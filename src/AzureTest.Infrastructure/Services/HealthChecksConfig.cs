@@ -15,28 +15,50 @@ public static class HealthChecksConfig
         if (!options.EnableHealthCheck)
             return services;
 
-        var connections = configuration
-            .GetSection("HealthCheckConnections")
-            .Get<HealthCheckConnectionOptions>() ?? new HealthCheckConnectionOptions();
-
         var healthChecksBuilder = services.AddHealthChecks();
 
-        if (options.EnableHealthChecksSql && !string.IsNullOrWhiteSpace(connections.SqlServer))
+        if (options.EnableHealthChecksSql)
         {
-            healthChecksBuilder.AddSqlServer(connections.SqlServer, name: "AzureSql");
+            var sqlServer = configuration.GetConnectionString("DefaultConnection");
+            if (!string.IsNullOrWhiteSpace(sqlServer))
+                healthChecksBuilder.AddSqlServer(sqlServer, name: "AzureSql");
         }
 
-        if (options.EnableHealthChecksCosmos && !string.IsNullOrWhiteSpace(connections.CosmosDb))
+        if (options.EnableHealthChecksCosmos)
         {
-            // Register CosmosClient in DI, then health check resolves it automatically
-            services.AddSingleton(_ => new CosmosClient(connections.CosmosDb));
-            healthChecksBuilder.AddAzureCosmosDB(name: "AzureCosmos");
+            var mongoDb = configuration.GetConnectionString("MongoDb");
+            if (!string.IsNullOrWhiteSpace(mongoDb))
+                healthChecksBuilder.AddMongoDb(
+                    _ => new MongoDB.Driver.MongoClient(mongoDb),
+                    name: "MongoDbCosmos");
         }
 
-        if (options.EnableHealthChecksBlob && !string.IsNullOrWhiteSpace(connections.BlobStorage))
+        if (options.EnableHealthChecksBlob)
         {
-            healthChecksBuilder.AddAzureBlobStorage(connections.BlobStorage, name: "AzureBlob");
+            var blobStorage = configuration.GetConnectionString("BlobStorage");
+            if (!string.IsNullOrWhiteSpace(blobStorage))
+                healthChecksBuilder.AddAzureBlobStorage(blobStorage, name: "AzureBlob");
         }
+
+        if (options.EnableHealthCheckMonitor)
+        {
+            // Add Application Insights Publisher if Azure Monitor is enabled
+            var appInsights = configuration.GetSection("AzureMonitor:ConnectionString").Value;
+            if (!string.IsNullOrWhiteSpace(appInsights))
+            {
+                services.Configure<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckPublisherOptions>(opts =>
+                {
+                    opts.Delay = TimeSpan.FromSeconds(2);
+                    opts.Predicate = (check) => true;
+                });
+                services.Configure<Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration>(config => 
+                {
+                    config.ConnectionString = appInsights;
+                });
+                healthChecksBuilder.AddApplicationInsightsPublisher();
+            }
+        }
+        
 
         return services;
     }

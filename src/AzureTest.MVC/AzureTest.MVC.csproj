@@ -9,6 +9,7 @@
     <ItemGroup>
         <PackageReference Include="AspNetCore.HealthChecks.UI" />
         <PackageReference Include="AspNetCore.HealthChecks.UI.InMemory.Storage" />
+        <PackageReference Include="AspNetCore.HealthChecks.UI.Client" />
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" />
         <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" />
         <PackageReference Include="FluentValidation.AspNetCore" />

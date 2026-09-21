@@ -45,6 +45,8 @@ public class ResumeController : Controller
     {
         var resume = await _queries.GetById.HandleAsync(new GetResumeByIdQuery(id), cancellationToken);
         if (resume is null) return NotFound();
+
+        ViewBag.Files = await _documentService.GetFileMetadataByResumeIdAsync(id, cancellationToken);
         return View(resume);
     }
 
@@ -90,6 +92,8 @@ public class ResumeController : Controller
     {
         var resume = await _queries.GetById.HandleAsync(new GetResumeByIdQuery(id), cancellationToken);
         if (resume is null) return NotFound();
+
+        ViewBag.Files = await _documentService.GetFileMetadataByResumeIdAsync(id, cancellationToken);
 
         var dto = new UpdateResumeDto(resume.Id, resume.PositionTitle, resume.Description,
             resume.Location, resume.JobLink, resume.Note, resume.Source, resume.Status, resume.CreatedOn.ToLocalTime().Date);
@@ -171,7 +175,45 @@ public class ResumeController : Controller
     public async Task<IActionResult> DeleteConfirmed(Guid id, CancellationToken cancellationToken)
     {
         await _commands.Delete.HandleAsync(new DeleteResumeCommand(id), cancellationToken);
+        await _documentService.DeleteAllFilesByResumeIdAsync(id, cancellationToken);
         TempData["Success"] = "Resume deleted successfully.";
         return RedirectToAction(nameof(Index));
+    }
+
+    // GET: /Resume/DownloadFile/{id}?type=cv
+    [HttpGet]
+    public async Task<IActionResult> DownloadFile(Guid id, string type, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(type) || (type.ToLower() != "cv" && type.ToLower() != "cl"))
+            return BadRequest("Invalid file type.");
+
+        var files = await _documentService.GetFileMetadataByResumeIdAsync(id, cancellationToken);
+        if (files is null) return NotFound("File record not found.");
+
+        var download = await _documentService.DownloadFileAsync(files.FileRecordId, type, cancellationToken);
+        if (download is null) return NotFound("File not found in storage.");
+
+        return File(download.Value.Content, download.Value.ContentType, download.Value.FileName);
+    }
+
+    // POST: /Resume/DeleteFile/{id}?type=cv
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteFile(Guid id, string type, string returnUrl, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(type) || (type.ToLower() != "cv" && type.ToLower() != "cl"))
+            return BadRequest("Invalid file type.");
+
+        var files = await _documentService.GetFileMetadataByResumeIdAsync(id, cancellationToken);
+        if (files is not null)
+        {
+            await _documentService.DeleteFileAsync(files.FileRecordId, type, cancellationToken);
+            TempData["Success"] = "File deleted successfully.";
+        }
+
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return Redirect(returnUrl);
+
+        return RedirectToAction(nameof(Details), new { id });
     }
 }

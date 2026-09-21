@@ -1,0 +1,110 @@
+@model AzureTest.Contracts.DTOs.Resumes.ResumeAnalyticsDto
+@{
+    ViewData["Title"] = "Analytics Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Analytics Dashboard</h1>
+</div>
+
+<div class="row">
+    <!-- Status Distribution Pie Chart -->
+    <div class="col-lg-5 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Applications by Status</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Applications Over Time Bar Chart -->
+    <div class="col-lg-7 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Applications Over Time</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="dateChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Data for Status Chart
+            const statusLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusCounts.Keys));
+            const statusData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusCounts.Values));
+
+            // Custom color palette mapped approximately to status semantics
+            const statusColors = statusLabels.map(label => {
+                switch(label) {
+                    case 'Rejected': return '#dc3545';
+                    case 'Offer': return '#198754';
+                    case 'Interviewing': return '#ffc107';
+                    case 'Applied': return '#0d6efd';
+                    case 'Screening': return '#0dcaf0';
+                    default: return '#6c757d';
+                }
+            });
+
+            const ctxStatus = document.getElementById('statusChart').getContext('2d');
+            new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: statusLabels,
+                    datasets: [{
+                        data: statusData,
+                        backgroundColor: statusColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+
+            // Data for Dates Chart
+            const dateLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByDate.Keys));
+            const dateData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByDate.Values));
+
+            const ctxDate = document.getElementById('dateChart').getContext('2d');
+            new Chart(ctxDate, {
+                type: 'bar',
+                data: {
+                    labels: dateLabels,
+                    datasets: [{
+                        label: 'Applications',
+                        data: dateData,
+                        backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                        borderColor: '#0d6efd',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 } // Show only whole numbers
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        });
+    </script>
+}

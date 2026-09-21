@@ -21,6 +21,34 @@
             
             <hr class="my-4" />
             <h6 class="mb-3">Update Attachments</h6>
+
+            @{
+                var files = ViewBag.Files as AzureTest.Contracts.DTOs.Resumes.ResumeFilesDto;
+            }
+
+            @if (files is not null && (files.HasCv || files.HasCoverLetter))
+            {
+                <div class="alert alert-light border mb-4">
+                    <strong>Current Attachments:</strong>
+                    <ul class="mb-0 mt-2">
+                        @if (files.HasCv)
+                        {
+                            <li class="mb-1">
+                                CV: <a href="@Url.Action("DownloadFile", new { id = Model.Id, type = "cv" })" target="_blank">@files.CvName</a>
+                                <button type="submit" form="deleteCvForm" class="btn btn-sm btn-link text-danger p-0 ms-2" onclick="return confirm('Delete this CV?');">Remove</button>
+                            </li>
+                        }
+                        @if (files.HasCoverLetter)
+                        {
+                            <li>
+                                Cover Letter: <a href="@Url.Action("DownloadFile", new { id = Model.Id, type = "cl" })" target="_blank">@files.CoverLetterName</a>
+                                <button type="submit" form="deleteClForm" class="btn btn-sm btn-link text-danger p-0 ms-2" onclick="return confirm('Delete this Cover Letter?');">Remove</button>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+
             <p class="text-muted small">Uploading new files will overwrite any existing files for this resume.</p>
             
             <div class="mb-3">
@@ -43,4 +71,10 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+
+@if (ViewBag.Files != null)
+{
+    <form id="deleteCvForm" asp-action="DeleteFile" asp-route-id="@Model.Id" asp-route-type="cv" asp-route-returnUrl="@Context.Request.Path" method="post" style="display:none;"></form>
+    <form id="deleteClForm" asp-action="DeleteFile" asp-route-id="@Model.Id" asp-route-type="cl" asp-route-returnUrl="@Context.Request.Path" method="post" style="display:none;"></form>
 }

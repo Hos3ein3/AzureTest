@@ -91,7 +91,20 @@ else
 
 @section Scripts {
     <script>
+        function updateSelectColor(select) {
+            select.classList.remove('bg-primary', 'bg-warning', 'bg-success', 'bg-danger', 'bg-info', 'bg-secondary', 'text-white', 'text-dark');
+            switch(select.value) {
+                case 'Rejected': select.classList.add('bg-danger', 'text-white'); break;
+                case 'Offer': select.classList.add('bg-success', 'text-white'); break;
+                case 'Interviewing': select.classList.add('bg-warning', 'text-dark'); break;
+                case 'Applied': select.classList.add('bg-primary', 'text-white'); break;
+                case 'Screening': select.classList.add('bg-info', 'text-dark'); break;
+                default: select.classList.add('bg-secondary', 'text-white'); break;
+            }
+        }
+
         document.querySelectorAll('.status-dropdown').forEach(dd => {
+            updateSelectColor(dd);
             dd.addEventListener('change', function() {
                 var selectElement = this;
                 var resumeId = selectElement.getAttribute('data-id');
@@ -118,15 +131,19 @@ else
                 .then(data => {
                     selectElement.disabled = false;
                     if(data.success) {
+                        updateSelectColor(selectElement);
                         indicator.style.display = 'inline-block';
                         setTimeout(() => indicator.style.display = 'none', 2000);
                     } else {
                         alert('Failed to update status: ' + (data.message || 'Unknown error'));
+                        // Reload to revert color on failure
+                        location.reload();
                     }
                 })
                 .catch(err => {
                     selectElement.disabled = false;
                     alert('An error occurred while updating the status.');
+                    location.reload();
                 });
             });
         });

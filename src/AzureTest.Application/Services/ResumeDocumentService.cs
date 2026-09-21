@@ -98,9 +98,51 @@ public class ResumeDocumentService : IResumeDocumentService
         }
     }
 
-    public async Task DeleteFileAsync(Guid fileRecordId, CancellationToken cancellationToken = default)
+    public async Task<ResumeFilesDto?> GetFileMetadataByResumeIdAsync(Guid resumeId, CancellationToken cancellationToken = default)
+    {
+        var document = await _resumeFilesRepository.GetByResumeIdAsync(resumeId);
+        if (document is null) return null;
+
+        return new ResumeFilesDto(
+            document.Id,
+            document.ResumeId,
+            !string.IsNullOrWhiteSpace(document.RealNameOfCV),
+            document.RealNameOfCV,
+            !string.IsNullOrWhiteSpace(document.RealNameOfCL),
+            document.RealNameOfCL,
+            document.UploadedOn
+        );
+    }
+
+    public async Task DeleteFileAsync(Guid fileRecordId, string fileType, CancellationToken cancellationToken = default)
     {
         var document = await _resumeFilesRepository.GetByIdAsync(fileRecordId);
+        if (document is null) return;
+
+        string containerName = "resumes";
+
+        if (fileType.ToLower() == "cv" && !string.IsNullOrWhiteSpace(document.TempNameOfCV))
+        {
+            await _blobService.DeleteFileAsync(containerName, document.TempNameOfCV, cancellationToken);
+            document.TempNameOfCV = null;
+            document.RealNameOfCV = null;
+        }
+        else if (fileType.ToLower() == "cl" && !string.IsNullOrWhiteSpace(document.TempNameOfCL))
+        {
+            await _blobService.DeleteFileAsync(containerName, document.TempNameOfCL, cancellationToken);
+            document.TempNameOfCL = null;
+            document.RealNameOfCL = null;
+        }
+
+        // If both files are now deleted, we can optionally remove the whole document,
+        // or just keep it around. Since it's a 1-to-1 relationship, keeping the empty document is fine.
+        // We'll update the record to clear out the deleted file names.
+        await _resumeFilesRepository.UpdateAsync(document.Id, document);
+    }
+
+    public async Task DeleteAllFilesByResumeIdAsync(Guid resumeId, CancellationToken cancellationToken = default)
+    {
+        var document = await _resumeFilesRepository.GetByResumeIdAsync(resumeId);
         if (document is null) return;
 
         string containerName = "resumes";

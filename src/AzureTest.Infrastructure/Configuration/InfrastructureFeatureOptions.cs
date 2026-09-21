@@ -8,6 +8,7 @@ public class InfrastructureFeatureOptions
     public bool EnableHealthChecksSql { get; set; } = true;
     public bool EnableHealthChecksCosmos { get; set; } = true;
     public bool EnableHealthChecksBlob { get; set; } = true;
+    public bool EnableHealthCheckMonitor { get; set; } = true;
 
     // OpenTelemetry Features
     public bool EnableOpenTelemetry { get; set; } = true;
@@ -20,4 +21,5 @@ public class InfrastructureFeatureOptions
 
     // Storage Features
     public bool EnableBlobStorage { get; set; } = false;
+    public bool EnableAzureMonitorOpenTelemetry { get; set; } = true;
 }

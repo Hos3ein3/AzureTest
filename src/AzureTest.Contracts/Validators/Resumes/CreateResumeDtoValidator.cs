@@ -22,7 +22,7 @@ public sealed class CreateResumeDtoValidator : AbstractValidator<CreateResumeDto
             .Must(link => string.IsNullOrWhiteSpace(link) || Uri.TryCreate(link, UriKind.Absolute, out _))
             .WithMessage("Job link must be a valid URL.");
 
-        RuleFor(x => x.Note)
+        RuleFor(x => x.Note).Empty()
             .MaximumLength(1000).WithMessage("Note must not exceed 1000 characters.");
 
         RuleFor(x => x.Source)

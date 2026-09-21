@@ -11,8 +11,11 @@
     <ItemGroup>
         <PackageReference Include="AspNetCore.HealthChecks.SqlServer" />
         <PackageReference Include="AspNetCore.HealthChecks.CosmosDb" />
+        <PackageReference Include="AspNetCore.HealthChecks.MongoDb" />
+        <PackageReference Include="AspNetCore.HealthChecks.Publisher.ApplicationInsights" />
         <PackageReference Include="AspNetCore.HealthChecks.AzureStorage" />
         <PackageReference Include="Azure.Storage.Blobs" />
+        <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" />
         <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
         <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
         <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />

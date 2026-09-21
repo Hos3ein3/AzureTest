@@ -58,6 +58,10 @@ app.MapHealthChecksUI(options =>
 {
     options.UIPath = "/healthchecks-ui";
 });
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = _ => true,
+    ResponseWriter = HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse
+});
 
 app.Run();

@@ -16,6 +16,7 @@ public static class DependencyInjection
         services.AddSerilogConfig(options);
         services.AddOpenTelemetryConfig(options);
         services.AddHealthChecksConfig(options, configuration);
+        services.AddAzureOpenTelemetryConfig(options);
 
         // Register the correct storage implementation based on the feature flag
         if (options.EnableBlobStorage)

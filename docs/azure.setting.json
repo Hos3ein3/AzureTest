@@ -1,4 +1,12 @@
 {
+  "AzureDevOps": {
+    "Organization": "ho3sein33",
+    "RepoName": "Azuretest",
+    "Users": {
+      "Name":"hos3ein.behzadi@gmail.com",
+      "Password": "5vycxhGcLi4jULDBYWjwpHiPd1ATaSuYHRCObYACFM5MNgOyPgtJJQQJ99CIACAAAAAAAAAAAAASAZDO2KJK",
+    }
+  },
   "ResourceGroup":{
     "Name":  "azure-test",
     "Features": {
@@ -10,6 +18,7 @@
       },
       "Cosmos": {
         "ClusterName": "azuretest-resume-tracker-docdb-cluster2",
+        "Name": "dbuser47lfqt",
         "Password": "~123456Mh~"
       },
       "AzureContainerRegistry": {
