@@ -1,0 +1,38 @@
+@model AzureTest.Contracts.DTOs.Resumes.ResumeDto
+@{
+    ViewData["Title"] = "Delete Resume";
+}
+
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Resumes</a></li>
+        <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.Id">@Model.PositionTitle</a></li>
+        <li class="breadcrumb-item active">Delete</li>
+    </ol>
+</nav>
+
+<div class="card shadow-sm border-danger" style="max-width: 600px;">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete</h5>
+    </div>
+    <div class="card-body">
+        <p>Are you sure you want to delete the following resume? This action can be undone by an administrator.</p>
+        <dl class="row">
+            <dt class="col-sm-4">Position</dt>
+            <dd class="col-sm-8">@Model.PositionTitle</dd>
+            <dt class="col-sm-4">Location</dt>
+            <dd class="col-sm-8">@(string.IsNullOrWhiteSpace(Model.Location) ? "—" : Model.Location)</dd>
+            <dt class="col-sm-4">Status</dt>
+            <dd class="col-sm-8"><span class="badge bg-primary">@Model.Status</span></dd>
+            <dt class="col-sm-4">Applied On</dt>
+            <dd class="col-sm-8">@Model.CreatedOn.ToString("MMMM d, yyyy")</dd>
+        </dl>
+    </div>
+    <div class="card-footer d-flex gap-2">
+        <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-danger">Yes, Delete</button>
+        </form>
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</div>

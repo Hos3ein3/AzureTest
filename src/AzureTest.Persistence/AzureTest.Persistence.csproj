@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <ItemGroup>
+        <ProjectReference Include="..\AzureTest.Application\AzureTest.Application.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Context\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+        <PackageReference Include="MongoDB.Driver" />
+    </ItemGroup>
+
+</Project>

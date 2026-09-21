@@ -1,0 +1,71 @@
+@model IEnumerable<AzureTest.Contracts.DTOs.Resumes.ResumeFileDto>
+
+@{
+    ViewData["Title"] = "Resume Files";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Resume Files</h2>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Resume ID</th>
+                        <th>CV File</th>
+                        <th>Cover Letter File</th>
+                        <th>Uploaded On</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                No resume files found.
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.ResumeId</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(item.RealNameOfCV))
+                                {
+                                    <a asp-action="Download" asp-route-id="@item.Id" asp-route-type="cv" class="text-decoration-none">
+                                        📄 @item.RealNameOfCV
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">None</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(item.RealNameOfCL))
+                                {
+                                    <a asp-action="Download" asp-route-id="@item.Id" asp-route-type="cl" class="text-decoration-none">
+                                        📄 @item.RealNameOfCL
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">None</span>
+                                }
+                            </td>
+                            <td>@item.UploadedOn.ToString("g")</td>
+                            <td class="text-end">
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

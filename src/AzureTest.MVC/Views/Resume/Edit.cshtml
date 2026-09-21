@@ -1,0 +1,46 @@
+@model AzureTest.Contracts.DTOs.Resumes.UpdateResumeDto
+@{
+    ViewData["Title"] = "Edit Resume";
+}
+
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Resumes</a></li>
+        <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.Id">@Model.PositionTitle</a></li>
+        <li class="breadcrumb-item active">Edit</li>
+    </ol>
+</nav>
+
+<div class="card shadow-sm" style="max-width: 700px;">
+    <div class="card-header"><h5 class="mb-0">Edit Resume</h5></div>
+    <div class="card-body">
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input asp-for="Id" type="hidden" />
+            <partial name="_ResumeFormPartial" />
+            
+            <hr class="my-4" />
+            <h6 class="mb-3">Update Attachments</h6>
+            <p class="text-muted small">Uploading new files will overwrite any existing files for this resume.</p>
+            
+            <div class="mb-3">
+                <label for="cvFile" class="form-label">Upload New CV</label>
+                <input type="file" class="form-control" id="cvFile" name="cvFile" />
+            </div>
+
+            <div class="mb-4">
+                <label for="clFile" class="form-label">Upload New Cover Letter</label>
+                <input type="file" class="form-control" id="clFile" name="clFile" />
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

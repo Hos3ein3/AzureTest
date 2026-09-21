@@ -1,0 +1,64 @@
+@model AzureTest.Contracts.DTOs.Resumes.IResumeFormDto
+@* Shared form fields for Create and Edit Resume views.
+   Both CreateResumeDto and UpdateResumeDto implement IResumeFormDto,
+   so the parent view can pass either model and asp-for will resolve correctly.
+   The parent view owns the <form> tag — this partial only renders the fields.
+*@
+
+<div class="row">
+    <div class="col-md-8 mb-3">
+        <label asp-for="PositionTitle" class="form-label">
+            Position Title <span class="text-danger">*</span>
+        </label>
+        <input asp-for="PositionTitle" class="form-control" placeholder="e.g. Senior Software Engineer" />
+        <span asp-validation-for="PositionTitle" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label asp-for="CreatedOn" class="form-label">Date Applied</label>
+        <input asp-for="CreatedOn" class="form-control" type="date" />
+        <span asp-validation-for="CreatedOn" class="text-danger small"></span>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="Source" class="form-label">Source</label>
+        <select asp-for="Source" class="form-select"
+                asp-items="Html.GetEnumSelectList<AzureTest.Domain.Enums.ResumeSource>()">
+        </select>
+        <span asp-validation-for="Source" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label asp-for="Status" class="form-label">Status</label>
+        <select asp-for="Status" class="form-select"
+                asp-items="Html.GetEnumSelectList<AzureTest.Domain.Enums.ResumeStatus>()">
+        </select>
+        <span asp-validation-for="Status" class="text-danger small"></span>
+    </div>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Location" class="form-label">Location</label>
+    <input asp-for="Location" class="form-control" placeholder="e.g. Remote, New York, NY" />
+    <span asp-validation-for="Location" class="text-danger small"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="JobLink" class="form-label">Job Link</label>
+    <input asp-for="JobLink" class="form-control" type="url" placeholder="https://..." />
+    <span asp-validation-for="JobLink" class="text-danger small"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Description" class="form-label">Description</label>
+    <textarea asp-for="Description" class="form-control" rows="4"
+              placeholder="Job description or notes about the role..."></textarea>
+    <span asp-validation-for="Description" class="text-danger small"></span>
+</div>
+
+<div class="mb-4">
+    <label asp-for="Note" class="form-label">Personal Notes</label>
+    <textarea asp-for="Note" class="form-control" rows="3"
+              placeholder="Your thoughts, contact details, etc."></textarea>
+    <span asp-validation-for="Note" class="text-danger small"></span>
+</div>

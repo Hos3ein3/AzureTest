@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Project Path="src/AzureTest.API/AzureTest.API.csproj" />
+  <Project Path="src/AzureTest.Application/AzureTest.Application.csproj" />
+  <Project Path="src/AzureTest.Contracts/AzureTest.Contracts.csproj" />
+  <Project Path="src/AzureTest.Domain/AzureTest.Domain.csproj" />
+  <Project Path="src/AzureTest.Endpoint/AzureTest.Endpoint.csproj" />
+  <Project Path="src/AzureTest.Infrastructure/AzureTest.Infrastructure.csproj" />
+  <Project Path="src/AzureTest.MVC/AzureTest.MVC.csproj" />
+  <Project Path="src/AzureTest.Persistence/AzureTest.Persistence.csproj" />
+  <Project Path="test/AzureTest.e2eTest/AzureTest.e2eTest.csproj" />
+  <Project Path="test/AzureTest.IntegrationTest/AzureTest.IntegrationTest.csproj" />
+  <Project Path="test/AzureTest.UnitTest/AzureTest.UnitTest.csproj" />
+</Solution>

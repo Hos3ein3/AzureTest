@@ -1,0 +1,31 @@
+{
+  "ResourceGroup":{
+    "Name":  "azure-test",
+    "Features": {
+      "AzureSqlServer": {
+        "ServerName": "azure-test-server-resume-tracker",
+        "ServerNameConnection": "azure-test-server-resume-tracker.database.windows.net",
+        "ServerAdminLogin": "azurre-test-server",
+        "Password": "~123456Mh~"
+      },
+      "Cosmos": {
+        "ClusterName": "azuretest-resume-tracker-docdb-cluster2",
+        "Password": "~123456Mh~"
+      },
+      "AzureContainerRegistry": {
+        "RegistryName": "AzureTestResumeTracker",
+        "GlobalEndpoint": "azuretestresumetracker.azurecr.io",
+      },
+      "AzureStorage": {
+        "StorageAccountName": "azuretest1bloblstorage1",
+        
+      },
+      "AzureContainerApp": {},
+      "StaticWebApp": {},
+      "AzureServiceApp": {},
+      "AzureMonitor": {
+        "Name": "azuretest-resumetracker-monitor"
+      }
+    }
+  },
+}

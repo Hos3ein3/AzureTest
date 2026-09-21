@@ -1,0 +1,23 @@
+namespace AzureTest.Infrastructure.Configuration;
+
+public class InfrastructureFeatureOptions
+{
+    // HealthChecks Features
+    public bool EnableHealthCheck { get; set; } = true;
+    public bool EnableHealthCheckUI { get; set; } = true;
+    public bool EnableHealthChecksSql { get; set; } = true;
+    public bool EnableHealthChecksCosmos { get; set; } = true;
+    public bool EnableHealthChecksBlob { get; set; } = true;
+
+    // OpenTelemetry Features
+    public bool EnableOpenTelemetry { get; set; } = true;
+    public bool EnableAspNetCoreInstrumentation { get; set; } = true;
+    public bool EnableRuntimeInstrumentation { get; set; } = true;
+    public bool EnableProcessInstrumentation { get; set; } = true;
+
+    // Logging Features
+    public bool EnableSerilog { get; set; } = true;
+
+    // Storage Features
+    public bool EnableBlobStorage { get; set; } = false;
+}
