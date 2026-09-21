@@ -27,8 +27,8 @@ RUN dotnet publish src/AzureTest.MVC/AzureTest.MVC.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-# Create a non-root user for security best practices
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+# Create a non-root user for security best practices (Debian-based image)
+RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
 
 COPY --from=build /app/publish .
 
