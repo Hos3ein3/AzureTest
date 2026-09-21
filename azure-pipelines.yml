@@ -107,13 +107,32 @@ stages:
                     scriptType: bash
                     scriptLocation: inlineScript
                     inlineScript: |
+                      set -e
                       FULL_IMAGE="$(acrLoginServer)/$(imageRepository):$(imageTag)"
                       echo "Deploying image: $FULL_IMAGE"
 
-                      az containerapp update \
-                        --name "$(containerAppName)" \
-                        --resource-group "$(resourceGroup)" \
-                        --image "$FULL_IMAGE"
+                      az extension add --name containerapp --upgrade --yes
+
+                      if az containerapp show \
+                          --name "$(containerAppName)" \
+                          --resource-group "$(resourceGroup)" &>/dev/null; then
+
+                        echo "Container App exists — updating image..."
+                        az containerapp update \
+                          --name "$(containerAppName)" \
+                          --resource-group "$(resourceGroup)" \
+                          --image "$FULL_IMAGE"
+
+                      else
+                        echo "Container App does not exist — creating it..."
+                        az containerapp up \
+                          --name "$(containerAppName)" \
+                          --resource-group "$(resourceGroup)" \
+                          --image "$FULL_IMAGE" \
+                          --ingress external \
+                          --target-port 8080 \
+                          --registry-server "$(acrLoginServer)"
+                      fi
 
                       echo "✅ Deployment triggered successfully!"
 
