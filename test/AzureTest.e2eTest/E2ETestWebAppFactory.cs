@@ -30,12 +30,16 @@ public class E2ETestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifeti
         .WithImage("mongo:6.0")
         .Build();
 
+    private IHost? _host;
     public string ServerAddress { get; private set; } = "";
 
     protected override IHost CreateHost(IHostBuilder builder)
     {
-        // Intercept host creation to force Kestrel to listen on a real port.
-        // We use port 0 so the OS assigns a free dynamic port.
+        // Create dummy host for WebApplicationFactory to use.
+        // WebApplicationFactory will start this itself.
+        var dummyHost = builder.Build();
+
+        // Configure Kestrel for our E2E tests
         builder.ConfigureWebHost(webHostBuilder =>
         {
             webHostBuilder.UseKestrel(options =>
@@ -44,7 +48,17 @@ public class E2ETestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifeti
             });
         });
 
-        return base.CreateHost(builder);
+        // Build and start the real Kestrel host
+        _host = builder.Build();
+        _host.Start();
+
+        // Extract the dynamically assigned URL
+        var server = _host.Services.GetRequiredService<IServer>();
+        var addresses = server.Features.Get<IServerAddressesFeature>();
+        
+        ServerAddress = addresses?.Addresses.FirstOrDefault() ?? "http://127.0.0.1";
+        
+        return dummyHost;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -110,10 +124,7 @@ public class E2ETestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifeti
         // Trigger host creation and startup so Kestrel binds to the port
         var client = this.CreateClient();
 
-        // Extract the dynamically assigned URL
-        var server = this.Services.GetRequiredService<IServer>();
-        var addresses = server.Features.Get<IServerAddressesFeature>();
-        ServerAddress = addresses?.Addresses.FirstOrDefault() ?? "http://127.0.0.1";
+        // ServerAddress is now populated by CreateHost
 
         // Database migrations
         using var scope = this.Services.CreateScope();
@@ -123,6 +134,11 @@ public class E2ETestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifeti
 
     public new async Task DisposeAsync()
     {
+        if (_host != null)
+        {
+            await _host.StopAsync();
+            _host.Dispose();
+        }
         await _dbContainer.DisposeAsync().AsTask();
         await _mongoContainer.DisposeAsync().AsTask();
         await base.DisposeAsync();

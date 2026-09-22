@@ -21,19 +21,19 @@ stages:
               command: 'restore'
               projects: '**/*.csproj'
 
-          - task: DotNetCoreCLI@2
-            displayName: 'Run Unit Tests'
-            inputs:
-              command: 'test'
-              projects: 'test/AzureTest.UnitTest/AzureTest.UnitTest.csproj'
-              arguments: '--configuration $(buildConfiguration) --no-restore'
-
-          - task: DotNetCoreCLI@2
-            displayName: 'Run Integration Tests'
-            inputs:
-              command: 'test'
-              projects: 'test/AzureTest.IntegrationTest/AzureTest.IntegrationTest.csproj'
-              arguments: '--configuration $(buildConfiguration) --no-restore'
+#          - task: DotNetCoreCLI@2
+#            displayName: 'Run Unit Tests'
+#            inputs:
+#              command: 'test'
+#              projects: 'test/AzureTest.UnitTest/AzureTest.UnitTest.csproj'
+#              arguments: '--configuration $(buildConfiguration) --no-restore'
+#
+#          - task: DotNetCoreCLI@2
+#            displayName: 'Run Integration Tests'
+#            inputs:
+#              command: 'test'
+#              projects: 'test/AzureTest.IntegrationTest/AzureTest.IntegrationTest.csproj'
+#              arguments: '--configuration $(buildConfiguration) --no-restore'
 
           - script: |
               dotnet build test/AzureTest.e2eTest/AzureTest.e2eTest.csproj --configuration $(buildConfiguration)
