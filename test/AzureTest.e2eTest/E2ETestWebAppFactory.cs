@@ -30,7 +30,6 @@ public class E2ETestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifeti
         .WithImage("mongo:6.0")
         .Build();
 
-    private IHost? _host;
     public string ServerAddress { get; private set; } = "";
 
     protected override IHost CreateHost(IHostBuilder builder)
@@ -45,16 +44,7 @@ public class E2ETestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifeti
             });
         });
 
-        _host = builder.Build();
-        _host.Start();
-
-        // Extract the dynamically assigned URL
-        var server = _host.Services.GetRequiredService<IServer>();
-        var addresses = server.Features.Get<IServerAddressesFeature>();
-        
-        ServerAddress = addresses?.Addresses.FirstOrDefault() ?? "http://127.0.0.1";
-        
-        return _host;
+        return base.CreateHost(builder);
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -117,22 +107,22 @@ public class E2ETestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifeti
         await _dbContainer.StartAsync();
         await _mongoContainer.StartAsync();
 
+        // Trigger host creation and startup so Kestrel binds to the port
+        var client = this.CreateClient();
+
+        // Extract the dynamically assigned URL
+        var server = this.Services.GetRequiredService<IServer>();
+        var addresses = server.Features.Get<IServerAddressesFeature>();
+        ServerAddress = addresses?.Addresses.FirstOrDefault() ?? "http://127.0.0.1";
+
         // Database migrations
-        if (_host != null)
-        {
-            using var scope = _host.Services.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<AzureTestDbContext>();
-            await context.Database.EnsureCreatedAsync();
-        }
+        using var scope = this.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AzureTestDbContext>();
+        await context.Database.EnsureCreatedAsync();
     }
 
     public new async Task DisposeAsync()
     {
-        if (_host != null)
-        {
-            await _host.StopAsync();
-            _host.Dispose();
-        }
         await _dbContainer.DisposeAsync().AsTask();
         await _mongoContainer.DisposeAsync().AsTask();
         await base.DisposeAsync();
