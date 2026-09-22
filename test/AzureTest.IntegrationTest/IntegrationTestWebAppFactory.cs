@@ -83,6 +83,13 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
 
             // Register dummy cache service since Redis is disabled
             services.AddSingleton<AzureTest.Application.Interfaces.Services.ICompanyCacheService, DummyCompanyCacheService>();
+
+            // Remove CompanyDataSeeder to avoid scraping live websites during CI integration tests
+            var seederDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(AzureTest.Persistence.Seeding.CompanyDataSeeder));
+            if (seederDescriptor != null)
+            {
+                services.Remove(seederDescriptor);
+            }
         });
     }
 
