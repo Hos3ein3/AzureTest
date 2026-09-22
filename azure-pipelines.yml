@@ -9,8 +9,48 @@ variables:
   buildConfiguration: 'Release'
 
 stages:
+  - stage: Test
+    displayName: 'Run Automated Tests'
+    jobs:
+      - job: RunTests
+        displayName: 'Unit, Integration, and E2E Tests'
+        steps:
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore solution dependencies'
+            inputs:
+              command: 'restore'
+              projects: '**/*.csproj'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Run Unit Tests'
+            inputs:
+              command: 'test'
+              projects: 'test/AzureTest.UnitTest/AzureTest.UnitTest.csproj'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Run Integration Tests'
+            inputs:
+              command: 'test'
+              projects: 'test/AzureTest.IntegrationTest/AzureTest.IntegrationTest.csproj'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+
+          - script: |
+              dotnet build test/AzureTest.e2eTest/AzureTest.e2eTest.csproj --configuration $(buildConfiguration)
+              pwsh test/AzureTest.e2eTest/bin/$(buildConfiguration)/net10.0/playwright.ps1 install
+            displayName: 'Install Playwright Browsers'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Run E2E Tests'
+            inputs:
+              command: 'test'
+              projects: 'test/AzureTest.e2eTest/AzureTest.e2eTest.csproj'
+              arguments: '--configuration $(buildConfiguration) --no-build'
+
   - stage: BuildAndDeploy
     displayName: 'Build and Deploy to Local Docker'
+    dependsOn: Test
+    condition: succeeded()
     jobs:
       - job: DockerDeploy
         displayName: 'Docker Compose Build and Deploy'

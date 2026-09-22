@@ -23,6 +23,15 @@ RUN dotnet publish src/AzureTest.MVC/AzureTest.MVC.csproj \
     --no-restore \
     --output /app/publish
 
+# Stage 2: Test
+FROM build AS test
+WORKDIR /src
+# Restore and build test project
+RUN dotnet restore test/AzureTest.IntegrationTest/AzureTest.IntegrationTest.csproj
+RUN dotnet build test/AzureTest.IntegrationTest/AzureTest.IntegrationTest.csproj --no-restore
+# Note: running tests here requires Docker-in-Docker setup to work with Testcontainers.
+# CMD ["dotnet", "test", "test/AzureTest.IntegrationTest/AzureTest.IntegrationTest.csproj", "--no-build"]
+
 # Stage 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app

@@ -9,6 +9,15 @@
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>
         <PackageReference Include="xunit"/>
         <PackageReference Include="xunit.runner.visualstudio"/>
+        <PackageReference Include="Moq" />
+        <PackageReference Include="FluentAssertions" />
+        <PackageReference Include="Bogus" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\AzureTest.Application\AzureTest.Application.csproj" />
+        <ProjectReference Include="..\..\src\AzureTest.Domain\AzureTest.Domain.csproj" />
+        <ProjectReference Include="..\..\src\AzureTest.Contracts\AzureTest.Contracts.csproj" />
     </ItemGroup>
 
     <ItemGroup>

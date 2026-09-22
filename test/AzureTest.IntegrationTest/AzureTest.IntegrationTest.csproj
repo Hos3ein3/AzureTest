@@ -9,6 +9,19 @@
         <PackageReference Include="Microsoft.NET.Test.Sdk"/>
         <PackageReference Include="xunit"/>
         <PackageReference Include="xunit.runner.visualstudio"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+        <PackageReference Include="Bogus" />
+        <PackageReference Include="Testcontainers" />
+        <PackageReference Include="Testcontainers.PostgreSql" />
+        <PackageReference Include="Testcontainers.MongoDb" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\AzureTest.MVC\AzureTest.MVC.csproj" />
+        <ProjectReference Include="..\..\src\AzureTest.Application\AzureTest.Application.csproj" />
+        <ProjectReference Include="..\..\src\AzureTest.Domain\AzureTest.Domain.csproj" />
+        <ProjectReference Include="..\..\src\AzureTest.Infrastructure\AzureTest.Infrastructure.csproj" />
+        <ProjectReference Include="..\..\src\AzureTest.Persistence\AzureTest.Persistence.csproj" />
     </ItemGroup>
 
     <ItemGroup>

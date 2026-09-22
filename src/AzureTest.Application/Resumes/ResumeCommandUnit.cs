@@ -9,15 +9,15 @@ namespace AzureTest.Application.Resumes;
 public sealed class ResumeCommandUnit : IResumeCommandUnit
 {
     public ICommandHandler<CreateResumeCommand, Guid> Create { get; }
-    public ICommandHandler<UpdateResumeCommand> Update { get; }
+    public ICommandHandler<UpdateResumeCommand,bool> Update { get; }
     public ICommandHandler<UpdateResumeStatusCommand> UpdateStatus { get; }
-    public ICommandHandler<DeleteResumeCommand> Delete { get; }
+    public ICommandHandler<DeleteResumeCommand,bool> Delete { get; }
 
     public ResumeCommandUnit(
         ICommandHandler<CreateResumeCommand, Guid> create,
-        ICommandHandler<UpdateResumeCommand> update,
+        ICommandHandler<UpdateResumeCommand,bool> update,
         ICommandHandler<UpdateResumeStatusCommand> updateStatus,
-        ICommandHandler<DeleteResumeCommand> delete)
+        ICommandHandler<DeleteResumeCommand,bool> delete)
     {
         Create = create;
         Update = update;

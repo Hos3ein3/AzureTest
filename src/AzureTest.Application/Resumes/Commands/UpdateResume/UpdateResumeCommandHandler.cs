@@ -11,11 +11,11 @@ namespace AzureTest.Application.Resumes.Commands.UpdateResume;
 
 // ── Command ───────────────────────────────────────────────────────────────────
 
-public sealed record UpdateResumeCommand(UpdateResumeDto Dto) : ICommand;
+public sealed record UpdateResumeCommand(UpdateResumeDto Dto) : ICommand<bool>;
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-public sealed class UpdateResumeCommandHandler : BaseCommandHandler<UpdateResumeCommand>
+public sealed class UpdateResumeCommandHandler : BaseCommandHandler<UpdateResumeCommand,bool>
 {
     private readonly IResumeRepository _resumeRepository;
     private readonly ICompanyRepository _companyRepository;
@@ -23,14 +23,15 @@ public sealed class UpdateResumeCommandHandler : BaseCommandHandler<UpdateResume
     public UpdateResumeCommandHandler(
         IUnitOfWork unitOfWork,
         IResumeRepository resumeRepository,
-        ILogger<UpdateResumeCommandHandler> logger, ICompanyRepository companyRepository)
+        ICompanyRepository companyRepository,
+        ILogger<UpdateResumeCommandHandler> logger)
         : base(unitOfWork, logger)
     {
         _resumeRepository = resumeRepository;
         _companyRepository = companyRepository;
     }
 
-    protected override async Task ExecuteAsync(UpdateResumeCommand command, CancellationToken cancellationToken)
+    protected override async Task<bool> ExecuteAsync(UpdateResumeCommand command, CancellationToken cancellationToken)
     {
         var dto = command.Dto;
         
@@ -67,5 +68,6 @@ public sealed class UpdateResumeCommandHandler : BaseCommandHandler<UpdateResume
         resume.CreatedOn = dto.CreatedOn;
 
         _resumeRepository.Update(resume);
+        return true;
     }
 }

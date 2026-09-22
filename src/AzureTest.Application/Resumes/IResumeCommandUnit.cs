@@ -13,7 +13,7 @@ namespace AzureTest.Application.Resumes;
 public interface IResumeCommandUnit
 {
     ICommandHandler<CreateResumeCommand, Guid> Create { get; }
-    ICommandHandler<UpdateResumeCommand> Update { get; }
+    ICommandHandler<UpdateResumeCommand,bool> Update { get; }
     ICommandHandler<UpdateResumeStatusCommand> UpdateStatus { get; }
-    ICommandHandler<DeleteResumeCommand> Delete { get; }
+    ICommandHandler<DeleteResumeCommand,bool> Delete { get; }
 }

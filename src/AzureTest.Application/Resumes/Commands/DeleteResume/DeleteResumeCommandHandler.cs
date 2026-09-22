@@ -7,11 +7,11 @@ namespace AzureTest.Application.Resumes.Commands.DeleteResume;
 
 // ── Command ───────────────────────────────────────────────────────────────────
 
-public sealed record DeleteResumeCommand(Guid Id) : ICommand;
+public sealed record DeleteResumeCommand(Guid Id) : ICommand<bool>;
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-public sealed class DeleteResumeCommandHandler : BaseCommandHandler<DeleteResumeCommand>
+public sealed class DeleteResumeCommandHandler : BaseCommandHandler<DeleteResumeCommand,bool>
 {
     private readonly IResumeRepository _resumeRepository;
 
@@ -24,12 +24,13 @@ public sealed class DeleteResumeCommandHandler : BaseCommandHandler<DeleteResume
         _resumeRepository = resumeRepository;
     }
 
-    protected override async Task ExecuteAsync(DeleteResumeCommand command, CancellationToken cancellationToken)
+    protected override async Task<bool> ExecuteAsync(DeleteResumeCommand command, CancellationToken cancellationToken)
     {
         var resume = await _resumeRepository.GetByIdAsync(command.Id)
             ?? throw new KeyNotFoundException($"Resume with ID {command.Id} was not found.");
 
         resume.SoftDelete();
         _resumeRepository.Update(resume);
+        return  true;
     }
 }
