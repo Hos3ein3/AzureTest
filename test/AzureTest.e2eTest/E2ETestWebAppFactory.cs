@@ -30,15 +30,10 @@ public class E2ETestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifeti
         .WithImage("mongo:6.0")
         .Build();
 
-    private IHost? _host;
     public string ServerAddress { get; private set; } = "";
 
     protected override IHost CreateHost(IHostBuilder builder)
     {
-        // Create dummy host for WebApplicationFactory to use.
-        // WebApplicationFactory will start this itself.
-        var dummyHost = builder.Build();
-
         // Configure Kestrel for our E2E tests
         builder.ConfigureWebHost(webHostBuilder =>
         {
@@ -46,19 +41,30 @@ public class E2ETestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifeti
             {
                 options.ListenLocalhost(0);
             });
+
+            // Playwright requires Kestrel. WebApplicationFactory adds TestServer by default.
+            // We must remove TestServer, otherwise IHost.Start() crashes with InvalidOperationException.
+            webHostBuilder.ConfigureServices(services =>
+            {
+                var testServer = services.FirstOrDefault(d => d.ServiceType == typeof(Microsoft.AspNetCore.Hosting.Server.IServer));
+                if (testServer != null)
+                {
+                    services.Remove(testServer);
+                }
+            });
         });
 
-        // Build and start the real Kestrel host
-        _host = builder.Build();
-        _host.Start();
+        // Build and start the host
+        var host = builder.Build();
+        host.Start();
 
         // Extract the dynamically assigned URL
-        var server = _host.Services.GetRequiredService<IServer>();
+        var server = host.Services.GetRequiredService<IServer>();
         var addresses = server.Features.Get<IServerAddressesFeature>();
         
         ServerAddress = addresses?.Addresses.FirstOrDefault() ?? "http://127.0.0.1";
         
-        return dummyHost;
+        return host;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -121,8 +127,10 @@ public class E2ETestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifeti
         await _dbContainer.StartAsync();
         await _mongoContainer.StartAsync();
 
-        // Trigger host creation and startup so Kestrel binds to the port
-        var client = this.CreateClient();
+        // Trigger host creation and startup so Kestrel binds to the port.
+        // We use this.Services instead of this.CreateClient() because we removed TestServer
+        // to avoid Kestrel port conflicts. CreateClient() requires TestServer.
+        _ = this.Services;
 
         // ServerAddress is now populated by CreateHost
 
@@ -134,11 +142,6 @@ public class E2ETestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifeti
 
     public new async Task DisposeAsync()
     {
-        if (_host != null)
-        {
-            await _host.StopAsync();
-            _host.Dispose();
-        }
         await _dbContainer.DisposeAsync().AsTask();
         await _mongoContainer.DisposeAsync().AsTask();
         await base.DisposeAsync();
