@@ -1,5 +1,4 @@
 using AzureTest.Infrastructure.Configuration;
-using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,7 +20,7 @@ public static class HealthChecksConfig
         {
             var sqlServer = configuration.GetConnectionString("DefaultConnection");
             if (!string.IsNullOrWhiteSpace(sqlServer))
-                healthChecksBuilder.AddSqlServer(sqlServer, name: "AzureSql");
+                healthChecksBuilder.AddNpgSql(sqlServer, name: "PostgreSQL");
         }
 
         if (options.EnableHealthChecksCosmos)
@@ -30,8 +29,24 @@ public static class HealthChecksConfig
             if (!string.IsNullOrWhiteSpace(mongoDb))
                 healthChecksBuilder.AddMongoDb(
                     _ => new MongoDB.Driver.MongoClient(mongoDb),
-                    name: "MongoDbCosmos");
+                    name: "MongoDB");
         }
+        
+        var redis = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrWhiteSpace(redis))
+            healthChecksBuilder.AddRedis(redis, name: "Redis");
+            
+        // RabbitMQ (Assuming default Docker credentials/port if not in config)
+        var rabbitmq = configuration.GetConnectionString("RabbitMQ") ?? "amqp://guest:guest@rabbitmq:5672";
+        healthChecksBuilder.AddRabbitMQ(rabbitmq, name: "RabbitMQ");
+        
+        // Grafana
+        healthChecksBuilder.AddUrlGroup(new Uri("http://grafana:3000/api/health"), name: "Grafana");
+
+        // Hangfire
+        healthChecksBuilder.AddHangfire(options => {
+            options.MinimumAvailableServers = 1;
+        }, name: "Hangfire");
 
         if (options.EnableHealthChecksBlob)
         {

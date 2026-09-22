@@ -3,73 +3,111 @@
     ViewData["Title"] = Model.PositionTitle;
 }
 
-<nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-action="Index">Resumes</a></li>
-        <li class="breadcrumb-item active">@Model.PositionTitle</li>
+<nav aria-label="breadcrumb" class="mb-6">
+    <ol class="flex items-center space-x-2 text-sm text-slate-500">
+        <li>
+            <a asp-action="Index" class="hover:text-brand-600 transition-colors">Resumes</a>
+        </li>
+        <li>
+            <i class="fa-solid fa-chevron-right text-xs mx-1"></i>
+        </li>
+        <li class="font-medium text-slate-800" aria-current="page">@Model.PositionTitle</li>
     </ol>
 </nav>
 
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 flex items-start" role="alert">
+        <i class="fa-solid fa-circle-check text-emerald-500 mt-0.5 mr-3"></i>
+        <div class="flex-1">
+            <p class="text-sm text-emerald-800 font-medium">@TempData["Success"]</p>
+        </div>
+        <button type="button" class="text-emerald-500 hover:text-emerald-700 focus:outline-none" onclick="this.parentElement.style.display='none';">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
     </div>
 }
 @if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start" role="alert">
+        <i class="fa-solid fa-circle-exclamation text-red-500 mt-0.5 mr-3"></i>
+        <div class="flex-1">
+            <p class="text-sm text-red-800 font-medium">@TempData["Error"]</p>
+        </div>
+        <button type="button" class="text-red-500 hover:text-red-700 focus:outline-none" onclick="this.parentElement.style.display='none';">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
     </div>
 }
 
-<div class="card shadow-sm mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">@Model.PositionTitle</h5>
-        <div>
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-primary me-2">Edit</a>
-            <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-8">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+        <h5 class="text-lg font-semibold text-slate-800 m-0">@Model.PositionTitle</h5>
+        <div class="flex space-x-2">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="inline-flex items-center px-3 py-1.5 border border-brand-200 text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg text-sm font-medium transition-colors">
+                <i class="fa-solid fa-pen-to-square mr-1.5"></i> Edit
+            </a>
+            <a asp-action="Delete" asp-route-id="@Model.Id" class="inline-flex items-center px-3 py-1.5 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors">
+                <i class="fa-solid fa-trash mr-1.5"></i> Delete
+            </a>
         </div>
     </div>
-    <div class="card-body">
-        <dl class="row">
-            <dt class="col-sm-3">Location</dt>
-            <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.Location) ? "—" : Model.Location)</dd>
-
-            <dt class="col-sm-3">Source</dt>
-            <dd class="col-sm-9"><span class="badge bg-secondary">@Model.Source</span></dd>
-
-            <dt class="col-sm-3">Status</dt>
-            <dd class="col-sm-9"><span class="badge bg-primary">@Model.Status</span></dd>
-
-            <dt class="col-sm-3">Job Link</dt>
-            <dd class="col-sm-9">
-                @if (string.IsNullOrWhiteSpace(Model.JobLink))
-                {
-                    <span class="text-muted">—</span>
-                }
-                else
-                {
-                    <a href="@Model.JobLink" target="_blank">@Model.JobLink <i class="bi bi-box-arrow-up-right"></i></a>
-                }
-            </dd>
-
-            <dt class="col-sm-3">Description</dt>
-            <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.Description) ? "—" : Model.Description)</dd>
-
-            <dt class="col-sm-3">Notes</dt>
-            <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.Note) ? "—" : Model.Note)</dd>
-
-            <dt class="col-sm-3">Applied On</dt>
-            <dd class="col-sm-9">@Model.CreatedOn.ToString("MMMM d, yyyy HH:mm")</dd>
-
+    <div class="p-6">
+        <dl class="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-6">
+            <div class="sm:col-span-1">
+                <dt class="text-sm font-medium text-slate-500">Location</dt>
+                <dd class="mt-1 text-sm text-slate-900">@(string.IsNullOrWhiteSpace(Model.Location) ? "—" : Model.Location)</dd>
+            </div>
+            <div class="sm:col-span-1">
+                <dt class="text-sm font-medium text-slate-500">Source</dt>
+                <dd class="mt-1">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                        @Model.Source
+                    </span>
+                </dd>
+            </div>
+            <div class="sm:col-span-1">
+                <dt class="text-sm font-medium text-slate-500">Status</dt>
+                <dd class="mt-1">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-100 text-brand-800">
+                        @Model.Status
+                    </span>
+                </dd>
+            </div>
+            <div class="sm:col-span-1">
+                <dt class="text-sm font-medium text-slate-500">Job Link</dt>
+                <dd class="mt-1 text-sm text-slate-900">
+                    @if (string.IsNullOrWhiteSpace(Model.JobLink))
+                    {
+                        <span class="text-slate-400">—</span>
+                    }
+                    else
+                    {
+                        <a href="@Model.JobLink" target="_blank" class="text-brand-600 hover:text-brand-500 truncate block">
+                            @Model.JobLink <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-xs"></i>
+                        </a>
+                    }
+                </dd>
+            </div>
+            <div class="sm:col-span-1">
+                <dt class="text-sm font-medium text-slate-500">Applied On</dt>
+                <dd class="mt-1 text-sm text-slate-900">@Model.CreatedOn.ToString("MMMM d, yyyy HH:mm")</dd>
+            </div>
             @if (Model.ModifiedOn.HasValue)
             {
-                <dt class="col-sm-3">Last Modified</dt>
-                <dd class="col-sm-9">@Model.ModifiedOn.Value.ToString("MMMM d, yyyy HH:mm")</dd>
+                <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-slate-500">Last Modified</dt>
+                    <dd class="mt-1 text-sm text-slate-900">@Model.ModifiedOn.Value.ToString("MMMM d, yyyy HH:mm")</dd>
+                </div>
             }
+            <div class="sm:col-span-3">
+                <dt class="text-sm font-medium text-slate-500">Description</dt>
+                <dd class="mt-1 text-sm text-slate-900 bg-slate-50 p-4 rounded-lg border border-slate-100 whitespace-pre-wrap">@(string.IsNullOrWhiteSpace(Model.Description) ? "—" : Model.Description)</dd>
+            </div>
+            <div class="sm:col-span-3">
+                <dt class="text-sm font-medium text-slate-500">Notes</dt>
+                <dd class="mt-1 text-sm text-slate-900 bg-yellow-50/50 p-4 rounded-lg border border-yellow-100 whitespace-pre-wrap">@(string.IsNullOrWhiteSpace(Model.Note) ? "—" : Model.Note)</dd>
+            </div>
         </dl>
     </div>
 </div>
@@ -80,25 +118,29 @@
 
 @if (files is not null && (files.HasCv || files.HasCoverLetter))
 {
-    <div class="card shadow-sm mb-4">
-        <div class="card-header"><h6 class="mb-0">Attachments</h6></div>
-        <div class="card-body">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-8">
+        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+            <h6 class="text-lg font-semibold text-slate-800 m-0">Attachments</h6>
+        </div>
+        <div class="p-6">
             @if (files.HasCv)
             {
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong>Curriculum Vitae (CV)</strong>
-                        <div class="d-flex gap-2">
-                            <a href="@Url.Action("DownloadFile", new { id = Model.Id, type = "cv" })" class="btn btn-sm btn-outline-primary" target="_blank">
-                                <i class="bi bi-download"></i> Download
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-3">
+                        <strong class="text-slate-800 font-medium"><i class="fa-solid fa-file-pdf text-red-500 mr-2"></i>Curriculum Vitae (CV)</strong>
+                        <div class="flex space-x-2">
+                            <a href="@Url.Action("DownloadFile", new { id = Model.Id, type = "cv" })" class="inline-flex items-center px-3 py-1.5 border border-brand-200 text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg text-xs font-medium transition-colors" target="_blank">
+                                <i class="fa-solid fa-download mr-1.5"></i> Download
                             </a>
-                            <form asp-action="DeleteFile" asp-route-id="@Model.Id" asp-route-type="cv" asp-route-returnUrl="@Context.Request.Path" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this CV?');">
-                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Delete</button>
+                            <form asp-action="DeleteFile" asp-route-id="@Model.Id" asp-route-type="cv" asp-route-returnUrl="@Context.Request.Path" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this CV?');">
+                                <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-medium transition-colors">
+                                    <i class="fa-solid fa-trash mr-1.5"></i> Delete
+                                </button>
                             </form>
                         </div>
                     </div>
-                    <p class="text-muted small mb-2">@files.CvName</p>
-                    <div class="border rounded" style="height: 500px; overflow: hidden;">
+                    <p class="text-slate-500 text-xs mb-3">@files.CvName</p>
+                    <div class="border border-slate-200 rounded-lg overflow-hidden h-[500px] bg-slate-100">
                         <embed src="@Url.Action("DownloadFile", new { id = Model.Id, type = "cv" })" type="application/pdf" width="100%" height="100%" />
                     </div>
                 </div>
@@ -106,25 +148,27 @@
 
             @if (files.HasCv && files.HasCoverLetter)
             {
-                <hr class="my-4" />
+                <hr class="my-6 border-slate-200" />
             }
 
             @if (files.HasCoverLetter)
             {
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong>Cover Letter</strong>
-                        <div class="d-flex gap-2">
-                            <a href="@Url.Action("DownloadFile", new { id = Model.Id, type = "cl" })" class="btn btn-sm btn-outline-primary" target="_blank">
-                                <i class="bi bi-download"></i> Download
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <strong class="text-slate-800 font-medium"><i class="fa-solid fa-file-word text-blue-500 mr-2"></i>Cover Letter</strong>
+                        <div class="flex space-x-2">
+                            <a href="@Url.Action("DownloadFile", new { id = Model.Id, type = "cl" })" class="inline-flex items-center px-3 py-1.5 border border-brand-200 text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg text-xs font-medium transition-colors" target="_blank">
+                                <i class="fa-solid fa-download mr-1.5"></i> Download
                             </a>
-                            <form asp-action="DeleteFile" asp-route-id="@Model.Id" asp-route-type="cl" asp-route-returnUrl="@Context.Request.Path" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this Cover Letter?');">
-                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Delete</button>
+                            <form asp-action="DeleteFile" asp-route-id="@Model.Id" asp-route-type="cl" asp-route-returnUrl="@Context.Request.Path" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this Cover Letter?');">
+                                <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-medium transition-colors">
+                                    <i class="fa-solid fa-trash mr-1.5"></i> Delete
+                                </button>
                             </form>
                         </div>
                     </div>
-                    <p class="text-muted small mb-2">@files.CoverLetterName</p>
-                    <div class="border rounded" style="height: 500px; overflow: hidden;">
+                    <p class="text-slate-500 text-xs mb-3">@files.CoverLetterName</p>
+                    <div class="border border-slate-200 rounded-lg overflow-hidden h-[500px] bg-slate-100">
                         <embed src="@Url.Action("DownloadFile", new { id = Model.Id, type = "cl" })" type="application/pdf" width="100%" height="100%" />
                     </div>
                 </div>
@@ -133,24 +177,28 @@
     </div>
 }
 
-<div class="card shadow-sm">
-    <div class="card-header"><h6 class="mb-0">Update Status</h6></div>
-    <div class="card-body">
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden max-w-md">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+        <h6 class="text-lg font-semibold text-slate-800 m-0">Update Status</h6>
+    </div>
+    <div class="p-6">
         <form asp-action="UpdateStatus" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" name="Id" value="@Model.Id" />
-            <div class="row g-3 align-items-end">
-                <div class="col-auto">
-                    <label class="form-label">New Status</label>
-                    <select name="Status" class="form-select">
+            <div class="flex items-end space-x-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">New Status</label>
+                    <select name="Status" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border">
                         @foreach (var status in Enum.GetValues<AzureTest.Domain.Enums.ResumeStatus>())
                         {
                             <option value="@((int)status)" selected="@(status == Model.Status)">@status</option>
                         }
                     </select>
                 </div>
-                <div class="col-auto">
-                    <button type="submit" class="btn btn-primary">Update</button>
+                <div>
+                    <button type="submit" class="inline-flex justify-center rounded-lg border border-transparent bg-brand-600 py-2 px-6 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
+                        Update
+                    </button>
                 </div>
             </div>
         </form>

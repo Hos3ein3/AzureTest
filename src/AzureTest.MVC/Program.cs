@@ -5,6 +5,7 @@ using AzureTest.Persistence;
 using AzureTest.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
+using Hangfire;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -96,5 +97,6 @@ app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks
 });
 
 app.MapPrometheusScrapingEndpoint();
+app.UseHangfireDashboard("/hangfire");
 
 app.Run();

@@ -1,32 +1,33 @@
 @model AzureTest.Contracts.DTOs.Resumes.IResumeFormDto
-@* Shared form fields for Create and Edit Resume views.
-   Both CreateResumeDto and UpdateResumeDto implement IResumeFormDto,
-   so the parent view can pass either model and asp-for will resolve correctly.
-   The parent view owns the <form> tag — this partial only renders the fields.
-*@
+@* Shared form fields for Create and Edit Resume views. *@
 
-<div class="row">
-    <div class="col-md-8 mb-3">
-        <label asp-for="PositionTitle" class="form-label">
-            Position Title <span class="text-danger">*</span>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6">
+    <div class="md:col-span-8">
+        <label asp-for="PositionTitle" class="block text-sm font-medium text-slate-700 mb-1">
+            Position Title <span class="text-red-500">*</span>
         </label>
-        <input asp-for="PositionTitle" class="form-control" placeholder="e.g. Senior Software Engineer" />
-        <span asp-validation-for="PositionTitle" class="text-danger small"></span>
+        <input asp-for="PositionTitle" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="e.g. Senior Software Engineer" />
+        <span asp-validation-for="PositionTitle" class="text-red-500 text-xs mt-1 block"></span>
     </div>
-    <div class="col-md-4 mb-3">
-        <label asp-for="CreatedOn" class="form-label">Date Applied</label>
-        <input asp-for="CreatedOn" class="form-control" type="date" />
-        <span asp-validation-for="CreatedOn" class="text-danger small"></span>
+    <div class="md:col-span-4">
+        <label asp-for="CreatedOn" class="block text-sm font-medium text-slate-700 mb-1">Date Applied</label>
+        <input asp-for="CreatedOn" type="date" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" />
+        <span asp-validation-for="CreatedOn" class="text-red-500 text-xs mt-1 block"></span>
     </div>
 </div>
 
 @* Company Field *@
-<div class="mb-3">
-    <label class="form-label">Company</label>
-
-    <div class="input-group">
-        <select id="companySelect" name="CompanyId" class="form-select">
-            <option value="">— Select existing company —</option>
+<div class="mb-6">
+    <div class="flex justify-between items-end mb-1">
+        <label class="block text-sm font-medium text-slate-700">Company</label>
+        <button type="button" class="text-xs font-medium text-brand-600 hover:text-brand-700 focus:outline-none flex items-center" id="toggleNewCompany">
+            <i class="fa-solid fa-plus mr-1"></i> Add new company
+        </button>
+    </div>
+    
+    <div>
+        <select id="companySelect" name="CompanyId" class="search-select w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm border px-4 py-2" placeholder="— Search or select existing company —">
+            <option value="">— Search or select existing company —</option>
             @if (ViewBag.Companies != null)
             {
                 foreach (var item in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Companies)
@@ -38,70 +39,66 @@
                 }
             }
         </select>
-        <button type="button" class="btn btn-outline-secondary" id="toggleNewCompany" title="Add new company">
-            <i class="bi bi-plus-lg"></i>
-        </button>
     </div>
 
-    <div id="newCompanyPanel" class="mt-2" style="display:none;">
-        <input type="text" id="newCompanyInput" name="NewCompanyName" class="form-control"
+    <div id="newCompanyPanel" class="mt-3 bg-slate-50 p-4 rounded-lg border border-slate-200" style="display:none;">
+        <label class="block text-sm font-medium text-slate-700 mb-1">New Company Name</label>
+        <input type="text" id="newCompanyInput" name="NewCompanyName" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border"
                placeholder="Type new company name..." autocomplete="off" />
-        <div id="companyAutocomplete" class="list-group position-absolute z-3 w-100" style="display:none; max-height:200px; overflow-y:auto;"></div>
-        <div class="form-text text-muted">
-            <i class="bi bi-info-circle"></i>
+        <div id="companyAutocomplete" class="absolute z-10 w-full mt-1 bg-white shadow-lg rounded-md border border-slate-200 max-h-60 overflow-y-auto" style="display:none;"></div>
+        <p class="mt-2 text-xs text-slate-500">
+            <i class="fa-solid fa-circle-info mr-1"></i>
             If this company already exists it will be linked automatically; otherwise a new one will be created.
-        </div>
+        </p>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-6 mb-3">
-        <label asp-for="Source" class="form-label">Source</label>
-        <select asp-for="Source" class="form-select"
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div>
+        <label asp-for="Source" class="block text-sm font-medium text-slate-700 mb-1">Source</label>
+        <select asp-for="Source" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border"
                 asp-items="Html.GetEnumSelectList<AzureTest.Domain.Enums.ResumeSource>()">
         </select>
-        <span asp-validation-for="Source" class="text-danger small"></span>
+        <span asp-validation-for="Source" class="text-red-500 text-xs mt-1 block"></span>
     </div>
-    <div class="col-md-6 mb-3">
-        <label asp-for="Status" class="form-label">Status</label>
-        <select asp-for="Status" class="form-select"
+    <div>
+        <label asp-for="Status" class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+        <select asp-for="Status" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border"
                 asp-items="Html.GetEnumSelectList<AzureTest.Domain.Enums.ResumeStatus>()">
         </select>
-        <span asp-validation-for="Status" class="text-danger small"></span>
+        <span asp-validation-for="Status" class="text-red-500 text-xs mt-1 block"></span>
     </div>
 </div>
 
-<div class="mb-3">
-    <label asp-for="Location" class="form-label">Location</label>
-    <input asp-for="Location" class="form-control" placeholder="e.g. Remote, New York, NY" />
-    <span asp-validation-for="Location" class="text-danger small"></span>
+<div class="mb-6">
+    <label asp-for="Location" class="block text-sm font-medium text-slate-700 mb-1">Location</label>
+    <input asp-for="Location" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="e.g. Remote, New York, NY" />
+    <span asp-validation-for="Location" class="text-red-500 text-xs mt-1 block"></span>
 </div>
 
-<div class="mb-3">
-    <label asp-for="JobLink" class="form-label">Job Link</label>
-    <input asp-for="JobLink" class="form-control" type="url" placeholder="https://..." />
-    <span asp-validation-for="JobLink" class="text-danger small"></span>
-</div>
-<div class="mb-3">
-    <label asp-for="ChatUrl" class="form-label">Chat Link</label>
-    <input asp-for="ChatUrl" class="form-control" type="url" placeholder="https://..." />
-    <span asp-validation-for="ChatUrl" class="text-danger small"></span>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div>
+        <label asp-for="JobLink" class="block text-sm font-medium text-slate-700 mb-1">Job Link</label>
+        <input asp-for="JobLink" type="url" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="https://..." />
+        <span asp-validation-for="JobLink" class="text-red-500 text-xs mt-1 block"></span>
+    </div>
+    <div>
+        <label asp-for="ChatUrl" class="block text-sm font-medium text-slate-700 mb-1">Chat Link</label>
+        <input asp-for="ChatUrl" type="url" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="https://..." />
+        <span asp-validation-for="ChatUrl" class="text-red-500 text-xs mt-1 block"></span>
+    </div>
 </div>
 
-<div class="mb-3">
-    <label asp-for="Description" class="form-label">Description</label>
-    <textarea asp-for="Description" class="form-control" rows="4"
+<div class="mb-6">
+    <label asp-for="Description" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+    <textarea asp-for="Description" rows="4" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border"
               placeholder="Job description or notes about the role..."></textarea>
-    <span asp-validation-for="Description" class="text-danger small"></span>
+    <span asp-validation-for="Description" class="text-red-500 text-xs mt-1 block"></span>
 </div>
 
-<div class="mb-4">
-    <label asp-for="Note" class="form-label">Personal Notes</label>
-    <textarea asp-for="Note" class="form-control" rows="3"
+<div class="mb-6">
+    <label asp-for="Note" class="block text-sm font-medium text-slate-700 mb-1">Personal Notes</label>
+    <textarea asp-for="Note" rows="3" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border"
               placeholder="Your thoughts, contact details, etc."></textarea>
-    <span asp-validation-for="Note" class="text-danger small"></span>
+    <span asp-validation-for="Note" class="text-red-500 text-xs mt-1 block"></span>
 </div>
-
-@section Scripts {
-
-}

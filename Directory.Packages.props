@@ -19,6 +19,11 @@
     <PackageVersion Include="AspNetCore.HealthChecks.MongoDb" Version="9.0.0" />
     <PackageVersion Include="AspNetCore.HealthChecks.Publisher.ApplicationInsights" Version="8.0.1" />
     <PackageVersion Include="AspNetCore.HealthChecks.AzureStorage" Version="7.0.0" />
+    <PackageVersion Include="AspNetCore.HealthChecks.Npgsql" Version="8.0.2" />
+    <PackageVersion Include="AspNetCore.HealthChecks.Redis" Version="8.0.1" />
+    <PackageVersion Include="AspNetCore.HealthChecks.Rabbitmq" Version="8.0.2" />
+    <PackageVersion Include="AspNetCore.HealthChecks.Uris" Version="8.0.1" />
+    <PackageVersion Include="AspNetCore.HealthChecks.Hangfire" Version="8.0.2" />
     <!-- Azure Storage -->
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.23.0" />
     <PackageVersion Include="Azure.Identity" Version="1.12.0" />
@@ -44,15 +49,22 @@
 
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
     <PackageVersion Include="MongoDB.Driver" Version="3.1.0" />
-    <!-- Logging -->
-    <PackageVersion Include="Serilog.AspNetCore" Version="8.0.3" />
+    <!-- Observability & Telemetry -->
+    <PackageVersion Include="Serilog.AspNetCore" Version="9.0.0" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageVersion Include="Serilog.Sinks.ApplicationInsights" Version="4.0.0" />
+    <PackageVersion Include="Serilog.Sinks.Seq" Version="9.0.0" />
+    <PackageVersion Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    
+    <!-- Background Jobs -->
+    <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.18" />
+    <PackageVersion Include="Hangfire.PostgreSql" Version="1.20.10" />
+    <PackageVersion Include="Quartz.Extensions.Hosting" Version="3.13.1" />
     <!-- Validation -->
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
     <!-- Caching -->
     <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.2" />
-    <PackageVersion Include="Serilog.Sinks.Seq" Version="8.0.0" />
 
 
     <PackageVersion Include="HtmlAgilityPack" Version="1.11.71" />

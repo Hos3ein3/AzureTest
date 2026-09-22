@@ -35,7 +35,17 @@ public sealed class GetResumeAnalyticsQueryHandler : BaseQueryHandler<GetResumeA
             .GroupBy(r => r.CreatedOn.ToLocalTime().ToString("yyyy-MM-dd"))
             .OrderBy(g => g.Key)
             .ToDictionary(g => g.Key, g => g.Count());
+            
+        var positionCounts = resumes
+            .GroupBy(r => string.IsNullOrWhiteSpace(r.PositionTitle) ? "Unknown" : r.PositionTitle)
+            .OrderByDescending(g => g.Count())
+            .ToDictionary(g => g.Key, g => g.Count());
+            
+        var locationCounts = resumes
+            .GroupBy(r => string.IsNullOrWhiteSpace(r.Location) ? "Unknown" : r.Location)
+            .OrderByDescending(g => g.Count())
+            .ToDictionary(g => g.Key, g => g.Count());
 
-        return new ResumeAnalyticsDto(statusCounts, dateCounts);
+        return new ResumeAnalyticsDto(statusCounts, dateCounts, positionCounts, locationCounts);
     }
 }

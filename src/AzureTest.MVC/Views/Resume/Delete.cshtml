@@ -3,36 +3,66 @@
     ViewData["Title"] = "Delete Resume";
 }
 
-<nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-action="Index">Resumes</a></li>
-        <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.Id">@Model.PositionTitle</a></li>
-        <li class="breadcrumb-item active">Delete</li>
+<nav aria-label="breadcrumb" class="mb-6">
+    <ol class="flex items-center space-x-2 text-sm text-slate-500">
+        <li>
+            <a asp-action="Index" class="hover:text-brand-600 transition-colors">Resumes</a>
+        </li>
+        <li>
+            <i class="fa-solid fa-chevron-right text-xs mx-1"></i>
+        </li>
+        <li>
+            <a asp-action="Details" asp-route-id="@Model.Id" class="hover:text-brand-600 transition-colors">@Model.PositionTitle</a>
+        </li>
+        <li>
+            <i class="fa-solid fa-chevron-right text-xs mx-1"></i>
+        </li>
+        <li class="font-medium text-slate-800" aria-current="page">Delete</li>
     </ol>
 </nav>
 
-<div class="card shadow-sm border-danger" style="max-width: 600px;">
-    <div class="card-header bg-danger text-white">
-        <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete</h5>
-    </div>
-    <div class="card-body">
-        <p>Are you sure you want to delete the following resume? This action can be undone by an administrator.</p>
-        <dl class="row">
-            <dt class="col-sm-4">Position</dt>
-            <dd class="col-sm-8">@Model.PositionTitle</dd>
-            <dt class="col-sm-4">Location</dt>
-            <dd class="col-sm-8">@(string.IsNullOrWhiteSpace(Model.Location) ? "—" : Model.Location)</dd>
-            <dt class="col-sm-4">Status</dt>
-            <dd class="col-sm-8"><span class="badge bg-primary">@Model.Status</span></dd>
-            <dt class="col-sm-4">Applied On</dt>
-            <dd class="col-sm-8">@Model.CreatedOn.ToString("MMMM d, yyyy")</dd>
-        </dl>
-    </div>
-    <div class="card-footer d-flex gap-2">
-        <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
-            @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-danger">Yes, Delete</button>
-        </form>
-        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Cancel</a>
+<div class="max-w-xl mx-auto mt-8">
+    <div class="bg-white rounded-xl shadow-sm border border-red-200 overflow-hidden">
+        <div class="px-6 py-4 bg-red-50 border-b border-red-200 flex items-center">
+            <i class="fa-solid fa-triangle-exclamation text-red-500 text-xl mr-3"></i>
+            <h5 class="text-lg font-semibold text-red-800 m-0">Confirm Delete</h5>
+        </div>
+        <div class="p-6">
+            <p class="text-slate-600 mb-6">Are you sure you want to delete the following resume? This action can be undone by an administrator (soft delete).</p>
+            
+            <dl class="grid grid-cols-1 sm:grid-cols-3 gap-y-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                <div class="sm:col-span-3 grid grid-cols-3 gap-4">
+                    <dt class="text-sm font-medium text-slate-500 col-span-1">Position</dt>
+                    <dd class="text-sm font-semibold text-slate-900 col-span-2">@Model.PositionTitle</dd>
+                </div>
+                <div class="sm:col-span-3 grid grid-cols-3 gap-4">
+                    <dt class="text-sm font-medium text-slate-500 col-span-1">Location</dt>
+                    <dd class="text-sm text-slate-900 col-span-2">@(string.IsNullOrWhiteSpace(Model.Location) ? "—" : Model.Location)</dd>
+                </div>
+                <div class="sm:col-span-3 grid grid-cols-3 gap-4">
+                    <dt class="text-sm font-medium text-slate-500 col-span-1">Status</dt>
+                    <dd class="col-span-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-100 text-brand-800">
+                            @Model.Status
+                        </span>
+                    </dd>
+                </div>
+                <div class="sm:col-span-3 grid grid-cols-3 gap-4">
+                    <dt class="text-sm font-medium text-slate-500 col-span-1">Applied On</dt>
+                    <dd class="text-sm text-slate-900 col-span-2">@Model.CreatedOn.ToString("MMMM d, yyyy")</dd>
+                </div>
+            </dl>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end space-x-3">
+            <a asp-action="Details" asp-route-id="@Model.Id" class="inline-flex justify-center rounded-lg border border-slate-300 bg-white py-2 px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
+                Cancel
+            </a>
+            <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="inline-flex justify-center rounded-lg border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">
+                    Yes, Delete
+                </button>
+            </form>
+        </div>
     </div>
 </div>

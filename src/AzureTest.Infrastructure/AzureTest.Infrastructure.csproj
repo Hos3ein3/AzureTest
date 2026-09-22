@@ -9,9 +9,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="AspNetCore.HealthChecks.SqlServer" />
-        <PackageReference Include="AspNetCore.HealthChecks.CosmosDb" />
+        <PackageReference Include="AspNetCore.HealthChecks.Npgsql" />
         <PackageReference Include="AspNetCore.HealthChecks.MongoDb" />
+        <PackageReference Include="AspNetCore.HealthChecks.Redis" />
+        <PackageReference Include="AspNetCore.HealthChecks.Rabbitmq" />
+        <PackageReference Include="AspNetCore.HealthChecks.Uris" />
+        <PackageReference Include="AspNetCore.HealthChecks.Hangfire" />
         <PackageReference Include="AspNetCore.HealthChecks.Publisher.ApplicationInsights" />
         <PackageReference Include="AspNetCore.HealthChecks.AzureStorage" />
         <PackageReference Include="Azure.Storage.Blobs" />
@@ -25,6 +28,10 @@
         <PackageReference Include="Serilog.Sinks.Console" />
         <PackageReference Include="Serilog.Sinks.File" />
         <PackageReference Include="Serilog.Sinks.Seq" />
+
+        <PackageReference Include="Hangfire.AspNetCore" />
+        <PackageReference Include="Hangfire.PostgreSql" />
+        <PackageReference Include="Quartz.Extensions.Hosting" />
         <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
         <PackageReference Include="HtmlAgilityPack"  />
         <PackageReference Include="ClosedXML"  />

@@ -51,10 +51,11 @@ public class ResumeController : Controller
 
     // GET: /Resume
     [HttpGet]
-    public async Task<IActionResult> Index(CancellationToken cancellationToken)
+    public async Task<IActionResult> Index(GetAllResumesFilters filters, CancellationToken cancellationToken)
     {
-        var resumes = await _queries.GetAll.HandleAsync(new GetAllResumesQuery(), cancellationToken);
-        return View(resumes);
+        var pagedResumes = await _queries.GetAll.HandleAsync(new GetAllResumesQuery(filters), cancellationToken);
+        ViewBag.Filters = filters;
+        return View(pagedResumes);
     }
 
     // GET: /Resume/Details/{id}

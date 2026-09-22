@@ -34,6 +34,17 @@ stages:
             displayName: 'Docker Compose Up (persist)'
 
           - script: |
-              sleep 15
-              docker ps
-            displayName: 'Verify Containers are Running'
+              echo "Waiting for application to become healthy..."
+              end=$((SECONDS+60))
+              while [ $SECONDS -lt $end ]; do
+                if curl -s http://localhost:8080/health | grep -q "Healthy"; then
+                  echo "Application is up and healthy!"
+                  exit 0
+                fi
+                echo "Waiting..."
+                sleep 5
+              done
+              echo "Timeout waiting for application to become healthy."
+              docker logs azuretest-web
+              exit 1
+            displayName: 'Verify Application Health'

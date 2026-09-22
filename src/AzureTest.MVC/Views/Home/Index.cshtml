@@ -1,8 +1,105 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Dashboard Overview";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="mb-8">
+    <h1 class="text-3xl font-bold text-slate-800">Welcome Back</h1>
+    <p class="text-slate-500 mt-1">Here is the latest snapshot of your job tracking operations.</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Stat Card 1 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center">
+        <div class="h-12 w-12 rounded-lg bg-indigo-50 flex items-center justify-center">
+            <i class="fa-solid fa-file-lines text-indigo-500 text-xl"></i>
+        </div>
+        <div class="ml-4">
+            <p class="text-sm font-medium text-slate-500">Total Resumes</p>
+            <p class="text-2xl font-bold text-slate-800">142</p>
+        </div>
+    </div>
+    
+    <!-- Stat Card 2 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center">
+        <div class="h-12 w-12 rounded-lg bg-emerald-50 flex items-center justify-center">
+            <i class="fa-solid fa-check-double text-emerald-500 text-xl"></i>
+        </div>
+        <div class="ml-4">
+            <p class="text-sm font-medium text-slate-500">Accepted</p>
+            <p class="text-2xl font-bold text-slate-800">18</p>
+        </div>
+    </div>
+    
+    <!-- Stat Card 3 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center">
+        <div class="h-12 w-12 rounded-lg bg-amber-50 flex items-center justify-center">
+            <i class="fa-solid fa-clock text-amber-500 text-xl"></i>
+        </div>
+        <div class="ml-4">
+            <p class="text-sm font-medium text-slate-500">Pending Review</p>
+            <p class="text-2xl font-bold text-slate-800">45</p>
+        </div>
+    </div>
+    
+    <!-- Stat Card 4 -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center">
+        <div class="h-12 w-12 rounded-lg bg-blue-50 flex items-center justify-center">
+            <i class="fa-solid fa-building text-blue-500 text-xl"></i>
+        </div>
+        <div class="ml-4">
+            <p class="text-sm font-medium text-slate-500">Companies</p>
+            <p class="text-2xl font-bold text-slate-800">76</p>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+        <h2 class="text-lg font-bold text-slate-800 mb-4">Recent Activity</h2>
+        <div class="space-y-4">
+            <!-- Activity Item -->
+            <div class="flex">
+                <div class="flex-shrink-0 mt-1">
+                    <div class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center">
+                        <i class="fa-solid fa-upload text-slate-500 text-sm"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-slate-800">New resume uploaded</p>
+                    <p class="text-sm text-slate-500">Software Engineer role at Google</p>
+                    <p class="text-xs text-slate-400 mt-1">2 hours ago</p>
+                </div>
+            </div>
+            <!-- Activity Item -->
+            <div class="flex">
+                <div class="flex-shrink-0 mt-1">
+                    <div class="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <i class="fa-solid fa-check text-emerald-600 text-sm"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-slate-800">Status Updated</p>
+                    <p class="text-sm text-slate-500">Microsoft application moved to 'Interview'</p>
+                    <p class="text-xs text-slate-400 mt-1">5 hours ago</p>
+                </div>
+            </div>
+        </div>
+        <div class="mt-6 pt-4 border-t border-slate-100">
+            <a href="#" class="text-sm font-medium text-brand-600 hover:text-brand-500">View all activity &rarr;</a>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+        <h2 class="text-lg font-bold text-slate-800 mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-2 gap-4">
+            <a asp-controller="Resume" asp-action="Create" class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-lg hover:bg-brand-50 hover:border-brand-200 border border-transparent transition-colors group">
+                <i class="fa-solid fa-file-circle-plus text-3xl text-slate-400 group-hover:text-brand-500 mb-3"></i>
+                <span class="text-sm font-medium text-slate-700 group-hover:text-brand-700">Add Resume</span>
+            </a>
+            <a asp-controller="Company" asp-action="Create" class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-lg hover:bg-brand-50 hover:border-brand-200 border border-transparent transition-colors group">
+                <i class="fa-solid fa-building-circle-check text-3xl text-slate-400 group-hover:text-brand-500 mb-3"></i>
+                <span class="text-sm font-medium text-slate-700 group-hover:text-brand-700">Add Company</span>
+            </a>
+        </div>
+    </div>
 </div>

@@ -33,8 +33,9 @@ public class CompanyController : Controller
     // GET: /Company
     public async Task<IActionResult> Index(GetAllCompaniesFilters filters,CancellationToken cancellationToken)
     {
-        var companies = await _companyQueryUnit.GetAll.HandleAsync(new GetAllCompaniesQuery(filters), cancellationToken);
-        return View(companies);
+        var pagedCompanies = await _companyQueryUnit.GetAll.HandleAsync(new GetAllCompaniesQuery(filters), cancellationToken);
+        ViewBag.Filters = filters;
+        return View(pagedCompanies);
     }
 
     // POST: /Company/Crawl
