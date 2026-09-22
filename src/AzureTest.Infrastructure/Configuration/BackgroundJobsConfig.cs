@@ -16,14 +16,17 @@ public static class BackgroundJobsConfig
         // ── Hangfire (Persistent Jobs) ───────────────────────────────────────────
         if (!string.IsNullOrWhiteSpace(connectionString))
         {
-            services.AddHangfire(config => config
-                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-                .UseSimpleAssemblyNameTypeSerializer()
-                .UseRecommendedSerializerSettings()
-                .UsePostgreSqlStorage(options =>
-                {
-                    options.UseNpgsqlConnection(connectionString);
-                }));
+            services.AddHangfire((sp, config) => {
+                var currentConnectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("DefaultConnection");
+                config
+                    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                    .UseSimpleAssemblyNameTypeSerializer()
+                    .UseRecommendedSerializerSettings()
+                    .UsePostgreSqlStorage(options =>
+                    {
+                        options.UseNpgsqlConnection(currentConnectionString);
+                    });
+            });
 
             // Add the processing server as IHostedService
             services.AddHangfireServer(options =>
