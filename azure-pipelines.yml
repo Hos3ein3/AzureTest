@@ -56,6 +56,15 @@ stages:
         displayName: 'Docker Compose Build and Deploy'
         steps:
           - script: |
+              echo "Pre-pulling .NET images to avoid concurrent pull timeouts..."
+              for img in mcr.microsoft.com/dotnet/sdk:10.0 mcr.microsoft.com/dotnet/aspnet:10.0; do
+                for i in 1 2 3; do
+                  docker pull $img && break || (echo "Retry $i for $img..." && sleep 5)
+                done
+              done
+            displayName: 'Pre-pull .NET Images'
+
+          - script: |
               docker compose build
             displayName: 'Docker Compose Build'
 
