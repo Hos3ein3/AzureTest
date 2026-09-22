@@ -29,6 +29,7 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.10.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Process" Version="1.11.0-beta.1" />
+    <PackageVersion Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.11.0-beta.1" />
     <!-- API specific -->
     <PackageVersion Include="Scalar.AspNetCore" Version="2.1.2" />
     <PackageVersion Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
@@ -36,11 +37,11 @@
     <!-- MVC specific -->
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="10.0.5" />
     <!-- Persistence -->
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.2" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.2" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.3" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.2" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.2" />
 
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
     <PackageVersion Include="MongoDB.Driver" Version="3.1.0" />
     <!-- Logging -->
@@ -49,6 +50,9 @@
     <PackageVersion Include="Serilog.Sinks.File" Version="6.0.0" />
     <!-- Validation -->
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
+    <!-- Caching -->
+    <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.2" />
+    <PackageVersion Include="Serilog.Sinks.Seq" Version="8.0.0" />
 
 
     <PackageVersion Include="HtmlAgilityPack" Version="1.11.71" />

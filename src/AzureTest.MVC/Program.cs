@@ -28,6 +28,9 @@ builder.Services.AddControllersWithViews()
 builder.Services.AddHealthChecksUI()
     .AddInMemoryStorage();
 
+builder.Services.AddExceptionHandler<AzureTest.MVC.Infrastructure.GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
 
 // ── Auto-apply pending EF Core migrations on cold start ─────────────────────
@@ -59,13 +62,13 @@ catch (Exception ex)
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
+    app.UseExceptionHandler();
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 else
 {
-    app.UseExceptionHandler("/Error");
+    app.UseExceptionHandler();
 }
 
 app.UseStatusCodePagesWithReExecute("/Error/{0}");
@@ -91,5 +94,7 @@ app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks
     Predicate = _ => true,
     ResponseWriter = HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse
 });
+
+app.MapPrometheusScrapingEndpoint();
 
 app.Run();

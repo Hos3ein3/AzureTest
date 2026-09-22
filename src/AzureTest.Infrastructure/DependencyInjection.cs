@@ -19,6 +19,17 @@ public static class DependencyInjection
         // ── Crawler Service ───────────────────────────────────────────────────
         services.AddHttpClient<IIndCrawlerService, IndCrawlerService>();
 
+        // ── Caching ───────────────────────────────────────────────────────────
+        var redisConnectionString = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redisConnectionString;
+            });
+            services.AddScoped<ICompanyCacheService, CompanyCacheService>();
+        }
+
         services.AddSerilogConfig(options);
         services.AddOpenTelemetryConfig(options);
         services.AddHealthChecksConfig(options, configuration);

@@ -28,12 +28,12 @@ public static class DependencyInjection
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<DomainEventsInterceptor>();
 
-        // ── SQL Server / EF Core ──────────────────────────────────────────────
+        // ── PostgreSQL / EF Core ──────────────────────────────────────────────
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
         services.AddDbContext<AzureTestDbContext>((sp, options) =>
         {
-            options.UseSqlServer(connectionString);
+            options.UseNpgsql(connectionString);
 
             // Interceptors are injected via the service provider
             options.AddInterceptors(

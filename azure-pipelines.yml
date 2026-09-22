@@ -1,143 +1,29 @@
-# Azure DevOps Pipeline
-# Builds, pushes to ACR, and deploys to Azure Container App
-
 trigger:
   branches:
     include:
       - main
 
-pr: none  # Don't run on Pull Requests, only on merge to main
+pool: 'Default'   # your Mac's agent pool name, not vmImage
 
 variables:
-  # Azure Container Registry
-  acrLoginServer: 'azuretestresumetracker.azurecr.io'
-  imageRepository: 'azuretest-mvc'
-  imageTag: '$(Build.BuildId)'
-
-  # Azure Resource Group & Container App
-  resourceGroup: 'azure-test'
-  containerAppName: 'azuretest-resume-tracker-app'
-
-  # Service Connection names (must match what you configured in Azure DevOps Project Settings)
-  dockerServiceConnection: 'acr-azuretest'
-  armServiceConnection: 'arm-azuretest'
-
-  # Build paths
-  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
-  buildContext: '$(Build.SourcesDirectory)'
+  buildConfiguration: 'Release'
 
 stages:
-  # ─────────────────────────────────────────────────────────────
-  # STAGE 1: Build Docker image and push to ACR
-  # ─────────────────────────────────────────────────────────────
-  - stage: Build
-    displayName: 'Build & Push to ACR'
+  - stage: BuildAndDeploy
+    displayName: 'Build and Deploy to Local Docker'
     jobs:
-      - job: BuildAndPush
-        displayName: 'Docker Build and Push'
-        pool:
-          vmImage: 'ubuntu-latest'
+      - job: DockerDeploy
+        displayName: 'Docker Compose Build and Deploy'
         steps:
-          - checkout: self
-            displayName: 'Checkout source code'
+          - script: |
+              docker compose build
+            displayName: 'Docker Compose Build'
 
-          # Login to ACR
-          - task: Docker@2
-            displayName: 'Login to ACR'
-            inputs:
-              command: login
-              containerRegistry: '$(dockerServiceConnection)'
+          - script: |
+              docker compose up -d
+            displayName: 'Docker Compose Up (persist)'
 
-          # Build the image
-          - task: Docker@2
-            displayName: 'Build Docker image'
-            inputs:
-              command: build
-              containerRegistry: '$(dockerServiceConnection)'
-              repository: '$(imageRepository)'
-              dockerfile: '$(dockerfilePath)'
-              buildContext: '$(buildContext)'
-              tags: |
-                $(imageTag)
-                latest
-
-          # Push to ACR
-          - task: Docker@2
-            displayName: 'Push image to ACR'
-            inputs:
-              command: push
-              containerRegistry: '$(dockerServiceConnection)'
-              repository: '$(imageRepository)'
-              tags: |
-                $(imageTag)
-                latest
-
-  # ─────────────────────────────────────────────────────────────
-  # STAGE 2: Deploy the new image to Azure Container App
-  # ─────────────────────────────────────────────────────────────
-  - stage: Deploy
-    displayName: 'Deploy to Azure Container App'
-    dependsOn: Build
-    condition: succeeded()
-    jobs:
-      - deployment: DeployToContainerApp
-        displayName: 'Update Container App image'
-        pool:
-          vmImage: 'ubuntu-latest'
-        environment: 'production'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                # Install the containerapp extension
-                - task: AzureCLI@2
-                  displayName: 'Install Azure Container Apps CLI extension'
-                  inputs:
-                    azureSubscription: '$(armServiceConnection)'
-                    scriptType: bash
-                    scriptLocation: inlineScript
-                    inlineScript: |
-                      az extension add --name containerapp --upgrade --yes
-
-                # Deploy the new image
-                - task: AzureCLI@2
-                  displayName: 'Deploy new image to Azure Container App'
-                  inputs:
-                    azureSubscription: '$(armServiceConnection)'
-                    scriptType: bash
-                    scriptLocation: inlineScript
-                    inlineScript: |
-                      FULL_IMAGE="$(acrLoginServer)/$(imageRepository):$(imageTag)"
-                      echo "Deploying image: $FULL_IMAGE"
-
-                      az containerapp update \
-                        --name "$(containerAppName)" \
-                        --resource-group "$(resourceGroup)" \
-                        --image "$FULL_IMAGE"
-
-                      echo "✅ Deployment triggered successfully!"
-
-                # Wait and verify the new revision is running
-                - task: AzureCLI@2
-                  displayName: 'Verify new revision is Running'
-                  inputs:
-                    azureSubscription: '$(armServiceConnection)'
-                    scriptType: bash
-                    scriptLocation: inlineScript
-                    inlineScript: |
-                      echo "Waiting for new revision to become active..."
-                      sleep 15
-
-                      STATUS=$(az containerapp revision list \
-                        --name "$(containerAppName)" \
-                        --resource-group "$(resourceGroup)" \
-                        --query "sort_by(@, &properties.createdTime)[-1].properties.runningState" \
-                        --output tsv)
-
-                      echo "Latest revision running state: $STATUS"
-
-                      if [[ "$STATUS" == "Running" ]]; then
-                        echo "✅ Deployment verified — revision is Running."
-                      else
-                        echo "##vso[task.logissue type=warning]Revision is not Running yet (state: $STATUS). Check the Azure Portal."
-                      fi
+          - script: |
+              sleep 15
+              docker ps
+            displayName: 'Verify Containers are Running'

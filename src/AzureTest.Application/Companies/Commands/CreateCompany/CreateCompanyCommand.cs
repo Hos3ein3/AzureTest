@@ -16,14 +16,17 @@ public sealed record CreateCompanyCommand(CreateCompanyDto Dto) : ICommand<Guid>
 public sealed class CreateCompanyCommandHandler : BaseCommandHandler<CreateCompanyCommand, Guid>
 {
     private readonly ICompanyRepository _companyRepository;
+    private readonly AzureTest.Application.Interfaces.Services.ICompanyCacheService _cacheService;
 
     public CreateCompanyCommandHandler(
         IUnitOfWork unitOfWork,
         ICompanyRepository companyRepository,
+        AzureTest.Application.Interfaces.Services.ICompanyCacheService cacheService,
         ILogger<CreateCompanyCommandHandler> logger)
         : base(unitOfWork, logger)
     {
         _companyRepository = companyRepository;
+        _cacheService = cacheService;
     }
 
     protected override async Task<Guid> ExecuteAsync(CreateCompanyCommand command, CancellationToken cancellationToken)
@@ -33,10 +36,12 @@ public sealed class CreateCompanyCommandHandler : BaseCommandHandler<CreateCompa
             CompanyName = command.Dto.CompanyName,
             KvkNumber = command.Dto.KvkNumber,
             IsINDMember = command.Dto.IsINDMember,
-            Location = command.Dto.Location
+            Location = command.Dto.Location,
         };
 
         await _companyRepository.AddAsync(company);
+        await _cacheService.InvalidateCompaniesAsync(cancellationToken);
+        
         return company.Id;
     }
 }

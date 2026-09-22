@@ -21,16 +21,19 @@ public sealed class CrawlIndCompaniesCommandHandler : BaseCommandHandler<CrawlIn
 {
     private readonly IIndCrawlerService _indCrawlerService;
     private readonly ICompanyRepository _companyRepository;
+    private readonly AzureTest.Application.Interfaces.Services.ICompanyCacheService _cacheService;
 
     public CrawlIndCompaniesCommandHandler(
         IUnitOfWork unitOfWork,
         IIndCrawlerService indCrawlerService,
         ICompanyRepository companyRepository,
+        AzureTest.Application.Interfaces.Services.ICompanyCacheService cacheService,
         ILogger<CrawlIndCompaniesCommandHandler> logger)
         : base(unitOfWork, logger)
     {
         _indCrawlerService = indCrawlerService;
         _companyRepository = companyRepository;
+        _cacheService = cacheService;
     }
 
     protected override async Task<CrawlIndCompaniesResult> ExecuteAsync(CrawlIndCompaniesCommand command, CancellationToken cancellationToken)
@@ -72,6 +75,14 @@ public sealed class CrawlIndCompaniesCommandHandler : BaseCommandHandler<CrawlIn
                     newAddedCount++;
                 }
             }
+
+            if (newAddedCount > 0 || existingCompanies.Count != existingByKvk.Count)
+            {
+                // In a more precise implementation, we'd check if any existing companies were actually updated.
+                // For simplicity, we just invalidate if anything was added.
+            }
+            // Always invalidate to be safe, since updates might have happened.
+            await _cacheService.InvalidateCompaniesAsync(cancellationToken);
 
             return new CrawlIndCompaniesResult(newAddedCount, parsedCompanies.Count);
         }

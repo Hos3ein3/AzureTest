@@ -14,24 +14,41 @@ public sealed record GetAllCompaniesQuery(GetAllCompaniesFilters Filters) : IQue
 public sealed class GetAllCompaniesQueryHandler : IQueryHandler<GetAllCompaniesQuery, IEnumerable<CompanyDto>>
 {
     private readonly ICompanyRepository _companyRepository;
+    private readonly AzureTest.Application.Interfaces.Services.ICompanyCacheService _cacheService;
 
-    public GetAllCompaniesQueryHandler(ICompanyRepository companyRepository)
+    public GetAllCompaniesQueryHandler(
+        ICompanyRepository companyRepository,
+        AzureTest.Application.Interfaces.Services.ICompanyCacheService cacheService)
     {
         _companyRepository = companyRepository;
+        _cacheService = cacheService;
     }
 
     public async Task<IEnumerable<CompanyDto>> HandleAsync(GetAllCompaniesQuery request, CancellationToken cancellationToken)
     {
-        IEnumerable<Company> list;
-        var companies = await _companyRepository.GetAllAsync();
-        if (!String.IsNullOrEmpty(request.Filters.Name))
+        // Check cache first
+        var cachedCompanies = await _cacheService.GetCompaniesAsync(cancellationToken);
+        
+        IEnumerable<CompanyDto> allDtos;
+        if (cachedCompanies != null)
         {
-            list = companies.Where(x => x.CompanyName.Contains(request.Filters.Name));
+            allDtos = cachedCompanies;
         }
         else
         {
-            list = companies;
+            var companies = await _companyRepository.GetAllAsync();
+            allDtos = companies.Select(c => new CompanyDto(c.Id, c.CompanyName ?? "", c.KvkNumber ?? "", c.IsINDMember, c.Location));
+            
+            // Set in cache
+            await _cacheService.SetCompaniesAsync(allDtos, cancellationToken);
         }
-        return list.Select(c => new CompanyDto(c.Id, c.CompanyName ?? "", c.KvkNumber ?? "", c.IsINDMember,c.Location));
+
+        // Apply filters
+        if (!System.String.IsNullOrEmpty(request.Filters?.Name))
+        {
+            return allDtos.Where(x => x.CompanyName.Contains(request.Filters.Name, System.StringComparison.OrdinalIgnoreCase));
+        }
+
+        return allDtos;
     }
 }

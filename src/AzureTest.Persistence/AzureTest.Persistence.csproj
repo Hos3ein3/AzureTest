@@ -6,10 +6,11 @@
 
     <ItemGroup>
       <Folder Include="Context\" />
+      <Folder Include="Migrations\" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
         <PackageReference Include="MongoDB.Driver" />
     </ItemGroup>

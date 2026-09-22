@@ -1,0 +1,184 @@
+version: '3.8'
+
+services:
+  # ── Application ────────────────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: azuretest-web
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - SeqUrl=http://loki:3100 # This won't work perfectly for Seq sink out of the box if Loki doesn't support Seq API natively, but we will rely on Promtail for logging, or change the sink to OpenTelemetry.
+    depends_on:
+      - postgres
+      - mongo
+      - redis
+    networks:
+      - app-network
+    # Exposing docker logs for Promtail
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ── PostgreSQL Database & Admin ────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: azuretest-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ResumeTrackerDb.Dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: azuretest-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+  # ── MongoDB & Express ──────────────────────────────────────────────────────
+  mongo:
+    image: mongo:6
+    container_name: azuretest-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    networks:
+      - app-network
+
+  mongo-express:
+    image: mongo-express
+    container_name: azuretest-mongo-express
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: password
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongo
+    networks:
+      - app-network
+
+  # ── Redis & Dashboard ──────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: azuretest-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - app-network
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: azuretest-redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8082:8081"
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  # ── RabbitMQ ───────────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: azuretest-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - app-network
+
+  # ── Observability: Prometheus & Node Exporter ──────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: azuretest-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheusdata:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: azuretest-node-exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - app-network
+
+  # ── Observability: Loki & Promtail ─────────────────────────────────────────
+  loki:
+    image: grafana/loki:latest
+    container_name: azuretest-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - app-network
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: azuretest-promtail
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./promtail-config.yml:/etc/promtail/promtail-config.yml
+    command: -config.file=/etc/promtail/promtail-config.yml
+    networks:
+      - app-network
+
+  # ── Observability: Grafana ─────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: azuretest-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+    volumes:
+      - grafanadata:/var/lib/grafana
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+  mongodata:
+  redisdata:
+  prometheusdata:
+  grafanadata:

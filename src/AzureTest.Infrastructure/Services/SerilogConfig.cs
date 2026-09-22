@@ -27,6 +27,12 @@ public static class SerilogConfig
                 .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
                 .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day, outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
                 .ReadFrom.Configuration(configuration);
+
+            var seqUrl = configuration["SeqUrl"];
+            if (!string.IsNullOrWhiteSpace(seqUrl))
+            {
+                loggerConfiguration.WriteTo.Seq(seqUrl);
+            }
         });
 
         return services;

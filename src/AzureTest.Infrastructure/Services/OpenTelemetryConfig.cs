@@ -26,6 +26,8 @@ public static class OpenTelemetryConfig
                     metrics.AddRuntimeInstrumentation();
                 if (options.EnableProcessInstrumentation)
                     metrics.AddProcessInstrumentation();
+                
+                metrics.AddPrometheusExporter();
             });
 
         return services;

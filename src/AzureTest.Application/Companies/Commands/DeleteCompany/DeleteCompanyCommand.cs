@@ -15,13 +15,17 @@ public sealed record DeleteCompanyCommand(Guid Id) : ICommand<bool>;
 public sealed class DeleteCompanyCommandHandler : BaseCommandHandler<DeleteCompanyCommand, bool>
 {
     private readonly ICompanyRepository _companyRepository;
+    private readonly AzureTest.Application.Interfaces.Services.ICompanyCacheService _cacheService;
 
-    public DeleteCompanyCommandHandler(IUnitOfWork unitOfWork, ICompanyRepository companyRepository,ILogger<DeleteCompanyCommandHandler> logger) : base(unitOfWork,logger)
+    public DeleteCompanyCommandHandler(
+        IUnitOfWork unitOfWork, 
+        ICompanyRepository companyRepository, 
+        AzureTest.Application.Interfaces.Services.ICompanyCacheService cacheService,
+        ILogger<DeleteCompanyCommandHandler> logger) : base(unitOfWork,logger)
     {
         _companyRepository = companyRepository;
+        _cacheService = cacheService;
     }
-
-    
 
     protected override async Task<bool> ExecuteAsync(DeleteCompanyCommand command, CancellationToken cancellationToken)
     {
@@ -29,6 +33,7 @@ public sealed class DeleteCompanyCommandHandler : BaseCommandHandler<DeleteCompa
         if (company == null) return false;
 
         await _companyRepository.RemoveAsync(company.Id);
+        await _cacheService.InvalidateCompaniesAsync(cancellationToken);
 
         return true;
     }

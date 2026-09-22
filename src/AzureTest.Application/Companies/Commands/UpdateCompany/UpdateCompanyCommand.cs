@@ -15,12 +15,17 @@ public sealed record UpdateCompanyCommand(UpdateCompanyDto Dto) : ICommand<bool>
 public sealed class UpdateCompanyCommandHandler : BaseCommandHandler<UpdateCompanyCommand, bool>
 {
     private readonly ICompanyRepository _companyRepository;
+    private readonly AzureTest.Application.Interfaces.Services.ICompanyCacheService _cacheService;
 
-    public UpdateCompanyCommandHandler(IUnitOfWork unitOfWork, ICompanyRepository companyRepository, ILogger<UpdateCompanyCommandHandler> logger) : base(unitOfWork,logger)
+    public UpdateCompanyCommandHandler(
+        IUnitOfWork unitOfWork, 
+        ICompanyRepository companyRepository, 
+        AzureTest.Application.Interfaces.Services.ICompanyCacheService cacheService,
+        ILogger<UpdateCompanyCommandHandler> logger) : base(unitOfWork,logger)
     {
         _companyRepository = companyRepository;
+        _cacheService = cacheService;
     }
-
 
     protected override async Task<bool> ExecuteAsync(UpdateCompanyCommand command, CancellationToken cancellationToken)
     {
@@ -33,6 +38,7 @@ public sealed class UpdateCompanyCommandHandler : BaseCommandHandler<UpdateCompa
         company.Location = command.Dto.Location;
 
         await _companyRepository.UpdateAsync(company.Id,company);
+        await _cacheService.InvalidateCompaniesAsync(cancellationToken);
 
         return true;
     }
