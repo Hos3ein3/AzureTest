@@ -7,7 +7,10 @@ public sealed record CreateResumeDto(
     string Description,
     string Location,
     string JobLink,
-    string Note,
+    string? Note,
+    string? ChatUrl,
     ResumeSource Source,
     System.DateTime CreatedOn,
-    ResumeStatus Status = ResumeStatus.Applied) : IResumeFormDto;
+    ResumeStatus Status = ResumeStatus.Applied,
+    System.Guid? CompanyId = null,
+    string? NewCompanyName = null) : IResumeFormDto;

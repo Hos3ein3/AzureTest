@@ -38,8 +38,10 @@ public sealed class GetAllResumesQueryHandler : BaseQueryHandler<GetAllResumesQu
         resume.Location,
         resume.JobLink,
         resume.Note,
+        resume.ChatUrl,
         resume.Source,
         resume.Status,
         resume.CreatedOn,
-        resume.ModifiedOn);
+        resume.ModifiedOn,
+        resume.CompanyId);
 }

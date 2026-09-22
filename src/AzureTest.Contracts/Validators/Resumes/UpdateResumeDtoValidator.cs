@@ -33,5 +33,9 @@ public sealed class UpdateResumeDtoValidator : AbstractValidator<UpdateResumeDto
 
         RuleFor(x => x.Status)
             .IsInEnum().WithMessage("Status must be a valid value.");
+        
+        RuleFor(x=>x.ChatUrl).MaximumLength(500).WithMessage("Chat url must not exceed 500 characters.")
+            .Must(link => string.IsNullOrWhiteSpace(link) || Uri.TryCreate(link, UriKind.Absolute, out _))
+            .WithMessage("Chat Url must be a valid URL.");
     }
 }

@@ -145,18 +145,8 @@ public class ResumeDocumentService : IResumeDocumentService
         var document = await _resumeFilesRepository.GetByResumeIdAsync(resumeId);
         if (document is null) return;
 
-        string containerName = "resumes";
-
-        if (!string.IsNullOrWhiteSpace(document.TempNameOfCV))
-        {
-            await _blobService.DeleteFileAsync(containerName, document.TempNameOfCV, cancellationToken);
-        }
-
-        if (!string.IsNullOrWhiteSpace(document.TempNameOfCL))
-        {
-            await _blobService.DeleteFileAsync(containerName, document.TempNameOfCL, cancellationToken);
-        }
-
-        await _resumeFilesRepository.RemoveAsync(document.Id);
+        // Soft-delete: mark the document as deleted without removing it from MongoDB
+        document.SoftDelete();
+        await _resumeFilesRepository.UpdateAsync(document.Id, document);
     }
 }

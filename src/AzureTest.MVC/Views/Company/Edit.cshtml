@@ -1,0 +1,21 @@
+@model AzureTest.Contracts.DTOs.Companies.UpdateCompanyDto
+@{
+    ViewData["Title"] = "Edit Company";
+}
+
+<h1>Edit Company</h1>
+<hr />
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+            @Html.AntiForgeryToken()
+            <partial name="_UpsertPartial" />
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>

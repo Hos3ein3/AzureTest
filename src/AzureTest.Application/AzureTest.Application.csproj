@@ -9,6 +9,11 @@
         <PackageReference Include="Scrutor" />
         <PackageReference Include="Microsoft.EntityFrameworkCore" />
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+        <PackageReference Include="ClosedXML" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Companies\Filters\" />
     </ItemGroup>
 
 </Project>

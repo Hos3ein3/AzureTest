@@ -49,5 +49,9 @@
     <PackageVersion Include="Serilog.Sinks.File" Version="6.0.0" />
     <!-- Validation -->
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
+
+
+    <PackageVersion Include="HtmlAgilityPack" Version="1.11.71" />
+    <PackageVersion Include="ClosedXML" Version="0.104.2" />
   </ItemGroup>
 </Project>

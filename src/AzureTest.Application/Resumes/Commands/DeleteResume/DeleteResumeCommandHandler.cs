@@ -29,7 +29,7 @@ public sealed class DeleteResumeCommandHandler : BaseCommandHandler<DeleteResume
         var resume = await _resumeRepository.GetByIdAsync(command.Id)
             ?? throw new KeyNotFoundException($"Resume with ID {command.Id} was not found.");
 
-        // AuditInterceptor converts this to a soft-delete (IsDeleted = true)
-        _resumeRepository.Remove(resume);
+        resume.SoftDelete();
+        _resumeRepository.Update(resume);
     }
 }

@@ -4,6 +4,7 @@ using AzureTest.Application.Resumes.Commands.DeleteResume;
 using AzureTest.Application.Resumes.Commands.UpdateResume;
 using AzureTest.Application.Resumes.Commands.UpdateResumeStatus;
 using AzureTest.Application.Interfaces.Services;
+using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Resumes.Queries.GetAllResumes;
 using AzureTest.Application.Resumes.Queries.GetResumeById;
 using AzureTest.Contracts.DTOs.Resumes;
@@ -18,17 +19,34 @@ public class ResumeController : Controller
     private readonly IResumeQueryUnit _queries;
     private readonly IResumeValidationUnit _validators;
     private readonly IResumeDocumentService _documentService;
+    private readonly ICompanyRepository _companyRepository;
 
     public ResumeController(
         IResumeCommandUnit commands,
         IResumeQueryUnit queries,
         IResumeValidationUnit validators,
-        IResumeDocumentService documentService)
+        IResumeDocumentService documentService,
+        ICompanyRepository companyRepository)
     {
         _commands = commands;
         _queries = queries;
         _validators = validators;
         _documentService = documentService;
+        _companyRepository = companyRepository;
+    }
+
+    // Helper: loads companies into ViewBag for the form
+    private async Task LoadCompaniesViewBagAsync()
+    {
+        var companies = await _companyRepository.GetAllAsync();
+        ViewBag.Companies = companies
+            .OrderBy(c => c.CompanyName)
+            .Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+            {
+                Value = c.Id.ToString(),
+                Text = c.CompanyName
+            })
+            .ToList();
     }
 
     // GET: /Resume
@@ -52,9 +70,10 @@ public class ResumeController : Controller
 
     // GET: /Resume/Create
     [HttpGet]
-    public IActionResult Create()
+    public async Task<IActionResult> Create(CancellationToken cancellationToken)
     {
-        return View(new CreateResumeDto(string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, default, DateTime.Now.Date));
+        await LoadCompaniesViewBagAsync();
+        return View(new CreateResumeDto(string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, default, DateTime.Now.Date));
     }
 
     // POST: /Resume/Create
@@ -67,6 +86,7 @@ public class ResumeController : Controller
         {
             foreach (var error in validation.Errors)
                 ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+            await LoadCompaniesViewBagAsync();
             return View(dto);
         }
 
@@ -94,9 +114,21 @@ public class ResumeController : Controller
         if (resume is null) return NotFound();
 
         ViewBag.Files = await _documentService.GetFileMetadataByResumeIdAsync(id, cancellationToken);
+        await LoadCompaniesViewBagAsync();
 
-        var dto = new UpdateResumeDto(resume.Id, resume.PositionTitle, resume.Description,
-            resume.Location, resume.JobLink, resume.Note, resume.Source, resume.Status, resume.CreatedOn.ToLocalTime().Date);
+        var dto = new UpdateResumeDto(
+            resume.Id,
+            resume.PositionTitle,
+            resume.Description,
+            resume.Location,
+            resume.JobLink,
+            resume.Note,
+            resume.ChatUrl,
+            resume.CompanyId,
+            null,
+            resume.Source,
+            resume.Status,
+            resume.CreatedOn.ToLocalTime().Date);
         return View(dto);
     }
 
@@ -112,6 +144,7 @@ public class ResumeController : Controller
         {
             foreach (var error in validation.Errors)
                 ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+            await LoadCompaniesViewBagAsync();
             return View(dto);
         }
 
@@ -215,5 +248,17 @@ public class ResumeController : Controller
             return Redirect(returnUrl);
 
         return RedirectToAction(nameof(Details), new { id });
+    }
+
+    // GET: /Resume/SearchCompanies?term=acme
+    [HttpGet]
+    public async Task<IActionResult> SearchCompanies(string term, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(term) || term.Length < 1)
+            return Json(new List<object>());
+
+        var results = await _companyRepository.SearchByNameAsync(term);
+        var mapped = results.Select(c => new { id = c.Id, name = c.CompanyName });
+        return Json(mapped);
     }
 }

@@ -1,0 +1,32 @@
+@model AzureTest.Contracts.DTOs.Companies.CompanyDto
+@{
+    ViewData["Title"] = "Company Details";
+}
+
+<h1>Company Details</h1>
+<hr />
+
+<dl class="row">
+    <dt class="col-sm-3">Company Name</dt>
+    <dd class="col-sm-9">@Model.CompanyName</dd>
+
+    <dt class="col-sm-3">KVK Number</dt>
+    <dd class="col-sm-9">@Model.KvkNumber</dd>
+
+    <dt class="col-sm-3">IND Member</dt>
+    <dd class="col-sm-9">
+        @if (Model.IsINDMember)
+        {
+            <span class="badge bg-success">Yes</span>
+        }
+        else
+        {
+            <span class="badge bg-secondary">No</span>
+        }
+    </dd>
+</dl>
+
+<div class="mt-4">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit</a>
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</div>

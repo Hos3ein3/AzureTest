@@ -13,6 +13,12 @@ public static class DependencyInjection
         InfrastructureFeatureOptions options,
         IConfiguration configuration)
     {
+        // services.AddScoped<IPdfGenerator, QuestPdfGenerator>();
+        // services.AddScoped<IIdentityService, IdentityService>();
+        
+        // ── Crawler Service ───────────────────────────────────────────────────
+        services.AddHttpClient<IIndCrawlerService, IndCrawlerService>();
+
         services.AddSerilogConfig(options);
         services.AddOpenTelemetryConfig(options);
         services.AddHealthChecksConfig(options, configuration);

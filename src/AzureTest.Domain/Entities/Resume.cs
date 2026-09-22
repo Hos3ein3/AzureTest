@@ -10,7 +10,7 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
     public string Description { get; private set; } = string.Empty;
     public string Location { get; private set; } = string.Empty;
     public string JobLink { get; private set; } = string.Empty;
-    public string Note { get; private set; } = string.Empty;
+    public string? Note { get; private set; } = string.Empty;
     public ResumeSource Source { get; private set; }
     public ResumeStatus Status { get; private set; }
 
@@ -25,6 +25,12 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
     public DateTime? DeletedOn { get; set; }
     public string? DeletedBy { get; set; }
 
+    public string? ChatUrl { get; set; } = null;
+    
+    public Guid? CompanyId { get; set; }
+
+    
+
     // Parameterless constructor for EF Core
     private Resume() { }
 
@@ -34,6 +40,8 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         string location, 
         string jobLink, 
         string note, 
+        string chatUrl,
+        Guid? companyId,
         ResumeSource source, 
         ResumeStatus status)
     {
@@ -44,6 +52,8 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         Note = note;
         Source = source;
         Status = status;
+        ChatUrl = chatUrl;
+        CompanyId = companyId;
     }
 
     public static Resume Create(
@@ -52,6 +62,8 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         string location, 
         string jobLink, 
         string note, 
+        string chatUrl,
+        Guid? companyId,
         ResumeSource source, 
         ResumeStatus status = ResumeStatus.Applied)
     {
@@ -61,6 +73,8 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
             location,
             jobLink,
             note,
+            chatUrl,
+            companyId,
             source,
             status
         );
@@ -76,12 +90,21 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         string description, 
         string location, 
         string jobLink, 
-        string note)
+        Guid? companyId,
+        string note,string chatUrl)
     {
         PositionTitle = positionTitle;
         Description = description;
         Location = location;
         JobLink = jobLink;
         Note = note;
+        ChatUrl = chatUrl;
+    }
+
+    public void SoftDelete(string? deletedBy = null)
+    {
+        IsDeleted = true;
+        DeletedOn = DateTime.UtcNow;
+        DeletedBy = deletedBy;
     }
 }

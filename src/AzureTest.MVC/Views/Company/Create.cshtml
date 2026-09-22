@@ -1,0 +1,21 @@
+@model AzureTest.Contracts.DTOs.Companies.CreateCompanyDto
+@{
+    ViewData["Title"] = "Create Company";
+}
+
+<h1>Create Company</h1>
+<hr />
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            @Html.AntiForgeryToken()
+            <partial name="_UpsertPartial" />
+            
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Create</button>
+                <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>

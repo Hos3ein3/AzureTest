@@ -10,7 +10,9 @@ public sealed record ResumeDto(
     string Location,
     string JobLink,
     string Note,
+    string ChatUrl,
     ResumeSource Source,
     ResumeStatus Status,
     DateTime CreatedOn,
-    DateTime? ModifiedOn);
+    DateTime? ModifiedOn,
+    Guid? CompanyId = null);

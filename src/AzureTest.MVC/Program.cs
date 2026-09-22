@@ -2,6 +2,8 @@ using AzureTest.Application;
 using AzureTest.Infrastructure;
 using AzureTest.Infrastructure.Configuration;
 using AzureTest.Persistence;
+using AzureTest.Persistence.Context;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +29,32 @@ builder.Services.AddHealthChecksUI()
     .AddInMemoryStorage();
 
 var app = builder.Build();
+
+// ── Auto-apply pending EF Core migrations on cold start ─────────────────────
+try
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AzureTestDbContext>();
+    var pending = await db.Database.GetPendingMigrationsAsync();
+    if (pending.Any())
+    {
+        app.Logger.LogInformation("Applying {Count} pending migration(s)...", pending.Count());
+        await db.Database.MigrateAsync();
+        app.Logger.LogInformation("Migrations applied successfully.");
+    }
+
+    // ── Auto-seed IND Companies on cold start ────────────────────────────────
+    var companySeeder = scope.ServiceProvider.GetService<AzureTest.Persistence.Seeding.CompanyDataSeeder>();
+    if (companySeeder != null)
+    {
+        await companySeeder.SeedIfEmptyAsync();
+    }
+}
+catch (Exception ex)
+{
+    app.Logger.LogError(ex, "An error occurred while applying migrations.");
+    throw;
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

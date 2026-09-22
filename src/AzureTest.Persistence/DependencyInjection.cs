@@ -61,7 +61,9 @@ public static class DependencyInjection
                 sp.GetRequiredService<IMongoClient>().GetDatabase(mongoDatabaseName));
 
             services.AddScoped<IResumeFilesRepository, ResumeFilesRepository>();
+            services.AddScoped<ICompanyRepository, CompanyRepository>();
             services.AddScoped<INoSqlUnitOfWork, NoSqlUnitOfWork>();
+            services.AddScoped<AzureTest.Persistence.Seeding.CompanyDataSeeder>();
         }
         else
         {

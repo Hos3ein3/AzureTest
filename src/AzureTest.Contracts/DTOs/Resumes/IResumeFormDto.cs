@@ -13,8 +13,11 @@ public interface IResumeFormDto
     string Description { get; }
     string Location { get; }
     string JobLink { get; }
-    string Note { get; }
+    string? Note { get; }
+    string? ChatUrl { get; }
     ResumeSource Source { get; }
     ResumeStatus Status { get; }
     System.DateTime CreatedOn { get; }
+    System.Guid? CompanyId { get; }
+    string? NewCompanyName { get; }
 }

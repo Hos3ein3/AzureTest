@@ -49,15 +49,22 @@ else
                     <tr>
                         <td>
                             <strong>@resume.PositionTitle</strong>
+                            @if (!string.IsNullOrWhiteSpace(resume.ChatUrl))
+                            {
+                                <a href="@resume.ChatUrl" target="_blank" class="ms-1 text-muted small">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            }
+                        </td>
+                        <td>@(string.IsNullOrWhiteSpace(resume.Location) ? "—" : resume.Location)</td>
+                        <td><span class="badge bg-secondary">@resume.Source</span>
                             @if (!string.IsNullOrWhiteSpace(resume.JobLink))
                             {
                                 <a href="@resume.JobLink" target="_blank" class="ms-1 text-muted small">
                                     <i class="bi bi-box-arrow-up-right"></i>
                                 </a>
                             }
-                        </td>
-                        <td>@(string.IsNullOrWhiteSpace(resume.Location) ? "—" : resume.Location)</td>
-                        <td><span class="badge bg-secondary">@resume.Source</span></td>
+                            </td>
                         <td>
                             <select class="form-select form-select-sm status-dropdown" data-id="@resume.Id" style="width: 140px; display: inline-block;">
                                 @foreach (var status in Enum.GetValues(typeof(AzureTest.Domain.Enums.ResumeStatus)).Cast<AzureTest.Domain.Enums.ResumeStatus>())

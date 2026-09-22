@@ -1,0 +1,23 @@
+@model AzureTest.Contracts.DTOs.Companies.ICompanyFormDto
+<div class="mb-3">
+    <label asp-for="CompanyName" class="form-label">Company Name</label>
+    <input asp-for="CompanyName" class="form-control" />
+    <span asp-validation-for="CompanyName" class="text-danger"></span>
+</div>
+            
+<div class="mb-3">
+    <label asp-for="Location" class="form-label">Company Location</label>
+    <input asp-for="Location" class="form-control" />
+    <span asp-validation-for="Location" class="text-danger"></span>
+</div>
+            
+<div class="mb-3">
+    <label asp-for="KvkNumber" class="form-label">KVK Number</label>
+    <input asp-for="KvkNumber" class="form-control" />
+    <span asp-validation-for="KvkNumber" class="text-danger"></span>
+</div>
+            
+<div class="mb-3 form-check">
+    <input asp-for="IsINDMember" class="form-check-input" />
+    <label asp-for="IsINDMember" class="form-check-label">Is IND Recognized Sponsor</label>
+</div>

@@ -71,6 +71,81 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+    (function () {
+        const toggleBtn = document.getElementById('toggleNewCompany');
+        const newPanel  = document.getElementById('newCompanyPanel');
+        const selectEl  = document.getElementById('companySelect');
+        const newInput  = document.getElementById('newCompanyInput');
+        const acList    = document.getElementById('companyAutocomplete');
+
+        // Toggle the "new company" panel
+        toggleBtn.addEventListener('click', () => {
+            const isVisible = newPanel.style.display !== 'none';
+            if (isVisible) {
+                newPanel.style.display = 'none';
+                newInput.value = '';
+                // Re-enable the select so its value is submitted
+                selectEl.disabled = false;
+            } else {
+                newPanel.style.display = 'block';
+                // Clear and disable the select so CompanyId is not submitted
+                selectEl.value = '';
+                selectEl.disabled = true;
+                newInput.focus();
+            }
+        });
+
+        // When the user picks from the dropdown, hide the new panel
+        selectEl.addEventListener('change', () => {
+            if (selectEl.value) {
+                newPanel.style.display = 'none';
+                newInput.value = '';
+                selectEl.disabled = false;
+            }
+        });
+
+        // Autocomplete: search existing companies as the user types
+        let debounceTimer;
+        newInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            const term = newInput.value.trim();
+            if (term.length < 1) { acList.style.display = 'none'; return; }
+
+            debounceTimer = setTimeout(async () => {
+                const res  = await fetch(`/Resume/SearchCompanies?term=${encodeURIComponent(term)}`);
+                const data = await res.json();
+
+                acList.innerHTML = '';
+                if (data.length === 0) { acList.style.display = 'none'; return; }
+
+                data.forEach(c => {
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'list-group-item list-group-item-action';
+                    item.textContent = c.name;
+                    item.addEventListener('click', () => {
+                        // User picked an existing company from autocomplete
+                        selectEl.value = c.id;
+                        selectEl.disabled = false;
+                        newInput.value = '';
+                        newPanel.style.display = 'none';
+                        acList.style.display = 'none';
+                    });
+                    acList.appendChild(item);
+                });
+                acList.style.display = 'block';
+            }, 300);
+        });
+
+        // Hide autocomplete when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!acList.contains(e.target) && e.target !== newInput) {
+                acList.style.display = 'none';
+            }
+        });
+    })();
+</script>
 }
 
 @if (ViewBag.Files != null)
