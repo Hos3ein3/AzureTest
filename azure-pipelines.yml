@@ -20,6 +20,16 @@ stages:
             displayName: 'Docker Compose Build'
 
           - script: |
+              echo "Pulling images sequentially to avoid Docker Hub timeouts..."
+              for img in postgres:15-alpine dpage/pgadmin4 mongo:6 mongo-express redis:7-alpine rediscommander/redis-commander:latest rabbitmq:3-management-alpine prom/prometheus:latest prom/node-exporter:latest grafana/loki:latest grafana/promtail:latest grafana/grafana:latest; do
+                echo "Pulling $$img..."
+                for i in 1 2 3 4; do
+                  docker pull $$img && break || (echo "Retry $$i for $$img in 5 seconds..." && sleep 5)
+                done
+              done
+            displayName: 'Pre-pull Docker Images (Sequential)'
+
+          - script: |
               docker compose up -d
             displayName: 'Docker Compose Up (persist)'
 
