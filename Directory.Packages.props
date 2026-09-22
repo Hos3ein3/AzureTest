@@ -77,5 +77,8 @@
 
     <PackageVersion Include="HtmlAgilityPack" Version="1.11.71" />
     <PackageVersion Include="ClosedXML" Version="0.104.2" />
+
+    <PackageVersion Include="Shouldly" Version="4.3.0" />
+    <PackageVersion Include="AutoFixture"  Version="4.18.1"/>
   </ItemGroup>
 </Project>
