@@ -31,7 +31,7 @@ public class ResumeIntegrationTests : IClassFixture<IntegrationTestWebAppFactory
                 f.Lorem.Sentence(),
                 f.Internet.Url(),
                 ResumeSource.Referral, // CompanyId (can be generated if we also create a company)
-                f.Date.Past().Date
+                DateTime.UtcNow
             ));
     }
 

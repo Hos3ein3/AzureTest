@@ -34,6 +34,7 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
             {
                 { "ConnectionStrings:DefaultConnection", _dbContainer.GetConnectionString() },
                 { "ConnectionStrings:MongoDb", _mongoContainer.GetConnectionString() },
+                { "ConnectionStrings:Redis", "" }, // Disable real redis to avoid connection errors
                 { "MongoDb:DatabaseName", "AzureTestDb_IntegrationTest" }
             });
         });
@@ -79,7 +80,22 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
             
             // Note: IMongoDatabase registration is scoped and depends on IMongoClient. 
             // It will pick up the new IMongoClient automatically.
+
+            // Register dummy cache service since Redis is disabled
+            services.AddSingleton<AzureTest.Application.Interfaces.Services.ICompanyCacheService, DummyCompanyCacheService>();
         });
+    }
+
+    private class DummyCompanyCacheService : AzureTest.Application.Interfaces.Services.ICompanyCacheService
+    {
+        public Task<System.Collections.Generic.IEnumerable<AzureTest.Contracts.DTOs.Companies.CompanyDto>?> GetCompaniesAsync(System.Threading.CancellationToken cancellationToken = default) 
+            => Task.FromResult<System.Collections.Generic.IEnumerable<AzureTest.Contracts.DTOs.Companies.CompanyDto>?>(null);
+
+        public Task InvalidateCompaniesAsync(System.Threading.CancellationToken cancellationToken = default) 
+            => Task.CompletedTask;
+
+        public Task SetCompaniesAsync(System.Collections.Generic.IEnumerable<AzureTest.Contracts.DTOs.Companies.CompanyDto> companies, System.Threading.CancellationToken cancellationToken = default) 
+            => Task.CompletedTask;
     }
 
     public async Task InitializeAsync()
