@@ -28,6 +28,8 @@ internal sealed class GetResumeFileByIdQueryHandler : IQueryHandler<GetResumeFil
             document.TempNameOfCV,
             document.RealNameOfCL,
             document.TempNameOfCL,
+            document.CvSize,
+            document.ClSize,
             document.UploadedOn
         );
     }

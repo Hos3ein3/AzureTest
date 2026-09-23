@@ -98,6 +98,9 @@ app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks
 });
 
 app.MapPrometheusScrapingEndpoint();
-app.UseHangfireDashboard("/hangfire");
+if (builder.Configuration.GetValue<bool>("FeatureManagement:EnableHangfire"))
+{
+    app.UseHangfireDashboard("/hangfire");
+}
 
 app.Run();

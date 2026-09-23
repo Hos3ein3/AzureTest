@@ -48,8 +48,8 @@ namespace AzureTest.Persistence.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(5000)
-                        .HasColumnType("character varying(5000)");
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");

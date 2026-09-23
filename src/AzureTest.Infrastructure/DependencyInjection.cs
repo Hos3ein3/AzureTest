@@ -35,6 +35,8 @@ public static class DependencyInjection
         services.AddHealthChecksConfig(options, configuration);
         services.AddAzureOpenTelemetryConfig(options);
         services.AddBackgroundJobs(configuration);
+        services.AddMessageBroker(configuration);
+        services.AddResiliencePipelines();
 
         // Register the correct storage implementation based on the feature flag
         if (options.EnableBlobStorage)

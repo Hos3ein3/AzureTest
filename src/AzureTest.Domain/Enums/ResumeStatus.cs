@@ -9,5 +9,6 @@ public enum ResumeStatus
     Rejected,
     Ghosted,
     Withdraw,
-    OnHold
+    OnHold,
+    WantToApply
 }

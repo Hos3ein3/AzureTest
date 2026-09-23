@@ -1,3 +1,3 @@
 {
-  "add migration": "dotnet ef migrations add AddSoftDeleteQueryFilter --project src/AzureTest.Persistence --startup-project src/AzureTest.MVC --context AzureTestDbContext",
+  "add migration": "dotnet ef migrations add changeResumeEntity --project src/AzureTest.Persistence --startup-project src/AzureTest.MVC --context AzureTestDbContext",
 }

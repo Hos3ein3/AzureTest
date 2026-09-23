@@ -58,4 +58,14 @@ public class ResumeFileController : Controller
         TempData["Success"] = "Resume files deleted successfully.";
         return RedirectToAction(nameof(Index));
     }
+
+    // POST: /ResumeFile/SyncSizes
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SyncSizes(CancellationToken cancellationToken)
+    {
+        int count = await _documentService.SyncAllFileSizesAsync(cancellationToken);
+        TempData["Success"] = $"Successfully synchronized sizes for {count} files.";
+        return RedirectToAction(nameof(Index));
+    }
 }

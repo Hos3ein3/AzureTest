@@ -72,7 +72,16 @@
 
 <div class="mb-6">
     <label asp-for="Location" class="block text-sm font-medium text-slate-700 mb-1">Location</label>
-    <input asp-for="Location" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="e.g. Remote, New York, NY" />
+    <input asp-for="Location" list="locationOptions" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="e.g. Remote, New York, NY" />
+    <datalist id="locationOptions">
+        @if (ViewBag.Locations != null)
+        {
+            foreach (var loc in (List<string>)ViewBag.Locations)
+            {
+                <option value="@loc" />
+            }
+        }
+    </datalist>
     <span asp-validation-for="Location" class="text-red-500 text-xs mt-1 block"></span>
 </div>
 

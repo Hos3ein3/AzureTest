@@ -61,13 +61,31 @@ public sealed class GetAllResumesQueryHandler : BaseQueryHandler<GetAllResumesQu
         {
             queryable = queryable.Where(r => r.Status == query.Filters.Status.Value);
         }
+        
+        if (query.Filters?.AppliedDate.HasValue == true)
+        {
+            var date = query.Filters.AppliedDate.Value.Date;
+            queryable = queryable.Where(r => r.CreatedOn.Date == date);
+        }
 
         int totalCount = queryable.Count();
         int pageNumber = query.Filters?.PageNumber ?? 1;
         int pageSize = query.Filters?.PageSize ?? 10;
+        
+        // Sorting logic
+        string sortBy = (query.Filters?.SortBy ?? "CreatedOn").ToLower();
+        bool desc = query.Filters?.SortDescending ?? true;
+
+        queryable = sortBy switch
+        {
+            "position" => desc ? queryable.OrderByDescending(r => r.PositionTitle) : queryable.OrderBy(r => r.PositionTitle),
+            "location" => desc ? queryable.OrderByDescending(r => r.Location) : queryable.OrderBy(r => r.Location),
+            "source" => desc ? queryable.OrderByDescending(r => r.Source) : queryable.OrderBy(r => r.Source),
+            "status" => desc ? queryable.OrderByDescending(r => r.Status) : queryable.OrderBy(r => r.Status),
+            _ => desc ? queryable.OrderByDescending(r => r.CreatedOn) : queryable.OrderBy(r => r.CreatedOn)
+        };
 
         var pagedResumes = queryable
-            .OrderByDescending(r => r.CreatedOn)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .Select(MapToDto)

@@ -15,10 +15,12 @@ public class ResumeFiles : ISoftDelete
     // Curriculum Vitae (CV) Properties
     public string? RealNameOfCV { get; set; }
     public string? TempNameOfCV { get; set; }
+    public long CvSize { get; set; }
 
     // Cover Letter (CL) Properties
     public string? RealNameOfCL { get; set; }
     public string? TempNameOfCL { get; set; }
+    public long ClSize { get; set; }
 
     // Additional properties
     public DateTime UploadedOn { get; set; } = DateTime.UtcNow;

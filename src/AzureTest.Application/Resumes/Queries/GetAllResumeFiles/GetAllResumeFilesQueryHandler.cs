@@ -28,6 +28,8 @@ internal sealed class GetAllResumeFilesQueryHandler : IQueryHandler<GetAllResume
             d.TempNameOfCV,
             d.RealNameOfCL,
             d.TempNameOfCL,
+            d.CvSize,
+            d.ClSize,
             d.UploadedOn
         )).ToList();
     }

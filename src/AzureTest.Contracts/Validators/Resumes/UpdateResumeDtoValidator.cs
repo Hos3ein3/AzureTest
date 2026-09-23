@@ -15,7 +15,7 @@ public sealed class UpdateResumeDtoValidator : AbstractValidator<UpdateResumeDto
             .MaximumLength(200).WithMessage("Position title must not exceed 200 characters.");
 
         RuleFor(x => x.Description)
-            .MaximumLength(5000).WithMessage("Description must not exceed 2000 characters.");
+            .MaximumLength(10000).WithMessage("Description must not exceed 2000 characters.");
 
         RuleFor(x => x.Location)
             .MaximumLength(200).WithMessage("Location must not exceed 200 characters.");
@@ -26,7 +26,7 @@ public sealed class UpdateResumeDtoValidator : AbstractValidator<UpdateResumeDto
             .WithMessage("Job link must be a valid URL.");
 
         RuleFor(x => x.Note)
-            .MaximumLength(1000).WithMessage("Note must not exceed 1000 characters.");
+            .MaximumLength(5000).WithMessage("Note must not exceed 1000 characters.");
 
         RuleFor(x => x.Source)
             .IsInEnum().WithMessage("Source must be a valid value.");

@@ -80,6 +80,12 @@
                     </a>
                 </li>
                 <li>
+                    <a asp-area="" asp-controller="ResumeFile" asp-action="Index" class="flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("ResumeFile")">
+                        <i class="fa-solid fa-file-pdf w-6 @GetActiveIconClasses("ResumeFile")"></i>
+                        <span class="ml-2 font-medium">Resume Files</span>
+                    </a>
+                </li>
+                <li>
                     <a asp-area="" asp-controller="Analytics" asp-action="Index" class="flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Analytics")">
                         <i class="fa-solid fa-chart-pie w-6 @GetActiveIconClasses("Analytics")"></i>
                         <span class="ml-2 font-medium">Analytics</span>

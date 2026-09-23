@@ -11,6 +11,8 @@ using AzureTest.Contracts.DTOs.Resumes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 
+using Microsoft.Extensions.Caching.Memory;
+
 namespace AzureTest.MVC.Controllers;
 
 public class ResumeController : Controller
@@ -20,19 +22,46 @@ public class ResumeController : Controller
     private readonly IResumeValidationUnit _validators;
     private readonly IResumeDocumentService _documentService;
     private readonly ICompanyRepository _companyRepository;
+    private readonly IMemoryCache _cache;
 
     public ResumeController(
         IResumeCommandUnit commands,
         IResumeQueryUnit queries,
         IResumeValidationUnit validators,
         IResumeDocumentService documentService,
-        ICompanyRepository companyRepository)
+        ICompanyRepository companyRepository,
+        IMemoryCache cache)
     {
         _commands = commands;
         _queries = queries;
         _validators = validators;
         _documentService = documentService;
         _companyRepository = companyRepository;
+        _cache = cache;
+    }
+
+    private async Task LoadLocationsViewBagAsync(CancellationToken cancellationToken)
+    {
+        const string cacheKey = "ResumeLocations";
+        if (!_cache.TryGetValue(cacheKey, out List<string>? locations))
+        {
+            var filters = new GetAllResumesFilters(PageSize: 10000);
+            var resumes = await _queries.GetAll.HandleAsync(new GetAllResumesQuery(filters), cancellationToken);
+            
+            locations = resumes.Items
+                .Where(x => !string.IsNullOrWhiteSpace(x.Location))
+                .Select(x => x.Location!)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+                
+            var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromHours(1));
+
+            _cache.Set(cacheKey, locations, cacheEntryOptions);
+        }
+        
+        ViewBag.Locations = locations ?? new List<string>();
     }
 
     // Helper: loads companies into ViewBag for the form
@@ -74,6 +103,7 @@ public class ResumeController : Controller
     public async Task<IActionResult> Create(CancellationToken cancellationToken)
     {
         await LoadCompaniesViewBagAsync();
+        await LoadLocationsViewBagAsync(cancellationToken);
         return View(new CreateResumeDto(string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, default, DateTime.Now.Date));
     }
 
@@ -88,6 +118,7 @@ public class ResumeController : Controller
             foreach (var error in validation.Errors)
                 ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
             await LoadCompaniesViewBagAsync();
+            await LoadLocationsViewBagAsync(cancellationToken);
             return View(dto);
         }
 
@@ -102,6 +133,8 @@ public class ResumeController : Controller
             clFile?.OpenReadStream(), clFile?.FileName, clFile?.ContentType
         );
         await _documentService.UploadFilesAsync(createUploadDto, cancellationToken);
+        
+        _cache.Remove("ResumeLocations"); // Invalidate cache so new locations appear
 
         TempData["Success"] = "Resume created successfully.";
         return RedirectToAction(nameof(Details), new { id });
@@ -116,6 +149,7 @@ public class ResumeController : Controller
 
         ViewBag.Files = await _documentService.GetFileMetadataByResumeIdAsync(id, cancellationToken);
         await LoadCompaniesViewBagAsync();
+        await LoadLocationsViewBagAsync(cancellationToken);
 
         var dto = new UpdateResumeDto(
             resume.Id,
@@ -146,6 +180,7 @@ public class ResumeController : Controller
             foreach (var error in validation.Errors)
                 ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
             await LoadCompaniesViewBagAsync();
+            await LoadLocationsViewBagAsync(cancellationToken);
             return View(dto);
         }
 
@@ -160,6 +195,8 @@ public class ResumeController : Controller
             clFile?.OpenReadStream(), clFile?.FileName, clFile?.ContentType
         );
         await _documentService.UploadFilesAsync(editUploadDto, cancellationToken);
+
+        _cache.Remove("ResumeLocations"); // Invalidate cache so new locations appear
 
         TempData["Success"] = "Resume updated successfully.";
         return RedirectToAction(nameof(Details), new { id });
@@ -216,7 +253,7 @@ public class ResumeController : Controller
 
     // GET: /Resume/DownloadFile/{id}?type=cv
     [HttpGet]
-    public async Task<IActionResult> DownloadFile(Guid id, string type, CancellationToken cancellationToken)
+    public async Task<IActionResult> DownloadFile(Guid id, string type, bool inline = false, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(type) || (type.ToLower() != "cv" && type.ToLower() != "cl"))
             return BadRequest("Invalid file type.");
@@ -226,6 +263,11 @@ public class ResumeController : Controller
 
         var download = await _documentService.DownloadFileAsync(files.FileRecordId, type, cancellationToken);
         if (download is null) return NotFound("File not found in storage.");
+
+        if (inline)
+        {
+            return File(download.Value.Content, download.Value.ContentType);
+        }
 
         return File(download.Value.Content, download.Value.ContentType, download.Value.FileName);
     }
@@ -261,5 +303,24 @@ public class ResumeController : Controller
         var results = await _companyRepository.SearchByNameAsync(term);
         var mapped = results.Select(c => new { id = c.Id, name = c.CompanyName });
         return Json(mapped);
+    }
+
+    // GET: /Resume/GetTitle/{id}
+    [HttpGet]
+    public async Task<IActionResult> GetTitle(Guid id, CancellationToken cancellationToken)
+    {
+        var resume = await _queries.GetById.HandleAsync(new GetResumeByIdQuery(id), cancellationToken);
+        if (resume is null) return NotFound();
+        return Json(new { id = resume.Id, title = resume.PositionTitle });
+    }
+
+    // GET: /Resume/Kanban
+    [HttpGet]
+    public async Task<IActionResult> Kanban(CancellationToken cancellationToken)
+    {
+        // Fetch all resumes with a large page size so all appear on the Kanban board
+        var filters = new GetAllResumesFilters(PageSize: 1000);
+        var pagedResumes = await _queries.GetAll.HandleAsync(new GetAllResumesQuery(filters), cancellationToken);
+        return View(pagedResumes.Items);
     }
 }

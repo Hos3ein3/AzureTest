@@ -2,65 +2,137 @@
 
 @{
     ViewData["Title"] = "Resume Files";
+    
+    long totalBytes = Model?.Sum(m => m.CvSize + m.ClSize) ?? 0;
+    int totalFiles = Model?.Sum(m => (string.IsNullOrWhiteSpace(m.RealNameOfCV) ? 0 : 1) + (string.IsNullOrWhiteSpace(m.RealNameOfCL) ? 0 : 1)) ?? 0;
+    
+    string FormatSize(long bytes)
+    {
+        if (bytes == 0) return "0 B";
+        string[] suffix = { "B", "KB", "MB", "GB", "TB" };
+        int i;
+        double dblSByte = bytes;
+        for (i = 0; i < suffix.Length && bytes >= 1024; i++, bytes /= 1024)
+        {
+            dblSByte = bytes / 1024.0;
+        }
+        return string.Format("{0:0.##} {1}", dblSByte, suffix[i]);
+    }
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Resume Files</h2>
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">Resume Files</h1>
+    <form asp-action="SyncSizes" method="post">
+        <button type="submit" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white py-2 px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+            <i class="fa-solid fa-rotate mr-2"></i> Sync File Sizes
+        </button>
+    </form>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0 align-middle">
-                <thead class="table-light">
+<div class="mb-6 bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+    <div class="flex items-center space-x-3 text-brand-600">
+        <i class="fa-solid fa-server text-2xl"></i>
+        <div>
+            <h3 class="text-lg font-semibold text-slate-800">Storage Usage</h3>
+            <p class="text-sm text-slate-500">Total space occupied by uploaded resumes and cover letters.</p>
+        </div>
+    </div>
+    <div class="text-right">
+        <span class="block text-2xl font-bold text-slate-900">@FormatSize(totalBytes)</span>
+        <span class="text-sm text-slate-500">across @totalFiles files</span>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 flex items-start" role="alert">
+        <i class="fa-solid fa-circle-check text-emerald-500 mt-0.5 mr-3"></i>
+        <div class="flex-1">
+            <p class="text-sm text-emerald-800 font-medium">@TempData["Success"]</p>
+        </div>
+        <button type="button" class="text-emerald-500 hover:text-emerald-700 focus:outline-none" onclick="this.parentElement.style.display='none';">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-12 text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 mb-4">
+            <i class="fa-solid fa-file-excel text-2xl text-slate-400"></i>
+        </div>
+        <h3 class="text-lg font-medium text-slate-900 mb-1">No files found</h3>
+        <p class="text-slate-500 mb-6">There are no uploaded resumes or cover letters in the system yet.</p>
+    </div>
+}
+else
+{
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
                     <tr>
-                        <th>Resume ID</th>
-                        <th>CV File</th>
-                        <th>Cover Letter File</th>
-                        <th>Uploaded On</th>
-                        <th class="text-end">Actions</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Resume / Position</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">CV File</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Cover Letter File</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Uploaded On</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @if (!Model.Any())
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">
-                                No resume files found.
-                            </td>
-                        </tr>
-                    }
+                <tbody class="bg-white divide-y divide-slate-200">
                     @foreach (var item in Model)
                     {
-                        <tr>
-                            <td>@item.ResumeId</td>
-                            <td>
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-800 font-medium">
+                                <div class="resume-title-loader flex items-center space-x-2" data-resume-id="@item.ResumeId">
+                                    <i class="fa-solid fa-spinner fa-spin text-slate-400"></i>
+                                    <span class="text-slate-400 text-xs">Loading...</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
                                 @if (!string.IsNullOrWhiteSpace(item.RealNameOfCV))
                                 {
-                                    <a asp-action="Download" asp-route-id="@item.Id" asp-route-type="cv" class="text-decoration-none">
-                                        📄 @item.RealNameOfCV
-                                    </a>
+                                    <div class="flex items-center">
+                                        <i class="fa-regular fa-file-pdf text-red-500 text-lg mr-2"></i>
+                                        <div>
+                                            <a asp-action="Download" asp-route-id="@item.Id" asp-route-type="cv" class="text-brand-600 hover:text-brand-800 font-medium transition-colors">
+                                                @item.RealNameOfCV
+                                            </a>
+                                            <span class="block text-xs text-slate-400">@FormatSize(item.CvSize)</span>
+                                        </div>
+                                    </div>
                                 }
                                 else
                                 {
-                                    <span class="text-muted">None</span>
+                                    <span class="text-slate-400 italic">None</span>
                                 }
                             </td>
-                            <td>
+                            <td class="px-6 py-4">
                                 @if (!string.IsNullOrWhiteSpace(item.RealNameOfCL))
                                 {
-                                    <a asp-action="Download" asp-route-id="@item.Id" asp-route-type="cl" class="text-decoration-none">
-                                        📄 @item.RealNameOfCL
-                                    </a>
+                                    <div class="flex items-center">
+                                        <i class="fa-regular fa-file-word text-blue-500 text-lg mr-2"></i>
+                                        <div>
+                                            <a asp-action="Download" asp-route-id="@item.Id" asp-route-type="cl" class="text-brand-600 hover:text-brand-800 font-medium transition-colors">
+                                                @item.RealNameOfCL
+                                            </a>
+                                            <span class="block text-xs text-slate-400">@FormatSize(item.ClSize)</span>
+                                        </div>
+                                    </div>
                                 }
                                 else
                                 {
-                                    <span class="text-muted">None</span>
+                                    <span class="text-slate-400 italic">None</span>
                                 }
                             </td>
-                            <td>@item.UploadedOn.ToString("g")</td>
-                            <td class="text-end">
-                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                @item.UploadedOn.ToLocalTime().ToString("MMM d, yyyy HH:mm")
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="text-red-500 hover:text-red-700 transition-colors" title="Delete Files">
+                                    <i class="fa-solid fa-trash"></i>
+                                </a>
                             </td>
                         </tr>
                     }
@@ -68,4 +140,30 @@
             </table>
         </div>
     </div>
-</div>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const loaders = document.querySelectorAll('.resume-title-loader');
+            
+            loaders.forEach(loader => {
+                const resumeId = loader.getAttribute('data-resume-id');
+                if (!resumeId) return;
+                
+                fetch(`/Resume/GetTitle/${resumeId}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.json();
+                    })
+                    .then(data => {
+                        loader.innerHTML = `<a href="/Resume/Details/${data.id}" class="text-brand-600 hover:text-brand-800 transition-colors font-semibold" title="View Resume Details">${data.title}</a>`;
+                    })
+                    .catch(error => {
+                        loader.innerHTML = `<span class="text-red-500 text-xs"><i class="fa-solid fa-circle-exclamation mr-1"></i>Error loading</span>`;
+                        console.error('Error fetching resume title:', error);
+                    });
+            });
+        });
+    </script>
+}

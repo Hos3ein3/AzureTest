@@ -44,6 +44,7 @@ public class ResumeDocumentService : IResumeDocumentService
             
             document.RealNameOfCV = dto.CvFileName;
             document.TempNameOfCV = tempName;
+            document.CvSize = dto.CvContent.Length;
         }
 
         if (dto.ClContent is not null && !string.IsNullOrWhiteSpace(dto.ClFileName))
@@ -58,6 +59,7 @@ public class ResumeDocumentService : IResumeDocumentService
             
             document.RealNameOfCL = dto.ClFileName;
             document.TempNameOfCL = tempName;
+            document.ClSize = dto.ClContent.Length;
         }
 
         document.UploadedOn = DateTime.UtcNow;
@@ -90,7 +92,20 @@ public class ResumeDocumentService : IResumeDocumentService
         try
         {
             var stream = await _blobService.DownloadFileAsync("resumes", tempName, cancellationToken);
-            return (stream, "application/octet-stream", realName);
+            
+            // Determine Content-Type based on extension for preview to work in browser
+            string extension = Path.GetExtension(realName).ToLowerInvariant();
+            string contentType = extension switch
+            {
+                ".pdf" => "application/pdf",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".doc" => "application/msword",
+                ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                _ => "application/octet-stream"
+            };
+
+            return (stream, contentType, realName);
         }
         catch
         {
@@ -148,5 +163,53 @@ public class ResumeDocumentService : IResumeDocumentService
         // Soft-delete: mark the document as deleted without removing it from MongoDB
         document.SoftDelete();
         await _resumeFilesRepository.UpdateAsync(document.Id, document);
+    }
+
+    public async Task<int> SyncAllFileSizesAsync(CancellationToken cancellationToken = default)
+    {
+        var allDocuments = await _resumeFilesRepository.GetAllAsync();
+        int updatedCount = 0;
+        string containerName = "resumes";
+
+        foreach (var document in allDocuments)
+        {
+            bool hasUpdates = false;
+
+            if (!string.IsNullOrWhiteSpace(document.TempNameOfCV) && document.CvSize == 0)
+            {
+                try
+                {
+                    using var stream = await _blobService.DownloadFileAsync(containerName, document.TempNameOfCV, cancellationToken);
+                    document.CvSize = stream.Length;
+                    hasUpdates = true;
+                }
+                catch
+                {
+                    // Ignore missing files or errors during sync
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(document.TempNameOfCL) && document.ClSize == 0)
+            {
+                try
+                {
+                    using var stream = await _blobService.DownloadFileAsync(containerName, document.TempNameOfCL, cancellationToken);
+                    document.ClSize = stream.Length;
+                    hasUpdates = true;
+                }
+                catch
+                {
+                    // Ignore missing files or errors during sync
+                }
+            }
+
+            if (hasUpdates)
+            {
+                await _resumeFilesRepository.UpdateAsync(document.Id, document);
+                updatedCount++;
+            }
+        }
+
+        return updatedCount;
     }
 }

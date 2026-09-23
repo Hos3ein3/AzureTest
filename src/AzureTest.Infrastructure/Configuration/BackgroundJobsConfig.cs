@@ -14,7 +14,8 @@ public static class BackgroundJobsConfig
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
         // ── Hangfire (Persistent Jobs) ───────────────────────────────────────────
-        if (!string.IsNullOrWhiteSpace(connectionString))
+        var enableHangfire = configuration.GetValue<bool>("FeatureManagement:EnableHangfire");
+        if (enableHangfire && !string.IsNullOrWhiteSpace(connectionString))
         {
             services.AddHangfire((sp, config) => {
                 var currentConnectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("DefaultConnection");
@@ -36,20 +37,20 @@ public static class BackgroundJobsConfig
         }
 
         // ── Quartz (In-Memory / Fast Scheduling) ─────────────────────────────────
-        services.AddQuartz(q =>
+        var enableQuartz = configuration.GetValue<bool>("FeatureManagement:EnableQuartz");
+        if (enableQuartz)
         {
-            // You can register Quartz jobs here later:
-            // q.ScheduleJob<MyJob>(trigger => trigger
-            //     .WithIdentity("MyJobTrigger")
-            //     .StartNow()
-            //     .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
-        });
+            services.AddQuartz(q =>
+            {
+                // You can register Quartz jobs here later:
+            });
 
-        // Quartz hosted service
-        services.AddQuartzHostedService(options =>
-        {
-            options.WaitForJobsToComplete = true;
-        });
+            // Quartz hosted service
+            services.AddQuartzHostedService(options =>
+            {
+                options.WaitForJobsToComplete = true;
+            });
+        }
 
         return services;
     }
