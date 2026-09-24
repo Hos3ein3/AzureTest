@@ -16,6 +16,6 @@ storage:
     local:
       path: /var/tempo/traces
 
-compactor:
-  compaction:
-    block_retention: 24h
+#compactor:
+#  compaction:
+#    block_retention: 24h
