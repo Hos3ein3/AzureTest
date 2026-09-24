@@ -89,10 +89,10 @@ services:
       - app-network
 
   redisinsight:
-    image: redislabs/redisinsight:latest
+    image: redis/redisinsight:latest
     container_name: azuretest-redisinsight
     ports:
-      - "8001:8001"
+      - "5540:5540"
     depends_on:
       - redis
     networks:

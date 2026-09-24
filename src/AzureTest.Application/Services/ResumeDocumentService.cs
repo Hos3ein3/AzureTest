@@ -13,11 +13,13 @@ public class ResumeDocumentService : IResumeDocumentService
 {
     private readonly IResumeFilesRepository _resumeFilesRepository;
     private readonly IBlobService _blobService;
+    private readonly ICurrentUser _currentUser;
 
-    public ResumeDocumentService(IResumeFilesRepository resumeFilesRepository, IBlobService blobService)
+    public ResumeDocumentService(IResumeFilesRepository resumeFilesRepository, IBlobService blobService, ICurrentUser currentUser)
     {
         _resumeFilesRepository = resumeFilesRepository;
         _blobService = blobService;
+        _currentUser = currentUser;
     }
 
     public async Task<Guid> UploadFilesAsync(UploadResumeFilesDto dto, CancellationToken cancellationToken = default)
@@ -26,11 +28,15 @@ public class ResumeDocumentService : IResumeDocumentService
         var document = await _resumeFilesRepository.GetByResumeIdAsync(dto.ResumeId);
         if (document is null)
         {
-            document = new ResumeFiles { ResumeId = dto.ResumeId };
+            document = new ResumeFiles { ResumeId = dto.ResumeId, UserId = _currentUser.Id };
             isNew = true;
         }
+        else if (document.UserId == Guid.Empty)
+        {
+            document.UserId = _currentUser.Id; // Backfill if empty
+        }
 
-        string containerName = "resumes";
+        string containerName = $"resumes/{document.UserId}";
 
         if (dto.CvContent is not null && !string.IsNullOrWhiteSpace(dto.CvFileName))
         {
@@ -81,6 +87,8 @@ public class ResumeDocumentService : IResumeDocumentService
         var fileRecord = await _resumeFilesRepository.GetByIdAsync(fileRecordId);
         if (fileRecord is null) return null;
 
+        string containerName = fileRecord.UserId == Guid.Empty ? "resumes" : $"resumes/{fileRecord.UserId}";
+
         string? tempName = fileType.ToLower() == "cv" ? fileRecord.TempNameOfCV : fileRecord.TempNameOfCL;
         string? realName = fileType.ToLower() == "cv" ? fileRecord.RealNameOfCV : fileRecord.RealNameOfCL;
 
@@ -91,7 +99,7 @@ public class ResumeDocumentService : IResumeDocumentService
 
         try
         {
-            var stream = await _blobService.DownloadFileAsync("resumes", tempName, cancellationToken);
+            var stream = await _blobService.DownloadFileAsync(containerName, tempName, cancellationToken);
             
             // Determine Content-Type based on extension for preview to work in browser
             string extension = Path.GetExtension(realName).ToLowerInvariant();
@@ -134,7 +142,7 @@ public class ResumeDocumentService : IResumeDocumentService
         var document = await _resumeFilesRepository.GetByIdAsync(fileRecordId);
         if (document is null) return;
 
-        string containerName = "resumes";
+        string containerName = document.UserId == Guid.Empty ? "resumes" : $"resumes/{document.UserId}";
 
         if (fileType.ToLower() == "cv" && !string.IsNullOrWhiteSpace(document.TempNameOfCV))
         {
@@ -169,11 +177,11 @@ public class ResumeDocumentService : IResumeDocumentService
     {
         var allDocuments = await _resumeFilesRepository.GetAllAsync();
         int updatedCount = 0;
-        string containerName = "resumes";
 
         foreach (var document in allDocuments)
         {
             bool hasUpdates = false;
+            string containerName = document.UserId == Guid.Empty ? "resumes" : $"resumes/{document.UserId}";
 
             if (!string.IsNullOrWhiteSpace(document.TempNameOfCV) && document.CvSize == 0)
             {

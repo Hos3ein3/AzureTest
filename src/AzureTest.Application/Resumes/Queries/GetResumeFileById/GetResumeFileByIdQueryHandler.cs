@@ -30,7 +30,8 @@ internal sealed class GetResumeFileByIdQueryHandler : IQueryHandler<GetResumeFil
             document.TempNameOfCL,
             document.CvSize,
             document.ClSize,
-            document.UploadedOn
+            document.UploadedOn,
+            document.UserId
         );
     }
 }

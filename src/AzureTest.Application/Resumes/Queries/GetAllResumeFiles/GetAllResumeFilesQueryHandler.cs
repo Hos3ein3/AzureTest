@@ -8,6 +8,9 @@ using AzureTest.Contracts.DTOs.Resumes;
 
 namespace AzureTest.Application.Resumes.Queries.GetAllResumeFiles;
 
+
+public sealed record GetAllResumeFilesQuery : IQuery<IReadOnlyList<ResumeFileDto>>;
+
 internal sealed class GetAllResumeFilesQueryHandler : IQueryHandler<GetAllResumeFilesQuery, IReadOnlyList<ResumeFileDto>>
 {
     private readonly IResumeFilesRepository _resumeFilesRepository;
@@ -19,7 +22,7 @@ internal sealed class GetAllResumeFilesQueryHandler : IQueryHandler<GetAllResume
 
     public async Task<IReadOnlyList<ResumeFileDto>> HandleAsync(GetAllResumeFilesQuery query, CancellationToken cancellationToken = default)
     {
-        var documents = await _resumeFilesRepository.GetAllAsync();
+        var documents = await _resumeFilesRepository.GetAllAvailableAsync();
 
         return documents.Select(d => new ResumeFileDto(
             d.Id,
@@ -30,7 +33,8 @@ internal sealed class GetAllResumeFilesQueryHandler : IQueryHandler<GetAllResume
             d.TempNameOfCL,
             d.CvSize,
             d.ClSize,
-            d.UploadedOn
+            d.UploadedOn,
+            d.UserId
         )).ToList();
     }
 }

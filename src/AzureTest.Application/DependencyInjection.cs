@@ -1,5 +1,6 @@
 using AzureTest.Application.Companies;
 using AzureTest.Application.Resumes;
+using AzureTest.Application.Users;
 using AzureTest.Contracts.Validators.Resumes;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +21,8 @@ public static class DependencyInjection
         services.AddScoped<IResumeQueryUnit, ResumeQueryUnit>();
         services.AddScoped<ICompanyQueryUnit, CompanyQueryUnit>();
         services.AddScoped<ICompanyCommandUnit, CompanyCommandUnit>();
+        services.AddScoped<IUserCommandUnit, UserCommandUnit>();
+        services.AddScoped<IUserQueryUnit, UserQueryUnit>();
         services.AddScoped<IResumeValidationUnit, ResumeValidationUnit>();
         services.AddScoped<AzureTest.Application.Interfaces.Services.IResumeDocumentService, AzureTest.Application.Services.ResumeDocumentService>();
         services.AddScoped<IResumeFileQueryUnit, ResumeFileQueryUnit>();

@@ -48,6 +48,18 @@ public static class DependencyInjection
             services.AddScoped<IBlobService, LocalFileService>();
         }
 
+        // Register User and Role Management Services
+        services.AddScoped<IUserManagerService, UserManagerService>();
+        services.AddScoped<IRoleManagerService, RoleManagerService>();
+
+        // Register CurrentUser and HttpContextAccessor
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUser, CurrentUser>();
+        services.AddTransient<AzureTest.Infrastructure.Seeding.IdentityDataSeeder>();
+
+        services.Configure<AzureTest.Infrastructure.Configuration.JwtSettings>(configuration.GetSection(AzureTest.Infrastructure.Configuration.JwtSettings.SectionName));
+        services.Configure<InfrastructureFeatureOptions>(configuration.GetSection("FeatureManagement"));
+
         return services;
     }
 }

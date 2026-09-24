@@ -2,13 +2,26 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using AzureTest.MVC.Models;
 
+using Microsoft.AspNetCore.Authorization;
+using AzureTest.Application.Resumes;
+using AzureTest.Application.Resumes.Queries.GetResumeAnalytics;
+
 namespace AzureTest.MVC.Controllers;
 
+[Authorize]
 public class HomeController : Controller
 {
-    public IActionResult Index()
+    private readonly IResumeQueryUnit _queries;
+
+    public HomeController(IResumeQueryUnit queries)
     {
-        return View();
+        _queries = queries;
+    }
+
+    public async Task<IActionResult> Index(CancellationToken cancellationToken)
+    {
+        var data = await _queries.GetAnalytics.HandleAsync(new GetResumeAnalyticsQuery(), cancellationToken);
+        return View(data);
     }
 
     public IActionResult Privacy()
@@ -16,6 +29,7 @@ public class HomeController : Controller
         return View();
     }
 
+    [AllowAnonymous]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {

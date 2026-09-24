@@ -1,105 +1,297 @@
+@model AzureTest.Contracts.DTOs.Resumes.ResumeAnalyticsDto
 @{
     ViewData["Title"] = "Dashboard Overview";
 }
 
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-slate-800">Welcome Back</h1>
-    <p class="text-slate-500 mt-1">Here is the latest snapshot of your job tracking operations.</p>
+<div class="mb-8 flex justify-between items-end">
+    <div>
+        <h1 class="text-3xl font-bold text-slate-800">Dashboard Overview</h1>
+        <p class="text-slate-500 mt-1">Here is the latest snapshot of your job tracking operations.</p>
+    </div>
+    
+    <div class="flex gap-3">
+        <a asp-controller="Resume" asp-action="Create" class="inline-flex items-center justify-center px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700 transition-colors shadow-sm text-sm">
+            <i class="fa-solid fa-plus mr-2"></i> Add Resume
+        </a>
+    </div>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
     <!-- Stat Card 1 -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center">
-        <div class="h-12 w-12 rounded-lg bg-indigo-50 flex items-center justify-center">
-            <i class="fa-solid fa-file-lines text-indigo-500 text-xl"></i>
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center hover:shadow-md transition-shadow">
+        <div class="h-14 w-14 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-briefcase text-blue-500 text-2xl"></i>
         </div>
-        <div class="ml-4">
-            <p class="text-sm font-medium text-slate-500">Total Resumes</p>
-            <p class="text-2xl font-bold text-slate-800">142</p>
+        <div class="ml-4 truncate">
+            <p class="text-sm font-medium text-slate-500 truncate">Total Applications</p>
+            <p class="text-3xl font-bold text-slate-800">@Model.TotalApplications</p>
         </div>
     </div>
     
     <!-- Stat Card 2 -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center">
-        <div class="h-12 w-12 rounded-lg bg-emerald-50 flex items-center justify-center">
-            <i class="fa-solid fa-check-double text-emerald-500 text-xl"></i>
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center hover:shadow-md transition-shadow">
+        <div class="h-14 w-14 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-spinner text-amber-500 text-2xl"></i>
         </div>
-        <div class="ml-4">
-            <p class="text-sm font-medium text-slate-500">Accepted</p>
-            <p class="text-2xl font-bold text-slate-800">18</p>
+        <div class="ml-4 truncate">
+            <p class="text-sm font-medium text-slate-500 truncate">Active Processing</p>
+            <p class="text-3xl font-bold text-slate-800">@Model.ActiveApplications</p>
         </div>
     </div>
     
     <!-- Stat Card 3 -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center">
-        <div class="h-12 w-12 rounded-lg bg-amber-50 flex items-center justify-center">
-            <i class="fa-solid fa-clock text-amber-500 text-xl"></i>
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center hover:shadow-md transition-shadow">
+        <div class="h-14 w-14 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-handshake text-emerald-500 text-2xl"></i>
         </div>
-        <div class="ml-4">
-            <p class="text-sm font-medium text-slate-500">Pending Review</p>
-            <p class="text-2xl font-bold text-slate-800">45</p>
+        <div class="ml-4 truncate">
+            <p class="text-sm font-medium text-slate-500 truncate">Interview Rate</p>
+            <p class="text-3xl font-bold text-slate-800">@Model.InterviewRate%</p>
         </div>
     </div>
     
     <!-- Stat Card 4 -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center">
-        <div class="h-12 w-12 rounded-lg bg-blue-50 flex items-center justify-center">
-            <i class="fa-solid fa-building text-blue-500 text-xl"></i>
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center hover:shadow-md transition-shadow">
+        <div class="h-14 w-14 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-building text-purple-500 text-2xl"></i>
         </div>
-        <div class="ml-4">
-            <p class="text-sm font-medium text-slate-500">Companies</p>
-            <p class="text-2xl font-bold text-slate-800">76</p>
+        <div class="ml-4 truncate">
+            <p class="text-sm font-medium text-slate-500 truncate">Total Companies</p>
+            <p class="text-3xl font-bold text-slate-800">@Model.TotalCompanies</p>
         </div>
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-        <h2 class="text-lg font-bold text-slate-800 mb-4">Recent Activity</h2>
-        <div class="space-y-4">
-            <!-- Activity Item -->
-            <div class="flex">
-                <div class="flex-shrink-0 mt-1">
-                    <div class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center">
-                        <i class="fa-solid fa-upload text-slate-500 text-sm"></i>
-                    </div>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-slate-800">New resume uploaded</p>
-                    <p class="text-sm text-slate-500">Software Engineer role at Google</p>
-                    <p class="text-xs text-slate-400 mt-1">2 hours ago</p>
-                </div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="col-span-1 lg:col-span-2">
+        <!-- Applications Over Time Bar Chart -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h5 class="text-lg font-semibold text-slate-800 m-0">Applications Over Time</h5>
+                <i class="fa-solid fa-chart-column text-slate-400"></i>
             </div>
-            <!-- Activity Item -->
-            <div class="flex">
-                <div class="flex-shrink-0 mt-1">
-                    <div class="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <i class="fa-solid fa-check text-emerald-600 text-sm"></i>
-                    </div>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-slate-800">Status Updated</p>
-                    <p class="text-sm text-slate-500">Microsoft application moved to 'Interview'</p>
-                    <p class="text-xs text-slate-400 mt-1">5 hours ago</p>
-                </div>
+            <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
+                <canvas id="dateChart"></canvas>
             </div>
-        </div>
-        <div class="mt-6 pt-4 border-t border-slate-100">
-            <a href="#" class="text-sm font-medium text-brand-600 hover:text-brand-500">View all activity &rarr;</a>
         </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-        <h2 class="text-lg font-bold text-slate-800 mb-4">Quick Actions</h2>
-        <div class="grid grid-cols-2 gap-4">
-            <a asp-controller="Resume" asp-action="Create" class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-lg hover:bg-brand-50 hover:border-brand-200 border border-transparent transition-colors group">
-                <i class="fa-solid fa-file-circle-plus text-3xl text-slate-400 group-hover:text-brand-500 mb-3"></i>
-                <span class="text-sm font-medium text-slate-700 group-hover:text-brand-700">Add Resume</span>
-            </a>
-            <a asp-controller="Company" asp-action="Create" class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-lg hover:bg-brand-50 hover:border-brand-200 border border-transparent transition-colors group">
-                <i class="fa-solid fa-building-circle-check text-3xl text-slate-400 group-hover:text-brand-500 mb-3"></i>
-                <span class="text-sm font-medium text-slate-700 group-hover:text-brand-700">Add Company</span>
-            </a>
+    <!-- Recent Activity -->
+    <div class="col-span-1 bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col">
+        <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center justify-between">
+            Recent Activity
+            <i class="fa-solid fa-clock-rotate-left text-slate-400 font-normal"></i>
+        </h2>
+        <div class="space-y-5 flex-1">
+            @if (!Model.RecentActivities.Any())
+            {
+                <div class="text-center text-slate-400 mt-10">
+                    <p>No recent activity.</p>
+                </div>
+            }
+            else
+            {
+                @foreach(var act in Model.RecentActivities)
+                {
+                    <div class="flex">
+                        <div class="flex-shrink-0 mt-1">
+                            <div class="h-8 w-8 rounded-full bg-brand-50 flex items-center justify-center border border-brand-100">
+                                @if (act.Status == "Applied" || act.Status == "WantToApply")
+                                {
+                                    <i class="fa-solid fa-paper-plane text-brand-500 text-xs"></i>
+                                }
+                                else if (act.Status == "Interview" || act.Status == "PhoneScreen")
+                                {
+                                    <i class="fa-solid fa-comments text-amber-500 text-xs"></i>
+                                }
+                                else if (act.Status == "Offer" || act.Status == "OfferAccepted")
+                                {
+                                    <i class="fa-solid fa-trophy text-emerald-500 text-xs"></i>
+                                }
+                                else
+                                {
+                                    <i class="fa-solid fa-bell text-slate-500 text-xs"></i>
+                                }
+                            </div>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <p class="text-sm font-medium text-slate-800">@act.PositionTitle</p>
+                            <p class="text-sm text-slate-500">@act.CompanyName &bull; <span class="text-brand-600 font-medium">@act.Status</span></p>
+                            <p class="text-xs text-slate-400 mt-1">@act.Date.ToLocalTime().ToString("MMM dd, yyyy h:mm tt")</p>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+        <div class="mt-4 pt-4 border-t border-slate-100">
+            <a asp-controller="Resume" asp-action="Index" class="text-sm font-medium text-brand-600 hover:text-brand-500">View all applications &rarr;</a>
         </div>
     </div>
 </div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+    <!-- Status Distribution Pie Chart -->
+    <div class="col-span-1 lg:col-span-4">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h5 class="text-lg font-semibold text-slate-800 m-0">Applications by Status</h5>
+                <i class="fa-solid fa-chart-pie text-slate-400"></i>
+            </div>
+            <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+    <!-- Position Title Chart -->
+    <div class="col-span-1 lg:col-span-4">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-100">
+                <h5 class="text-lg font-semibold text-slate-800 m-0">Top Positions</h5>
+            </div>
+            <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
+                <canvas id="positionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Location Chart -->
+    <div class="col-span-1 lg:col-span-4">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-100">
+                <h5 class="text-lg font-semibold text-slate-800 m-0">Top Locations</h5>
+            </div>
+            <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
+                <canvas id="locationChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Source Chart -->
+    <div class="col-span-1 lg:col-span-4">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-100">
+                <h5 class="text-lg font-semibold text-slate-800 m-0">Application Sources</h5>
+            </div>
+            <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
+                <canvas id="sourceChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            
+            // Common Options
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            };
+            const barOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { ticks: { precision: 0 } },
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            };
+            const hBarOptions = {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            };
+
+            // Status Chart
+            const statusLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusCounts.Keys));
+            const statusData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusCounts.Values));
+            const statusColors = statusLabels.map(label => {
+                switch(label) {
+                    case 'Rejected': return '#dc2626'; // red-600
+                    case 'OfferExtended': 
+                    case 'OfferAccepted':
+                    case 'Offer': return '#16a34a'; // green-600
+                    case 'Interview': return '#d97706'; // amber-600
+                    case 'Applied': return '#2563eb'; // blue-600
+                    case 'Screening': return '#0284c7'; // sky-600
+                    default: return '#94a3b8'; // slate-400
+                }
+            });
+            new Chart(document.getElementById('statusChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: statusLabels,
+                    datasets: [{ data: statusData, backgroundColor: statusColors, borderWidth: 1 }]
+                },
+                options: commonOptions
+            });
+
+            // Date Chart
+            const dateLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByDate.Keys));
+            const dateData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByDate.Values));
+            new Chart(document.getElementById('dateChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: dateLabels,
+                    datasets: [{
+                        label: 'Applications',
+                        data: dateData,
+                        backgroundColor: '#3b82f6', // blue-500
+                        borderRadius: 4
+                    }]
+                },
+                options: barOptions
+            });
+
+            // Position Chart
+            const posLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PositionCounts.Keys));
+            const posData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PositionCounts.Values));
+            new Chart(document.getElementById('positionChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: posLabels,
+                    datasets: [{ label: 'Positions', data: posData, backgroundColor: '#0d9488', borderRadius: 4 }]
+                },
+                options: hBarOptions
+            });
+
+            // Location Chart
+            const locLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.LocationCounts.Keys));
+            const locData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.LocationCounts.Values));
+            new Chart(document.getElementById('locationChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: locLabels,
+                    datasets: [{ label: 'Locations', data: locData, backgroundColor: '#8b5cf6', borderRadius: 4 }]
+                },
+                options: hBarOptions
+            });
+            
+            // Source Chart
+            const srcLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SourceCounts.Keys));
+            const srcData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SourceCounts.Values));
+            new Chart(document.getElementById('sourceChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: srcLabels,
+                    datasets: [{ 
+                        data: srcData, 
+                        backgroundColor: ['#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#6366f1', '#14b8a6', '#f43f5e', '#8b5cf6'],
+                        borderWidth: 1 
+                    }]
+                },
+                options: commonOptions
+            });
+        });
+    </script>
+}

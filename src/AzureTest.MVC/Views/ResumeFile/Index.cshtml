@@ -22,11 +22,16 @@
 
 <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold text-slate-800">Resume Files</h1>
-    <form asp-action="SyncSizes" method="post">
-        <button type="submit" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white py-2 px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
-            <i class="fa-solid fa-rotate mr-2"></i> Sync File Sizes
-        </button>
-    </form>
+    <div class="flex gap-2">
+        <a asp-action="Explorer" class="inline-flex items-center justify-center rounded-lg border border-transparent bg-brand-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-brand-700 transition-colors">
+            <i class="fa-solid fa-folder-open mr-2"></i> File Explorer
+        </a>
+        <form asp-action="SyncSizes" method="post">
+            <button type="submit" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white py-2 px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+                <i class="fa-solid fa-rotate mr-2"></i> Sync File Sizes
+            </button>
+        </form>
+    </div>
 </div>
 
 <div class="mb-6 bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">

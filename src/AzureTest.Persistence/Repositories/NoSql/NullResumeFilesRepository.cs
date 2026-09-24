@@ -18,6 +18,9 @@ public class NullResumeFilesRepository : IResumeFilesRepository
     public Task<IReadOnlyList<ResumeFiles>> GetAllAsync() =>
         Task.FromResult<IReadOnlyList<ResumeFiles>>(Array.Empty<ResumeFiles>());
 
+    public Task<IReadOnlyList<ResumeFiles>> GetAllAvailableAsync()
+    => Task.FromResult<IReadOnlyList<ResumeFiles>>(Array.Empty<ResumeFiles>());
+
     public Task<IReadOnlyList<ResumeFiles>> FindAsync(Expression<Func<ResumeFiles, bool>> predicate) =>
         Task.FromResult<IReadOnlyList<ResumeFiles>>(Array.Empty<ResumeFiles>());
 

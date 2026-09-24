@@ -4,8 +4,11 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace AzureTest.MVC.Controllers;
 
+[Authorize]
 public class AnalyticsController : Controller
 {
     private readonly IResumeQueryUnit _queries;

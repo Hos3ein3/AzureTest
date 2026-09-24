@@ -2,10 +2,12 @@ namespace AzureTest.Domain.Enums;
 
 public enum ResumeStatus
 {
-    Applied,
+    Applied=0,
     PhoneScreen,
     Interview,
     Offer,
+    OfferAccepted,
+    OfferExtended,
     Rejected,
     Ghosted,
     Withdraw,

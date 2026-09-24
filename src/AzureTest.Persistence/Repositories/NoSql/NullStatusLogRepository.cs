@@ -18,6 +18,9 @@ public class NullStatusLogRepository : IStatusLogRepository
     public Task<IReadOnlyList<StatusLog>> GetAllAsync() =>
         Task.FromResult<IReadOnlyList<StatusLog>>(Array.Empty<StatusLog>());
 
+    public Task<IReadOnlyList<StatusLog>> GetAllAvailableAsync()
+        => Task.FromResult<IReadOnlyList<StatusLog>>(Array.Empty<StatusLog>());
+
     public Task<IReadOnlyList<StatusLog>> FindAsync(Expression<Func<StatusLog, bool>> predicate) =>
         Task.FromResult<IReadOnlyList<StatusLog>>(Array.Empty<StatusLog>());
 

@@ -11,4 +11,5 @@ public sealed record ResumeFileDto(
     string? TempNameOfCL,
     long CvSize,
     long ClSize,
-    DateTime UploadedOn);
+    DateTime UploadedOn,
+    Guid UserId);

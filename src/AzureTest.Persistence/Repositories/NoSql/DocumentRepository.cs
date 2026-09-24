@@ -7,6 +7,7 @@ using MongoDB.Driver;
 
 namespace AzureTest.Persistence.Repositories.NoSql;
 
+
 public class DocumentRepository<TDocument> : IDocumentRepository<TDocument> where TDocument : class
 {
     protected readonly IMongoCollection<TDocument> _collection;
@@ -25,6 +26,16 @@ public class DocumentRepository<TDocument> : IDocumentRepository<TDocument> wher
 
     public virtual async Task<IReadOnlyList<TDocument>> GetAllAsync()
     {
+        return await _collection.Find(_ => true).ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<TDocument>> GetAllAvailableAsync()
+    {
+        if (typeof(AzureTest.Domain.Primitives.ISoftDelete).IsAssignableFrom(typeof(TDocument)))
+        {
+            var filter = Builders<TDocument>.Filter.Eq("IsDeleted", false);
+            return await _collection.Find(filter).ToListAsync();
+        }
         return await _collection.Find(_ => true).ToListAsync();
     }
 

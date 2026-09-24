@@ -14,8 +14,11 @@ using AzureTest.Contracts.DTOs.Companies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace AzureTest.MVC.Controllers;
 
+[Authorize]
 public class CompanyController : Controller
 {
     private readonly ICompanyCommandUnit _companyCommandUnit;

@@ -4,6 +4,7 @@ using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.Resumes;
 using AzureTest.Contracts.DTOs.Common;
 using AzureTest.Domain.Entities;
+using AzureTest.Application.Interfaces.Services;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,18 +22,21 @@ public sealed record GetAllResumesQuery(GetAllResumesFilters Filters) : IQuery<P
 public sealed class GetAllResumesQueryHandler : BaseQueryHandler<GetAllResumesQuery, PagedResult<ResumeDto>>
 {
     private readonly IResumeRepository _resumeRepository;
+    private readonly ICurrentUser _currentUser;
 
     public GetAllResumesQueryHandler(
         IResumeRepository resumeRepository,
+        ICurrentUser currentUser,
         ILogger<GetAllResumesQueryHandler> logger)
         : base(logger)
     {
         _resumeRepository = resumeRepository;
+        _currentUser = currentUser;
     }
 
     protected override async Task<PagedResult<ResumeDto>> ExecuteAsync(GetAllResumesQuery query, CancellationToken cancellationToken)
     {
-        var resumes = await _resumeRepository.FindAsync(r => !r.IsDeleted);
+        var resumes = await _resumeRepository.FindAsync(r => !r.IsDeleted && r.UserId == _currentUser.Id);
 
         // Apply filters in memory (Note: for large datasets, this should be moved to IQueryable in repo)
         var queryable = resumes.AsQueryable();

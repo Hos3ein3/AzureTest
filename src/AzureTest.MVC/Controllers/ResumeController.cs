@@ -13,8 +13,11 @@ using Microsoft.AspNetCore.Http;
 
 using Microsoft.Extensions.Caching.Memory;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace AzureTest.MVC.Controllers;
 
+[Authorize]
 public class ResumeController : Controller
 {
     private readonly IResumeCommandUnit _commands;
@@ -265,6 +268,9 @@ public class ResumeController : Controller
         if (string.IsNullOrWhiteSpace(type) || (type.ToLower() != "cv" && type.ToLower() != "cl"))
             return BadRequest("Invalid file type.");
 
+        var resume = await _queries.GetById.HandleAsync(new GetResumeByIdQuery(id), cancellationToken);
+        if (resume is null) return NotFound("Resume not found or access denied.");
+
         var files = await _documentService.GetFileMetadataByResumeIdAsync(id, cancellationToken);
         if (files is null) return NotFound("File record not found.");
 
@@ -286,6 +292,9 @@ public class ResumeController : Controller
     {
         if (string.IsNullOrWhiteSpace(type) || (type.ToLower() != "cv" && type.ToLower() != "cl"))
             return BadRequest("Invalid file type.");
+
+        var resume = await _queries.GetById.HandleAsync(new GetResumeByIdQuery(id), cancellationToken);
+        if (resume is null) return NotFound("Resume not found or access denied.");
 
         var files = await _documentService.GetFileMetadataByResumeIdAsync(id, cancellationToken);
         if (files is not null)

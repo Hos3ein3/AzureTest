@@ -4,6 +4,7 @@ using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.Resumes;
 using AzureTest.Domain.Documents;
+using AzureTest.Application.Interfaces.Services;
 
 using Microsoft.Extensions.Logging;
 
@@ -19,16 +20,19 @@ public sealed class UpdateResumeCommandHandler : BaseCommandHandler<UpdateResume
 {
     private readonly IResumeRepository _resumeRepository;
     private readonly ICompanyRepository _companyRepository;
+    private readonly ICurrentUser _currentUser;
 
     public UpdateResumeCommandHandler(
         IUnitOfWork unitOfWork,
         IResumeRepository resumeRepository,
         ICompanyRepository companyRepository,
+        ICurrentUser currentUser,
         ILogger<UpdateResumeCommandHandler> logger)
         : base(unitOfWork, logger)
     {
         _resumeRepository = resumeRepository;
         _companyRepository = companyRepository;
+        _currentUser = currentUser;
     }
 
     protected override async Task<bool> ExecuteAsync(UpdateResumeCommand command, CancellationToken cancellationToken)
@@ -60,6 +64,9 @@ public sealed class UpdateResumeCommandHandler : BaseCommandHandler<UpdateResume
 
         var resume = await _resumeRepository.GetByIdAsync(dto.Id)
             ?? throw new KeyNotFoundException($"Resume with ID {dto.Id} was not found.");
+
+        if (resume.UserId != _currentUser.Id)
+            throw new UnauthorizedAccessException("You are not authorized to update this resume.");
 
         resume.UpdateDetails(dto.PositionTitle, dto.Description, dto.Location, dto.JobLink,dto.CompanyId, dto.Note,dto.ChatUrl);
         resume.CompanyId = companyId;

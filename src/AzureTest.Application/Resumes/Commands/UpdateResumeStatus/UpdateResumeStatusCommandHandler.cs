@@ -8,6 +8,7 @@ using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.Resumes;
 using AzureTest.Domain.Documents;
+using AzureTest.Application.Interfaces.Services;
 using Microsoft.Extensions.Logging;
 
 namespace AzureTest.Application.Resumes.Commands.UpdateResumeStatus;
@@ -22,22 +23,28 @@ public sealed class UpdateResumeStatusCommandHandler : BaseCommandHandler<Update
 {
     private readonly IResumeRepository _resumeRepository;
     private readonly IStatusLogRepository _statusLogRepository;
+    private readonly ICurrentUser _currentUser;
 
     public UpdateResumeStatusCommandHandler(
         IUnitOfWork unitOfWork,
         IResumeRepository resumeRepository,
         IStatusLogRepository statusLogRepository,
+        ICurrentUser currentUser,
         ILogger<UpdateResumeStatusCommandHandler> logger)
         : base(unitOfWork, logger)
     {
         _resumeRepository = resumeRepository;
         _statusLogRepository = statusLogRepository;
+        _currentUser = currentUser;
     }
 
     protected override async Task ExecuteAsync(UpdateResumeStatusCommand command, CancellationToken cancellationToken)
     {
         var resume = await _resumeRepository.GetByIdAsync(command.Dto.Id)
             ?? throw new KeyNotFoundException($"Resume with ID {command.Dto.Id} was not found.");
+
+        if (resume.UserId != _currentUser.Id)
+            throw new UnauthorizedAccessException("You are not authorized to update this resume.");
 
         var oldStatus = resume.Status;
 

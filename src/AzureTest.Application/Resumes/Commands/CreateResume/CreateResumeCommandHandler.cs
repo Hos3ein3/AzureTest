@@ -3,8 +3,9 @@ using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.Resumes;
-using AzureTest.Domain.Documents;
 using AzureTest.Domain.Entities;
+using AzureTest.Domain.Documents;
+using AzureTest.Application.Interfaces.Services;
 using Microsoft.Extensions.Logging;
 
 namespace AzureTest.Application.Resumes.Commands.CreateResume;
@@ -19,16 +20,19 @@ public sealed class CreateResumeCommandHandler : BaseCommandHandler<CreateResume
 {
     private readonly IResumeRepository _resumeRepository;
     private readonly ICompanyRepository _companyRepository;
+    private readonly ICurrentUser _currentUser;
 
     public CreateResumeCommandHandler(
         IUnitOfWork unitOfWork,
         IResumeRepository resumeRepository,
         ICompanyRepository companyRepository,
+        ICurrentUser currentUser,
         ILogger<CreateResumeCommandHandler> logger)
         : base(unitOfWork, logger)
     {
         _resumeRepository = resumeRepository;
         _companyRepository = companyRepository;
+        _currentUser = currentUser;
     }
 
     protected override async Task<Guid> ExecuteAsync(CreateResumeCommand command, CancellationToken cancellationToken)
@@ -67,6 +71,7 @@ public sealed class CreateResumeCommandHandler : BaseCommandHandler<CreateResume
             dto.Note,
             dto.ChatUrl,
             dto.CompanyId,
+            _currentUser.Id,
             dto.Source,
             dto.Status);
 

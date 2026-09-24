@@ -11,6 +11,8 @@ public class ResumeFiles : ISoftDelete
     /// Foreign key to the SQL Resume Aggregate Root (1-1 relationship)
     /// </summary>
     public Guid ResumeId { get; init; }
+    
+    public Guid UserId { get; set; }
 
     // Curriculum Vitae (CV) Properties
     public string? RealNameOfCV { get; set; }

@@ -22,4 +22,5 @@ public class InfrastructureFeatureOptions
     // Storage Features
     public bool EnableBlobStorage { get; set; } = false;
     public bool EnableAzureMonitorOpenTelemetry { get; set; } = true;
+    public bool UseJWT { get; set; } = false;
 }

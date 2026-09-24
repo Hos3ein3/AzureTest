@@ -29,7 +29,9 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
     
     public Guid? CompanyId { get; set; }
 
-    
+    public Guid UserId { get; private set; }
+
+
 
     // Parameterless constructor for EF Core
     private Resume() { }
@@ -42,6 +44,7 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         string note, 
         string chatUrl,
         Guid? companyId,
+        Guid userId,
         ResumeSource source, 
         ResumeStatus status)
     {
@@ -54,6 +57,7 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         Status = status;
         ChatUrl = chatUrl;
         CompanyId = companyId;
+        UserId = userId;
     }
 
     public static Resume Create(
@@ -64,6 +68,7 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         string note, 
         string chatUrl,
         Guid? companyId,
+        Guid userId,
         ResumeSource source, 
         ResumeStatus status = ResumeStatus.Applied)
     {
@@ -75,6 +80,7 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
             note,
             chatUrl,
             companyId,
+            userId,
             source,
             status
         );

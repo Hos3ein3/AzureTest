@@ -41,6 +41,7 @@ public static class DependencyInjection
                 sp.GetRequiredService<DomainEventsInterceptor>());
         });
 
+
         // ── SQL Repositories & Unit of Work ───────────────────────────────────
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
