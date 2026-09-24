@@ -1,6 +1,7 @@
 using AzureTest.Application;
 using AzureTest.Infrastructure;
 using AzureTest.Infrastructure.Configuration;
+using AzureTest.Infrastructure.Services;
 using AzureTest.Persistence;
 using AzureTest.Persistence.Context;
 using Microsoft.AspNetCore.Identity;
@@ -187,16 +188,18 @@ app.MapControllerRoute(
         pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-app.MapHealthChecksUI(options => 
+if (builder.Configuration.GetValue<bool>("FeatureManagement:EnableHealthCheck"))
 {
-    options.UIPath = "/healthchecks-ui";
-}).AllowAnonymous();
-app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
-{
-    Predicate = _ => true,
-    ResponseWriter = HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse
-}).AllowAnonymous();
-
+    app.MapHealthChecksUI(options => 
+    {
+        options.UIPath = "/healthchecks-ui";
+    }).AllowAnonymous();
+    app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+    {
+        Predicate = _ => true,
+        ResponseWriter = HealthChecks.UI.Client.UIResponseWriter.WriteHealthCheckUIResponse
+    }).AllowAnonymous();
+}
 app.MapPrometheusScrapingEndpoint().AllowAnonymous();
 if (builder.Configuration.GetValue<bool>("FeatureManagement:EnableHangfire"))
 {

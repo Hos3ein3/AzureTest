@@ -1,4 +1,6 @@
 using AzureTest.Infrastructure.Configuration;
+
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -6,6 +8,16 @@ namespace AzureTest.Infrastructure.Services;
 
 public static class HealthChecksConfig
 {
+
+    public static IEndpointRouteBuilder EnableHealthChecks(this IEndpointRouteBuilder endpoints,InfrastructureFeatureOptions options)
+    {
+        if (options.EnableHealthCheck)
+        {
+           
+
+        }
+        return endpoints;
+    }
     public static IServiceCollection AddHealthChecksConfig(
         this IServiceCollection services,
         InfrastructureFeatureOptions options,

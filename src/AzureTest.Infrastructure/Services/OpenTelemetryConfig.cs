@@ -17,6 +17,13 @@ public static class OpenTelemetryConfig
             {
                 if (options.EnableAspNetCoreInstrumentation)
                     tracing.AddAspNetCoreInstrumentation();
+
+                tracing.AddHttpClientInstrumentation();
+
+                tracing.AddOtlpExporter(otlp =>
+                {
+                    otlp.Endpoint = new Uri("http://tempo:4317");
+                });
             })
             .WithMetrics(metrics =>
             {
@@ -26,7 +33,7 @@ public static class OpenTelemetryConfig
                     metrics.AddRuntimeInstrumentation();
                 if (options.EnableProcessInstrumentation)
                     metrics.AddProcessInstrumentation();
-                
+
                 metrics.AddPrometheusExporter();
             });
 

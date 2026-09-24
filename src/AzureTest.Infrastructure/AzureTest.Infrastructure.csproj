@@ -25,7 +25,11 @@
         <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
         <PackageReference Include="OpenTelemetry.Instrumentation.Process" />
         <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" />
+      <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+      <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol"  />
+      <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient"  />
         <PackageReference Include="Serilog.AspNetCore" />
+        <PackageReference Include="Serilog.Enrichers.Span" />
         <PackageReference Include="Serilog.Sinks.Console" />
         <PackageReference Include="Serilog.Sinks.File" />
         <PackageReference Include="Serilog.Sinks.Seq" />

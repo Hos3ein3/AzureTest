@@ -23,4 +23,5 @@ public class InfrastructureFeatureOptions
     public bool EnableBlobStorage { get; set; } = false;
     public bool EnableAzureMonitorOpenTelemetry { get; set; } = true;
     public bool UseJWT { get; set; } = false;
+    public bool UseSeq { get; set; } = false;
 }
