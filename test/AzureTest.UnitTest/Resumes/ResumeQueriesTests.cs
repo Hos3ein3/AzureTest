@@ -99,4 +99,48 @@ public class ResumeQueriesTests
         pagedResult.Items.Should().Contain(x => x.PositionTitle == "Software Engineer");
         pagedResult.Items.Should().Contain(x => x.PositionTitle == "Frontend Engineer");
     }
+
+    [Fact]
+    public async Task GetStatusLogsByResumeId_Should_ReturnDtoList_WhenLogsExist()
+    {
+        // Arrange
+        var mockStatusLogRepo = new Mock<AzureTest.Application.Interfaces.Data.NoSql.IStatusLogRepository>();
+        var mockLogger = new Mock<ILogger<AzureTest.Application.Resumes.Queries.GetStatusLogsByResumeId.GetStatusLogsByResumeIdQueryHandler>>();
+        var handler = new AzureTest.Application.Resumes.Queries.GetStatusLogsByResumeId.GetStatusLogsByResumeIdQueryHandler(
+            mockStatusLogRepo.Object,
+            mockLogger.Object);
+
+        var resumeId = Guid.NewGuid();
+        var date = DateTime.UtcNow;
+        var logs = new List<AzureTest.Domain.Documents.StatusLog>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                ResumeId = resumeId,
+                Date = date,
+                OldStatus = ResumeStatus.Applied,
+                NewStatus = ResumeStatus.Interview,
+                Note = "Passed first round"
+            }
+        };
+
+        mockStatusLogRepo.Setup(x => x.GetByResumeIdAsync(resumeId))
+            .ReturnsAsync(logs);
+
+        var query = new AzureTest.Application.Resumes.Queries.GetStatusLogsByResumeId.GetStatusLogsByResumeIdQuery(resumeId);
+
+        // Act
+        var result = await handler.HandleAsync(query, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().HaveCount(1);
+        result[0].ResumeId.Should().Be(resumeId);
+        result[0].OldStatus.Should().Be(ResumeStatus.Applied);
+        result[0].NewStatus.Should().Be(ResumeStatus.Interview);
+        result[0].Note.Should().Be("Passed first round");
+        result[0].Date.Should().Be(date);
+    }
 }
+

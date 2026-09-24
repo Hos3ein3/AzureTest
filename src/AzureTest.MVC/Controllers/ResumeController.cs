@@ -94,6 +94,13 @@ public class ResumeController : Controller
         var resume = await _queries.GetById.HandleAsync(new GetResumeByIdQuery(id), cancellationToken);
         if (resume is null) return NotFound();
 
+        if (resume.CompanyId.HasValue)
+        {
+            ViewBag.Company = await _companyRepository.GetByIdAsync(resume.CompanyId.Value);
+        }
+
+        ViewBag.StatusLogs = await _queries.GetStatusLogsByResumeId.HandleAsync(new AzureTest.Application.Resumes.Queries.GetStatusLogsByResumeId.GetStatusLogsByResumeIdQuery(id), cancellationToken);
+
         ViewBag.Files = await _documentService.GetFileMetadataByResumeIdAsync(id, cancellationToken);
         return View(resume);
     }

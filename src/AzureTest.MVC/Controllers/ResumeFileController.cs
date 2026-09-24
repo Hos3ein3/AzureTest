@@ -54,8 +54,12 @@ public class ResumeFileController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(Guid id, CancellationToken cancellationToken)
     {
-        await _documentService.DeleteFileAsync(id,"cl",cancellationToken);
-        TempData["Success"] = "Resume files deleted successfully.";
+        var fileRecord = await _queries.GetById.HandleAsync(new GetResumeFileByIdQuery(id), cancellationToken);
+        if (fileRecord is not null)
+        {
+            await _documentService.DeleteAllFilesByResumeIdAsync(fileRecord.ResumeId, cancellationToken);
+            TempData["Success"] = "Resume files deleted successfully.";
+        }
         return RedirectToAction(nameof(Index));
     }
 

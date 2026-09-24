@@ -328,6 +328,26 @@ else
 }
 
 @section Scripts {
+    <!-- Status Change Modal -->
+    <div id="statusModal" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-500 bg-opacity-75 transition-opacity"></div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <h3 class="text-base font-semibold leading-6 text-slate-900 mb-2">Change Status</h3>
+                        <p class="text-sm text-slate-500 mb-4">Add an optional note about this status change.</p>
+                        <textarea id="statusNote" rows="3" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm border p-3" placeholder="Interview details, feedback, etc..."></textarea>
+                    </div>
+                    <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                        <button type="button" id="confirmStatusBtn" class="inline-flex w-full justify-center rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 sm:ml-3 sm:w-auto">Save</button>
+                        <button type="button" onclick="closeStatusModal()" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         function updateSelectColor(select) {
             // Remove previous color classes
@@ -348,47 +368,94 @@ else
             }
         }
 
+        let pendingStatusChange = null;
+
+        function closeStatusModal() {
+            if (pendingStatusChange) {
+                // Revert dropdown to old value
+                pendingStatusChange.selectElement.value = pendingStatusChange.oldStatus;
+                updateSelectColor(pendingStatusChange.selectElement);
+            }
+            pendingStatusChange = null;
+            document.getElementById('statusNote').value = '';
+            document.getElementById('statusModal').classList.add('hidden');
+        }
+
+        document.getElementById('confirmStatusBtn').addEventListener('click', function() {
+            if (!pendingStatusChange) return;
+
+            const note = document.getElementById('statusNote').value;
+            const { selectElement, resumeId, newStatus, oldStatus, token, indicator } = pendingStatusChange;
+            
+            // clear pending right away so cancel doesn't trigger revert
+            pendingStatusChange = null;
+            document.getElementById('statusModal').classList.add('hidden');
+            document.getElementById('statusNote').value = '';
+            
+            selectElement.disabled = true;
+
+            fetch('@Url.Action("UpdateStatus", "Resume")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams({
+                    'Id': resumeId,
+                    'Status': newStatus,
+                    'Note': note,
+                    '__RequestVerificationToken': token
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                selectElement.disabled = false;
+                if(data.success) {
+                    selectElement.setAttribute('data-old-value', newStatus);
+                    updateSelectColor(selectElement);
+                    indicator.classList.remove('hidden');
+                    setTimeout(() => indicator.classList.add('hidden'), 2000);
+                } else {
+                    alert('Failed to update status: ' + (data.message || 'Unknown error'));
+                    // revert
+                    selectElement.value = oldStatus;
+                    updateSelectColor(selectElement);
+                }
+            })
+            .catch(err => {
+                selectElement.disabled = false;
+                alert('An error occurred while updating the status.');
+                // revert
+                selectElement.value = oldStatus;
+                updateSelectColor(selectElement);
+            });
+        });
+
         document.querySelectorAll('.status-dropdown').forEach(dd => {
             updateSelectColor(dd);
+            
+            dd.addEventListener('focus', function() {
+                if (!this.getAttribute('data-old-value')) {
+                    this.setAttribute('data-old-value', this.value);
+                }
+            });
+
             dd.addEventListener('change', function() {
                 var selectElement = this;
+                var oldStatus = selectElement.getAttribute('data-old-value') || selectElement.value;
                 var resumeId = selectElement.getAttribute('data-id');
                 var newStatus = selectElement.value;
                 var token = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]').value;
                 var indicator = document.getElementById('indicator-' + resumeId);
                 
-                selectElement.disabled = true;
-
-                fetch('@Url.Action("UpdateStatus", "Resume")', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'RequestVerificationToken': token,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: new URLSearchParams({
-                        'Id': resumeId,
-                        'Status': newStatus,
-                        '__RequestVerificationToken': token
-                    })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    selectElement.disabled = false;
-                    if(data.success) {
-                        updateSelectColor(selectElement);
-                        indicator.classList.remove('hidden');
-                        setTimeout(() => indicator.classList.add('hidden'), 2000);
-                    } else {
-                        alert('Failed to update status: ' + (data.message || 'Unknown error'));
-                        location.reload();
-                    }
-                })
-                .catch(err => {
-                    selectElement.disabled = false;
-                    alert('An error occurred while updating the status.');
-                    location.reload();
-                });
+                pendingStatusChange = { selectElement, resumeId, newStatus, oldStatus, token, indicator };
+                
+                // Set to new color immediately for visual feedback, will revert if cancelled
+                updateSelectColor(selectElement);
+                
+                document.getElementById('statusModal').classList.remove('hidden');
+                document.getElementById('statusNote').focus();
             });
         });
     </script>

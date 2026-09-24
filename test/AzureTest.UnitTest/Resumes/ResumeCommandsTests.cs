@@ -136,4 +136,104 @@ public class ResumeCommandsTests
         _mockResumeRepository.Verify(x => x.Update(existingResume), Times.Once);
         _mockUnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task UpdateResumeStatus_Should_AddStatusLog_WhenStatusChanges()
+    {
+        // Arrange
+        var mockStatusLogRepo = new Mock<IStatusLogRepository>();
+        var mockLogger = new Mock<ILogger<AzureTest.Application.Resumes.Commands.UpdateResumeStatus.UpdateResumeStatusCommandHandler>>();
+        var handler = new AzureTest.Application.Resumes.Commands.UpdateResumeStatus.UpdateResumeStatusCommandHandler(
+            _mockUnitOfWork.Object,
+            _mockResumeRepository.Object,
+            mockStatusLogRepo.Object,
+            mockLogger.Object);
+
+        var resumeId = Guid.NewGuid();
+        var existingResume = Resume.Create("Title", "Desc", "Loc", "", "", "", null, ResumeSource.Referral, ResumeStatus.Applied);
+
+        _mockResumeRepository.Setup(x => x.GetByIdAsync(resumeId))
+            .ReturnsAsync(existingResume);
+
+        var dto = new UpdateResumeStatusDto(resumeId, ResumeStatus.Interview, "Passed screen");
+        var command = new AzureTest.Application.Resumes.Commands.UpdateResumeStatus.UpdateResumeStatusCommand(dto);
+
+        // Act
+        await handler.HandleAsync(command, CancellationToken.None);
+
+        // Assert
+        existingResume.Status.Should().Be(ResumeStatus.Interview);
+        mockStatusLogRepo.Verify(x => x.AddAsync(It.Is<StatusLog>(l =>
+            l.ResumeId == resumeId &&
+            l.OldStatus == ResumeStatus.Applied &&
+            l.NewStatus == ResumeStatus.Interview &&
+            l.Note == "Passed screen")), Times.Once);
+        _mockResumeRepository.Verify(x => x.Update(existingResume), Times.Once);
+        _mockUnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateResumeStatus_Should_AddStatusLog_WhenStatusUnchanged_ButNoteProvided()
+    {
+        // Arrange
+        var mockStatusLogRepo = new Mock<IStatusLogRepository>();
+        var mockLogger = new Mock<ILogger<AzureTest.Application.Resumes.Commands.UpdateResumeStatus.UpdateResumeStatusCommandHandler>>();
+        var handler = new AzureTest.Application.Resumes.Commands.UpdateResumeStatus.UpdateResumeStatusCommandHandler(
+            _mockUnitOfWork.Object,
+            _mockResumeRepository.Object,
+            mockStatusLogRepo.Object,
+            mockLogger.Object);
+
+        var resumeId = Guid.NewGuid();
+        var existingResume = Resume.Create("Title", "Desc", "Loc", "", "", "", null, ResumeSource.Referral, ResumeStatus.Applied);
+
+        _mockResumeRepository.Setup(x => x.GetByIdAsync(resumeId))
+            .ReturnsAsync(existingResume);
+
+        var dto = new UpdateResumeStatusDto(resumeId, ResumeStatus.Applied, "Followed up via email");
+        var command = new AzureTest.Application.Resumes.Commands.UpdateResumeStatus.UpdateResumeStatusCommand(dto);
+
+        // Act
+        await handler.HandleAsync(command, CancellationToken.None);
+
+        // Assert
+        existingResume.Status.Should().Be(ResumeStatus.Applied);
+        mockStatusLogRepo.Verify(x => x.AddAsync(It.Is<StatusLog>(l =>
+            l.ResumeId == resumeId &&
+            l.OldStatus == ResumeStatus.Applied &&
+            l.NewStatus == ResumeStatus.Applied &&
+            l.Note == "Followed up via email")), Times.Once);
+        _mockResumeRepository.Verify(x => x.Update(existingResume), Times.Once);
+        _mockUnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateResumeStatus_Should_NotAddStatusLog_WhenStatusUnchanged_AndNoteIsEmpty()
+    {
+        // Arrange
+        var mockStatusLogRepo = new Mock<IStatusLogRepository>();
+        var mockLogger = new Mock<ILogger<AzureTest.Application.Resumes.Commands.UpdateResumeStatus.UpdateResumeStatusCommandHandler>>();
+        var handler = new AzureTest.Application.Resumes.Commands.UpdateResumeStatus.UpdateResumeStatusCommandHandler(
+            _mockUnitOfWork.Object,
+            _mockResumeRepository.Object,
+            mockStatusLogRepo.Object,
+            mockLogger.Object);
+
+        var resumeId = Guid.NewGuid();
+        var existingResume = Resume.Create("Title", "Desc", "Loc", "", "", "", null, ResumeSource.Referral, ResumeStatus.Applied);
+
+        _mockResumeRepository.Setup(x => x.GetByIdAsync(resumeId))
+            .ReturnsAsync(existingResume);
+
+        var dto = new UpdateResumeStatusDto(resumeId, ResumeStatus.Applied, null);
+        var command = new AzureTest.Application.Resumes.Commands.UpdateResumeStatus.UpdateResumeStatusCommand(dto);
+
+        // Act
+        await handler.HandleAsync(command, CancellationToken.None);
+
+        // Assert
+        mockStatusLogRepo.Verify(x => x.AddAsync(It.IsAny<StatusLog>()), Times.Never);
+        _mockResumeRepository.Verify(x => x.Update(existingResume), Times.Once);
+        _mockUnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

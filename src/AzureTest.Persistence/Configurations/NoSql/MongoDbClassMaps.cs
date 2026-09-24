@@ -42,6 +42,41 @@ public static class MongoDbClassMaps
                 });
             }
 
+            // Map StatusLog document
+            if (!BsonClassMap.IsClassMapRegistered(typeof(StatusLog)))
+            {
+                BsonClassMap.RegisterClassMap<StatusLog>(cm =>
+                {
+                    cm.AutoMap();
+
+                    // Map Id property to MongoDB _id field
+                    cm.MapIdMember(c => c.Id)
+                      .SetSerializer(new GuidSerializer(GuidRepresentation.Standard));
+
+                    // Ensure ResumeId is also serialized as a standard Guid string
+                    cm.MapMember(c => c.ResumeId)
+                      .SetSerializer(new GuidSerializer(GuidRepresentation.Standard));
+
+                    cm.SetIgnoreExtraElements(true);
+                });
+            }
+            
+            if (!BsonClassMap.IsClassMapRegistered(typeof(Company)))
+            {
+                BsonClassMap.RegisterClassMap<Company>(cm =>
+                {
+                    cm.AutoMap();
+
+                    // Map Id property to MongoDB _id field
+                    cm.MapIdMember(c => c.Id)
+                        .SetSerializer(new GuidSerializer(GuidRepresentation.Standard));
+
+                    
+
+                    cm.SetIgnoreExtraElements(true);
+                });
+            }
+
             _registered = true;
         }
     }

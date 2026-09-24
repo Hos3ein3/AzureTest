@@ -17,6 +17,7 @@
 
     <ItemGroup>
       <Folder Include="logs\" />
+      <Folder Include="wwwroot\uploads\resumes\" />
     </ItemGroup>
 
 </Project>

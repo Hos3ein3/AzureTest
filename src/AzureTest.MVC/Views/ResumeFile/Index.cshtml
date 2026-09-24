@@ -130,9 +130,9 @@ else
                                 @item.UploadedOn.ToLocalTime().ToString("MMM d, yyyy HH:mm")
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a asp-action="Delete" asp-route-id="@item.Id" class="text-red-500 hover:text-red-700 transition-colors" title="Delete Files">
+                                <button type="button" onclick="openDeleteModal('@item.Id')" class="text-red-500 hover:text-red-700 transition-colors" title="Delete Files">
                                     <i class="fa-solid fa-trash"></i>
-                                </a>
+                                </button>
                             </td>
                         </tr>
                     }
@@ -142,8 +142,54 @@ else
     </div>
 }
 
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-500 bg-opacity-75 transition-opacity"></div>
+
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <i class="fa-solid fa-triangle-exclamation text-red-600"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                            <h3 class="text-base font-semibold leading-6 text-slate-900" id="modal-title">Delete Resume Files</h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-slate-500">Are you sure you want to permanently delete all attached files for this resume? This action cannot be undone.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button type="button" id="confirmDeleteBtn" class="inline-flex w-full justify-center rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto">Delete Files</button>
+                    <button type="button" onclick="closeDeleteModal()" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="delete-modal-form" method="post">
+    @Html.AntiForgeryToken()
+</form>
+
 @section Scripts {
     <script>
+        function openDeleteModal(id) {
+            document.getElementById('delete-modal-form').action = '/ResumeFile/Delete/' + id;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            document.getElementById('delete-modal-form').submit();
+        });
+
         document.addEventListener('DOMContentLoaded', function () {
             const loaders = document.querySelectorAll('.resume-title-loader');
             

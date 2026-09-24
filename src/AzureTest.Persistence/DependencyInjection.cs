@@ -62,6 +62,7 @@ public static class DependencyInjection
 
             services.AddScoped<IResumeFilesRepository, ResumeFilesRepository>();
             services.AddScoped<ICompanyRepository, CompanyRepository>();
+            services.AddScoped<IStatusLogRepository, StatusLogRepository>();
             services.AddScoped<INoSqlUnitOfWork, NoSqlUnitOfWork>();
             services.AddScoped<AzureTest.Persistence.Seeding.CompanyDataSeeder>();
         }
@@ -70,6 +71,7 @@ public static class DependencyInjection
             // MongoDB not configured — register no-op implementations so the app starts cleanly.
             // File metadata will not be persisted until a MongoDb connection string is provided.
             services.AddScoped<IResumeFilesRepository, NullResumeFilesRepository>();
+            services.AddScoped<IStatusLogRepository, NullStatusLogRepository>();
         }
 
         return services;
