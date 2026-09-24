@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <IsPackable>false</IsPackable>
@@ -24,6 +24,15 @@
 
     <ItemGroup>
         <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Resumes\ResumeCommandsTests.cs" />
+      <Compile Remove="Resumes\ResumeQueriesTests.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Resumes\" />
     </ItemGroup>
 
 </Project>

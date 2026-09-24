@@ -14,7 +14,7 @@ using System;
 
 namespace AzureTest.Application.Resumes.Queries.GetResumeAnalytics;
 
-public sealed record GetResumeAnalyticsQuery() : IQuery<ResumeAnalyticsDto>;
+public sealed record GetResumeAnalyticsQuery(string? UserId = null) : IQuery<ResumeAnalyticsDto>;
 
 public sealed class GetResumeAnalyticsQueryHandler : BaseQueryHandler<GetResumeAnalyticsQuery, ResumeAnalyticsDto>
 {
@@ -38,9 +38,25 @@ public sealed class GetResumeAnalyticsQueryHandler : BaseQueryHandler<GetResumeA
     {
         var allResumes = await _resumeRepository.GetAllAsync();
         
-        // Filter by user unless admin
         bool isAdmin = _currentUser.Roles.Contains("Admin");
-        var resumes = isAdmin ? allResumes : allResumes.Where(r => r.UserId == _currentUser.Id).ToList();
+        var totalUsersCount = allResumes.Select(r => r.UserId).Distinct().Count();
+
+        List<Resume> resumes;
+        if (isAdmin)
+        {
+            if (!string.IsNullOrWhiteSpace(query.UserId) && Guid.TryParse(query.UserId, out var filterGuid))
+            {
+                resumes = allResumes.Where(r => r.UserId == filterGuid).ToList();
+            }
+            else
+            {
+                resumes = allResumes.ToList();
+            }
+        }
+        else
+        {
+            resumes = allResumes.Where(r => r.UserId == _currentUser.Id).ToList();
+        }
 
         var statusCounts = resumes
             .GroupBy(r => r.Status.ToString())
@@ -89,7 +105,8 @@ public sealed class GetResumeAnalyticsQueryHandler : BaseQueryHandler<GetResumeA
         double offerRate = totalApps > 0 ? Math.Round((double)offerCount / totalApps * 100, 1) : 0;
 
         var distinctCompanyIds = resumes.Where(r => r.CompanyId.HasValue).Select(r => r.CompanyId.Value).Distinct().ToList();
-        int totalCompanies = distinctCompanyIds.Count;
+        var companiesCount = await _companyRepository.GetAllAvailableAsync();
+        
 
         // Fetch recent activities
         var recentResumes = resumes.OrderByDescending(r => r.CreatedOn).Take(5).ToList();
@@ -113,8 +130,10 @@ public sealed class GetResumeAnalyticsQueryHandler : BaseQueryHandler<GetResumeA
             totalApps, 
             activeApps, 
             interviewRate,
-            totalCompanies,
+            companiesCount.Count(),
             offerRate,
-            recentActivities);
+            recentActivities,
+            totalUsersCount,
+            isAdmin);
     }
 }

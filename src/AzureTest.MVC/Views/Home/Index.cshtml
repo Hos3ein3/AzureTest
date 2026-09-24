@@ -1,15 +1,43 @@
-@model AzureTest.Contracts.DTOs.Resumes.ResumeAnalyticsDto
+@model AzureTest.MVC.Models.HomeDashboardViewModel
 @{
     ViewData["Title"] = "Dashboard Overview";
 }
 
-<div class="mb-8 flex justify-between items-end">
+<div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
     <div>
         <h1 class="text-3xl font-bold text-slate-800">Dashboard Overview</h1>
         <p class="text-slate-500 mt-1">Here is the latest snapshot of your job tracking operations.</p>
+        @if (Model.IsAdmin && !string.IsNullOrWhiteSpace(Model.CurrentUserName))
+        {
+            <p class="text-sm font-medium text-brand-600 mt-2">
+                <i class="fa-solid fa-eye mr-1"></i> Viewing: @Model.CurrentUserName
+            </p>
+        }
     </div>
     
-    <div class="flex gap-3">
+    <div class="flex gap-3 items-center">
+        @if (Model.IsAdmin)
+        {
+            <form method="get" class="flex items-center gap-2 mr-4">
+                <select name="userId" class="block w-64 rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
+                    <option value="">-- All Users (Aggregate) --</option>
+                    @foreach (var user in Model.AvailableUsers)
+                    {
+                        if (user.Key == Model.CurrentUserId)
+                        {
+                            <option value="@user.Key" selected>@user.Value</option>
+                        }
+                        else
+                        {
+                            <option value="@user.Key">@user.Value</option>
+                        }
+                    }
+                </select>
+                <button type="submit" class="bg-slate-800 text-white px-3 py-2 rounded-md hover:bg-slate-700 text-sm font-medium transition-colors shadow-sm">
+                    Switch
+                </button>
+            </form>
+        }
         <a asp-controller="Resume" asp-action="Create" class="inline-flex items-center justify-center px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700 transition-colors shadow-sm text-sm">
             <i class="fa-solid fa-plus mr-2"></i> Add Resume
         </a>
@@ -24,7 +52,7 @@
         </div>
         <div class="ml-4 truncate">
             <p class="text-sm font-medium text-slate-500 truncate">Total Applications</p>
-            <p class="text-3xl font-bold text-slate-800">@Model.TotalApplications</p>
+            <p class="text-3xl font-bold text-slate-800">@Model.Analytics.TotalApplications</p>
         </div>
     </div>
     
@@ -35,7 +63,7 @@
         </div>
         <div class="ml-4 truncate">
             <p class="text-sm font-medium text-slate-500 truncate">Active Processing</p>
-            <p class="text-3xl font-bold text-slate-800">@Model.ActiveApplications</p>
+            <p class="text-3xl font-bold text-slate-800">@Model.Analytics.ActiveApplications</p>
         </div>
     </div>
     
@@ -46,7 +74,7 @@
         </div>
         <div class="ml-4 truncate">
             <p class="text-sm font-medium text-slate-500 truncate">Interview Rate</p>
-            <p class="text-3xl font-bold text-slate-800">@Model.InterviewRate%</p>
+            <p class="text-3xl font-bold text-slate-800">@Model.Analytics.InterviewRate%</p>
         </div>
     </div>
     
@@ -57,9 +85,23 @@
         </div>
         <div class="ml-4 truncate">
             <p class="text-sm font-medium text-slate-500 truncate">Total Companies</p>
-            <p class="text-3xl font-bold text-slate-800">@Model.TotalCompanies</p>
+            <p class="text-3xl font-bold text-slate-800">@Model.Analytics.TotalCompanies</p>
         </div>
     </div>
+    
+    @if(Model.IsAdmin)
+    {
+        <!-- Stat Card 5 (Admin Only) -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center hover:shadow-md transition-shadow">
+            <div class="h-14 w-14 rounded-xl bg-slate-200 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-users text-slate-500 text-2xl"></i>
+            </div>
+            <div class="ml-4 truncate">
+                <p class="text-sm font-medium text-slate-400 truncate">Registered Users</p>
+                <p class="text-3xl font-bold ">@Model.Analytics.TotalUsers</p>
+            </div>
+        </div>
+    }
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -83,7 +125,7 @@
             <i class="fa-solid fa-clock-rotate-left text-slate-400 font-normal"></i>
         </h2>
         <div class="space-y-5 flex-1">
-            @if (!Model.RecentActivities.Any())
+            @if (!Model.Analytics.RecentActivities.Any())
             {
                 <div class="text-center text-slate-400 mt-10">
                     <p>No recent activity.</p>
@@ -91,7 +133,7 @@
             }
             else
             {
-                @foreach(var act in Model.RecentActivities)
+                @foreach(var act in Model.Analytics.RecentActivities)
                 {
                     <div class="flex">
                         <div class="flex-shrink-0 mt-1">
@@ -104,7 +146,7 @@
                                 {
                                     <i class="fa-solid fa-comments text-amber-500 text-xs"></i>
                                 }
-                                else if (act.Status == "Offer" || act.Status == "OfferAccepted")
+                                else if (act.Status == "Offer" || act.Status == "OfferAccepted" || act.Status == "OfferExtended")
                                 {
                                     <i class="fa-solid fa-trophy text-emerald-500 text-xs"></i>
                                 }
@@ -213,8 +255,8 @@
             };
 
             // Status Chart
-            const statusLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusCounts.Keys));
-            const statusData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusCounts.Values));
+            const statusLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.StatusCounts.Keys));
+            const statusData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.StatusCounts.Values));
             const statusColors = statusLabels.map(label => {
                 switch(label) {
                     case 'Rejected': return '#dc2626'; // red-600
@@ -237,8 +279,8 @@
             });
 
             // Date Chart
-            const dateLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByDate.Keys));
-            const dateData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByDate.Values));
+            const dateLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.ApplicationsByDate.Keys));
+            const dateData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.ApplicationsByDate.Values));
             new Chart(document.getElementById('dateChart').getContext('2d'), {
                 type: 'bar',
                 data: {
@@ -254,8 +296,8 @@
             });
 
             // Position Chart
-            const posLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PositionCounts.Keys));
-            const posData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PositionCounts.Values));
+            const posLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.PositionCounts.Keys));
+            const posData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.PositionCounts.Values));
             new Chart(document.getElementById('positionChart').getContext('2d'), {
                 type: 'bar',
                 data: {
@@ -266,8 +308,8 @@
             });
 
             // Location Chart
-            const locLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.LocationCounts.Keys));
-            const locData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.LocationCounts.Values));
+            const locLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.LocationCounts.Keys));
+            const locData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.LocationCounts.Values));
             new Chart(document.getElementById('locationChart').getContext('2d'), {
                 type: 'bar',
                 data: {
@@ -278,8 +320,8 @@
             });
             
             // Source Chart
-            const srcLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SourceCounts.Keys));
-            const srcData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SourceCounts.Values));
+            const srcLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.SourceCounts.Keys));
+            const srcData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.SourceCounts.Values));
             new Chart(document.getElementById('sourceChart').getContext('2d'), {
                 type: 'doughnut',
                 data: {

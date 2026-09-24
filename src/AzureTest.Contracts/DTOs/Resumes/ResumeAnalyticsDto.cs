@@ -13,5 +13,7 @@ public sealed record ResumeAnalyticsDto(
     double InterviewRate,
     int TotalCompanies,
     double OfferRate,
-    List<RecentActivityDto> RecentActivities
+    List<RecentActivityDto> RecentActivities,
+    int TotalUsers,
+    bool IsAdmin
 );
