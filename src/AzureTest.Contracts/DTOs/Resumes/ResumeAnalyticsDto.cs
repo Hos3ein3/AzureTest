@@ -15,5 +15,6 @@ public sealed record ResumeAnalyticsDto(
     double OfferRate,
     List<RecentActivityDto> RecentActivities,
     int TotalUsers,
-    bool IsAdmin
+    bool IsAdmin,
+    long OccupiedStorage = 0
 );

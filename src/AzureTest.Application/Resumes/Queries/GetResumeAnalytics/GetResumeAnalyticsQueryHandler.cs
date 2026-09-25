@@ -20,17 +20,20 @@ public sealed class GetResumeAnalyticsQueryHandler : BaseQueryHandler<GetResumeA
 {
     private readonly IResumeRepository _resumeRepository;
     private readonly ICompanyRepository _companyRepository;
+    private readonly IResumeFilesRepository _resumeFilesRepository;
     private readonly ICurrentUser _currentUser;
 
     public GetResumeAnalyticsQueryHandler(
         IResumeRepository resumeRepository,
         ICompanyRepository companyRepository,
+        IResumeFilesRepository resumeFilesRepository,
         ICurrentUser currentUser,
         ILogger<GetResumeAnalyticsQueryHandler> logger)
         : base(logger)
     {
         _resumeRepository = resumeRepository;
         _companyRepository = companyRepository;
+        _resumeFilesRepository = resumeFilesRepository;
         _currentUser = currentUser;
     }
 
@@ -121,6 +124,11 @@ public sealed class GetResumeAnalyticsQueryHandler : BaseQueryHandler<GetResumeA
             r.CreatedOn
         )).ToList();
 
+        var resumeIds = resumes.Select(r => r.Id).ToHashSet();
+        var allFiles = await _resumeFilesRepository.GetAllAsync();
+        var filesForResumes = allFiles.Where(f => resumeIds.Contains(f.ResumeId)).ToList();
+        long occupiedStorage = filesForResumes.Sum(f => f.CvSize + f.ClSize);
+
         return new ResumeAnalyticsDto(
             statusCounts, 
             dateCounts, 
@@ -134,6 +142,7 @@ public sealed class GetResumeAnalyticsQueryHandler : BaseQueryHandler<GetResumeA
             offerRate,
             recentActivities,
             totalUsersCount,
-            isAdmin);
+            isAdmin,
+            occupiedStorage);
     }
 }

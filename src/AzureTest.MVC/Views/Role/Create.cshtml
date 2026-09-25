@@ -1,0 +1,35 @@
+@model AzureTest.MVC.ViewModels.Roles.RoleCreateViewModel
+@{
+    ViewData["Title"] = "Add New Role";
+}
+
+<div class="flex items-center mb-6">
+    <a asp-action="Index" class="text-slate-400 hover:text-brand-600 mr-4 transition-colors">
+        <i class="fa-solid fa-arrow-left text-xl"></i>
+    </a>
+    <h1 class="text-2xl font-bold text-slate-800">Add New Role</h1>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden max-w-2xl">
+    <form asp-action="Create" method="post" class="p-6 md:p-8">
+        <div asp-validation-summary="ModelOnly" class="text-red-500 text-sm mb-6 bg-red-50 p-4 rounded-lg"></div>
+
+        <div class="mb-8">
+            <label asp-for="RoleName" class="block text-sm font-medium text-slate-700 mb-2">Role Name <span class="text-red-500">*</span></label>
+            <input asp-for="RoleName" class="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500" placeholder="e.g. Moderator" />
+            <span asp-validation-for="RoleName" class="text-red-500 text-xs mt-1 block"></span>
+            <p class="text-xs text-slate-500 mt-2">Roles are used to define groups of permissions (e.g. Admin, Manager, User).</p>
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 pt-6 border-t border-slate-100">
+            <a asp-action="Index" class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">Cancel</a>
+            <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-brand-600 border border-transparent rounded-lg hover:bg-brand-700 transition-colors shadow-sm flex items-center">
+                <i class="fa-solid fa-check mr-2"></i> Create Role
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

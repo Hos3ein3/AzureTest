@@ -1,0 +1,283 @@
+@model AzureTest.MVC.ViewModels.Users.UserListViewModel
+@{
+    ViewData["Title"] = "User Management";
+    
+    string GetSortLink(string sortBy, string label)
+    {
+        var isCurrentSort = Model.SortBy?.Equals(sortBy, StringComparison.OrdinalIgnoreCase) ?? (sortBy == "FullName");
+        var desc = isCurrentSort ? !Model.SortDescending : false;
+        var icon = isCurrentSort ? (Model.SortDescending ? "fa-sort-down text-brand-600" : "fa-sort-up text-brand-600") : "fa-sort text-slate-300";
+        var url = $"?PageNumber=1&PageSize={Model.PageSize}&SearchTerm={Model.SearchTerm}&Role={Model.Role}&SortBy={sortBy}&SortDescending={desc}";
+        
+        return $@"<a href=""{url}"" class=""group inline-flex items-center hover:text-slate-700 transition-colors"">{label} <i class=""fa-solid {icon} ml-1""></i></a>";
+    }
+
+    string GetPageUrl(int pageNumber)
+    {
+        return $"?PageNumber={pageNumber}&PageSize={Model.PageSize}&SearchTerm={Model.SearchTerm}&Role={Model.Role}&SortBy={Model.SortBy}&SortDescending={Model.SortDescending}";
+    }
+}
+
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">User Management</h1>
+    
+    <div class="flex items-center space-x-4">
+        <a asp-action="Create" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors">
+            <i class="fa-solid fa-user-plus mr-2"></i> Add User
+        </a>
+    </div>
+</div>
+
+<form id="antiForgeryForm" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
+
+<div class="mb-6 bg-white p-5 rounded-xl shadow-sm border border-slate-100">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-slate-800">Filter Users</h3>
+    </div>
+    <form asp-action="Index" method="get">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Search</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                    </div>
+                    <input name="SearchTerm" type="text" value="@Model.SearchTerm" class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="Name, Email..." />
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                <select asp-for="Role" asp-items="Model.AvailableRoles" class="block w-full pl-3 pr-10 py-2 text-base border border-slate-300 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm rounded-lg">
+                    <option value="">All Roles</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Page Size</label>
+                <select name="PageSize" class="block w-full pl-3 pr-10 py-2 text-base border border-slate-300 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm rounded-lg">
+                    @foreach (var size in new[] { 10, 20, 50, 100 })
+                    {
+                        if (Model.PageSize == size)
+                        {
+                            <option value="@size" selected>@size items</option>
+                        }
+                        else
+                        {
+                            <option value="@size">@size items</option>
+                        }
+                    }
+                </select>
+            </div>
+            
+            <div class="flex items-end space-x-2">
+                <button type="submit" class="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-slate-800 hover:bg-slate-900 focus:outline-none transition-colors">
+                    <i class="fa-solid fa-filter mr-2"></i> Apply
+                </button>
+                <a asp-action="Index" class="inline-flex justify-center items-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none transition-colors" title="Clear Filters">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 flex items-start" role="alert">
+        <i class="fa-solid fa-circle-check text-emerald-500 mt-0.5 mr-3"></i>
+        <div class="flex-1">
+            <p class="text-sm text-emerald-800 font-medium">@TempData["Success"]</p>
+        </div>
+        <button type="button" class="text-emerald-500 hover:text-emerald-700 focus:outline-none" onclick="this.parentElement.style.display='none';">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start" role="alert">
+        <i class="fa-solid fa-triangle-exclamation text-red-500 mt-0.5 mr-3"></i>
+        <div class="flex-1">
+            <p class="text-sm text-red-800 font-medium">@TempData["Error"]</p>
+        </div>
+        <button type="button" class="text-red-500 hover:text-red-700 focus:outline-none" onclick="this.parentElement.style.display='none';">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+}
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@Html.Raw(GetSortLink("FullName", "Name"))</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@Html.Raw(GetSortLink("Email", "Email"))</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@Html.Raw(GetSortLink("Roles", "Roles"))</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200">
+                @foreach (var user in Model.Users.Items)
+                {
+                    <tr class="hover:bg-slate-50 transition-colors @(user.IsLockedOut ? "opacity-60" : "")">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold">
+                                    @(user.FullName.Length > 0 ? user.FullName[0].ToString() : "?")
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-slate-900">@user.FullName</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-slate-900">@user.Email</div>
+                            <div class="text-xs text-slate-500">
+                                @(user.EmailConfirmed ? Html.Raw("<span class='text-emerald-500'><i class='fa-solid fa-check-circle mr-1'></i>Verified</span>") : Html.Raw("<span class='text-amber-500'><i class='fa-solid fa-circle-exclamation mr-1'></i>Unverified</span>"))
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-wrap gap-1">
+                                @if (user.Roles.Any())
+                                {
+                                    @foreach (var role in user.Roles)
+                                    {
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium @(role == "Admin" ? "bg-purple-100 text-purple-800" : "bg-slate-100 text-slate-800")">
+                                            @role
+                                        </span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-sm text-slate-400 italic">None</span>
+                                }
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if (user.IsLockedOut)
+                            {
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    <i class="fa-solid fa-lock mr-1.5"></i> Locked
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                    <i class="fa-solid fa-check mr-1.5"></i> Active
+                                </span>
+                            }
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a asp-action="Edit" asp-route-id="@user.Id" class="text-slate-600 hover:text-brand-600 mx-2" title="Edit Profile">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                            <a asp-action="ManageRoles" asp-route-id="@user.Id" class="text-slate-600 hover:text-purple-600 mx-2" title="Manage Roles">
+                                <i class="fa-solid fa-user-shield"></i>
+                            </a>
+                            
+                            <form asp-action="ToggleLockout" asp-route-id="@user.Id" method="post" class="inline">
+                                <button type="submit" class="@(user.IsLockedOut ? "text-emerald-500 hover:text-emerald-700" : "text-amber-500 hover:text-amber-700") mx-2" title="@(user.IsLockedOut ? "Unlock User" : "Lock User")">
+                                    <i class="fa-solid @(user.IsLockedOut ? "fa-unlock" : "fa-lock")"></i>
+                                </button>
+                            </form>
+
+                            <form asp-action="Delete" asp-route-id="@user.Id" method="post" class="inline" onsubmit="return confirm('Are you sure you want to permanently delete this user? This action cannot be undone.');">
+                                <button type="submit" class="text-red-500 hover:text-red-700 ml-2" title="Delete User">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                
+                @if (!Model.Users.Items.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="px-6 py-10 text-center text-slate-500">
+                            No users found matching your criteria.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.Users.TotalPages > 1)
+    {
+        <div class="bg-white px-4 py-3 border-t border-slate-200 sm:px-6 flex items-center justify-between">
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-slate-700">
+                        Showing <span class="font-medium">@(((Model.Users.PageNumber - 1) * Model.Users.PageSize) + 1)</span>
+                        to <span class="font-medium">@(Math.Min(Model.Users.PageNumber * Model.Users.PageSize, Model.Users.TotalCount))</span>
+                        of <span class="font-medium">@Model.Users.TotalCount</span> results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        @{
+                            var prevDisabled = !Model.Users.HasPreviousPage ? "pointer-events-none text-slate-300" : "text-slate-500 hover:bg-slate-50";
+                            var nextDisabled = !Model.Users.HasNextPage ? "pointer-events-none text-slate-300" : "text-slate-500 hover:bg-slate-50";
+                        }
+                        <a href="@GetPageUrl(Model.Users.PageNumber - 1)" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium @prevDisabled">
+                            <span class="sr-only">Previous</span>
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </a>
+                        
+                        @{
+                            int window = 2; // Show 2 pages on each side of the current page
+                            int startPage = Math.Max(1, Model.Users.PageNumber - window);
+                            int endPage = Math.Min(Model.Users.TotalPages, Model.Users.PageNumber + window);
+                            
+                            if (startPage > 1)
+                            {
+                                <a href="@GetPageUrl(1)" class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">1</a>
+                                if (startPage > 2)
+                                {
+                                    <span class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700">...</span>
+                                }
+                            }
+                            
+                            for (int i = startPage; i <= endPage; i++)
+                            {
+                                if (i == Model.Users.PageNumber)
+                                {
+                                    <span class="relative inline-flex items-center px-4 py-2 border border-brand-500 bg-brand-50 text-sm font-medium text-brand-600 z-10">
+                                        @i
+                                    </span>
+                                }
+                                else
+                                {
+                                    <a href="@GetPageUrl(i)" class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+                                        @i
+                                    </a>
+                                }
+                            }
+                            
+                            if (endPage < Model.Users.TotalPages)
+                            {
+                                if (endPage < Model.Users.TotalPages - 1)
+                                {
+                                    <span class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700">...</span>
+                                }
+                                <a href="@GetPageUrl(Model.Users.TotalPages)" class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">@Model.Users.TotalPages</a>
+                            }
+                        }
+
+                        <a href="@GetPageUrl(Model.Users.PageNumber + 1)" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium @nextDisabled">
+                            <span class="sr-only">Next</span>
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    }
+</div>
