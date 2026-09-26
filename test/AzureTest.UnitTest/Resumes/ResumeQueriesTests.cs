@@ -101,18 +101,18 @@ public class ResumeQueriesTests
     }
 
     [Fact]
-    public async Task GetStatusLogsByResumeId_Should_ReturnDtoList_WhenLogsExist()
+    public async Task GetResumeStatusLogsByResumeId_Should_ReturnDtoList_WhenLogsExist()
     {
         // Arrange
-        var mockStatusLogRepo = new Mock<AzureTest.Application.Interfaces.Data.NoSql.IStatusLogRepository>();
-        var mockLogger = new Mock<ILogger<AzureTest.Application.Resumes.Queries.GetStatusLogsByResumeId.GetStatusLogsByResumeIdQueryHandler>>();
-        var handler = new AzureTest.Application.Resumes.Queries.GetStatusLogsByResumeId.GetStatusLogsByResumeIdQueryHandler(
-            mockStatusLogRepo.Object,
+        var mockResumeStatusLogRepo = new Mock<AzureTest.Application.Interfaces.Data.NoSql.IResumeStatusLogRepository>();
+        var mockLogger = new Mock<ILogger<AzureTest.Application.Resumes.Queries.GetResumeStatusLogsByResumeId.GetResumeStatusLogsByResumeIdQueryHandler>>();
+        var handler = new AzureTest.Application.Resumes.Queries.GetResumeStatusLogsByResumeId.GetResumeStatusLogsByResumeIdQueryHandler(
+            mockResumeStatusLogRepo.Object,
             mockLogger.Object);
 
         var resumeId = Guid.NewGuid();
         var date = DateTime.UtcNow;
-        var logs = new List<AzureTest.Domain.Documents.StatusLog>
+        var logs = new List<AzureTest.Domain.Documents.ResumeStatusLog>
         {
             new()
             {
@@ -125,10 +125,10 @@ public class ResumeQueriesTests
             }
         };
 
-        mockStatusLogRepo.Setup(x => x.GetByResumeIdAsync(resumeId))
+        mockResumeStatusLogRepo.Setup(x => x.GetByResumeIdAsync(resumeId))
             .ReturnsAsync(logs);
 
-        var query = new AzureTest.Application.Resumes.Queries.GetStatusLogsByResumeId.GetStatusLogsByResumeIdQuery(resumeId);
+        var query = new AzureTest.Application.Resumes.Queries.GetResumeStatusLogsByResumeId.GetResumeStatusLogsByResumeIdQuery(resumeId);
 
         // Act
         var result = await handler.HandleAsync(query, CancellationToken.None);

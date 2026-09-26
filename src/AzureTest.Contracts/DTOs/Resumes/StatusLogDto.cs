@@ -6,7 +6,7 @@ namespace AzureTest.Contracts.DTOs.Resumes;
 /// <summary>
 /// Read-only projection representing a status change log entry for a Resume.
 /// </summary>
-public sealed record StatusLogDto(
+public sealed record ResumeStatusLogDto(
     Guid Id,
     Guid ResumeId,
     DateTime Date,

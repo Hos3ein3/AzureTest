@@ -1,0 +1,142 @@
+@model AzureTest.Contracts.DTOs.Tickets.TicketDto
+@{
+    ViewData["Title"] = "Ticket Details";
+    bool isAdmin = ViewBag.IsAdmin == true;
+}
+
+<nav aria-label="breadcrumb" class="mb-6 flex justify-between items-center">
+    <ol class="flex items-center space-x-2 text-sm text-slate-500">
+        <li>
+            <a asp-action="Index" class="hover:text-brand-600 transition-colors">Tickets</a>
+        </li>
+        <li>
+            <i class="fa-solid fa-chevron-right text-xs mx-1"></i>
+        </li>
+        <li class="font-medium text-slate-800" aria-current="page">@Model.Subject</li>
+    </ol>
+    @if (isAdmin)
+    {
+        <form asp-action="UpdateStatus" method="post" class="flex items-center gap-2">
+            <input type="hidden" name="ticketId" value="@Model.Id" />
+            <select name="status" class="rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-xs px-3 py-1 border" onchange="this.form.submit()">
+                @foreach (var s in Enum.GetValues(typeof(AzureTest.Domain.Enums.TicketStatus)))
+                {
+                    if (Model.Status.ToString() == s.ToString())
+                    {
+                        <option value="@s" selected>@s</option>
+                    }
+                    else
+                    {
+                        <option value="@s">@s</option>
+                    }
+                }
+            </select>
+        </form>
+    }
+    else
+    {
+        <span class="px-2.5 py-1 text-xs rounded-full bg-slate-100 text-slate-700">@Model.Status</span>
+    }
+</nav>
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <div class="lg:col-span-3 space-y-6">
+        
+        <!-- Original Ticket Content -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">@Model.Subject</h3>
+                    <span class="text-xs text-slate-400">@Model.CreatedOn.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</span>
+                </div>
+                <div class="prose max-w-none text-slate-600 text-sm">
+                    @Html.Raw(Model.Content)
+                </div>
+            </div>
+        </div>
+
+        <!-- Replies -->
+        @foreach (var msg in Model.Messages)
+        {
+            var isCreator = msg.UserId == Model.UserId;
+            <div class="flex @(isCreator ? "justify-end" : "justify-start")">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5 max-w-[85%] @(isCreator ? "bg-brand-50/50 border-brand-100" : "")">
+                    <div class="flex justify-between items-center mb-2 gap-4">
+                        <span class="text-xs font-semibold @(isCreator ? "text-brand-600" : "text-slate-600")">
+                            @(isCreator ? "You" : "Support Agent")
+                        </span>
+                        <span class="text-xs text-slate-400">@msg.CreatedOn.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</span>
+                    </div>
+                    <div class="prose max-w-none text-slate-600 text-sm">
+                        @Html.Raw(msg.Content)
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Reply Form -->
+        @if (Model.Status != AzureTest.Domain.Enums.TicketStatus.Closed || isAdmin)
+        {
+            <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mt-8">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <h5 class="text-sm font-semibold text-slate-800 m-0">Leave a Reply</h5>
+                </div>
+                <div class="p-6">
+                    <form asp-action="AddMessage" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ticketId" value="@Model.Id" />
+                        <div class="mb-4">
+                            <textarea id="replyEditor" name="content" rows="4" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border"></textarea>
+                        </div>
+                        <button type="submit" class="inline-flex justify-center rounded-lg border border-transparent bg-brand-600 py-2 px-6 text-sm font-medium text-white shadow-sm hover:bg-brand-700 transition-colors">
+                            Send Reply
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="bg-slate-50 rounded-xl border border-slate-200 p-6 text-center text-slate-500">
+                <i class="fa-solid fa-lock mb-2 text-xl block"></i>
+                <p class="text-sm">This ticket is closed. If you need further assistance, please open a new ticket.</p>
+            </div>
+        }
+    </div>
+    
+    <!-- Sidebar Details -->
+    <div class="lg:col-span-1">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 sticky top-6">
+            <h5 class="text-sm font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-100">Ticket Info</h5>
+            
+            <div class="space-y-4 text-sm">
+                <div>
+                    <span class="block text-xs text-slate-400 mb-1">Status</span>
+                    <span class="font-medium text-slate-700">@Model.Status</span>
+                </div>
+                <div>
+                    <span class="block text-xs text-slate-400 mb-1">Priority</span>
+                    <span class="font-medium text-slate-700">@Model.Priority</span>
+                </div>
+                <div>
+                    <span class="block text-xs text-slate-400 mb-1">Opened On</span>
+                    <span class="font-medium text-slate-700">@Model.CreatedOn.ToLocalTime().ToString("MMM dd, yyyy")</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var replyEditor = document.querySelector('#replyEditor');
+            if (replyEditor) {
+                ClassicEditor
+                    .create(replyEditor)
+                    .catch(error => { console.error(error); });
+            }
+        });
+    </script>
+}

@@ -27,6 +27,16 @@ public static class DependencyInjection
         services.AddScoped<AzureTest.Application.Interfaces.Services.IResumeDocumentService, AzureTest.Application.Services.ResumeDocumentService>();
         services.AddScoped<IResumeFileQueryUnit, ResumeFileQueryUnit>();
 
+        // New Feature Domains
+        services.AddScoped<AzureTest.Application.Events.IEventCommandUnit, AzureTest.Application.Events.EventCommandUnit>();
+        services.AddScoped<AzureTest.Application.Events.IEventQueryUnit, AzureTest.Application.Events.EventQueryUnit>();
+        services.AddScoped<AzureTest.Application.Tasks.ITaskCommandUnit, AzureTest.Application.Tasks.TaskCommandUnit>();
+        services.AddScoped<AzureTest.Application.Tasks.ITaskQueryUnit, AzureTest.Application.Tasks.TaskQueryUnit>();
+        services.AddScoped<AzureTest.Application.Habits.IHabitCommandUnit, AzureTest.Application.Habits.HabitCommandUnit>();
+        services.AddScoped<AzureTest.Application.Habits.IHabitQueryUnit, AzureTest.Application.Habits.HabitQueryUnit>();
+        services.AddScoped<AzureTest.Application.Tickets.ITicketCommandUnit, AzureTest.Application.Tickets.TicketCommandUnit>();
+        services.AddScoped<AzureTest.Application.Tickets.ITicketQueryUnit, AzureTest.Application.Tickets.TicketQueryUnit>();
+
         return services;
     }
 }

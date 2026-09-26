@@ -12,10 +12,26 @@ public class UnitOfWork : IUnitOfWork
 {
     private readonly AzureTestDbContext _dbContext;
 
+    private IEventRepository? _events;
+    private ITaskRepository? _tasks;
+    private IHabitTrackerRepository? _habits;
+    private IHabitLogRepository? _habitLogs;
+    private ITicketRepository? _tickets;
+    private ITicketMessageRepository? _ticketMessages;
+    private IResumeRepository? _resumes;
+
     public UnitOfWork(AzureTestDbContext dbContext)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
     }
+
+    public IEventRepository Events => _events ??= new EventRepository(_dbContext);
+    public ITaskRepository Tasks => _tasks ??= new TaskRepository(_dbContext);
+    public IHabitTrackerRepository Habits => _habits ??= new HabitTrackerRepository(_dbContext);
+    public IHabitLogRepository HabitLogs => _habitLogs ??= new HabitLogRepository(_dbContext);
+    public ITicketRepository Tickets => _tickets ??= new TicketRepository(_dbContext);
+    public ITicketMessageRepository TicketMessages => _ticketMessages ??= new TicketMessageRepository(_dbContext);
+    public IResumeRepository Resumes => _resumes ??= new ResumeRepository(_dbContext);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

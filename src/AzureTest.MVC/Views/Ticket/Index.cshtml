@@ -1,0 +1,86 @@
+@model IEnumerable<AzureTest.Contracts.DTOs.Tickets.TicketDto>
+@{
+    ViewData["Title"] = "Tickets";
+    bool isAdmin = ViewBag.IsAdmin == true;
+}
+
+<nav aria-label="breadcrumb" class="mb-6 flex justify-between items-center">
+    <ol class="flex items-center space-x-2 text-sm text-slate-500">
+        <li class="font-medium text-slate-800" aria-current="page">Support Tickets</li>
+    </ol>
+    @if (!isAdmin)
+    {
+        <a asp-action="Create" class="inline-flex justify-center rounded-lg border border-transparent bg-brand-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-brand-700 transition-colors">
+            <i class="fa-solid fa-plus mr-2 mt-0.5"></i> Open New Ticket
+        </a>
+    }
+</nav>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+        <h5 class="text-lg font-semibold text-slate-800 m-0">@(isAdmin ? "All Support Tickets" : "Your Tickets")</h5>
+    </div>
+    
+    @if (!Model.Any())
+    {
+        <div class="p-8 text-center text-slate-500">
+            <i class="fa-solid fa-ticket text-4xl mb-3 text-slate-300 block"></i>
+            <p>No tickets found.</p>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left text-slate-600">
+                <thead class="text-xs text-slate-500 uppercase bg-slate-50/50 border-b border-slate-100">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 font-medium">Subject</th>
+                        <th scope="col" class="px-6 py-3 font-medium">Priority</th>
+                        <th scope="col" class="px-6 py-3 font-medium">Status</th>
+                        <th scope="col" class="px-6 py-3 font-medium">Date Opened</th>
+                        <th scope="col" class="px-6 py-3 font-medium text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model)
+                    {
+                        var unread = !isAdmin && t.Messages.Any(m => m.UserId != t.UserId && !m.IsReadByCreator);
+                        
+                        <tr class="bg-white border-b border-slate-50 hover:bg-slate-50/50 transition-colors @(unread ? "bg-brand-50/30" : "")">
+                            <td class="px-6 py-4 font-medium text-slate-800 whitespace-nowrap flex items-center">
+                                @if (unread)
+                                {
+                                    <span class="w-2 h-2 rounded-full bg-brand-500 mr-2" title="Unread Messages"></span>
+                                }
+                                @t.Subject
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-2.5 py-1 text-xs rounded-full 
+                                    @(t.Priority == AzureTest.Domain.Enums.TicketPriority.Low ? "bg-slate-100 text-slate-600" :
+                                      t.Priority == AzureTest.Domain.Enums.TicketPriority.Medium ? "bg-blue-100 text-blue-700" :
+                                      t.Priority == AzureTest.Domain.Enums.TicketPriority.High ? "bg-orange-100 text-orange-700" :
+                                      "bg-red-100 text-red-700")">
+                                    @t.Priority
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-2.5 py-1 text-xs rounded-full 
+                                    @(t.Status == AzureTest.Domain.Enums.TicketStatus.Closed ? "bg-slate-100 text-slate-500" :
+                                      t.Status == AzureTest.Domain.Enums.TicketStatus.Answered ? "bg-brand-100 text-brand-700" :
+                                      "bg-amber-100 text-amber-700")">
+                                    @t.Status
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                @t.CreatedOn.ToLocalTime().ToString("MMM dd, yyyy HH:mm")
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <a asp-action="Details" asp-route-id="@t.Id" class="text-brand-600 hover:text-brand-800 font-medium">View</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

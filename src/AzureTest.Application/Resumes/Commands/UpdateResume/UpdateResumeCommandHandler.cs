@@ -18,20 +18,18 @@ public sealed record UpdateResumeCommand(UpdateResumeDto Dto) : ICommand<bool>;
 
 public sealed class UpdateResumeCommandHandler : BaseCommandHandler<UpdateResumeCommand,bool>
 {
-    private readonly IResumeRepository _resumeRepository;
-    private readonly ICompanyRepository _companyRepository;
+
+    private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly ICurrentUser _currentUser;
 
     public UpdateResumeCommandHandler(
         IUnitOfWork unitOfWork,
-        IResumeRepository resumeRepository,
-        ICompanyRepository companyRepository,
+        INoSqlUnitOfWork noSqlUnitOfWork,
         ICurrentUser currentUser,
         ILogger<UpdateResumeCommandHandler> logger)
         : base(unitOfWork, logger)
     {
-        _resumeRepository = resumeRepository;
-        _companyRepository = companyRepository;
+        _noSqlUnitOfWork = noSqlUnitOfWork;
         _currentUser = currentUser;
     }
 
@@ -44,7 +42,7 @@ public sealed class UpdateResumeCommandHandler : BaseCommandHandler<UpdateResume
         if (companyId is null && !string.IsNullOrWhiteSpace(dto.NewCompanyName))
         {
             // Check if a company with this name already exists (case-insensitive)
-            var existing = await _companyRepository.GetByNameAsync(dto.NewCompanyName.Trim());
+            var existing = await _noSqlUnitOfWork.Companies.GetByNameAsync(dto.NewCompanyName.Trim());
             if (existing is not null)
             {
                 companyId = existing.Id;
@@ -56,13 +54,13 @@ public sealed class UpdateResumeCommandHandler : BaseCommandHandler<UpdateResume
                 {
                     CompanyName = dto.NewCompanyName.Trim()
                 };
-                await _companyRepository.AddAsync(newCompany);
+                await _noSqlUnitOfWork.Companies.AddAsync(newCompany);
                 companyId = newCompany.Id;
             }
         }
         
 
-        var resume = await _resumeRepository.GetByIdAsync(dto.Id)
+        var resume = await UnitOfWork.Resumes.GetByIdAsync(dto.Id)
             ?? throw new KeyNotFoundException($"Resume with ID {dto.Id} was not found.");
 
         if (resume.UserId != _currentUser.Id)
@@ -74,7 +72,7 @@ public sealed class UpdateResumeCommandHandler : BaseCommandHandler<UpdateResume
         resume.UpdateStatus(dto.Status);
         resume.CreatedOn = dto.CreatedOn;
 
-        _resumeRepository.Update(resume);
+        UnitOfWork.Resumes.Update(resume);
         return true;
     }
 }

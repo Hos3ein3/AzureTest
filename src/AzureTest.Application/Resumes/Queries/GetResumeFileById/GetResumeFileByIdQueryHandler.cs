@@ -8,16 +8,16 @@ namespace AzureTest.Application.Resumes.Queries.GetResumeFileById;
 
 internal sealed class GetResumeFileByIdQueryHandler : IQueryHandler<GetResumeFileByIdQuery, ResumeFileDto?>
 {
-    private readonly IResumeFilesRepository _resumeFilesRepository;
+    private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
 
-    public GetResumeFileByIdQueryHandler(IResumeFilesRepository resumeFilesRepository)
+    public GetResumeFileByIdQueryHandler(INoSqlUnitOfWork noSqlUnitOfWork)
     {
-        _resumeFilesRepository = resumeFilesRepository;
+        _noSqlUnitOfWork = noSqlUnitOfWork;
     }
 
     public async Task<ResumeFileDto?> HandleAsync(GetResumeFileByIdQuery query, CancellationToken cancellationToken = default)
     {
-        var document = await _resumeFilesRepository.GetByIdAsync(query.Id);
+        var document = await _noSqlUnitOfWork.ResumeFiles.GetByIdAsync(query.Id);
 
         if (document is null) return null;
 

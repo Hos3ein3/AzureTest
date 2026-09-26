@@ -15,17 +15,17 @@ public sealed record CreateCompanyCommand(CreateCompanyDto Dto) : ICommand<Guid>
 
 public sealed class CreateCompanyCommandHandler : BaseCommandHandler<CreateCompanyCommand, Guid>
 {
-    private readonly ICompanyRepository _companyRepository;
+    private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly AzureTest.Application.Interfaces.Services.ICompanyCacheService _cacheService;
 
     public CreateCompanyCommandHandler(
         IUnitOfWork unitOfWork,
-        ICompanyRepository companyRepository,
+        INoSqlUnitOfWork noSqlUnitOfWork,
         AzureTest.Application.Interfaces.Services.ICompanyCacheService cacheService,
         ILogger<CreateCompanyCommandHandler> logger)
         : base(unitOfWork, logger)
     {
-        _companyRepository = companyRepository;
+        _noSqlUnitOfWork = noSqlUnitOfWork;
         _cacheService = cacheService;
     }
 
@@ -39,7 +39,7 @@ public sealed class CreateCompanyCommandHandler : BaseCommandHandler<CreateCompa
             Location = command.Dto.Location,
         };
 
-        await _companyRepository.AddAsync(company);
+        await _noSqlUnitOfWork.Companies.AddAsync(company);
         await _cacheService.InvalidateCompaniesAsync(cancellationToken);
         
         return company.Id;

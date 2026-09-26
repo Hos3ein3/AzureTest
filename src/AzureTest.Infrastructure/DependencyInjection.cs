@@ -16,6 +16,8 @@ public static class DependencyInjection
         // services.AddScoped<IPdfGenerator, QuestPdfGenerator>();
         // services.AddScoped<IIdentityService, IdentityService>();
         
+        services.AddScoped<INotificationService, MockNotificationService>();
+        
         // ── Crawler Service ───────────────────────────────────────────────────
         services.AddHttpClient<IIndCrawlerService, IndCrawlerService>();
 

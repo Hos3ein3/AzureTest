@@ -6,5 +6,13 @@ namespace AzureTest.Application.Interfaces.Data;
 
 public interface IUnitOfWork : IDisposable
 {
+    IEventRepository Events { get; }
+    ITaskRepository Tasks { get; }
+    IHabitTrackerRepository Habits { get; }
+    IHabitLogRepository HabitLogs { get; }
+    ITicketRepository Tickets { get; }
+    ITicketMessageRepository TicketMessages { get; }
+    IResumeRepository Resumes { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

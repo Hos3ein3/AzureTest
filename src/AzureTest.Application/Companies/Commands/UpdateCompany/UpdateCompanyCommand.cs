@@ -14,22 +14,22 @@ public sealed record UpdateCompanyCommand(UpdateCompanyDto Dto) : ICommand<bool>
 
 public sealed class UpdateCompanyCommandHandler : BaseCommandHandler<UpdateCompanyCommand, bool>
 {
-    private readonly ICompanyRepository _companyRepository;
+    private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly AzureTest.Application.Interfaces.Services.ICompanyCacheService _cacheService;
 
     public UpdateCompanyCommandHandler(
         IUnitOfWork unitOfWork, 
-        ICompanyRepository companyRepository, 
+        INoSqlUnitOfWork noSqlUnitOfWork, 
         AzureTest.Application.Interfaces.Services.ICompanyCacheService cacheService,
         ILogger<UpdateCompanyCommandHandler> logger) : base(unitOfWork,logger)
     {
-        _companyRepository = companyRepository;
+        _noSqlUnitOfWork = noSqlUnitOfWork;
         _cacheService = cacheService;
     }
 
     protected override async Task<bool> ExecuteAsync(UpdateCompanyCommand command, CancellationToken cancellationToken)
     {
-        var company = await _companyRepository.GetByIdAsync(command.Dto.Id);
+        var company = await _noSqlUnitOfWork.Companies.GetByIdAsync(command.Dto.Id);
         if (company == null) return false;
 
         company.CompanyName = command.Dto.CompanyName;
@@ -37,7 +37,7 @@ public sealed class UpdateCompanyCommandHandler : BaseCommandHandler<UpdateCompa
         company.IsINDMember = command.Dto.IsINDMember;
         company.Location = command.Dto.Location;
 
-        await _companyRepository.UpdateAsync(company.Id,company);
+        await _noSqlUnitOfWork.Companies.UpdateAsync(company.Id,company);
         await _cacheService.InvalidateCompaniesAsync(cancellationToken);
 
         return true;

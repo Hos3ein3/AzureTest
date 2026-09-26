@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Companies.Queries.GetAllCompanies;
 using AzureTest.Application.Companies.Queries.GetCompanyById;
+using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Contracts.DTOs.Companies;
@@ -17,11 +18,15 @@ namespace AzureTest.UnitTest.Companies;
 
 public class CompanyQueriesTests
 {
+    private readonly Mock<INoSqlUnitOfWork> _mockNoSqlUnitOfWork;
+    private readonly Mock<IUnitOfWork>  _mockUnitOfWork;
     private readonly Mock<ICompanyRepository> _mockCompanyRepository;
     private readonly Mock<ICompanyCacheService> _mockCacheService;
 
     public CompanyQueriesTests()
     {
+        _mockNoSqlUnitOfWork= new Mock<INoSqlUnitOfWork>();
+        _mockUnitOfWork = new Mock<IUnitOfWork>();
         _mockCompanyRepository = new Mock<ICompanyRepository>();
         _mockCacheService = new Mock<ICompanyCacheService>();
     }
@@ -30,7 +35,7 @@ public class CompanyQueriesTests
     public async Task GetCompanyById_Should_ReturnDto_WhenCompanyExists()
     {
         // Arrange
-        var handler = new GetCompanyByIdQueryHandler(_mockCompanyRepository.Object);
+        var handler = new GetCompanyByIdQueryHandler(_mockNoSqlUnitOfWork.Object);
         var companyId = Guid.NewGuid();
         var company = new Company 
         { 
@@ -57,7 +62,7 @@ public class CompanyQueriesTests
     public async Task GetCompanyById_Should_ReturnNull_WhenCompanyDoesNotExist()
     {
         // Arrange
-        var handler = new GetCompanyByIdQueryHandler(_mockCompanyRepository.Object);
+        var handler = new GetCompanyByIdQueryHandler(_mockNoSqlUnitOfWork.Object);
         _mockCompanyRepository.Setup(x => x.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Company?)null);
         var query = new GetCompanyByIdQuery(Guid.NewGuid());
 
@@ -72,7 +77,7 @@ public class CompanyQueriesTests
     public async Task GetAllCompanies_Should_ReturnFromCache_WhenCacheIsNotEmpty()
     {
         // Arrange
-        var handler = new GetAllCompaniesQueryHandler(_mockCompanyRepository.Object, _mockCacheService.Object);
+        var handler = new GetAllCompaniesQueryHandler(_mockNoSqlUnitOfWork.Object, _mockCacheService.Object);
         var cachedDtos = new List<CompanyDto>
         {
             new CompanyDto(Guid.NewGuid(), "Cached Company 1", "111", true, "Rotterdam"),
@@ -98,7 +103,7 @@ public class CompanyQueriesTests
     public async Task GetAllCompanies_Should_FetchFromRepository_WhenCacheIsEmpty_And_ApplyFilters()
     {
         // Arrange
-        var handler = new GetAllCompaniesQueryHandler(_mockCompanyRepository.Object, _mockCacheService.Object);
+        var handler = new GetAllCompaniesQueryHandler(_mockNoSqlUnitOfWork.Object, _mockCacheService.Object);
         var companies = new List<Company>
         {
             new Company { Id = Guid.NewGuid(), CompanyName = "Tech Corp", IsINDMember = true, Location = "Utrecht" },

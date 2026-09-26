@@ -9,12 +9,22 @@ namespace AzureTest.Persistence.Repositories.NoSql;
 public class NoSqlUnitOfWork : INoSqlUnitOfWork
 {
     private readonly IMongoClient _mongoClient;
+    private readonly IMongoDatabase _database;
     private IClientSessionHandle? _session;
 
-    public NoSqlUnitOfWork(IMongoClient mongoClient)
+    private IResumeFilesRepository? _resumeFiles;
+    private ICompanyRepository? _companies;
+    private IResumeStatusLogRepository? _resumeStatusLogs;
+
+    public NoSqlUnitOfWork(IMongoClient mongoClient, IMongoDatabase database)
     {
         _mongoClient = mongoClient ?? throw new ArgumentNullException(nameof(mongoClient));
+        _database = database ?? throw new ArgumentNullException(nameof(database));
     }
+
+    public IResumeFilesRepository ResumeFiles => _resumeFiles ??= new ResumeFilesRepository(_database);
+    public ICompanyRepository Companies => _companies ??= new CompanyRepository(_database);
+    public IResumeStatusLogRepository ResumeStatusLogs => _resumeStatusLogs ??= new ResumeStatusLogRepository(_database);
 
     public async Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

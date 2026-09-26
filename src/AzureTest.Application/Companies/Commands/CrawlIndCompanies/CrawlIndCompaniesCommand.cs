@@ -20,19 +20,19 @@ public sealed record CrawlIndCompaniesResult(int NewlyAdded, int TotalProcessed)
 public sealed class CrawlIndCompaniesCommandHandler : BaseCommandHandler<CrawlIndCompaniesCommand, CrawlIndCompaniesResult>
 {
     private readonly IIndCrawlerService _indCrawlerService;
-    private readonly ICompanyRepository _companyRepository;
+    private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly AzureTest.Application.Interfaces.Services.ICompanyCacheService _cacheService;
 
     public CrawlIndCompaniesCommandHandler(
         IUnitOfWork unitOfWork,
         IIndCrawlerService indCrawlerService,
-        ICompanyRepository companyRepository,
+        INoSqlUnitOfWork noSqlUnitOfWork,
         AzureTest.Application.Interfaces.Services.ICompanyCacheService cacheService,
         ILogger<CrawlIndCompaniesCommandHandler> logger)
         : base(unitOfWork, logger)
     {
         _indCrawlerService = indCrawlerService;
-        _companyRepository = companyRepository;
+        _noSqlUnitOfWork = noSqlUnitOfWork;
         _cacheService = cacheService;
     }
 
@@ -44,7 +44,7 @@ public sealed class CrawlIndCompaniesCommandHandler : BaseCommandHandler<CrawlIn
             excelFilePath = await _indCrawlerService.CrawlAndSaveToExcelAsync(cancellationToken);
             var parsedCompanies = await _indCrawlerService.ReadCompaniesFromExcelAsync(excelFilePath, cancellationToken);
 
-            var existingCompanies = await _companyRepository.GetAllAsync();
+            var existingCompanies = await _noSqlUnitOfWork.Companies.GetAllAsync();
             var existingByKvk = existingCompanies
                 .Where(c => !string.IsNullOrWhiteSpace(c.KvkNumber))
                 .ToDictionary(c => c.KvkNumber!, c => c);
@@ -60,7 +60,7 @@ public sealed class CrawlIndCompaniesCommandHandler : BaseCommandHandler<CrawlIn
                     {
                         existing.IsINDMember = true;
                         existing.CompanyName = parsed.CompanyName;
-                        await _companyRepository.UpdateAsync(existing.Id, existing);
+                        await _noSqlUnitOfWork.Companies.UpdateAsync(existing.Id, existing);
                     }
                 }
                 else
@@ -71,7 +71,7 @@ public sealed class CrawlIndCompaniesCommandHandler : BaseCommandHandler<CrawlIn
                         KvkNumber = parsed.KvkNumber,
                         IsINDMember = true
                     };
-                    await _companyRepository.AddAsync(newCompany);
+                    await _noSqlUnitOfWork.Companies.AddAsync(newCompany);
                     newAddedCount++;
                 }
             }

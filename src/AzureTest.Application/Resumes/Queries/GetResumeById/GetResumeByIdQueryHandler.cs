@@ -16,22 +16,22 @@ public sealed record GetResumeByIdQuery(Guid Id) : IQuery<ResumeDto?>;
 
 public sealed class GetResumeByIdQueryHandler : BaseQueryHandler<GetResumeByIdQuery, ResumeDto?>
 {
-    private readonly IResumeRepository _resumeRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUser _currentUser;
 
     public GetResumeByIdQueryHandler(
-        IResumeRepository resumeRepository,
+        IUnitOfWork unitOfWork,
         ICurrentUser currentUser,
         ILogger<GetResumeByIdQueryHandler> logger)
         : base(logger)
     {
-        _resumeRepository = resumeRepository;
+        _unitOfWork = unitOfWork;
         _currentUser = currentUser;
     }
 
     protected override async Task<ResumeDto?> ExecuteAsync(GetResumeByIdQuery query, CancellationToken cancellationToken)
     {
-        var resume = await _resumeRepository.GetResumeWithDetailsAsync(query.Id);
+        var resume = await _unitOfWork.Resumes.GetResumeWithDetailsAsync(query.Id);
         if (resume is null || resume.UserId != _currentUser.Id)
             return null;
         return MapToDto(resume);

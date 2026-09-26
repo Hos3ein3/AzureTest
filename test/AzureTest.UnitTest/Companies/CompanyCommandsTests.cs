@@ -19,11 +19,13 @@ namespace AzureTest.UnitTest.Companies;
 public class CompanyCommandsTests
 {
     private readonly Mock<IUnitOfWork> _mockUnitOfWork;
+    private readonly Mock<INoSqlUnitOfWork>  _mockNoSqlUnitOfWork;
     private readonly Mock<ICompanyRepository> _mockCompanyRepository;
     private readonly Mock<ICompanyCacheService> _mockCacheService;
 
-    public CompanyCommandsTests()
+    public CompanyCommandsTests(Mock<INoSqlUnitOfWork> mockNoSqlUnitOfWork)
     {
+        _mockNoSqlUnitOfWork = mockNoSqlUnitOfWork;
         _mockUnitOfWork = new Mock<IUnitOfWork>();
         _mockCompanyRepository = new Mock<ICompanyRepository>();
         _mockCacheService = new Mock<ICompanyCacheService>();
@@ -36,7 +38,7 @@ public class CompanyCommandsTests
         var mockLogger = new Mock<ILogger<CreateCompanyCommandHandler>>();
         var handler = new CreateCompanyCommandHandler(
             _mockUnitOfWork.Object,
-            _mockCompanyRepository.Object,
+            _mockNoSqlUnitOfWork.Object,
             _mockCacheService.Object,
             mockLogger.Object);
 
@@ -66,7 +68,7 @@ public class CompanyCommandsTests
         var mockLogger = new Mock<ILogger<UpdateCompanyCommandHandler>>();
         var handler = new UpdateCompanyCommandHandler(
             _mockUnitOfWork.Object,
-            _mockCompanyRepository.Object,
+            _mockNoSqlUnitOfWork.Object,
             _mockCacheService.Object,
             mockLogger.Object);
 
@@ -101,7 +103,7 @@ public class CompanyCommandsTests
         var mockLogger = new Mock<ILogger<DeleteCompanyCommandHandler>>();
         var handler = new DeleteCompanyCommandHandler(
             _mockUnitOfWork.Object,
-            _mockCompanyRepository.Object,
+            _mockNoSqlUnitOfWork.Object,
             _mockCacheService.Object,
             mockLogger.Object);
 

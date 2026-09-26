@@ -8,28 +8,28 @@ using AzureTest.Domain.Documents;
 namespace AzureTest.Persistence.Repositories.NoSql;
 
 /// <summary>
-/// No-op implementation of IStatusLogRepository used when MongoDB is not configured.
+/// No-op implementation of IResumeStatusLogRepository used when MongoDB is not configured.
 /// All operations complete successfully without doing anything.
 /// </summary>
-public class NullStatusLogRepository : IStatusLogRepository
+public class NullResumeStatusLogRepository : IResumeStatusLogRepository
 {
-    public Task<StatusLog?> GetByIdAsync(Guid id) => Task.FromResult<StatusLog?>(null);
+    public Task<ResumeStatusLog?> GetByIdAsync(Guid id) => Task.FromResult<ResumeStatusLog?>(null);
 
-    public Task<IReadOnlyList<StatusLog>> GetAllAsync() =>
-        Task.FromResult<IReadOnlyList<StatusLog>>(Array.Empty<StatusLog>());
+    public Task<IReadOnlyList<ResumeStatusLog>> GetAllAsync() =>
+        Task.FromResult<IReadOnlyList<ResumeStatusLog>>(Array.Empty<ResumeStatusLog>());
 
-    public Task<IReadOnlyList<StatusLog>> GetAllAvailableAsync()
-        => Task.FromResult<IReadOnlyList<StatusLog>>(Array.Empty<StatusLog>());
+    public Task<IReadOnlyList<ResumeStatusLog>> GetAllAvailableAsync()
+        => Task.FromResult<IReadOnlyList<ResumeStatusLog>>(Array.Empty<ResumeStatusLog>());
 
-    public Task<IReadOnlyList<StatusLog>> FindAsync(Expression<Func<StatusLog, bool>> predicate) =>
-        Task.FromResult<IReadOnlyList<StatusLog>>(Array.Empty<StatusLog>());
+    public Task<IReadOnlyList<ResumeStatusLog>> FindAsync(Expression<Func<ResumeStatusLog, bool>> predicate) =>
+        Task.FromResult<IReadOnlyList<ResumeStatusLog>>(Array.Empty<ResumeStatusLog>());
 
-    public Task AddAsync(StatusLog document) => Task.CompletedTask;
+    public Task AddAsync(ResumeStatusLog document) => Task.CompletedTask;
 
-    public Task UpdateAsync(Guid id, StatusLog document) => Task.CompletedTask;
+    public Task UpdateAsync(Guid id, ResumeStatusLog document) => Task.CompletedTask;
 
     public Task RemoveAsync(Guid id) => Task.CompletedTask;
 
-    public Task<IReadOnlyList<StatusLog>> GetByResumeIdAsync(Guid resumeId) =>
-        Task.FromResult<IReadOnlyList<StatusLog>>(Array.Empty<StatusLog>());
+    public Task<IReadOnlyList<ResumeStatusLog>> GetByResumeIdAsync(Guid resumeId) =>
+        Task.FromResult<IReadOnlyList<ResumeStatusLog>>(Array.Empty<ResumeStatusLog>());
 }

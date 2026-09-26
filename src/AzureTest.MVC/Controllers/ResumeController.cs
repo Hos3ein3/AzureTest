@@ -102,7 +102,7 @@ public class ResumeController : Controller
             ViewBag.Company = await _companyRepository.GetByIdAsync(resume.CompanyId.Value);
         }
 
-        ViewBag.StatusLogs = await _queries.GetStatusLogsByResumeId.HandleAsync(new AzureTest.Application.Resumes.Queries.GetStatusLogsByResumeId.GetStatusLogsByResumeIdQuery(id), cancellationToken);
+        ViewBag.StatusLogs = await _queries.GetResumeStatusLogsByResumeId.HandleAsync(new AzureTest.Application.Resumes.Queries.GetResumeStatusLogsByResumeId.GetResumeStatusLogsByResumeIdQuery(id), cancellationToken);
 
         ViewBag.Files = await _documentService.GetFileMetadataByResumeIdAsync(id, cancellationToken);
         return View(resume);

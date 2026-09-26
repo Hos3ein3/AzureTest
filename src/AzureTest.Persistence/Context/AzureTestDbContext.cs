@@ -36,6 +36,14 @@ public class AzureTestDbContext : IdentityDbContext<ApplicationUser, Application
 
     public DbSet<Resume> Resumes => Set<Resume>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    
+    // New Feature Domains
+    public DbSet<Event> Events => Set<Event>();
+    public DbSet<TaskItem> Tasks => Set<TaskItem>();
+    public DbSet<HabitTracker> HabitTrackers => Set<HabitTracker>();
+    public DbSet<HabitLog> HabitLogs => Set<HabitLog>();
+    public DbSet<Ticket> Tickets => Set<Ticket>();
+    public DbSet<TicketMessage> TicketMessages => Set<TicketMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

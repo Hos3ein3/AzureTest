@@ -11,16 +11,16 @@ public sealed record GetCompanyByIdQuery(Guid Id) : IQuery<CompanyDto?>;
 
 public sealed class GetCompanyByIdQueryHandler : IQueryHandler<GetCompanyByIdQuery, CompanyDto?>
 {
-    private readonly ICompanyRepository _companyRepository;
+    private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
 
-    public GetCompanyByIdQueryHandler(ICompanyRepository companyRepository)
+    public GetCompanyByIdQueryHandler(INoSqlUnitOfWork noSqlUnitOfWork)
     {
-        _companyRepository = companyRepository;
+        _noSqlUnitOfWork = noSqlUnitOfWork;
     }
 
     public async Task<CompanyDto?> HandleAsync(GetCompanyByIdQuery request, CancellationToken cancellationToken)
     {
-        var company = await _companyRepository.GetByIdAsync(request.Id);
+        var company = await _noSqlUnitOfWork.Companies.GetByIdAsync(request.Id);
         if (company == null) return null;
 
         return new CompanyDto(company.Id, company.CompanyName ?? "", company.KvkNumber ?? "", company.IsINDMember,company.Location);

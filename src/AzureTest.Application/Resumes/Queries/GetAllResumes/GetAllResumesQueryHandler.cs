@@ -21,22 +21,22 @@ public sealed record GetAllResumesQuery(GetAllResumesFilters Filters) : IQuery<P
 
 public sealed class GetAllResumesQueryHandler : BaseQueryHandler<GetAllResumesQuery, PagedResult<ResumeDto>>
 {
-    private readonly IResumeRepository _resumeRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUser _currentUser;
 
     public GetAllResumesQueryHandler(
-        IResumeRepository resumeRepository,
+        IUnitOfWork unitOfWork,
         ICurrentUser currentUser,
         ILogger<GetAllResumesQueryHandler> logger)
         : base(logger)
     {
-        _resumeRepository = resumeRepository;
+        _unitOfWork = unitOfWork;
         _currentUser = currentUser;
     }
 
     protected override async Task<PagedResult<ResumeDto>> ExecuteAsync(GetAllResumesQuery query, CancellationToken cancellationToken)
     {
-        var resumes = await _resumeRepository.FindAsync(r => !r.IsDeleted && r.UserId == _currentUser.Id);
+        var resumes = await _unitOfWork.Resumes.FindAsync(r => !r.IsDeleted && r.UserId == _currentUser.Id);
 
         // Apply filters in memory (Note: for large datasets, this should be moved to IQueryable in repo)
         var queryable = resumes.AsQueryable();

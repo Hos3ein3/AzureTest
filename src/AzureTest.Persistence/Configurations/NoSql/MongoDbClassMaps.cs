@@ -42,10 +42,10 @@ public static class MongoDbClassMaps
                 });
             }
 
-            // Map StatusLog document
-            if (!BsonClassMap.IsClassMapRegistered(typeof(StatusLog)))
+            // Map ResumeStatusLog document
+            if (!BsonClassMap.IsClassMapRegistered(typeof(ResumeStatusLog)))
             {
-                BsonClassMap.RegisterClassMap<StatusLog>(cm =>
+                BsonClassMap.RegisterClassMap<ResumeStatusLog>(cm =>
                 {
                     cm.AutoMap();
 

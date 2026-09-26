@@ -14,14 +14,14 @@ public sealed record GetAllCompaniesQuery(GetAllCompaniesFilters Filters) : IQue
 
 public sealed class GetAllCompaniesQueryHandler : IQueryHandler<GetAllCompaniesQuery, PagedResult<CompanyDto>>
 {
-    private readonly ICompanyRepository _companyRepository;
+    private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly AzureTest.Application.Interfaces.Services.ICompanyCacheService _cacheService;
 
     public GetAllCompaniesQueryHandler(
-        ICompanyRepository companyRepository,
+        INoSqlUnitOfWork noSqlUnitOfWork,
         AzureTest.Application.Interfaces.Services.ICompanyCacheService cacheService)
     {
-        _companyRepository = companyRepository;
+        _noSqlUnitOfWork = noSqlUnitOfWork;
         _cacheService = cacheService;
     }
 
@@ -37,7 +37,7 @@ public sealed class GetAllCompaniesQueryHandler : IQueryHandler<GetAllCompaniesQ
         }
         else
         {
-            var companies = await _companyRepository.GetAllAsync();
+            var companies = await _noSqlUnitOfWork.Companies.GetAllAsync();
             allDtos = companies.Select(c => new CompanyDto(c.Id, c.CompanyName ?? "", c.KvkNumber ?? "", c.IsINDMember, c.Location));
             
             // Set in cache

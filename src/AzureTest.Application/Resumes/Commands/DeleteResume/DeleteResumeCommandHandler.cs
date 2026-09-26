@@ -14,30 +14,28 @@ public sealed record DeleteResumeCommand(Guid Id) : ICommand<bool>;
 
 public sealed class DeleteResumeCommandHandler : BaseCommandHandler<DeleteResumeCommand,bool>
 {
-    private readonly IResumeRepository _resumeRepository;
+
     private readonly ICurrentUser _currentUser;
 
     public DeleteResumeCommandHandler(
         IUnitOfWork unitOfWork,
-        IResumeRepository resumeRepository,
         ICurrentUser currentUser,
         ILogger<DeleteResumeCommandHandler> logger)
         : base(unitOfWork, logger)
     {
-        _resumeRepository = resumeRepository;
         _currentUser = currentUser;
     }
 
     protected override async Task<bool> ExecuteAsync(DeleteResumeCommand command, CancellationToken cancellationToken)
     {
-        var resume = await _resumeRepository.GetByIdAsync(command.Id)
+        var resume = await UnitOfWork.Resumes.GetByIdAsync(command.Id)
             ?? throw new KeyNotFoundException($"Resume with ID {command.Id} was not found.");
 
         if (resume.UserId != _currentUser.Id)
             throw new UnauthorizedAccessException("You are not authorized to delete this resume.");
 
         resume.SoftDelete(_currentUser.Id.ToString());
-        _resumeRepository.Update(resume);
+        UnitOfWork.Resumes.Update(resume);
         return  true;
     }
 }

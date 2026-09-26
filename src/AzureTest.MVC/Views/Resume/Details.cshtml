@@ -266,10 +266,10 @@
 }
 
 @{
-    var statusLogs = ViewBag.StatusLogs as System.Collections.Generic.IReadOnlyList<AzureTest.Contracts.DTOs.Resumes.StatusLogDto>;
+    var resumeStatusLogs = ViewBag.StatusLogs as System.Collections.Generic.IReadOnlyList<AzureTest.Contracts.DTOs.Resumes.ResumeStatusLogDto>;
 }
 
-@if (statusLogs != null && statusLogs.Any())
+@if (resumeStatusLogs != null && resumeStatusLogs.Any())
 {
     <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-8">
         <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
@@ -277,7 +277,7 @@
         </div>
         <div class="p-0">
             <ul class="divide-y divide-slate-100">
-                @foreach (var log in statusLogs)
+                @foreach (var log in resumeStatusLogs)
                 {
                     <li class="p-6 hover:bg-slate-50 transition-colors">
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">

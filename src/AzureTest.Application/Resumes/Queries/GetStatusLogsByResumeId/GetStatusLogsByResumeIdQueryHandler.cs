@@ -8,27 +8,27 @@ using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.Resumes;
 using Microsoft.Extensions.Logging;
 
-namespace AzureTest.Application.Resumes.Queries.GetStatusLogsByResumeId;
+namespace AzureTest.Application.Resumes.Queries.GetResumeStatusLogsByResumeId;
 
-public sealed class GetStatusLogsByResumeIdQueryHandler : BaseQueryHandler<GetStatusLogsByResumeIdQuery, IReadOnlyList<StatusLogDto>>
+public sealed class GetResumeStatusLogsByResumeIdQueryHandler : BaseQueryHandler<GetResumeStatusLogsByResumeIdQuery, IReadOnlyList<ResumeStatusLogDto>>
 {
-    private readonly IStatusLogRepository _statusLogRepository;
+    private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
 
-    public GetStatusLogsByResumeIdQueryHandler(
-        IStatusLogRepository statusLogRepository,
-        ILogger<GetStatusLogsByResumeIdQueryHandler> logger)
+    public GetResumeStatusLogsByResumeIdQueryHandler(
+        INoSqlUnitOfWork noSqlUnitOfWork,
+        ILogger<GetResumeStatusLogsByResumeIdQueryHandler> logger)
         : base(logger)
     {
-        _statusLogRepository = statusLogRepository;
+        _noSqlUnitOfWork = noSqlUnitOfWork;
     }
 
-    protected override async Task<IReadOnlyList<StatusLogDto>> ExecuteAsync(
-        GetStatusLogsByResumeIdQuery query,
+    protected override async Task<IReadOnlyList<ResumeStatusLogDto>> ExecuteAsync(
+        GetResumeStatusLogsByResumeIdQuery query,
         CancellationToken cancellationToken)
     {
-        var logs = await _statusLogRepository.GetByResumeIdAsync(query.ResumeId);
+        var logs = await _noSqlUnitOfWork.ResumeStatusLogs.GetByResumeIdAsync(query.ResumeId);
 
-        return logs.Select(log => new StatusLogDto(
+        return logs.Select(log => new ResumeStatusLogDto(
             log.Id,
             log.ResumeId,
             log.Date,

@@ -18,20 +18,18 @@ public sealed record CreateResumeCommand(CreateResumeDto Dto) : ICommand<Guid>;
 
 public sealed class CreateResumeCommandHandler : BaseCommandHandler<CreateResumeCommand, Guid>
 {
-    private readonly IResumeRepository _resumeRepository;
-    private readonly ICompanyRepository _companyRepository;
+
+    private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly ICurrentUser _currentUser;
 
     public CreateResumeCommandHandler(
         IUnitOfWork unitOfWork,
-        IResumeRepository resumeRepository,
-        ICompanyRepository companyRepository,
+        INoSqlUnitOfWork noSqlUnitOfWork,
         ICurrentUser currentUser,
         ILogger<CreateResumeCommandHandler> logger)
         : base(unitOfWork, logger)
     {
-        _resumeRepository = resumeRepository;
-        _companyRepository = companyRepository;
+        _noSqlUnitOfWork = noSqlUnitOfWork;
         _currentUser = currentUser;
     }
 
@@ -45,7 +43,7 @@ public sealed class CreateResumeCommandHandler : BaseCommandHandler<CreateResume
         if (companyId is null && !string.IsNullOrWhiteSpace(dto.NewCompanyName))
         {
             // Check if a company with this name already exists (case-insensitive)
-            var existing = await _companyRepository.GetByNameAsync(dto.NewCompanyName.Trim());
+            var existing = await _noSqlUnitOfWork.Companies.GetByNameAsync(dto.NewCompanyName.Trim());
             if (existing is not null)
             {
                 companyId = existing.Id;
@@ -57,7 +55,7 @@ public sealed class CreateResumeCommandHandler : BaseCommandHandler<CreateResume
                 {
                     CompanyName = dto.NewCompanyName.Trim()
                 };
-                await _companyRepository.AddAsync(newCompany);
+                await _noSqlUnitOfWork.Companies.AddAsync(newCompany);
                 companyId = newCompany.Id;
             }
         }
@@ -79,7 +77,7 @@ public sealed class CreateResumeCommandHandler : BaseCommandHandler<CreateResume
         resume.CompanyId = companyId;
         resume.ChatUrl = dto.ChatUrl;
 
-        _resumeRepository.Add(resume);
+        UnitOfWork.Resumes.Add(resume);
 
         return await Task.FromResult(resume.Id);
     }

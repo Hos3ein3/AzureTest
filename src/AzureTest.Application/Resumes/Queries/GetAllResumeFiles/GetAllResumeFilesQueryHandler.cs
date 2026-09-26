@@ -13,16 +13,16 @@ public sealed record GetAllResumeFilesQuery : IQuery<IReadOnlyList<ResumeFileDto
 
 internal sealed class GetAllResumeFilesQueryHandler : IQueryHandler<GetAllResumeFilesQuery, IReadOnlyList<ResumeFileDto>>
 {
-    private readonly IResumeFilesRepository _resumeFilesRepository;
+    private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
 
-    public GetAllResumeFilesQueryHandler(IResumeFilesRepository resumeFilesRepository)
+    public GetAllResumeFilesQueryHandler(INoSqlUnitOfWork noSqlUnitOfWork)
     {
-        _resumeFilesRepository = resumeFilesRepository;
+        _noSqlUnitOfWork = noSqlUnitOfWork;
     }
 
     public async Task<IReadOnlyList<ResumeFileDto>> HandleAsync(GetAllResumeFilesQuery query, CancellationToken cancellationToken = default)
     {
-        var documents = await _resumeFilesRepository.GetAllAvailableAsync();
+        var documents = await _noSqlUnitOfWork.ResumeFiles.GetAllAvailableAsync();
 
         return documents.Select(d => new ResumeFileDto(
             d.Id,

@@ -5,7 +5,7 @@ using AzureTest.Domain.Documents;
 
 namespace AzureTest.Application.Interfaces.Data.NoSql;
 
-public interface IStatusLogRepository : IDocumentRepository<StatusLog>
+public interface IResumeStatusLogRepository : IDocumentRepository<ResumeStatusLog>
 {
-    Task<IReadOnlyList<StatusLog>> GetByResumeIdAsync(Guid resumeId);
+    Task<IReadOnlyList<ResumeStatusLog>> GetByResumeIdAsync(Guid resumeId);
 }

@@ -3,7 +3,7 @@ using AzureTest.Domain.Enums;
 
 namespace AzureTest.Domain.Documents;
 
-public class StatusLog
+public class ResumeStatusLog
 {
     public Guid Id { get; set; } = Guid.CreateVersion7();
     public Guid ResumeId { get; set; }

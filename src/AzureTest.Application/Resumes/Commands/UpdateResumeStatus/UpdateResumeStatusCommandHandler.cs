@@ -21,26 +21,24 @@ public sealed record UpdateResumeStatusCommand(UpdateResumeStatusDto Dto) : ICom
 
 public sealed class UpdateResumeStatusCommandHandler : BaseCommandHandler<UpdateResumeStatusCommand>
 {
-    private readonly IResumeRepository _resumeRepository;
-    private readonly IStatusLogRepository _statusLogRepository;
+
+    private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly ICurrentUser _currentUser;
 
     public UpdateResumeStatusCommandHandler(
         IUnitOfWork unitOfWork,
-        IResumeRepository resumeRepository,
-        IStatusLogRepository statusLogRepository,
+        INoSqlUnitOfWork noSqlUnitOfWork,
         ICurrentUser currentUser,
         ILogger<UpdateResumeStatusCommandHandler> logger)
         : base(unitOfWork, logger)
     {
-        _resumeRepository = resumeRepository;
-        _statusLogRepository = statusLogRepository;
+        _noSqlUnitOfWork = noSqlUnitOfWork;
         _currentUser = currentUser;
     }
 
     protected override async Task ExecuteAsync(UpdateResumeStatusCommand command, CancellationToken cancellationToken)
     {
-        var resume = await _resumeRepository.GetByIdAsync(command.Dto.Id)
+        var resume = await UnitOfWork.Resumes.GetByIdAsync(command.Dto.Id)
             ?? throw new KeyNotFoundException($"Resume with ID {command.Dto.Id} was not found.");
 
         if (resume.UserId != _currentUser.Id)
@@ -50,7 +48,7 @@ public sealed class UpdateResumeStatusCommandHandler : BaseCommandHandler<Update
 
         if (oldStatus != command.Dto.Status || !string.IsNullOrWhiteSpace(command.Dto.Note))
         {
-            var statusLog = new StatusLog
+            var resumeStatusLog = new ResumeStatusLog
             {
                 Id = Guid.CreateVersion7(),
                 ResumeId = resume.Id,
@@ -60,11 +58,11 @@ public sealed class UpdateResumeStatusCommandHandler : BaseCommandHandler<Update
                 Note = command.Dto.Note
             };
 
-            await _statusLogRepository.AddAsync(statusLog);
+            await _noSqlUnitOfWork.ResumeStatusLogs.AddAsync(resumeStatusLog);
         }
 
         resume.UpdateStatus(command.Dto.Status);
 
-        _resumeRepository.Update(resume);
+        UnitOfWork.Resumes.Update(resume);
     }
 }

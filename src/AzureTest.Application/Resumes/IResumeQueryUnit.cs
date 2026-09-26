@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using AzureTest.Application.Resumes.Queries.GetAllResumes;
 using AzureTest.Application.Resumes.Queries.GetResumeById;
-using AzureTest.Application.Resumes.Queries.GetStatusLogsByResumeId;
+using AzureTest.Application.Resumes.Queries.GetResumeStatusLogsByResumeId;
 using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.Resumes;
 using AzureTest.Contracts.DTOs.Common;
@@ -16,6 +16,6 @@ public interface IResumeQueryUnit
     IQueryHandler<GetAllResumesQuery, PagedResult<ResumeDto>> GetAll { get; }
     IQueryHandler<GetResumeByIdQuery, ResumeDto?> GetById { get; }
     IQueryHandler<AzureTest.Application.Resumes.Queries.GetResumeAnalytics.GetResumeAnalyticsQuery, ResumeAnalyticsDto> GetAnalytics { get; }
-    IQueryHandler<GetStatusLogsByResumeIdQuery, IReadOnlyList<StatusLogDto>> GetStatusLogs { get; }
-    IQueryHandler<GetStatusLogsByResumeIdQuery, IReadOnlyList<StatusLogDto>> GetStatusLogsByResumeId => GetStatusLogs;
+    IQueryHandler<GetResumeStatusLogsByResumeIdQuery, IReadOnlyList<ResumeStatusLogDto>> GetResumeStatusLogs { get; }
+    IQueryHandler<GetResumeStatusLogsByResumeIdQuery, IReadOnlyList<ResumeStatusLogDto>> GetResumeStatusLogsByResumeId => GetResumeStatusLogs;
 }

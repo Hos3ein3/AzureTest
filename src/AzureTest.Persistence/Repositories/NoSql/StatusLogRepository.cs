@@ -7,9 +7,9 @@ using MongoDB.Driver;
 
 namespace AzureTest.Persistence.Repositories.NoSql;
 
-public class StatusLogRepository : DocumentRepository<StatusLog>, IStatusLogRepository
+public class ResumeStatusLogRepository : DocumentRepository<ResumeStatusLog>, IResumeStatusLogRepository
 {
-    public StatusLogRepository(IMongoDatabase database)
+    public ResumeStatusLogRepository(IMongoDatabase database)
         : base(database, "StatusLogs")
     {
         EnsureIndexes();
@@ -17,14 +17,14 @@ public class StatusLogRepository : DocumentRepository<StatusLog>, IStatusLogRepo
 
     private void EnsureIndexes()
     {
-        var indexKeys = Builders<StatusLog>.IndexKeys.Ascending(x => x.ResumeId).Descending(x => x.Date);
+        var indexKeys = Builders<ResumeStatusLog>.IndexKeys.Ascending(x => x.ResumeId).Descending(x => x.Date);
         var indexOptions = new CreateIndexOptions { Background = true };
-        _collection.Indexes.CreateOne(new CreateIndexModel<StatusLog>(indexKeys, indexOptions));
+        _collection.Indexes.CreateOne(new CreateIndexModel<ResumeStatusLog>(indexKeys, indexOptions));
     }
 
-    public async Task<IReadOnlyList<StatusLog>> GetByResumeIdAsync(Guid resumeId)
+    public async Task<IReadOnlyList<ResumeStatusLog>> GetByResumeIdAsync(Guid resumeId)
     {
-        var filter = Builders<StatusLog>.Filter.Eq(x => x.ResumeId, resumeId);
+        var filter = Builders<ResumeStatusLog>.Filter.Eq(x => x.ResumeId, resumeId);
         return await _collection.Find(filter)
             .SortByDescending(x => x.Date)
             .ToListAsync();

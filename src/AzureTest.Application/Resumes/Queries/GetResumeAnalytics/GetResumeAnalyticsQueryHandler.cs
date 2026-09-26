@@ -18,28 +18,25 @@ public sealed record GetResumeAnalyticsQuery(string? UserId = null) : IQuery<Res
 
 public sealed class GetResumeAnalyticsQueryHandler : BaseQueryHandler<GetResumeAnalyticsQuery, ResumeAnalyticsDto>
 {
-    private readonly IResumeRepository _resumeRepository;
-    private readonly ICompanyRepository _companyRepository;
-    private readonly IResumeFilesRepository _resumeFilesRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly ICurrentUser _currentUser;
 
     public GetResumeAnalyticsQueryHandler(
-        IResumeRepository resumeRepository,
-        ICompanyRepository companyRepository,
-        IResumeFilesRepository resumeFilesRepository,
+        IUnitOfWork unitOfWork,
+        INoSqlUnitOfWork noSqlUnitOfWork,
         ICurrentUser currentUser,
         ILogger<GetResumeAnalyticsQueryHandler> logger)
         : base(logger)
     {
-        _resumeRepository = resumeRepository;
-        _companyRepository = companyRepository;
-        _resumeFilesRepository = resumeFilesRepository;
+        _unitOfWork = unitOfWork;
+        _noSqlUnitOfWork = noSqlUnitOfWork;
         _currentUser = currentUser;
     }
 
     protected override async Task<ResumeAnalyticsDto> ExecuteAsync(GetResumeAnalyticsQuery query, CancellationToken cancellationToken)
     {
-        var allResumes = await _resumeRepository.GetAllAsync();
+        var allResumes = await _unitOfWork.Resumes.GetAllAsync();
         
         bool isAdmin = _currentUser.Roles.Contains("Admin");
         var totalUsersCount = allResumes.Select(r => r.UserId).Distinct().Count();
@@ -108,12 +105,12 @@ public sealed class GetResumeAnalyticsQueryHandler : BaseQueryHandler<GetResumeA
         double offerRate = totalApps > 0 ? Math.Round((double)offerCount / totalApps * 100, 1) : 0;
 
         var distinctCompanyIds = resumes.Where(r => r.CompanyId.HasValue).Select(r => r.CompanyId.Value).Distinct().ToList();
-        var companiesCount = await _companyRepository.GetAllAvailableAsync();
+        var companiesCount = await _noSqlUnitOfWork.Companies.GetAllAvailableAsync();
         
 
         // Fetch recent activities
         var recentResumes = resumes.OrderByDescending(r => r.CreatedOn).Take(5).ToList();
-        var allCompanies = await _companyRepository.GetAllAsync();
+        var allCompanies = await _noSqlUnitOfWork.Companies.GetAllAsync();
         var companyDict = allCompanies.ToDictionary(c => c.Id, c => c.CompanyName);
 
         var recentActivities = recentResumes.Select(r => new RecentActivityDto(
@@ -125,7 +122,7 @@ public sealed class GetResumeAnalyticsQueryHandler : BaseQueryHandler<GetResumeA
         )).ToList();
 
         var resumeIds = resumes.Select(r => r.Id).ToHashSet();
-        var allFiles = await _resumeFilesRepository.GetAllAsync();
+        var allFiles = await _noSqlUnitOfWork.ResumeFiles.GetAllAsync();
         var filesForResumes = allFiles.Where(f => resumeIds.Contains(f.ResumeId)).ToList();
         long occupiedStorage = filesForResumes.Sum(f => f.CvSize + f.ClSize);
 
