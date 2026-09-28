@@ -129,44 +129,75 @@ builder.Services.AddHybridCache();
 builder.Services.AddExceptionHandler<AzureTest.MVC.Infrastructure.GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-// ── ProductionSimulate: start containers & override connection strings ────────
+// ── ProductionSimulate: start Testcontainers & override connection strings ────
 if (builder.Environment.IsEnvironment("ProductionSimulate"))
     await AzureTest.MVC.Infrastructure.ProductionSimulateSetup.ConfigureAsync(builder);
+// ── ProductionSimulateLocal: no container bootstrap needed — reads from appsettings.ProductionSimulateLocal.json ──
+
 
 var app = builder.Build();
 
 // ── Auto-apply pending EF Core migrations on cold start ─────────────────────
-try
+var isSimulateEnv = app.Environment.IsEnvironment("ProductionSimulate") ||
+                    app.Environment.IsEnvironment("ProductionSimulateLocal");
+if (!isSimulateEnv)
 {
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<AzureTestDbContext>();
-    var pending = await db.Database.GetPendingMigrationsAsync();
-    if (pending.Any())
+    try
     {
-        app.Logger.LogInformation("Applying {Count} pending migration(s)...", pending.Count());
-        await db.Database.MigrateAsync();
-        app.Logger.LogInformation("Migrations applied successfully.");
-    }
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AzureTestDbContext>();
+        var pending = await db.Database.GetPendingMigrationsAsync();
+        if (pending.Any())
+        {
+            app.Logger.LogInformation("Applying {Count} pending migration(s)...", pending.Count());
+            await db.Database.MigrateAsync();
+            app.Logger.LogInformation("Migrations applied successfully.");
+        }
 
-    // ── Auto-seed IND Companies on cold start ────────────────────────────────
-    var companySeeder = scope.ServiceProvider.GetService<AzureTest.Persistence.Seeding.CompanyDataSeeder>();
-    if (companySeeder != null)
+        // ── Auto-seed IND Companies on cold start ────────────────────────────────
+        var companySeeder = scope.ServiceProvider.GetService<AzureTest.Persistence.Seeding.CompanyDataSeeder>();
+        if (companySeeder != null)
+        {
+            await companySeeder.SeedIfEmptyAsync();
+        }
+
+        var identitySeeder = scope.ServiceProvider.GetService<AzureTest.Infrastructure.Seeding.IdentityDataSeeder>();
+        if (identitySeeder != null)
+            await identitySeeder.SeedAsync();
+    }
+    catch (Exception ex)
     {
-        await companySeeder.SeedIfEmptyAsync();
+        app.Logger.LogError(ex, "An error occurred while applying migrations.");
+        throw;
     }
-
-    var identitySeeder = scope.ServiceProvider.GetService<AzureTest.Infrastructure.Seeding.IdentityDataSeeder>();
-    if (identitySeeder != null)
-        await identitySeeder.SeedAsync();
-
-    // ── ProductionSimulate: apply migrations + seed Bogus data ────────────
-    if (app.Environment.IsEnvironment("ProductionSimulate"))
-        await AzureTest.MVC.Infrastructure.ProductionSimulateSetup.SeedAsync(app);
 }
-catch (Exception ex)
+
+// ── ProductionSimulate: apply Testcontainer migrations + seed all Bogus data ───
+ if (app.Environment.IsEnvironment("ProductionSimulate"))
 {
-    app.Logger.LogError(ex, "An error occurred while applying migrations.");
-    throw;
+    try
+    {
+        await AzureTest.MVC.Infrastructure.ProductionSimulateSetup.SeedAsync(app);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "An error occurred during ProductionSimulate seeding.");
+        throw;
+    }
+}
+
+// ── ProductionSimulateLocal: migrate + seed if empty (uses real local services) ──
+if (app.Environment.IsEnvironment("ProductionSimulateLocal"))
+{
+    try
+    {
+        await AzureTest.MVC.Infrastructure.ProductionSimulateLocalSetup.SeedIfEmptyAsync(app);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "An error occurred during ProductionSimulateLocal seeding.");
+        throw;
+    }
 }
 
 app.Logger.LogInformation(app.Environment.EnvironmentName, "Environment {0}");

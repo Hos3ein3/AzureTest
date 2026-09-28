@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AzureTest.Persistence.Migrations
 {
     [DbContext(typeof(AzureTestDbContext))]
-    [Migration("20260927102912_addDebt")]
-    partial class addDebt
+    [Migration("20260928085143_addATSScore")]
+    partial class addATSScore
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -54,6 +54,9 @@ namespace AzureTest.Persistence.Migrations
 
                     b.Property<DateTime?>("DeletedOn")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -435,6 +438,9 @@ namespace AzureTest.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<int?>("AtsScore")
+                        .HasColumnType("integer");
 
                     b.Property<string>("ChatUrl")
                         .HasColumnType("text");

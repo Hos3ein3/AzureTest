@@ -1,4 +1,7 @@
 using AzureTest.Application.Companies;
+using AzureTest.Application.Debts;
+using AzureTest.Application.Debts.Interfaces;
+using AzureTest.Application.Expenses.Units;
 using AzureTest.Application.Resumes;
 using AzureTest.Application.Users;
 using AzureTest.Contracts.Validators.Resumes;
@@ -36,6 +39,11 @@ public static class DependencyInjection
         services.AddScoped<AzureTest.Application.Habits.IHabitQueryUnit, AzureTest.Application.Habits.HabitQueryUnit>();
         services.AddScoped<AzureTest.Application.Tickets.ITicketCommandUnit, AzureTest.Application.Tickets.TicketCommandUnit>();
         services.AddScoped<AzureTest.Application.Tickets.ITicketQueryUnit, AzureTest.Application.Tickets.TicketQueryUnit>();
+        
+        services.AddScoped<IDebtCommandUnit, DebtCommandUnit>();
+        services.AddScoped<IDebtQueryUnit, DebtQueryUnit>();
+        services.AddScoped<IExpenseQueryUnit, ExpenseQueryUnit>();
+        services.AddScoped<IExpenseCommandUnit, ExpenseCommandUnit>();
 
         return services;
     }

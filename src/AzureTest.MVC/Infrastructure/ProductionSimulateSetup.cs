@@ -53,27 +53,91 @@ public static class ProductionSimulateSetup
 
         logger.LogInformation("🐳 ProductionSimulate: Starting ephemeral containers…");
 
+        // ── Resolve the Docker socket for macOS Docker Desktop compatibility ─────
+        // Active context is 'desktop-linux' => ~/.docker/run/docker.sock — probe FIRST.
+        // /var/run/docker.sock also exists as a symlink but may point to the wrong daemon.
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var candidateSockets = new[]
+        {
+            System.IO.Path.Combine(home, ".docker", "run", "docker.sock"),      // macOS Docker Desktop (desktop-linux ctx)
+            System.IO.Path.Combine(home, ".docker", "desktop", "docker.sock"),  // older macOS Docker Desktop
+            "/var/run/docker.sock",                                              // Linux / symlink fallback
+        };
+
+        string? socketPath = null;
+        foreach (var candidate in candidateSockets)
+        {
+            if (System.IO.File.Exists(candidate))
+            {
+                socketPath = candidate;
+                break;
+            }
+        }
+
+        if (socketPath == null)
+            throw new InvalidOperationException(
+                "❌ ProductionSimulate: Docker socket not found. " +
+                "Make sure Docker Desktop is running. Checked:\n  " +
+                string.Join("\n  ", candidateSockets));
+
+        var dockerEndpoint = $"unix://{socketPath}";
+        logger.LogInformation("🔌 Docker endpoint: {Endpoint}", dockerEndpoint);
+        Environment.SetEnvironmentVariable("DOCKER_HOST", dockerEndpoint);
+
+        // ── Build containers ──────────────────────────────────────────────────────
+        // WithDockerEndpoint() passes the socket directly — no reliance on env-var timing.
+        // WithCleanUp(false) disables the Ryuk reaper container (the actual source of the
+        // hang on macOS). Cleanup is handled manually in ApplicationStopped below.
         _postgres = new PostgreSqlBuilder()
+            .WithDockerEndpoint(dockerEndpoint)
             .WithImage("postgres:16-alpine")
             .WithDatabase("azuretest_sim")
             .WithUsername("sim_user")
             .WithPassword("sim_pass")
+            .WithCleanUp(false)
             .Build();
 
         _mongo = new MongoDbBuilder()
+            .WithDockerEndpoint(dockerEndpoint)
             .WithImage("mongo:7.0")
+            .WithCleanUp(false)
             .Build();
 
         _redis = new RedisBuilder()
+            .WithDockerEndpoint(dockerEndpoint)
             .WithImage("redis:7.2-alpine")
+            .WithCleanUp(false)
             .Build();
 
-        // Start all three in parallel for faster startup
-        await Task.WhenAll(
-            _postgres.StartAsync(),
-            _mongo.StartAsync(),
-            _redis.StartAsync()
-        );
+        // Start all three in parallel — with a generous timeout so we fail fast with a clear error
+        logger.LogInformation("⏳ Waiting for containers to start (timeout: 3 minutes)…");
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        try
+        {
+            await Task.WhenAll(
+                _postgres.StartAsync(cts.Token),
+                _mongo.StartAsync(cts.Token),
+                _redis.StartAsync(cts.Token)
+            );
+        }
+        catch (Exception ex)
+        {
+            // Log the FULL exception so we can see what actually failed
+            logger.LogError(ex,
+                "❌ ProductionSimulate: Container startup failed. " +
+                "Docker endpoint: {Endpoint}. " +
+                "Exception type: {ExType}. " +
+                "Message: {Message}",
+                dockerEndpoint, ex.GetType().Name, ex.Message);
+
+            if (ex is OperationCanceledException)
+                throw new InvalidOperationException(
+                    $"❌ ProductionSimulate: Containers failed to start within 3 minutes. " +
+                    $"Docker endpoint: {dockerEndpoint}", ex);
+
+            throw;  // re-throw original for all other errors
+        }
+
 
         logger.LogInformation("✅ ProductionSimulate: All containers running.");
 
