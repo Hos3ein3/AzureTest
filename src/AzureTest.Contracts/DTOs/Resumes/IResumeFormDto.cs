@@ -20,4 +20,5 @@ public interface IResumeFormDto
     System.DateTime CreatedOn { get; }
     System.Guid? CompanyId { get; }
     string? NewCompanyName { get; }
+    int? AtsScore { get; }
 }

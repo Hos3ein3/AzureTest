@@ -13,4 +13,5 @@ public sealed record CreateResumeDto(
     System.DateTime CreatedOn,
     ResumeStatus Status = ResumeStatus.Applied,
     System.Guid? CompanyId = null,
-    string? NewCompanyName = null) : IResumeFormDto;
+    string? NewCompanyName = null,
+    int? AtsScore = null) : IResumeFormDto;

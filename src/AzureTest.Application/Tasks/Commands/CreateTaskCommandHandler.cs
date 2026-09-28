@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AzureTest.Application.Tasks.Commands;
 
-public record CreateTaskCommand(string Title, string? Description, DateTime? DueDate, string? Priority) : ICommand<Guid>;
+public record CreateTaskCommand(string Title, string? Description, DateTime? StartDate, DateTime? EndDate, string? Priority) : ICommand<Guid>;
 
 public class CreateTaskCommandHandler : BaseCommandHandler<CreateTaskCommand, Guid>
 {
@@ -25,7 +25,7 @@ public class CreateTaskCommandHandler : BaseCommandHandler<CreateTaskCommand, Gu
 
     protected override async Task<Guid> ExecuteAsync(CreateTaskCommand command, CancellationToken cancellationToken)
     {
-        var t = TaskItem.Create(command.Title, command.Description, command.DueDate?.ToUniversalTime() , command.Priority, _currentUser.Id);
+        var t = TaskItem.Create(command.Title, command.Description, command.StartDate?.ToUniversalTime(), command.EndDate?.ToUniversalTime(), command.Priority, _currentUser.Id);
         UnitOfWork.Tasks.Add(t);
         return await Task.FromResult(t.Id);
     }

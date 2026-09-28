@@ -10,6 +10,15 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
+    "http-ps": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:5191",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "ProductionSimulate"
+      }
+    },
     "https": {
       "commandName": "Project",
       "dotnetRunMessages": true,

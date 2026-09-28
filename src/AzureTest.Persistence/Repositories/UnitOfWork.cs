@@ -19,6 +19,8 @@ public class UnitOfWork : IUnitOfWork
     private ITicketRepository? _tickets;
     private ITicketMessageRepository? _ticketMessages;
     private IResumeRepository? _resumes;
+    private IDebtRepository? _debts;
+    private IExpenseRepository? _expenses;
 
     public UnitOfWork(AzureTestDbContext dbContext)
     {
@@ -32,6 +34,8 @@ public class UnitOfWork : IUnitOfWork
     public ITicketRepository Tickets => _tickets ??= new TicketRepository(_dbContext);
     public ITicketMessageRepository TicketMessages => _ticketMessages ??= new TicketMessageRepository(_dbContext);
     public IResumeRepository Resumes => _resumes ??= new ResumeRepository(_dbContext);
+    public IDebtRepository Debts => _debts ??= new DebtRepository(_dbContext);
+    public IExpenseRepository Expenses => _expenses ??= new ExpenseRepository(_dbContext);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

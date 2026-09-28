@@ -49,5 +49,6 @@ public sealed class GetResumeByIdQueryHandler : BaseQueryHandler<GetResumeByIdQu
         resume.Status,
         resume.CreatedOn,
         resume.ModifiedOn,
-        resume.CompanyId);
+        resume.CompanyId,
+        resume.AtsScore);
 }

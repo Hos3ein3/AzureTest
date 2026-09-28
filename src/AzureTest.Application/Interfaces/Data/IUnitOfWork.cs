@@ -13,6 +13,8 @@ public interface IUnitOfWork : IDisposable
     ITicketRepository Tickets { get; }
     ITicketMessageRepository TicketMessages { get; }
     IResumeRepository Resumes { get; }
+    IDebtRepository Debts { get; }
+    IExpenseRepository Expenses { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

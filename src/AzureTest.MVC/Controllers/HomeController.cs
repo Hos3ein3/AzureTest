@@ -7,6 +7,12 @@ using Microsoft.AspNetCore.Identity;
 using AzureTest.Application.Resumes;
 using AzureTest.Application.Resumes.Queries.GetResumeAnalytics;
 using AzureTest.Domain.Entities.Identity;
+using AzureTest.Application.Debts.Interfaces;
+using AzureTest.Application.Events;
+using AzureTest.Application.Expenses.Units;
+using AzureTest.Application.Habits;
+using AzureTest.Application.Tasks;
+using AzureTest.Application.Tickets;
 
 namespace AzureTest.MVC.Controllers;
 
@@ -15,18 +21,22 @@ public class HomeController : Controller
 {
     private readonly IResumeQueryUnit _queries;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly AzureTest.Application.Events.IEventQueryUnit _eventQuery;
-    private readonly AzureTest.Application.Tasks.ITaskQueryUnit _taskQuery;
-    private readonly AzureTest.Application.Tickets.ITicketQueryUnit _ticketQuery;
-    private readonly AzureTest.Application.Habits.IHabitQueryUnit _habitQuery;
+    private readonly IEventQueryUnit _eventQuery;
+    private readonly ITaskQueryUnit _taskQuery;
+    private readonly ITicketQueryUnit _ticketQuery;
+    private readonly IHabitQueryUnit _habitQuery;
+    private readonly IDebtQueryUnit _debtQuery;
+    private readonly IExpenseQueryUnit _expenseQuery;
 
     public HomeController(
         IResumeQueryUnit queries, 
         UserManager<ApplicationUser> userManager,
-        AzureTest.Application.Events.IEventQueryUnit eventQuery,
-        AzureTest.Application.Tasks.ITaskQueryUnit taskQuery,
-        AzureTest.Application.Tickets.ITicketQueryUnit ticketQuery,
-        AzureTest.Application.Habits.IHabitQueryUnit habitQuery)
+        IEventQueryUnit eventQuery,
+        ITaskQueryUnit taskQuery,
+        ITicketQueryUnit ticketQuery,
+        IHabitQueryUnit habitQuery,
+        IDebtQueryUnit debtQuery,
+        IExpenseQueryUnit expenseQuery)
     {
         _queries = queries;
         _userManager = userManager;
@@ -34,6 +44,8 @@ public class HomeController : Controller
         _taskQuery = taskQuery;
         _ticketQuery = ticketQuery;
         _habitQuery = habitQuery;
+        _debtQuery = debtQuery;
+        _expenseQuery = expenseQuery;
     }
 
     public async Task<IActionResult> Index(string? userId, CancellationToken cancellationToken)
@@ -82,6 +94,46 @@ public class HomeController : Controller
             {
                 model.Tickets = await _ticketQuery.GetUnreadTickets.HandleAsync(new AzureTest.Application.Tickets.Queries.GetUnreadTicketsQuery(parsedUserId ?? Guid.Empty), cancellationToken);
             }
+            
+            // Recent Debts
+            var allDebts = await _debtQuery.GetAll.HandleAsync(new AzureTest.Application.Debts.Queries.GetAllDebtsQuery(parsedUserId), cancellationToken);
+            model.RecentDebts = allDebts.Take(5).ToList();
+            
+            // Promissed Debts (Due Soon)
+            model.PromissedDebts = allDebts
+                .Where(d => d.PromissedReturnDate.HasValue && !d.IsDone)
+                .OrderBy(d => d.PromissedReturnDate)
+                .Take(5).ToList();
+            
+            // Debt Graph Data
+            model.DebtsByPerson = allDebts
+                .Where(d => d.Amount > 0)
+                .GroupBy(d => d.DebtPersonName ?? "Unknown")
+                .ToDictionary(g => g.Key, g => g.Sum(d => d.Amount));
+            
+            // Recent Expenses
+            var allExpenses = await _expenseQuery.GetAll.HandleAsync(new AzureTest.Application.Expenses.Queries.GetAllExpensesQuery(
+                new AzureTest.Contracts.DTOs.Expenses.GetAllExpensesFilters 
+                { 
+                    UserId = parsedUserId,
+                    PageSize = 1000, // Fetch more for analytics
+                    SortBy = "Date",
+                    SortDescending = true
+                }), cancellationToken);
+            
+            model.RecentExpenses = allExpenses.Items.Take(5).ToList();
+            
+            // Expense Graph Data
+            model.ExpensesByCategory = allExpenses.Items
+                .Where(e => e.Amount > 0)
+                .GroupBy(e => string.IsNullOrWhiteSpace(e.CategoryName) ? "Uncategorized" : e.CategoryName)
+                .ToDictionary(g => g.Key, g => g.Sum(e => e.Amount));
+                
+            // Analytics KPIs
+            model.TotalOutstandingDebt = allDebts.Where(d => !d.IsDone).Sum(d => d.Amount);
+            model.TotalExpensesThisMonth = allExpenses.Items
+                .Where(e => e.Date.Year == now.Year && e.Date.Month == now.Month)
+                .Sum(e => e.Amount);
         }
 
         if (data.IsAdmin)

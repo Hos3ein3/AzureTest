@@ -71,7 +71,8 @@ public sealed class CreateResumeCommandHandler : BaseCommandHandler<CreateResume
             dto.CompanyId,
             _currentUser.Id,
             dto.Source,
-            dto.Status);
+            dto.Status,
+            dto.AtsScore);
 
         resume.CreatedOn = dto.CreatedOn;
         resume.CompanyId = companyId;

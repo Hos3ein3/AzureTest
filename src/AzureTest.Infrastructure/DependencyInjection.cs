@@ -31,6 +31,15 @@ public static class DependencyInjection
             });
             services.AddScoped<ICompanyCacheService, CompanyCacheService>();
         }
+        else
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = "localhost:6379";
+            });
+        }
+        
+        services.AddScoped<IRedisService, RedisService>();
 
         services.AddSerilogConfig(options);
         services.AddOpenTelemetryConfig(options);

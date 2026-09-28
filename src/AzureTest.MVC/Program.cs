@@ -4,10 +4,13 @@ using AzureTest.Infrastructure.Configuration;
 using AzureTest.Infrastructure.Services;
 using AzureTest.Persistence;
 using AzureTest.Persistence.Context;
+
+using Hangfire;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
-using Hangfire;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -126,6 +129,10 @@ builder.Services.AddHybridCache();
 builder.Services.AddExceptionHandler<AzureTest.MVC.Infrastructure.GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+// ── ProductionSimulate: start containers & override connection strings ────────
+if (builder.Environment.IsEnvironment("ProductionSimulate"))
+    await AzureTest.MVC.Infrastructure.ProductionSimulateSetup.ConfigureAsync(builder);
+
 var app = builder.Build();
 
 // ── Auto-apply pending EF Core migrations on cold start ─────────────────────
@@ -150,9 +157,11 @@ try
 
     var identitySeeder = scope.ServiceProvider.GetService<AzureTest.Infrastructure.Seeding.IdentityDataSeeder>();
     if (identitySeeder != null)
-    {
         await identitySeeder.SeedAsync();
-    }
+
+    // ── ProductionSimulate: apply migrations + seed Bogus data ────────────
+    if (app.Environment.IsEnvironment("ProductionSimulate"))
+        await AzureTest.MVC.Infrastructure.ProductionSimulateSetup.SeedAsync(app);
 }
 catch (Exception ex)
 {

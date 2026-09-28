@@ -127,9 +127,31 @@
             <p class="text-3xl font-bold text-slate-800">@FormatBytes(Model.Analytics.OccupiedStorage)</p>
         </div>
     </div>
+    
+    <!-- Stat Card: Outstanding Debt -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center hover:shadow-md transition-shadow">
+        <div class="h-14 w-14 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-money-bill-transfer text-red-500 text-2xl"></i>
+        </div>
+        <div class="ml-4 truncate">
+            <p class="text-sm font-medium text-slate-500 truncate">Outstanding Debt</p>
+            <p class="text-3xl font-bold text-slate-800">@Model.TotalOutstandingDebt.ToString("C")</p>
+        </div>
+    </div>
+
+    <!-- Stat Card: Expenses This Month -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center hover:shadow-md transition-shadow">
+        <div class="h-14 w-14 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-receipt text-orange-500 text-2xl"></i>
+        </div>
+        <div class="ml-4 truncate">
+            <p class="text-sm font-medium text-slate-500 truncate">Monthly Expenses</p>
+            <p class="text-3xl font-bold text-slate-800">@Model.TotalExpensesThisMonth.ToString("C")</p>
+        </div>
+    </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
     
     <!-- Tickets Widget -->
     <div class="col-span-1 bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
@@ -200,9 +222,17 @@
                             }
                             <div class="flex-1 truncate">
                                 <p class="text-sm font-medium text-slate-700 truncate">@t.Title</p>
-                                @if (t.DueDate.HasValue)
+                                @if (t.StartDate.HasValue && t.EndDate.HasValue)
                                 {
-                                    <p class="text-xs text-slate-400">Due: @t.DueDate.Value.ToString("MMM dd")</p>
+                                    <p class="text-xs text-slate-400">@t.StartDate.Value.ToString("MMM dd") &rarr; @t.EndDate.Value.ToString("MMM dd")</p>
+                                }
+                                else if (t.EndDate.HasValue)
+                                {
+                                    <p class="text-xs text-slate-400">Due: @t.EndDate.Value.ToString("MMM dd")</p>
+                                }
+                                else if (t.StartDate.HasValue)
+                                {
+                                    <p class="text-xs text-slate-400">Start: @t.StartDate.Value.ToString("MMM dd")</p>
                                 }
                             </div>
                         </div>
@@ -333,6 +363,131 @@
         </div>
     </div>
 
+    <!-- Debts Widget -->
+    <div class="col-span-1 bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+            <h5 class="text-lg font-semibold text-slate-800 m-0">Recent Debts</h5>
+            <a asp-controller="Debt" asp-action="Index" class="text-xs text-brand-600 hover:text-brand-500 font-medium">Manage &rarr;</a>
+        </div>
+        <div class="p-6 flex-1">
+            @if (!Model.RecentDebts.Any())
+            {
+                <div class="text-center text-slate-400 mt-6">
+                    <i class="fa-solid fa-money-bill-transfer text-3xl mb-2 block"></i>
+                    <p class="text-sm">No debts recorded.</p>
+                </div>
+            }
+            else
+            {
+                <div class="space-y-4">
+                    @foreach (var d in Model.RecentDebts)
+                    {
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full @(d.Amount > 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600") flex items-center justify-center flex-shrink-0">
+                                <i class="fa-solid @(d.Amount > 0 ? "fa-arrow-up" : "fa-arrow-down")"></i>
+                            </div>
+                            <div class="flex-1 truncate">
+                                <p class="text-sm font-medium text-slate-700 truncate">@d.DebtPersonName</p>
+                                <p class="text-xs text-slate-500">Borrowed: @d.DateOfBorrow.ToString("MMM dd")</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-slate-800">@d.Amount.ToString("C")</p>
+                                @if (d.DateOfReturn.HasValue)
+                                {
+                                    <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">Returned</span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">Pending</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Expenses Widget -->
+    <div class="col-span-1 bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+            <h5 class="text-lg font-semibold text-slate-800 m-0">Recent Expenses</h5>
+            <a asp-controller="Expense" asp-action="Index" class="text-xs text-brand-600 hover:text-brand-500 font-medium">Manage &rarr;</a>
+        </div>
+        <div class="p-6 flex-1">
+            @if (!Model.RecentExpenses.Any())
+            {
+                <div class="text-center text-slate-400 mt-6">
+                    <i class="fa-solid fa-receipt text-3xl mb-2 block"></i>
+                    <p class="text-sm">No recent expenses.</p>
+                </div>
+            }
+            else
+            {
+                <div class="space-y-4">
+                    @foreach (var e in Model.RecentExpenses)
+                    {
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-slate-50 text-slate-600 flex items-center justify-center flex-shrink-0 border border-slate-200">
+                                <i class="fa-solid fa-credit-card"></i>
+                            </div>
+                            <div class="flex-1 truncate">
+                                <p class="text-sm font-medium text-slate-700 truncate">@e.CategoryName</p>
+                                <p class="text-xs text-slate-500 truncate" title="@e.Description">@e.Description</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-red-600">-@e.Amount.ToString("C")</p>
+                                <p class="text-xs text-slate-400">@e.Date.ToString("MMM dd")</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Debts Due Soon Widget -->
+    <div class="col-span-1 bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+            <h5 class="text-lg font-semibold text-slate-800 m-0">Debts Due Soon</h5>
+            <a asp-controller="Debt" asp-action="Index" class="text-xs text-brand-600 hover:text-brand-500 font-medium">Manage &rarr;</a>
+        </div>
+        <div class="p-6 flex-1">
+            @if (!Model.PromissedDebts.Any())
+            {
+                <div class="text-center text-slate-400 mt-6">
+                    <i class="fa-solid fa-calendar-check text-3xl mb-2 block"></i>
+                    <p class="text-sm">No debts due soon.</p>
+                </div>
+            }
+            else
+            {
+                <div class="space-y-4">
+                    @foreach (var d in Model.PromissedDebts)
+                    {
+                        var isOverdue = d.PromissedReturnDate < DateTime.UtcNow;
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full @(isOverdue ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-600") flex items-center justify-center flex-shrink-0">
+                                <i class="fa-solid @(isOverdue ? "fa-triangle-exclamation" : "fa-clock")"></i>
+                            </div>
+                            <div class="flex-1 truncate">
+                                <p class="text-sm font-medium text-slate-700 truncate">@d.DebtPersonName</p>
+                                <p class="text-xs @(isOverdue ? "text-red-500 font-medium" : "text-slate-500")">Due: @d.PromissedReturnDate?.ToString("MMM dd")</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-slate-800">@d.Amount.ToString("C")</p>
+                                @if (d.Profit > 0)
+                                {
+                                    <p class="text-xs text-emerald-600 font-medium">+@d.Profit.ToString("C")</p>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -454,6 +609,46 @@
             </div>
         </div>
     </div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+    <!-- Expense Category Chart -->
+    <div class="col-span-1 lg:col-span-6">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h5 class="text-lg font-semibold text-slate-800 m-0">Expenses by Category</h5>
+                <i class="fa-solid fa-chart-pie text-slate-400"></i>
+            </div>
+            <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
+                @if(Model.ExpensesByCategory.Any())
+                {
+                    <canvas id="expenseChart"></canvas>
+                }
+                else
+                {
+                    <p class="text-slate-400">No expense data available.</p>
+                }
+            </div>
+        </div>
+    </div>
+    
+    <!-- Debt Person Chart -->
+    <div class="col-span-1 lg:col-span-6">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h5 class="text-lg font-semibold text-slate-800 m-0">Debts by Person</h5>
+                <i class="fa-solid fa-chart-bar text-slate-400"></i>
+            </div>
+            <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
+                @if(Model.DebtsByPerson.Any())
+                {
+                    <canvas id="debtChart"></canvas>
+                }
+                else
+                {
+                    <p class="text-slate-400">No debt data available.</p>
+                }
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
@@ -566,6 +761,37 @@
                 },
                 options: commonOptions
             });
+            // Expense Chart
+            if (document.getElementById('expenseChart')) {
+                const expLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpensesByCategory.Keys));
+                const expData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpensesByCategory.Values));
+                new Chart(document.getElementById('expenseChart').getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: expLabels,
+                        datasets: [{ 
+                            data: expData, 
+                            backgroundColor: ['#f87171', '#fb923c', '#fbbf24', '#a3e635', '#4ade80', '#2dd4bf', '#38bdf8', '#818cf8', '#c084fc', '#f472b6'],
+                            borderWidth: 1 
+                        }]
+                    },
+                    options: commonOptions
+                });
+            }
+
+            // Debt Chart
+            if (document.getElementById('debtChart')) {
+                const debtLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DebtsByPerson.Keys));
+                const debtData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DebtsByPerson.Values));
+                new Chart(document.getElementById('debtChart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: debtLabels,
+                        datasets: [{ label: 'Total Debt ($)', data: debtData, backgroundColor: '#f43f5e', borderRadius: 4 }]
+                    },
+                    options: barOptions
+                });
+            }
         });
     </script>
 }

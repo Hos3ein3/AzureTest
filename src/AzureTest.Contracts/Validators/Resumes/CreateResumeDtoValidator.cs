@@ -34,5 +34,8 @@ public sealed class CreateResumeDtoValidator : AbstractValidator<CreateResumeDto
         RuleFor(x=>x.ChatUrl).MaximumLength(500).WithMessage("Chat url must not exceed 500 characters.")
             .Must(link => string.IsNullOrWhiteSpace(link) || Uri.TryCreate(link, UriKind.Absolute, out _))
             .WithMessage("Chat Url must be a valid URL.");
+            
+        RuleFor(x => x.AtsScore)
+            .InclusiveBetween(0, 100).WithMessage("ATS Score must be between 0 and 100.");
     }
 }

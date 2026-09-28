@@ -66,7 +66,7 @@ public sealed class UpdateResumeCommandHandler : BaseCommandHandler<UpdateResume
         if (resume.UserId != _currentUser.Id)
             throw new UnauthorizedAccessException("You are not authorized to update this resume.");
 
-        resume.UpdateDetails(dto.PositionTitle, dto.Description, dto.Location, dto.JobLink,dto.CompanyId, dto.Note,dto.ChatUrl);
+        resume.UpdateDetails(dto.PositionTitle, dto.Description, dto.Location, dto.JobLink,dto.CompanyId, dto.Note,dto.ChatUrl, dto.AtsScore);
         resume.CompanyId = companyId;
         resume.ChatUrl = dto.ChatUrl;
         resume.UpdateStatus(dto.Status);

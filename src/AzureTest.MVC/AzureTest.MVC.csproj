@@ -16,6 +16,9 @@
         <PackageReference Include="FluentValidation.AspNetCore" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
         <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />
+        <PackageReference Include="Testcontainers.PostgreSql" />
+        <PackageReference Include="Testcontainers.MongoDb"  />
+        <PackageReference Include="Testcontainers.Redis"  />
     </ItemGroup>
 
     <ItemGroup>

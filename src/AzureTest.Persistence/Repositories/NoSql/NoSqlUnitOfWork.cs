@@ -15,6 +15,9 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     private IResumeFilesRepository? _resumeFiles;
     private ICompanyRepository? _companies;
     private IResumeStatusLogRepository? _resumeStatusLogs;
+    private IDebtPersonRepository? _debtPersons;
+    private IExpenseCategoryRepository? _expenseCategories;
+    private IUserPreferenceRepository? _userPreferences;
 
     public NoSqlUnitOfWork(IMongoClient mongoClient, IMongoDatabase database)
     {
@@ -25,6 +28,9 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     public IResumeFilesRepository ResumeFiles => _resumeFiles ??= new ResumeFilesRepository(_database);
     public ICompanyRepository Companies => _companies ??= new CompanyRepository(_database);
     public IResumeStatusLogRepository ResumeStatusLogs => _resumeStatusLogs ??= new ResumeStatusLogRepository(_database);
+    public IDebtPersonRepository DebtPersons => _debtPersons ??= new DebtPersonRepository(_database);
+    public IExpenseCategoryRepository ExpenseCategories => _expenseCategories ??= new ExpenseCategoryRepository(_database);
+    public IUserPreferenceRepository UserPreferences => _userPreferences ??= new UserPreferenceRepository(_database);
 
     public async Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

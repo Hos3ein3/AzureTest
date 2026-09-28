@@ -1,0 +1,71 @@
+@model System.Collections.Generic.IReadOnlyList<AzureTest.Contracts.DTOs.Debts.DebtDto>
+@{
+    ViewData["Title"] = "Debts";
+}
+
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">Debts</h1>
+        <p class="text-sm text-slate-500 mt-1">Manage your debts and track who owes you or whom you owe.</p>
+    </div>
+    <div>
+        <a asp-action="Create" class="inline-flex items-center justify-center rounded-lg border border-transparent bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
+            <i class="fa-solid fa-plus mr-2"></i> Add Debt
+        </a>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Person</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Amount</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date of Borrow</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date of Return</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Description</th>
+                    <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200">
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                                @item.DebtPersonName
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                @item.Amount.ToString("C")
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                @item.DateOfBorrow.ToShortDateString()
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                @(item.DateOfReturn?.ToShortDateString() ?? "-")
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 truncate max-w-xs">
+                                @(string.IsNullOrWhiteSpace(item.Description) ? "-" : item.Description)
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="text-brand-600 hover:text-brand-900 mx-1"><i class="fa-regular fa-eye"></i></a>
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="text-amber-600 hover:text-amber-900 mx-1"><i class="fa-regular fa-pen-to-square"></i></a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-slate-500 text-sm">
+                            <i class="fa-solid fa-folder-open text-4xl text-slate-300 mb-3 block"></i>
+                            <p>No debts found. Create one to get started.</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

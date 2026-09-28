@@ -1,0 +1,198 @@
+@model AzureTest.Application.Debts.Commands.CreateDebtCommand
+@{
+    ViewData["Title"] = "Add Debt";
+}
+
+<nav aria-label="breadcrumb" class="mb-6">
+    <ol class="flex items-center space-x-2 text-sm text-slate-500">
+        <li>
+            <a asp-action="Index" class="hover:text-brand-600 transition-colors">Debts</a>
+        </li>
+        <li>
+            <i class="fa-solid fa-chevron-right text-xs mx-1"></i>
+        </li>
+        <li class="font-medium text-slate-800" aria-current="page">Add New</li>
+    </ol>
+</nav>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden h-fit">
+        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+            <h5 class="text-lg font-semibold text-slate-800 m-0">Add New Debt</h5>
+        </div>
+        <div class="p-6 md:p-8">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                
+                <div class="grid grid-cols-1 gap-6 mb-6">
+                    <div>
+                        <label asp-for="Amount" class="block text-sm font-medium text-slate-700 mb-1">
+                            Amount <span class="text-red-500">*</span>
+                        </label>
+                        <input asp-for="Amount" type="number" step="0.01" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" />
+                        <span asp-validation-for="Amount" class="text-red-500 text-xs mt-1 block"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="DateOfBorrow" class="block text-sm font-medium text-slate-700 mb-1">
+                            Date of Borrow <span class="text-red-500">*</span>
+                        </label>
+                        <input asp-for="DateOfBorrow" type="date" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" />
+                        <span asp-validation-for="DateOfBorrow" class="text-red-500 text-xs mt-1 block"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="DateOfReturn" class="block text-sm font-medium text-slate-700 mb-1">Date of Return</label>
+                        <input asp-for="DateOfReturn" type="date" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" />
+                        <span asp-validation-for="DateOfReturn" class="text-red-500 text-xs mt-1 block"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="PromissedReturnDate" class="block text-sm font-medium text-slate-700 mb-1">Promissed Return Date</label>
+                        <input asp-for="PromissedReturnDate" type="date" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" />
+                        <span asp-validation-for="PromissedReturnDate" class="text-red-500 text-xs mt-1 block"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Profit" class="block text-sm font-medium text-slate-700 mb-1">Profit</label>
+                        <input asp-for="Profit" type="number" step="0.01" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" />
+                        <span asp-validation-for="Profit" class="text-red-500 text-xs mt-1 block"></span>
+                    </div>
+
+                    <div class="sm:col-span-1">
+                        <label asp-for="Description" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                        <textarea asp-for="Description" rows="3" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border"></textarea>
+                        <span asp-validation-for="Description" class="text-red-500 text-xs mt-1 block"></span>
+                    </div>
+                </div>
+                
+                <div class="mb-6 relative">
+                    <div class="flex justify-between items-end mb-1">
+                        <label class="block text-sm font-medium text-slate-700">Person</label>
+                        <button type="button" class="text-xs font-medium text-brand-600 hover:text-brand-700 focus:outline-none flex items-center" id="toggleNewPerson">
+                            <i class="fa-solid fa-plus mr-1"></i> Add new person
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <select id="personSelect" name="DebtPersonId" class="search-select w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm border px-4 py-2">
+                            <option value="">— Search or select existing person —</option>
+                            @if (ViewBag.DebtPersons != null)
+                            {
+                                foreach (var item in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.DebtPersons)
+                                {
+                                    <option value="@item.Value" selected="@(Model.DebtPersonId?.ToString() == item.Value)">@item.Text</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div id="newPersonPanel" class="mt-3 bg-slate-50 p-4 rounded-lg border border-slate-200" style="display:none;">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">New Person Name</label>
+                        <input type="text" id="newPersonInput" name="NewDebtPersonName" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="Type new person name..." autocomplete="off" />
+                        <div id="personAutocomplete" class="absolute z-10 w-full mt-1 bg-white shadow-lg rounded-md border border-slate-200 max-h-60 overflow-y-auto" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4 pt-4 border-t border-slate-100">
+                    <button type="submit" class="inline-flex justify-center rounded-lg border border-transparent bg-brand-600 py-2 px-6 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
+                        Save
+                    </button>
+                    <a asp-action="Index" class="inline-flex justify-center rounded-lg border border-slate-300 bg-white py-2 px-6 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectEl = document.getElementById('personSelect');
+        let tsInstance = null;
+        
+        if (selectEl) {
+            tsInstance = new TomSelect(selectEl, {
+                create: false,
+                sortField: { field: "text", direction: "asc" }
+            });
+        }
+
+        const toggleBtn = document.getElementById('toggleNewPerson');
+        const newPanel  = document.getElementById('newPersonPanel');
+        const newInput  = document.getElementById('newPersonInput');
+        const acList    = document.getElementById('personAutocomplete');
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                const isVisible = newPanel.style.display !== 'none';
+                if (isVisible) {
+                    newPanel.style.display = 'none';
+                    newInput.value = '';
+                    if (tsInstance) tsInstance.enable();
+                } else {
+                    newPanel.style.display = 'block';
+                    if (tsInstance) {
+                        tsInstance.clear();
+                        tsInstance.disable();
+                    }
+                    newInput.focus();
+                }
+            });
+        }
+
+        if (tsInstance) {
+            tsInstance.on('change', function(value) {
+                if (value) {
+                    newPanel.style.display = 'none';
+                    newInput.value = '';
+                }
+            });
+        }
+
+        let debounceTimer;
+        if (newInput) {
+            newInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                const term = newInput.value.trim();
+                if (term.length < 1) { acList.style.display = 'none'; return; }
+
+                debounceTimer = setTimeout(async () => {
+                    const res  = await fetch(`/Debt/SearchDebtPersons?term=${encodeURIComponent(term)}`);
+                    const data = await res.json();
+
+                    acList.innerHTML = '';
+                    if (data.length === 0) { acList.style.display = 'none'; return; }
+
+                    data.forEach(c => {
+                        const item = document.createElement('button');
+                        item.type = 'button';
+                        item.className = 'w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-brand-600 focus:outline-none focus:bg-slate-50';
+                        item.textContent = c.name;
+                        item.addEventListener('click', () => {
+                            if (tsInstance) {
+                                tsInstance.enable();
+                                tsInstance.setValue(c.id);
+                            }
+                            newInput.value = '';
+                            newPanel.style.display = 'none';
+                            acList.style.display = 'none';
+                        });
+                        acList.appendChild(item);
+                    });
+                    acList.style.display = 'block';
+                }, 300);
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (acList && !acList.contains(e.target) && e.target !== newInput) {
+                acList.style.display = 'none';
+            }
+        });
+    });
+    </script>
+}

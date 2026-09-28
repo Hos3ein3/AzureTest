@@ -6,7 +6,8 @@ public record TaskDto(
     Guid Id,
     string Title,
     string? Description,
-    DateTime? DueDate,
+    DateTime? StartDate,
+    DateTime? EndDate,
     bool IsCompleted,
     string? Priority,
     Guid UserId

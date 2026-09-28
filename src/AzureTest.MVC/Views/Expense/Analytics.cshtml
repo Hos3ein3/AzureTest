@@ -1,0 +1,243 @@
+@model AzureTest.MVC.Models.ExpenseAnalyticsViewModel
+@{
+    ViewData["Title"] = "Advanced Expense Analytics";
+}
+
+<div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+    <div>
+        <h1 class="text-3xl font-bold text-slate-800">Advanced Expense Analytics</h1>
+        <p class="text-slate-500 mt-1">Track your spending momentum and drill down into monthly details.</p>
+    </div>
+    <div class="flex gap-3">
+        <a asp-action="Index" class="inline-flex items-center justify-center px-4 py-2 bg-white text-slate-700 font-medium rounded-lg border border-slate-300 hover:bg-slate-50 transition-colors shadow-sm text-sm">
+            <i class="fa-solid fa-arrow-left mr-2"></i> Back to Expenses
+        </a>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center hover:shadow-md transition-shadow">
+        <div class="h-14 w-14 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-calendar-day text-orange-500 text-2xl"></i>
+        </div>
+        <div class="ml-4 truncate">
+            <p class="text-sm font-medium text-slate-500 truncate">Total This Month</p>
+            <p class="text-3xl font-bold text-slate-800">@Model.TotalThisMonth.ToString("C")</p>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center justify-between hover:shadow-md transition-shadow">
+        <div class="flex items-center">
+            <div class="h-14 w-14 rounded-xl @(Model.MonthOverMonthChangePercentage > 0 ? "bg-red-50 text-red-500" : "bg-emerald-50 text-emerald-500") flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid @(Model.MonthOverMonthChangePercentage > 0 ? "fa-arrow-trend-up" : "fa-arrow-trend-down") text-2xl"></i>
+            </div>
+            <div class="ml-4 truncate">
+                <p class="text-sm font-medium text-slate-500 truncate">Month-over-Month Change</p>
+                <div class="flex items-center gap-2">
+                    <p class="text-3xl font-bold text-slate-800">@Math.Abs(Model.MonthOverMonthChangePercentage).ToString("0.##")%</p>
+                    @if (Model.MonthOverMonthChangePercentage > 0)
+                    {
+                        <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">Higher</span>
+                    }
+                    else if (Model.MonthOverMonthChangePercentage < 0)
+                    {
+                        <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">Lower</span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">No Change</span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="text-right hidden sm:block">
+            <p class="text-sm font-medium text-slate-500">Last Month</p>
+            <p class="text-xl font-bold text-slate-700">@Model.TotalLastMonth.ToString("C")</p>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 flex flex-col h-full">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+            <h5 class="text-lg font-semibold text-slate-800 m-0">Monthly Trend</h5>
+            <i class="fa-solid fa-chart-line text-slate-400"></i>
+        </div>
+        <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
+            @if(Model.ExpensesByMonth.Any())
+            {
+                <canvas id="monthlyChart"></canvas>
+            }
+            else
+            {
+                <p class="text-slate-400">No monthly data available.</p>
+            }
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 flex flex-col h-full">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+            <h5 class="text-lg font-semibold text-slate-800 m-0">Category Breakdown</h5>
+            <i class="fa-solid fa-chart-pie text-slate-400"></i>
+        </div>
+        <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
+            @if(Model.ExpensesByCategory.Any())
+            {
+                <canvas id="categoryChart"></canvas>
+            }
+            else
+            {
+                <p class="text-slate-400">No category data available.</p>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Breakdown Accordion -->
+<h2 class="text-2xl font-bold text-slate-800 mb-4">Detailed Monthly Breakdown</h2>
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden divide-y divide-slate-200 mb-8" id="monthlyAccordion">
+    @if (!Model.MonthlyDetails.Any())
+    {
+        <div class="p-6 text-center text-slate-500">
+            No expenses recorded.
+        </div>
+    }
+    else
+    {
+        int index = 0;
+        foreach (var group in Model.MonthlyDetails)
+        {
+            var headingId = $"heading_{index}";
+            var collapseId = $"collapse_{index}";
+            var expanded = index == 0 ? "true" : "false";
+            var contentClass = index == 0 ? "" : "hidden";
+            var iconClass = index == 0 ? "fa-chevron-up" : "fa-chevron-down";
+
+            <div class="group">
+                <button type="button" 
+                        class="w-full px-6 py-4 flex items-center justify-between text-left focus:outline-none focus:bg-slate-50 hover:bg-slate-50 transition-colors"
+                        onclick="toggleAccordion('@collapseId', '@headingId')">
+                    <div class="flex items-center gap-4">
+                        <div class="h-10 w-10 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-sm">
+                            @group.MonthName.Substring(0, 3)
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800">@group.MonthName @group.Year</h3>
+                            <p class="text-sm text-slate-500">@group.Expenses.Count transactions</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="text-lg font-bold text-red-600">-@group.TotalAmount.ToString("C")</span>
+                        <i id="icon_@headingId" class="fa-solid @iconClass text-slate-400 transition-transform duration-200"></i>
+                    </div>
+                </button>
+                
+                <div id="@collapseId" class="@contentClass bg-slate-50 border-t border-slate-100">
+                    <div class="px-6 py-4">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-200 text-sm font-semibold text-slate-600">
+                                        <th class="pb-3 px-4">Date</th>
+                                        <th class="pb-3 px-4">Category</th>
+                                        <th class="pb-3 px-4">Description</th>
+                                        <th class="pb-3 px-4 text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 text-sm">
+                                    @foreach (var exp in group.Expenses.OrderByDescending(e => e.Date))
+                                    {
+                                        <tr class="hover:bg-white transition-colors">
+                                            <td class="py-3 px-4 text-slate-600 whitespace-nowrap">@exp.Date.ToString("MMM dd, yyyy")</td>
+                                            <td class="py-3 px-4 text-slate-800 font-medium">@(exp.CategoryName ?? "Uncategorized")</td>
+                                            <td class="py-3 px-4 text-slate-500 max-w-[200px] truncate" title="@exp.Description">@exp.Description</td>
+                                            <td class="py-3 px-4 text-right font-bold text-red-600 whitespace-nowrap">-@exp.Amount.ToString("C")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            index++;
+        }
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Accordion Logic
+        function toggleAccordion(collapseId, headingId) {
+            const content = document.getElementById(collapseId);
+            const icon = document.getElementById('icon_' + headingId);
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                content.classList.add('hidden');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Common Options
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            };
+
+            // Monthly Bar Chart
+            if (document.getElementById('monthlyChart')) {
+                const monthLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpensesByMonth.Keys));
+                const monthData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpensesByMonth.Values));
+                new Chart(document.getElementById('monthlyChart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [{
+                            label: 'Total Expenses ($)',
+                            data: monthData,
+                            backgroundColor: '#3b82f6', // blue-500
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+
+            // Category Doughnut Chart
+            if (document.getElementById('categoryChart')) {
+                const catLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpensesByCategory.Keys));
+                const catData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpensesByCategory.Values));
+                new Chart(document.getElementById('categoryChart').getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: catLabels,
+                        datasets: [{ 
+                            data: catData, 
+                            backgroundColor: ['#f87171', '#fb923c', '#fbbf24', '#a3e635', '#4ade80', '#2dd4bf', '#38bdf8', '#818cf8', '#c084fc', '#f472b6'],
+                            borderWidth: 1 
+                        }]
+                    },
+                    options: commonOptions
+                });
+            }
+        });
+    </script>
+}

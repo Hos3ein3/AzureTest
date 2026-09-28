@@ -32,11 +32,11 @@ public class TaskController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(string title, string? description, DateTime? dueDate, string? priority)
+    public async Task<IActionResult> Create(string title, string? description, DateTime? startDate, DateTime? endDate, string? priority)
     {
         if (!string.IsNullOrWhiteSpace(title))
         {
-            await _taskCommand.CreateTask.HandleAsync(new CreateTaskCommand(title, description, dueDate, priority), default);
+            await _taskCommand.CreateTask.HandleAsync(new CreateTaskCommand(title, description, startDate, endDate, priority), default);
         }
         return RedirectToAction(nameof(Index));
     }

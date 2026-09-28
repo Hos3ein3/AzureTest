@@ -71,8 +71,36 @@ public static class MongoDbClassMaps
                     cm.MapIdMember(c => c.Id)
                         .SetSerializer(new GuidSerializer(GuidRepresentation.Standard));
 
-                    
+                    cm.SetIgnoreExtraElements(true);
+                });
+            }
 
+            if (!BsonClassMap.IsClassMapRegistered(typeof(DebtPerson)))
+            {
+                BsonClassMap.RegisterClassMap<DebtPerson>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.MapIdMember(c => c.Id).SetSerializer(new GuidSerializer(GuidRepresentation.Standard));
+                    cm.SetIgnoreExtraElements(true);
+                });
+            }
+
+            if (!BsonClassMap.IsClassMapRegistered(typeof(ExpenseCategory)))
+            {
+                BsonClassMap.RegisterClassMap<ExpenseCategory>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.MapIdMember(c => c.Id).SetSerializer(new GuidSerializer(GuidRepresentation.Standard));
+                    cm.SetIgnoreExtraElements(true);
+                });
+            }
+
+            if (!BsonClassMap.IsClassMapRegistered(typeof(UserPreference)))
+            {
+                BsonClassMap.RegisterClassMap<UserPreference>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.MapIdMember(c => c.Id).SetSerializer(new GuidSerializer(GuidRepresentation.Standard));
                     cm.SetIgnoreExtraElements(true);
                 });
             }

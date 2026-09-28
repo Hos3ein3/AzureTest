@@ -180,6 +180,7 @@ else
                         <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@Html.Raw(GetSortLink("Location", "Location"))</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@Html.Raw(GetSortLink("Source", "Source"))</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@Html.Raw(GetSortLink("Status", "Status"))</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">ATS</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">@Html.Raw(GetSortLink("CreatedOn", "Applied On"))</th>
                         <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -234,6 +235,18 @@ else
                                         <i class="fa-solid fa-check"></i>
                                     </span>
                                 </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                @if (resume.AtsScore.HasValue)
+                                {
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium @(resume.AtsScore >= 80 ? "bg-emerald-100 text-emerald-800" : resume.AtsScore >= 50 ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-800")">
+                                        @resume.AtsScore
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-slate-300">—</span>
+                                }
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                                 @resume.CreatedOn.ToLocalTime().ToString("MMM d, yyyy")

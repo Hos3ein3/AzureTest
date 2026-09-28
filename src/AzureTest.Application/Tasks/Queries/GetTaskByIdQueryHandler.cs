@@ -27,6 +27,6 @@ public class GetTaskByIdQueryHandler : BaseQueryHandler<GetTaskByIdQuery, TaskDt
         var t = await _unitOfWork.Tasks.GetByIdAsync(query.Id);
         if (t == null || t.UserId != query.UserId) return null;
         
-        return new TaskDto(t.Id, t.Title, t.Description, t.DueDate, t.IsCompleted, t.Priority, t.UserId);
+        return new TaskDto(t.Id, t.Title, t.Description, t.StartDate, t.EndDate, t.IsCompleted, t.Priority, t.UserId);
     }
 }

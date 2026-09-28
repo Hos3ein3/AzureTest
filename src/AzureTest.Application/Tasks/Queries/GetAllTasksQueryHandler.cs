@@ -28,8 +28,8 @@ public class GetAllTasksQueryHandler : BaseQueryHandler<GetAllTasksQuery, IReadO
     {
         var tasks = await _unitOfWork.Tasks.GetTasksForUserAsync(query.UserId);
 
-        return tasks.OrderBy(t => t.IsCompleted).ThenBy(t => t.DueDate ?? DateTime.MaxValue).Select(t => new TaskDto(
-            t.Id, t.Title, t.Description, t.DueDate, t.IsCompleted, t.Priority, t.UserId
+        return tasks.OrderBy(t => t.IsCompleted).ThenBy(t => t.EndDate ?? t.StartDate ?? DateTime.MaxValue).Select(t => new TaskDto(
+            t.Id, t.Title, t.Description, t.StartDate, t.EndDate, t.IsCompleted, t.Priority, t.UserId
         )).ToList();
     }
 }

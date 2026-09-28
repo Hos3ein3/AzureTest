@@ -13,6 +13,7 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
     public string? Note { get; private set; } = string.Empty;
     public ResumeSource Source { get; private set; }
     public ResumeStatus Status { get; private set; }
+    public int? AtsScore { get; private set; }
 
     // IAudit properties
     public DateTime CreatedOn { get; set; }
@@ -46,7 +47,8 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         Guid? companyId,
         Guid userId,
         ResumeSource source, 
-        ResumeStatus status)
+        ResumeStatus status,
+        int? atsScore = null)
     {
         PositionTitle = positionTitle;
         Description = description;
@@ -58,6 +60,7 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         ChatUrl = chatUrl;
         CompanyId = companyId;
         UserId = userId;
+        AtsScore = atsScore;
     }
 
     public static Resume Create(
@@ -70,7 +73,8 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         Guid? companyId,
         Guid userId,
         ResumeSource source, 
-        ResumeStatus status = ResumeStatus.Applied)
+        ResumeStatus status = ResumeStatus.Applied,
+        int? atsScore = null)
     {
         return new Resume(
             positionTitle,
@@ -82,7 +86,8 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
             companyId,
             userId,
             source,
-            status
+            status,
+            atsScore
         );
     }
 
@@ -97,7 +102,7 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         string location, 
         string jobLink, 
         Guid? companyId,
-        string note,string chatUrl)
+        string note,string chatUrl, int? atsScore)
     {
         PositionTitle = positionTitle;
         Description = description;
@@ -105,6 +110,7 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         JobLink = jobLink;
         Note = note;
         ChatUrl = chatUrl;
+        AtsScore = atsScore;
     }
 
     public void SoftDelete(string? deletedBy = null)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -67,7 +67,8 @@ namespace AzureTest.Persistence.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "text", nullable: true),
-                    DueDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    StartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    EndDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsCompleted = table.Column<bool>(type: "boolean", nullable: false),
                     Priority = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),

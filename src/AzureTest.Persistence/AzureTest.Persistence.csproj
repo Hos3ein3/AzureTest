@@ -14,6 +14,7 @@
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
         <PackageReference Include="MongoDB.Driver" />
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+        <PackageReference Include="Bogus"   />
     </ItemGroup>
 
 </Project>

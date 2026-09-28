@@ -44,6 +44,8 @@ public class AzureTestDbContext : IdentityDbContext<ApplicationUser, Application
     public DbSet<HabitLog> HabitLogs => Set<HabitLog>();
     public DbSet<Ticket> Tickets => Set<Ticket>();
     public DbSet<TicketMessage> TicketMessages => Set<TicketMessage>();
+    public DbSet<Debt> Debts => Set<Debt>();
+    public DbSet<Expense> Expenses => Set<Expense>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

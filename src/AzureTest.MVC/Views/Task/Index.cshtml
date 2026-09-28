@@ -41,10 +41,22 @@
                     {
                         <p class="text-sm text-slate-500 mt-1 @(t.IsCompleted ? "line-through" : "")">@t.Description</p>
                     }
-                    @if (t.DueDate.HasValue)
+                    @if (t.StartDate.HasValue || t.EndDate.HasValue)
                     {
                         <p class="text-xs text-slate-400 mt-2">
-                            <i class="fa-regular fa-calendar mr-1"></i> Due: @t.DueDate.Value.ToShortDateString()
+                            <i class="fa-regular fa-calendar mr-1"></i>
+                            @if (t.StartDate.HasValue && t.EndDate.HasValue)
+                            {
+                                <span>@t.StartDate.Value.ToShortDateString() &rarr; @t.EndDate.Value.ToShortDateString()</span>
+                            }
+                            else if (t.StartDate.HasValue)
+                            {
+                                <span>Start: @t.StartDate.Value.ToShortDateString()</span>
+                            }
+                            else if (t.EndDate.HasValue)
+                            {
+                                <span>Due: @t.EndDate.Value.ToShortDateString()</span>
+                            }
                         </p>
                     }
                 </div>
@@ -76,9 +88,15 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
                         <textarea name="description" rows="2" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="Optional details..."></textarea>
                     </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
-                        <input type="date" name="dueDate" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" />
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
+                            <input type="date" name="startDate" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">End Date</label>
+                            <input type="date" name="endDate" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" />
+                        </div>
                     </div>
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-slate-700 mb-1">Priority</label>

@@ -102,7 +102,6 @@
             }
             
             <div class="sm:col-span-1">
-                <dt class="text-sm font-medium text-slate-500">Chat Url</dt>
                 <dd class="mt-1 text-sm text-slate-900">
                     @if (string.IsNullOrWhiteSpace(Model.ChatUrl))
                     {
@@ -113,6 +112,21 @@
                         <a href="@Model.ChatUrl" target="_blank" class="text-brand-600 hover:text-brand-500 truncate block">
                             @Model.ChatUrl <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-xs"></i>
                         </a>
+                    }
+                </dd>
+            </div>
+            <div class="sm:col-span-1">
+                <dt class="text-sm font-medium text-slate-500">ATS Score</dt>
+                <dd class="mt-1 text-sm text-slate-900">
+                    @if (Model.AtsScore.HasValue)
+                    {
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @(Model.AtsScore >= 80 ? "bg-emerald-100 text-emerald-800" : Model.AtsScore >= 50 ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-800")">
+                            @Model.AtsScore / 100
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="text-slate-400">—</span>
                     }
                 </dd>
             </div>

@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace AzureTest.Application.Tasks.Commands;
 
 
-public record UpdateTaskCommand(Guid Id, string Title, string? Description, DateTime? DueDate, string? Priority) : ICommand<Result>;
+public record UpdateTaskCommand(Guid Id, string Title, string? Description, DateTime? StartDate, DateTime? EndDate, string? Priority) : ICommand<Result>;
 
 
 public class UpdateTaskCommandHandler : BaseCommandHandler<UpdateTaskCommand, Result>
@@ -29,7 +29,7 @@ public class UpdateTaskCommandHandler : BaseCommandHandler<UpdateTaskCommand, Re
         var t = await UnitOfWork.Tasks.GetByIdAsync(command.Id);
         if (t == null || t.UserId != _currentUser.Id) return Result.Failure("Task not found.");
 
-        t.Update(command.Title, command.Description, command.DueDate, command.Priority);
+        t.Update(command.Title, command.Description, command.StartDate?.ToUniversalTime(), command.EndDate?.ToUniversalTime(), command.Priority);
         
         return Result.Success();
     }

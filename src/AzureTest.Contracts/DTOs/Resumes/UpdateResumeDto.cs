@@ -14,4 +14,5 @@ public sealed record UpdateResumeDto(
     string? NewCompanyName,
     ResumeSource Source,
     ResumeStatus Status,
-    System.DateTime CreatedOn) : IResumeFormDto;
+    System.DateTime CreatedOn,
+    int? AtsScore = null) : IResumeFormDto;

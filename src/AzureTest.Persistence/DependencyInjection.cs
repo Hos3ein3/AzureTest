@@ -52,6 +52,8 @@ public static class DependencyInjection
         services.AddScoped<IHabitLogRepository, HabitLogRepository>();
         services.AddScoped<ITicketRepository, TicketRepository>();
         services.AddScoped<ITicketMessageRepository, TicketMessageRepository>();
+        services.AddScoped<IDebtRepository, DebtRepository>();
+        services.AddScoped<IExpenseRepository, ExpenseRepository>();
 
         // ── Factories ─────────────────────────────────────────────────────────
         services.AddScoped<IDatabaseFactory, DatabaseFactory>();
@@ -70,6 +72,9 @@ public static class DependencyInjection
             services.AddScoped<IResumeFilesRepository, ResumeFilesRepository>();
             services.AddScoped<ICompanyRepository, CompanyRepository>();
             services.AddScoped<IResumeStatusLogRepository, ResumeStatusLogRepository>();
+            services.AddScoped<IDebtPersonRepository, DebtPersonRepository>();
+            services.AddScoped<IExpenseCategoryRepository, ExpenseCategoryRepository>();
+            services.AddScoped<IUserPreferenceRepository, UserPreferenceRepository>();
             services.AddScoped<INoSqlUnitOfWork, NoSqlUnitOfWork>();
             services.AddScoped<AzureTest.Persistence.Seeding.CompanyDataSeeder>();
         }
@@ -79,6 +84,9 @@ public static class DependencyInjection
             // File metadata will not be persisted until a MongoDb connection string is provided.
             services.AddScoped<IResumeFilesRepository, NullResumeFilesRepository>();
             services.AddScoped<IResumeStatusLogRepository, NullResumeStatusLogRepository>();
+            services.AddScoped<IDebtPersonRepository, NullDebtPersonRepository>();
+            services.AddScoped<IExpenseCategoryRepository, NullExpenseCategoryRepository>();
+            services.AddScoped<IUserPreferenceRepository, NullUserPreferenceRepository>();
         }
 
         return services;

@@ -7,7 +7,8 @@ public class TaskItem : AggregateRoot, ISoftDelete, IAudit
 {
     public string Title { get; private set; } = string.Empty;
     public string? Description { get; private set; }
-    public DateTime? DueDate { get; private set; }
+    public DateTime? StartDate { get; private set; }
+    public DateTime? EndDate { get; private set; }
     public bool IsCompleted { get; private set; }
     public string? Priority { get; private set; }
     public Guid UserId { get; private set; }
@@ -25,25 +26,27 @@ public class TaskItem : AggregateRoot, ISoftDelete, IAudit
 
     private TaskItem() { }
 
-    public static TaskItem Create(string title, string? description, DateTime? dueDate, string? priority, Guid userId)
+    public static TaskItem Create(string title, string? description, DateTime? startDate, DateTime? endDate, string? priority, Guid userId)
     {
         return new TaskItem
         {
             Id = Guid.NewGuid(),
             Title = title,
             Description = description,
-            DueDate = dueDate,
+            StartDate = startDate,
+            EndDate = endDate,
             Priority = priority,
             IsCompleted = false,
             UserId = userId
         };
     }
 
-    public void Update(string title, string? description, DateTime? dueDate, string? priority)
+    public void Update(string title, string? description, DateTime? startDate, DateTime? endDate, string? priority)
     {
         Title = title;
         Description = description;
-        DueDate = dueDate;
+        StartDate = startDate;
+        EndDate = endDate;
         Priority = priority;
     }
 
