@@ -5,6 +5,7 @@ using AzureTest.Domain.Entities.Identity;
 using AzureTest.Application.Messaging;
 using AzureTest.Application.Dashboards.Queries;
 using AzureTest.Application.Dashboards.Commands;
+using AzureTest.Application.Dashboards.RawComponents;
 using AzureTest.Application.UserPreferences.Commands;
 using AzureTest.Application.UserPreferences.Queries;
 using AzureTest.Domain.Documents;
@@ -30,6 +31,8 @@ public class DashboardController : Controller
     private readonly ICommandHandler<DeleteUserDashboardCommand> _deleteDashboardHandler;
     private readonly IQueryHandler<GetUserPreferenceQuery, UserPreference> _getPreferenceHandler;
     private readonly ICommandHandler<UpdateUserPreferenceCommand> _updatePreferenceHandler;
+
+    private readonly IQueryHandler<GetAllRawComponentsQuery, IReadOnlyList<DashboardRawComponent>> _getAllRawComponentsHandler;
     private readonly IDashboardDataLoader _dataLoader;
 
     public DashboardController(
@@ -42,6 +45,8 @@ public class DashboardController : Controller
         ICommandHandler<DeleteUserDashboardCommand> deleteDashboardHandler,
         IQueryHandler<GetUserPreferenceQuery, UserPreference> getPreferenceHandler,
         ICommandHandler<UpdateUserPreferenceCommand> updatePreferenceHandler,
+
+        IQueryHandler<GetAllRawComponentsQuery, IReadOnlyList<DashboardRawComponent>> getAllRawComponentsHandler,
         IDashboardDataLoader dataLoader)
     {
         _userManager = userManager;
@@ -53,6 +58,8 @@ public class DashboardController : Controller
         _deleteDashboardHandler = deleteDashboardHandler;
         _getPreferenceHandler = getPreferenceHandler;
         _updatePreferenceHandler = updatePreferenceHandler;
+
+        _getAllRawComponentsHandler = getAllRawComponentsHandler;
         _dataLoader = dataLoader;
     }
 
@@ -95,6 +102,14 @@ public class DashboardController : Controller
         }
 
         ViewBag.Components = allComponents.ToList();
+        
+        var allRawComponents = await _getAllRawComponentsHandler.HandleAsync(new GetAllRawComponentsQuery(), cancellationToken);
+        if (!isAdmin)
+        {
+            allRawComponents = allRawComponents.Where(c => string.IsNullOrEmpty(c.RequiredRole) || c.RequiredRole != "Admin").ToList();
+        }
+        ViewBag.AllRawComponents = allRawComponents;
+        
         return View(existing);
     }
 
@@ -108,18 +123,29 @@ public class DashboardController : Controller
         if (string.IsNullOrEmpty(payload.Name) || string.IsNullOrEmpty(payload.Slug))
             return BadRequest("Name and slug are required");
 
-        if (string.IsNullOrEmpty(payload.Id) || payload.Id == Guid.Empty.ToString()) // create new
+        try
         {
-            var cmd = new CreateUserDashboardCommand(userId, payload.Name, payload.Slug, payload.Sections);
-            await _createDashboardHandler.HandleAsync(cmd, cancellationToken);
-        }
-        else // update existing
-        {
-            var cmd = new UpdateUserDashboardCommand(Guid.Parse(payload.Id), userId, payload.Name, payload.Slug, payload.Sections);
-            await _updateDashboardHandler.HandleAsync(cmd, cancellationToken);
-        }
+            if (string.IsNullOrEmpty(payload.Id) || payload.Id == Guid.Empty.ToString()) // create new
+            {
+                var cmd = new CreateUserDashboardCommand(userId, payload.Name, payload.Slug, payload.Sections);
+                await _createDashboardHandler.HandleAsync(cmd, cancellationToken);
+            }
+            else // update existing
+            {
+                var cmd = new UpdateUserDashboardCommand(Guid.Parse(payload.Id), userId, payload.Name, payload.Slug, payload.Sections);
+                await _updateDashboardHandler.HandleAsync(cmd, cancellationToken);
+            }
 
-        return Ok(new { success = true, slug = payload.Slug });
+            return Ok(new { success = true, slug = payload.Slug });
+        }
+        catch (Exception ex)
+        {
+            if (ex.Message.Contains("duplicate key error"))
+            {
+                return BadRequest("A dashboard with this Name or Slug already exists. Please choose a different one.");
+            }
+            throw;
+        }
     }
 
     [HttpPost]
@@ -164,6 +190,19 @@ public class DashboardController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> CheckSlug(string slug, Guid? excludeId, CancellationToken cancellationToken)
+    {
+        var userIdStr = _userManager.GetUserId(User);
+        if (userIdStr == null) return Json(new { isAvailable = false });
+        var userId = Guid.Parse(userIdStr);
+        
+        var dashboards = await _getDashboardsHandler.HandleAsync(new GetUserDashboardsQuery(userId), cancellationToken);
+        var isTaken = dashboards.Any(d => string.Equals(d.Slug, slug, StringComparison.OrdinalIgnoreCase) && d.Id != excludeId);
+        
+        return Json(new { isAvailable = !isTaken });
+    }
+
+    [HttpGet]
     public async Task<IActionResult> ViewDashboard(string slug, string? targetUserId, CancellationToken cancellationToken)
     {
         var currentUserIdStr = _userManager.GetUserId(User);
@@ -199,6 +238,13 @@ public class DashboardController : Controller
             Dashboard = dashboard,
             HomeModel = homeModel
         };
+
+        var rawComponents = await _getAllRawComponentsHandler.HandleAsync(new GetAllRawComponentsQuery(), cancellationToken);
+        if (!isAdmin)
+        {
+            rawComponents = rawComponents.Where(c => string.IsNullOrEmpty(c.RequiredRole) || c.RequiredRole != "Admin").ToList();
+        }
+        ViewBag.AllRawComponents = rawComponents.ToDictionary(c => c.Id);
         
         return View(model);
     }

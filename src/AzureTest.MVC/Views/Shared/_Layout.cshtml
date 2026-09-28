@@ -199,6 +199,10 @@
                             <i class="fa-solid fa-user-shield w-6 @GetActiveIconClasses("Role")"></i>
                             <span class="ml-2 font-medium">Roles & Permissions</span>
                         </a>
+                        <a asp-area="" asp-controller="Component" asp-action="Index" class="flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Component")">
+                            <i class="fa-solid fa-cubes w-6 @GetActiveIconClasses("Component")"></i>
+                            <span class="ml-2 font-medium">Dashboard Components</span>
+                        </a>
                     }
                     <a href="/healthchecks-ui" target="_blank" class="flex items-center px-3 py-2.5 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors group">
                         <i class="fa-solid fa-heart-pulse w-6 text-slate-400 group-hover:text-white"></i>
@@ -338,6 +342,30 @@
                                 <option value="rose">Rose Elegance</option>
                             </select>
                         </div>
+
+                        <!-- Currency -->
+                        <div>
+                            <label for="prefCurrency" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                <i class="fa-solid fa-coins mr-1.5 text-brand-600"></i> Preferred Currency
+                            </label>
+                            <select id="prefCurrency" name="currency" class="block w-full rounded-lg border-slate-300 text-sm py-2 px-3 focus:border-brand-500 focus:ring-brand-500 border bg-white">
+                                <option value="USD">USD ($)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="GBP">GBP (£)</option>
+                                <option value="JPY">JPY (¥)</option>
+                            </select>
+                        </div>
+
+                        <!-- Preferred Dashboard -->
+                        <div>
+                            <label for="prefDashboard" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                <i class="fa-solid fa-chart-line mr-1.5 text-brand-600"></i> Default Dashboard
+                            </label>
+                            <select id="prefDashboard" name="preferredDashboard" class="block w-full rounded-lg border-slate-300 text-sm py-2 px-3 focus:border-brand-500 focus:ring-brand-500 border bg-white">
+                                <option value="">Standard View (Default)</option>
+                                <!-- Dashboards will be loaded here via JS -->
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Modal Footer -->
@@ -466,6 +494,27 @@
                         if (data.themeColor && themeColorSelect) {
                             themeColorSelect.value = data.themeColor;
                         }
+                        
+                        const currencySelect = document.getElementById('prefCurrency');
+                        if (data.currency && currencySelect) {
+                            currencySelect.value = data.currency;
+                        }
+                        
+                        const dashSelect = document.getElementById('prefDashboard');
+                        if (dashSelect && data.dashboards) {
+                            dashSelect.innerHTML = '<option value="">Standard View (Default)</option>';
+                            data.dashboards.forEach(d => {
+                                const opt = document.createElement('option');
+                                opt.value = d.slug;
+                                opt.textContent = d.name;
+                                dashSelect.appendChild(opt);
+                            });
+                            
+                            if (data.preferredDashboard) {
+                                dashSelect.value = data.preferredDashboard;
+                            }
+                        }
+                        
                     } else {
                         showAlert('Failed to load user preferences.', false);
                     }

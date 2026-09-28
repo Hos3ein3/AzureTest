@@ -5,6 +5,7 @@ using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
 using AzureTest.Application.UserPreferences.Commands;
 using AzureTest.Application.UserPreferences.Queries;
+using AzureTest.Application.Dashboards.Queries;
 using AzureTest.Domain.Documents;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,28 +18,34 @@ public class UserPreferenceController : Controller
     private readonly ICurrentUser _currentUser;
     private readonly IQueryHandler<GetUserPreferenceQuery, UserPreference> _getUserPreferenceQuery;
     private readonly ICommandHandler<UpdateUserPreferenceCommand> _updateUserPreferenceCommand;
+    private readonly IQueryHandler<GetUserDashboardsQuery, System.Collections.Generic.IEnumerable<UserDashboard>> _getDashboardsHandler;
 
     public UserPreferenceController(
         ICurrentUser currentUser,
         IQueryHandler<GetUserPreferenceQuery, UserPreference> getUserPreferenceQuery,
-        ICommandHandler<UpdateUserPreferenceCommand> updateUserPreferenceCommand)
+        ICommandHandler<UpdateUserPreferenceCommand> updateUserPreferenceCommand,
+        IQueryHandler<GetUserDashboardsQuery, System.Collections.Generic.IEnumerable<UserDashboard>> getDashboardsHandler)
     {
         _currentUser = currentUser;
         _getUserPreferenceQuery = getUserPreferenceQuery;
         _updateUserPreferenceCommand = updateUserPreferenceCommand;
+        _getDashboardsHandler = getDashboardsHandler;
     }
 
     [HttpGet]
     public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
         var pref = await _getUserPreferenceQuery.HandleAsync(new GetUserPreferenceQuery(_currentUser.Id), cancellationToken);
+        var dashboards = await _getDashboardsHandler.HandleAsync(new GetUserDashboardsQuery(_currentUser.Id), cancellationToken);
+        
         return Json(new
         {
             userId = pref.UserId,
             language = string.IsNullOrWhiteSpace(pref.Language) ? "en" : pref.Language,
             themeColor = string.IsNullOrWhiteSpace(pref.ThemeColor) ? "slate" : pref.ThemeColor,
             currency = string.IsNullOrWhiteSpace(pref.Currency) ? "USD" : pref.Currency,
-            preferredDashboard = pref.PreferredDashboard ?? string.Empty
+            preferredDashboard = pref.PreferredDashboard ?? string.Empty,
+            dashboards = dashboards.Select(d => new { slug = d.Slug, name = d.Name })
         });
     }
 

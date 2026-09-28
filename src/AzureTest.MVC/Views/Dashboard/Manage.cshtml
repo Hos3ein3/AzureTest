@@ -10,7 +10,13 @@
         <h1 class="text-2xl font-bold text-slate-800">My Dashboards</h1>
         <p class="text-slate-500 mt-1">Create and manage your custom dashboard layouts.</p>
     </div>
-    <div>
+    <div class="flex gap-3">
+        @if (User.IsInRole("Admin"))
+        {
+            <a asp-controller="Component" asp-action="Index" class="inline-flex items-center justify-center rounded-xl bg-white border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-all" title="Manage Standard & Dynamic Components">
+                <i class="fa-solid fa-puzzle-piece mr-2"></i> Manage Components
+            </a>
+        }
         <a asp-action="Builder" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 transition-all">
             <i class="fa-solid fa-plus mr-2"></i> New Dashboard
         </a>
@@ -78,9 +84,14 @@
                     <div>
                         @if(ViewBag.PreferredDashboard == dashboard.Slug)
                         {
-                            <span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                                <i class="fa-solid fa-star mr-1 text-[10px]"></i> Default
-                            </span>
+                            <form asp-action="SetDefault" method="post" class="inline">
+                                <input type="hidden" name="slug" value="" />
+                                <button type="submit" class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 hover:bg-red-50 hover:text-red-700 hover:ring-red-600/20 transition-colors group" title="Click to clear default">
+                                    <i class="fa-solid fa-star mr-1 text-[10px] group-hover:hidden"></i>
+                                    <i class="fa-solid fa-xmark mr-1 text-[10px] hidden group-hover:inline"></i>
+                                    Default
+                                </button>
+                            </form>
                         }
                         else
                         {

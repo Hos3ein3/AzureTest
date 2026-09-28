@@ -24,6 +24,12 @@ public class GlobalExceptionHandler : IExceptionHandler
     {
         _logger.LogError(
             exception, "An unhandled exception occurred: {Message}", exception.Message);
+            
+        // If the request expects HTML (e.g. browser navigation), let the UseExceptionHandler path handle it
+        if (httpContext.Request.Headers.Accept.ToString().Contains("text/html"))
+        {
+            return false;
+        }
 
         var problemDetails = new ProblemDetails
         {

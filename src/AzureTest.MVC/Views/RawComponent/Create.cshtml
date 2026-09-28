@@ -1,0 +1,101 @@
+@model AzureTest.Domain.Documents.DashboardRawComponent
+@{
+    ViewData["Title"] = "Create Dynamic Component";
+}
+
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">Add Dynamic Component</h1>
+    <p class="text-sm text-slate-500">Create a raw HTML/JS or JSON-configured widget for the whole system.</p>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+<div class="bg-white shadow-sm ring-1 ring-slate-200 rounded-xl overflow-hidden p-6 max-w-3xl">
+    <form asp-action="Create" method="post" class="space-y-6">
+        @if (ViewBag.ReturnUrl != null)
+        {
+            <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+        }
+        
+        <div asp-validation-summary="ModelOnly" class="text-sm text-red-600 mb-4 bg-red-50 p-3 rounded-lg border border-red-200"></div>
+
+        <div class="grid grid-cols-1 gap-6">
+            
+
+
+            <div>
+                <label asp-for="Name" class="block text-sm font-medium text-slate-700">Component Name</label>
+                <input asp-for="Name" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" placeholder="e.g. Live Sales Chart" />
+                <span asp-validation-for="Name" class="text-xs text-red-500"></span>
+            </div>
+            
+            <div>
+                <label asp-for="Category" class="block text-sm font-medium text-slate-700">Category (Optional)</label>
+                <input asp-for="Category" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" placeholder="e.g. Financials, HR, Metrics" />
+                <span asp-validation-for="Category" class="text-xs text-red-500"></span>
+            </div>
+            
+            <div>
+                <label asp-for="RequiredRole" class="block text-sm font-medium text-slate-700">Required Role (Optional)</label>
+                <input asp-for="RequiredRole" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" placeholder="e.g. Admin" />
+                <span asp-validation-for="RequiredRole" class="text-xs text-red-500"></span>
+            </div>
+            
+            <div>
+                <label asp-for="Type" class="block text-sm font-medium text-slate-700">Component Type</label>
+                <select asp-for="Type" id="componentTypeSelect" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm">
+                    <option value="RawHtml">Approach 1: Raw HTML / JS</option>
+                    <option value="JsonConfig">Approach 2: JSON Configuration</option>
+                </select>
+                <span asp-validation-for="Type" class="text-xs text-red-500"></span>
+            </div>
+
+            <!-- HTML Content Area -->
+            <div id="htmlSection" class="@(Model.Type == "RawHtml" ? "" : "hidden")">
+                <label asp-for="HtmlContent" class="block text-sm font-medium text-slate-700">Raw HTML & JavaScript</label>
+                <p class="text-xs text-slate-500 mb-2">Write full HTML, CSS, and script tags here. Will be rendered exactly as-is.</p>
+                <textarea asp-for="HtmlContent" rows="10" class="mt-1 block w-full font-mono rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm bg-slate-900 text-green-400 p-3" placeholder="<div>Hello World</div>"></textarea>
+                <span asp-validation-for="HtmlContent" class="text-xs text-red-500"></span>
+            </div>
+
+            <!-- JSON Content Area -->
+            <div id="jsonSection" class="@(Model.Type == "JsonConfig" ? "" : "hidden")">
+                <label asp-for="JsonConfiguration" class="block text-sm font-medium text-slate-700">JSON Configuration</label>
+                <p class="text-xs text-slate-500 mb-2">Provide a JSON object to configure the universal dynamic widget.</p>
+                <textarea asp-for="JsonConfiguration" rows="10" class="mt-1 block w-full font-mono rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm bg-slate-50 text-slate-800 p-3" placeholder='{ "chartType": "bar" }'></textarea>
+                <span asp-validation-for="JsonConfiguration" class="text-xs text-red-500"></span>
+            </div>
+            
+        </div>
+
+        <div class="flex justify-end pt-5 border-t border-slate-100 gap-3">
+            <a asp-action="Index" asp-controller="Dashboard" class="inline-flex justify-center rounded-md border border-slate-300 bg-white py-2 px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                Cancel
+            </a>
+            <button type="submit" class="inline-flex justify-center rounded-md border border-transparent bg-brand-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-brand-700">
+                Create Dynamic Component
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            const select = document.getElementById('componentTypeSelect');
+            const htmlSection = document.getElementById('htmlSection');
+            const jsonSection = document.getElementById('jsonSection');
+
+            select.addEventListener('change', function() {
+                if (this.value === 'RawHtml') {
+                    htmlSection.classList.remove('hidden');
+                    jsonSection.classList.add('hidden');
+                } else {
+                    htmlSection.classList.add('hidden');
+                    jsonSection.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
+}

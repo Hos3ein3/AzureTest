@@ -11,7 +11,7 @@ public class DashboardRouteConstraint : IRouteConstraint
     // E.g., /Expense/Index should go to ExpenseController, not DashboardController.
     private static readonly HashSet<string> ReservedControllers = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Home", "Auth", "Account", "Resume", "Expense", "Debt", "Task", "Calendar", "Habit", "Ticket", "Dashboard", "Health", "Hangfire"
+        "Home", "Auth", "Account", "Resume", "Expense", "Debt", "Task", "Calendar", "Habit", "Ticket", "Dashboard", "Health", "Hangfire", "User", "Role", "Company", "ResumeFile", "Component", "UserPreference", "RawComponent", "SampleData"
     };
 
     public bool Match(HttpContext? httpContext, IRouter? route, string routeKey, RouteValueDictionary values, RouteDirection routeDirection)

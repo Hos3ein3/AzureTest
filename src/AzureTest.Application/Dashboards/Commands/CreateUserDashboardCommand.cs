@@ -26,6 +26,8 @@ public class DashboardSectionDto
 public class UserDashboardComponentDto
 {
     public Guid ComponentId { get; set; }
+    public Guid? RawComponentId { get; set; }
+    public string Type { get; set; } = "Standard";
     public int X { get; set; }
     public int Y { get; set; }
     public int Width { get; set; }
@@ -55,6 +57,8 @@ public sealed class CreateUserDashboardCommandHandler : ICommandHandler<CreateUs
                 Components = s.Components.Select(c => new UserDashboardComponent
                 {
                     ComponentId = c.ComponentId,
+                    RawComponentId = c.RawComponentId,
+                    Type = c.Type,
                     X = c.X,
                     Y = c.Y,
                     Width = c.Width,

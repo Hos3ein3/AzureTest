@@ -230,17 +230,43 @@ if (app.Environment.IsEnvironment("ProductionSimulateLocal"))
     }
 }
 
+// FIX: Deduplicate Components
+try
+{
+    using var scope = app.Services.CreateScope();
+    var noSql = scope.ServiceProvider.GetRequiredService<AzureTest.Application.Interfaces.Data.NoSql.INoSqlUnitOfWork>();
+    var components = await noSql.DashboardComponents.GetAllAsync();
+    var duplicates = components.GroupBy(c => c.Name).Where(g => g.Count() > 1).ToList();
+    foreach (var group in duplicates)
+    {
+        var toDelete = group.Skip(1).ToList();
+        foreach (var item in toDelete)
+        {
+            await noSql.DashboardComponents.RemoveAsync(item.Id);
+        }
+    }
+    if (duplicates.Any())
+    {
+        await noSql.SaveChangesAsync();
+        app.Logger.LogInformation("Removed duplicate dashboard components.");
+    }
+}
+catch (Exception ex)
+{
+    app.Logger.LogError(ex, "Failed to deduplicate components.");
+}
+
 app.Logger.LogInformation(app.Environment.EnvironmentName, "Environment {0}");
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler();
+    app.UseExceptionHandler("/Error/500");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 else
 {
-    app.UseExceptionHandler();
+    app.UseDeveloperExceptionPage();
 }
 
 app.UseStatusCodePagesWithReExecute("/Error/{0}");

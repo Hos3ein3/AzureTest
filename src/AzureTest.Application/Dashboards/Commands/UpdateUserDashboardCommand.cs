@@ -43,6 +43,8 @@ public sealed class UpdateUserDashboardCommandHandler : ICommandHandler<UpdateUs
             Components = s.Components.Select(c => new UserDashboardComponent
             {
                 ComponentId = c.ComponentId,
+                RawComponentId = c.RawComponentId,
+                Type = c.Type,
                 X = c.X,
                 Y = c.Y,
                 Width = c.Width,

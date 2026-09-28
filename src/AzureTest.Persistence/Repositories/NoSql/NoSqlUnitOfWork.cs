@@ -19,6 +19,7 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     private IExpenseCategoryRepository? _expenseCategories;
     private IUserPreferenceRepository? _userPreferences;
     private IDashboardComponentRepository? _dashboardComponents;
+    private IDashboardRawComponentRepository? _dashboardRawComponents;
     private IUserDashboardRepository? _userDashboards;
 
     public NoSqlUnitOfWork(IMongoClient mongoClient, IMongoDatabase database)
@@ -34,6 +35,7 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     public IExpenseCategoryRepository ExpenseCategories => _expenseCategories ??= new ExpenseCategoryRepository(_database);
     public IUserPreferenceRepository UserPreferences => _userPreferences ??= new UserPreferenceRepository(_database);
     public IDashboardComponentRepository DashboardComponents => _dashboardComponents ??= new DashboardComponentRepository(_database);
+    public IDashboardRawComponentRepository DashboardRawComponents => _dashboardRawComponents ??= new DashboardRawComponentRepository(_database);
     public IUserDashboardRepository UserDashboards => _userDashboards ??= new UserDashboardRepository(_database);
 
     public async Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default)

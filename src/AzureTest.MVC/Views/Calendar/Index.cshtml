@@ -36,9 +36,11 @@
                     // Custom rendering based on event type
                     var type = arg.event.extendedProps.type;
                     if (type === 'task') {
-                        return { html: '<div class="px-1 text-xs font-semibold rounded"><i class="fa-solid fa-check-square mr-1"></i>' + arg.event.title + '</div>' };
+                        return { html: '<div class="px-1 py-0.5 text-xs font-semibold rounded"><i class="fa-solid fa-check-square mr-1"></i>' + arg.event.title + '</div>' };
+                    } else if (type === 'debt') {
+                        return { html: '<div class="px-1 py-0.5 text-xs font-semibold rounded text-white" style="background-color: ' + arg.event.backgroundColor + '"><i class="fa-solid fa-money-bill-wave mr-1"></i>' + arg.event.title + '</div>' };
                     } else {
-                        return { html: '<div class="px-1 text-xs font-semibold rounded"><i class="fa-regular fa-calendar mr-1"></i>' + arg.event.title + '</div>' };
+                        return { html: '<div class="px-1 py-0.5 text-xs font-semibold rounded text-white" style="background-color: ' + arg.event.backgroundColor + '"><i class="fa-regular fa-calendar-check mr-1"></i>' + arg.event.title + '</div>' };
                     }
                 }
             });

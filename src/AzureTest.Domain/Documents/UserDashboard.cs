@@ -22,6 +22,8 @@ public class DashboardSection
 public class UserDashboardComponent
 {
     public Guid ComponentId { get; set; }
+    public Guid? RawComponentId { get; set; }
+    public string Type { get; set; } = "Standard"; // "Standard", "RawHtml", "JsonConfig"
     public int X { get; set; }
     public int Y { get; set; }
     public int Width { get; set; }

@@ -6,7 +6,7 @@
         <h5 class="text-lg font-semibold text-slate-800 m-0">Daily Habits</h5>
         <a asp-controller="Habit" asp-action="Index" class="text-xs text-brand-600 hover:text-brand-500 font-medium">Track &rarr;</a>
     </div>
-    <div class="p-6 flex-1">
+    <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
         @if (!Model.RecentHabits.Any())
         {
             <div class="text-center text-slate-400 mt-6">

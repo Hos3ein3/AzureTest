@@ -125,6 +125,16 @@ public static class MongoDbClassMaps
                 });
             }
 
+            if (!BsonClassMap.IsClassMapRegistered(typeof(DashboardRawComponent)))
+            {
+                BsonClassMap.RegisterClassMap<DashboardRawComponent>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.MapIdMember(c => c.Id).SetSerializer(new GuidSerializer(GuidRepresentation.Standard));
+                    cm.SetIgnoreExtraElements(true);
+                });
+            }
+
             _registered = true;
         }
     }

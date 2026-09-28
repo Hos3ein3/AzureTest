@@ -3,11 +3,22 @@
     ViewData["Title"] = Model == null ? "Create Dashboard" : $"Edit Dashboard - {Model.Name}";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var allComponents = ViewBag.Components as List<AzureTest.Domain.Documents.DashboardComponent>;
+    var allRawComponents = ViewBag.AllRawComponents as IReadOnlyList<AzureTest.Domain.Documents.DashboardRawComponent> ?? new List<AzureTest.Domain.Documents.DashboardRawComponent>();
 }
 
 @section Styles {
     <link href="https://cdn.jsdelivr.net/npm/gridstack@8.2.3/dist/gridstack.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
     <style>
+        .ts-dropdown {
+            z-index: 9999 !important;
+        }
+        .grid-stack {
+            min-height: 200px;
+            background-color: #f8fafc;
+            border-radius: 0.75rem;
+            border: 2px dashed #e2e8f0;
+        }
         .grid-stack-item-content {
             background-color: white;
             border-radius: 0.75rem;
@@ -61,8 +72,31 @@
     <!-- Sidebar / Toolbox -->
     <div class="w-full lg:w-80 bg-white rounded-xl shadow-sm border border-slate-100 flex flex-col overflow-hidden h-full">
         <div class="p-4 border-b border-slate-100 bg-slate-50">
-            <h2 class="text-lg font-semibold text-slate-800">Components</h2>
-            <p class="text-xs text-slate-500 mt-1 mb-3">Drag items into the grid</p>
+            <h2 class="text-lg font-semibold text-slate-800">Quick Actions</h2>
+            <div class="mt-3 space-y-2">
+                <button type="button" onclick="createWidget('/RawComponent/Create?type=RawHtml')" class="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded shadow-sm hover:bg-slate-50 transition-colors flex items-center">
+                    <i class="fa-solid fa-code text-blue-500 mr-2 w-4 text-center"></i> Create Raw HTML
+                </button>
+                <button type="button" onclick="createWidget('/RawComponent/Create?type=JsonConfig')" class="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded shadow-sm hover:bg-slate-50 transition-colors flex items-center">
+                    <i class="fa-solid fa-chart-simple text-purple-500 mr-2 w-4 text-center"></i> Create JSON Config
+                </button>
+                <button type="button" onclick="createWidget('/Component/Create')" class="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded shadow-sm hover:bg-slate-50 transition-colors flex items-center">
+                    <i class="fa-solid fa-layer-group text-brand-500 mr-2 w-4 text-center"></i> Create Standard View
+                </button>
+                <div class="border-t border-slate-200 my-2 pt-2 space-y-2">
+                    <button type="button" onclick="openRawModal('RawHtml')" class="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 border border-slate-200 rounded hover:bg-slate-200 transition-colors flex items-center">
+                        <i class="fa-solid fa-plus mr-2 w-4 text-center"></i> Add Existing Raw HTML
+                    </button>
+                    <button type="button" onclick="openRawModal('JsonConfig')" class="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 border border-slate-200 rounded hover:bg-slate-200 transition-colors flex items-center">
+                        <i class="fa-solid fa-plus mr-2 w-4 text-center"></i> Add Existing JSON Config
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-4 border-b border-slate-100 bg-white">
+            <h2 class="text-sm font-semibold text-slate-800">Components</h2>
+            <p class="text-xs text-slate-500 mt-1 mb-2">Drag items into the grid</p>
             <div class="relative">
                 <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <i class="fa-solid fa-search text-slate-400 text-sm"></i>
@@ -111,19 +145,29 @@
         
         <!-- Toolbar -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 mb-4 flex items-center justify-between flex-wrap gap-4">
-            <div class="flex items-center gap-4 flex-1">
+            <div class="flex items-start gap-4 flex-1">
                 <div>
                     <label class="block text-xs font-medium text-slate-500 mb-1">Dashboard Name</label>
-                    <input type="text" id="dashboardName" value="@(Model?.Name)" placeholder="e.g. My Overview" class="block w-full sm:w-64 rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6" oninput="generateSlug(this.value)" />
+                    <div class="flex gap-2">
+                        <input type="text" id="dashboardName" value="@(Model?.Name)" placeholder="e.g. My Overview" class="block w-full sm:w-64 rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6" oninput="generateSlug(this.value); clearErrors();" />
+                        <button type="button" onclick="randomizeName()" class="inline-flex items-center justify-center rounded-md bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600 ring-1 ring-inset ring-slate-300 hover:bg-slate-100 transition-colors" title="Generate random name">
+                            <i class="fa-solid fa-dice"></i>
+                        </button>
+                    </div>
+                    <p id="nameError" class="text-xs text-red-500 mt-1 hidden"></p>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-500 mb-1">URL Slug</label>
-                    <div class="flex rounded-md shadow-sm">
+                    <div class="flex rounded-md shadow-sm relative">
                         <span class="inline-flex items-center rounded-l-md border border-r-0 border-slate-300 px-3 text-slate-500 sm:text-sm bg-slate-50">
                             /
                         </span>
-                        <input type="text" id="dashboardSlug" value="@(Model?.Slug)" class="block w-full sm:w-48 min-w-0 flex-1 rounded-none rounded-r-md border-0 py-1.5 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6" />
+                        <input type="text" id="dashboardSlug" value="@(Model?.Slug)" class="block w-full sm:w-48 min-w-0 flex-1 rounded-none rounded-r-md border-0 py-1.5 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6" oninput="checkSlugUnique(); clearErrors();" />
+                        <div id="slugCheckSpinner" class="absolute right-3 top-2 hidden">
+                            <i class="fa-solid fa-circle-notch fa-spin text-slate-400 text-sm"></i>
+                        </div>
                     </div>
+                    <p id="slugError" class="text-xs text-red-500 mt-1 hidden"></p>
                 </div>
             </div>
             
@@ -136,18 +180,15 @@
         </div>
 
         <!-- Grid Area -->
-        <div class="flex-1 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 p-4 overflow-y-auto custom-scrollbar relative" id="gridContainer" ondrop="handleDrop(event)" ondragover="allowDrop(event)">
-            @if(Model == null || !Model.Sections.Any() || !Model.Sections[0].Components.Any())
-            {
-                <div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <div class="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-                        <i class="fa-solid fa-download text-slate-400 text-2xl"></i>
-                    </div>
-                    <p class="text-slate-500 font-medium">Drag components here to build your dashboard</p>
-                </div>
-            }
-            
-            <div class="grid-stack"></div>
+        <!-- Toolbar addon for sections -->
+        <div class="px-4 pb-2 text-right">
+            <button type="button" onclick="addSection()" class="inline-flex items-center text-sm font-medium text-brand-600 hover:text-brand-500">
+                <i class="fa-solid fa-plus mr-1"></i> Add Section
+            </button>
+        </div>
+        <!-- Grid Area -->
+        <div class="flex-1 bg-slate-50 p-4 overflow-y-auto custom-scrollbar relative space-y-6" id="sectionsContainer">
+            <!-- Sections injected here -->
         </div>
         
     </div>
@@ -155,91 +196,171 @@
 
 <input type="hidden" id="dashboardId" value="@(Model?.Id.ToString())" />
 
+<!-- Raw Component Selection Modal -->
+<div id="rawComponentModal" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-500 bg-opacity-75 transition-opacity"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <i class="fa-solid fa-puzzle-piece text-brand-600"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                            <h3 class="text-base font-semibold leading-6 text-slate-900" id="rawModalTitle">Add Dynamic Component</h3>
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Select Component</label>
+                                <select id="rawComponentSelect" class="block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm">
+                                    <!-- Options injected via JS -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 gap-2">
+                    <button type="button" onclick="addSelectedRawComponent()" class="inline-flex w-full justify-center rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 sm:w-auto">Add to Grid</button>
+                    <button type="button" onclick="closeRawModal()" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/gridstack@8.2.3/dist/gridstack-all.js"></script>
     <script>
-        let grid;
+        let grids = {};
         
-        document.addEventListener('DOMContentLoaded', function () {
-            grid = GridStack.init({
+        function generateId() {
+            return 'sect_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function addSection(id = null, name = "New Section") {
+            const sectionId = id || generateId();
+            const container = document.getElementById('sectionsContainer');
+            
+            const sectionDiv = document.createElement('div');
+            sectionDiv.className = 'section-wrapper bg-white p-4 rounded-xl shadow-sm border border-slate-200';
+            sectionDiv.id = `wrapper_${sectionId}`;
+            
+            sectionDiv.innerHTML = `
+                <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                    <input type="text" class="section-name font-semibold text-slate-700 bg-transparent border-0 border-b border-transparent hover:border-slate-300 focus:border-brand-500 focus:ring-0 px-0 py-1" value="${name}" placeholder="Section Name" />
+                    <button type="button" onclick="removeSection('${sectionId}')" class="text-xs text-red-500 hover:text-red-700 p-1"><i class="fa-solid fa-trash"></i></button>
+                </div>
+                <div class="grid-stack" id="grid_${sectionId}" ondrop="handleDrop(event, '${sectionId}')" ondragover="allowDrop(event)"></div>
+            `;
+            
+            container.appendChild(sectionDiv);
+            
+            grids[sectionId] = GridStack.init({
                 cellHeight: 80,
                 margin: 10,
                 acceptWidgets: true,
-                float: true
-            });
+                float: true,
+                disableOneColumnMode: true
+            }, `#grid_${sectionId}`);
+            
+            return sectionId;
+        }
+
+        function removeSection(id) {
+            if (Object.keys(grids).length <= 1) {
+                alert("You must have at least one section.");
+                return;
+            }
+            if(confirm("Are you sure you want to remove this section and all its components?")) {
+                grids[id].destroy();
+                delete grids[id];
+                document.getElementById(`wrapper_${id}`).remove();
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function () {
             
             // Load existing data if editing
             @if(Model != null && Model.Sections.Any())
             {
                 <text>
-                document.getElementById('emptyState')?.remove();
-                
-                const existingWidgets = [];
-                @foreach(var c in Model.Sections.SelectMany(s => s.Components))
+                @foreach(var dashboardSection in Model.Sections)
                 {
-                    var compInfo = allComponents.FirstOrDefault(x => x.Id == c.ComponentId);
-                    if(compInfo != null)
-                    {
-                        <text>
-                        existingWidgets.push({
-                            x: @c.X,
-                            y: @c.Y,
-                            w: @c.Width,
-                            h: @c.Height,
-                            id: '@c.ComponentId',
-                            content: `
-                                <div class="w-full h-full relative">
-                                    <button type="button" class="remove-widget-btn" onclick="removeWidget(this)"><i class="fa-solid fa-xmark"></i></button>
-                                    <div class="w-full h-full flex flex-col bg-white">
-                                        <div class="px-3 py-2 border-b border-slate-100 bg-slate-50/50">
-                                            <p class="text-xs font-semibold text-slate-600 truncate">@compInfo.Name</p>
-                                        </div>
-                                        <div class="flex-1 p-2 flex items-center justify-center overflow-hidden">
-                                            <img src="@compInfo.ImagePath" class="widget-img" alt="@compInfo.Name" onerror="this.src='/img/placeholder.png'; this.onerror=null;"/>
-                                        </div>
-                                    </div>
-                                </div>`
-                        });
-                        </text>
-                    }
+                    <text>
+                    (function() {
+                        const secId = '@(dashboardSection.Id)';
+                        addSection(secId, '@Html.Raw(dashboardSection.Name.Replace("'", "\\'"))');
+                        const existingWidgets = [];
+                        @foreach(var c in dashboardSection.Components)
+                        {
+                            var compInfo = allComponents.FirstOrDefault(x => x.Id == c.ComponentId);
+                            if(compInfo != null)
+                            {
+                                <text>
+                                existingWidgets.push({
+                                    x: @c.X,
+                                    y: @c.Y,
+                                    w: @c.Width,
+                                    h: @c.Height,
+                                    id: '@c.ComponentId',
+                                    content: `
+                                        <div class="w-full h-full relative" data-type="Standard">
+                                            <button type="button" class="remove-widget-btn" onclick="removeWidget(this, '${secId}')"><i class="fa-solid fa-xmark"></i></button>
+                                            <div class="w-full h-full flex flex-col bg-white">
+                                                <div class="px-3 py-2 border-b border-slate-100 bg-slate-50/50">
+                                                    <p class="text-xs font-semibold text-slate-600 truncate">@compInfo.Name</p>
+                                                </div>
+                                                <div class="flex-1 p-2 flex items-center justify-center overflow-hidden">
+                                                    <img src="@compInfo.ImagePath" class="widget-img" alt="@compInfo.Name" onerror="this.src='/img/placeholder.png'; this.onerror=null;"/>
+                                                </div>
+                                            </div>
+                                        </div>`
+                                });
+                                </text>
+                            }
+                            else
+                            {
+                                var rawCompInfo = allRawComponents.FirstOrDefault(x => x.Id == c.RawComponentId || x.Id == c.ComponentId);
+                                if (rawCompInfo != null)
+                                {
+                                    var badgeClass = rawCompInfo.Type == "RawHtml" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800";
+                                    <text>
+                                    existingWidgets.push({
+                                        x: @c.X,
+                                        y: @c.Y,
+                                        w: @c.Width,
+                                        h: @c.Height,
+                                        id: '@rawCompInfo.Id',
+                                        content: `
+                                            <div class="w-full h-full relative" data-type="${'@rawCompInfo.Type'}" data-raw-id="${'@rawCompInfo.Id'}">
+                                                <button type="button" class="remove-widget-btn" onclick="removeWidget(this, '${secId}')"><i class="fa-solid fa-xmark"></i></button>
+                                                <div class="w-full h-full flex flex-col bg-white">
+                                                    <div class="px-3 py-2 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                                                        <p class="text-xs font-semibold text-slate-600 truncate">${'@rawCompInfo.Name.Replace("'", "\\'")'}</p>
+                                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-medium @badgeClass">${'@rawCompInfo.Type'}</span>
+                                                    </div>
+                                                    <div class="flex-1 p-4 flex items-center justify-center overflow-hidden bg-slate-50">
+                                                        <i class="fa-solid fa-code text-4xl text-slate-300"></i>
+                                                    </div>
+                                                </div>
+                                            </div>`
+                                    });
+                                    </text>
+                                }
+                            }
+                        }
+                        grids[secId].load(existingWidgets);
+                    })();
+                    </text>
                 }
-                
-                grid.load(existingWidgets);
                 </text>
             }
-            
-            grid.on('change', function(event, items) {
-                checkEmptyState();
-            });
-            grid.on('added', function(event, items) {
-                checkEmptyState();
-            });
-            grid.on('removed', function(event, items) {
-                checkEmptyState();
-            });
-        });
-        
-        function checkEmptyState() {
-            const container = document.getElementById('gridContainer');
-            let emptyState = document.getElementById('emptyState');
-            
-            if (grid.engine.nodes.length === 0) {
-                if (!emptyState) {
-                    const div = document.createElement('div');
-                    div.id = 'emptyState';
-                    div.className = 'absolute inset-0 flex flex-col items-center justify-center pointer-events-none';
-                    div.innerHTML = `
-                        <div class="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-                            <i class="fa-solid fa-download text-slate-400 text-2xl"></i>
-                        </div>
-                        <p class="text-slate-500 font-medium">Drag components here to build your dashboard</p>
-                    `;
-                    container.appendChild(div);
-                }
-            } else if (emptyState) {
-                emptyState.remove();
+            else
+            {
+                <text>
+                addSection('default', 'Main Layout');
+                </text>
             }
-        }
+        });
         
         function handleDragStart(ev) {
             ev.dataTransfer.setData("id", ev.currentTarget.getAttribute("data-id"));
@@ -247,13 +368,14 @@
             ev.dataTransfer.setData("h", ev.currentTarget.getAttribute("data-h"));
             ev.dataTransfer.setData("name", ev.currentTarget.getAttribute("data-name"));
             ev.dataTransfer.setData("img", ev.currentTarget.getAttribute("data-img"));
+            ev.dataTransfer.setData("type", "Standard");
         }
         
         function allowDrop(ev) {
             ev.preventDefault();
         }
         
-        function handleDrop(ev) {
+        function handleDrop(ev, sectionId) {
             ev.preventDefault();
             const id = ev.dataTransfer.getData("id");
             if (!id) return;
@@ -265,8 +387,8 @@
             
             // Generate content
             const content = `
-                <div class="w-full h-full relative">
-                    <button type="button" class="remove-widget-btn" onclick="removeWidget(this)"><i class="fa-solid fa-xmark"></i></button>
+                <div class="w-full h-full relative" data-type="Standard">
+                    <button type="button" class="remove-widget-btn" onclick="removeWidget(this, '${sectionId}')"><i class="fa-solid fa-xmark"></i></button>
                     <div class="w-full h-full flex flex-col bg-white">
                         <div class="px-3 py-2 border-b border-slate-100 bg-slate-50/50">
                             <p class="text-xs font-semibold text-slate-600 truncate">${name}</p>
@@ -278,12 +400,12 @@
                 </div>
             `;
             
-            grid.addWidget({w: w, h: h, content: content, id: id, autoPosition: true});
+            grids[sectionId].addWidget({w: w, h: h, content: content, id: id, autoPosition: true});
         }
         
-        function removeWidget(btn) {
+        function removeWidget(btn, sectionId) {
             const el = btn.closest('.grid-stack-item');
-            grid.removeWidget(el);
+            if(grids[sectionId]) grids[sectionId].removeWidget(el);
         }
         
         function generateSlug(val) {
@@ -296,7 +418,146 @@
             }
         }
         
-        async function saveDashboard() {
+        let slugCheckTimeout;
+        async function checkSlugUnique() {
+            const slug = document.getElementById('dashboardSlug').value.trim();
+            const id = document.getElementById('dashboardId').value;
+            const spinner = document.getElementById('slugCheckSpinner');
+            const error = document.getElementById('slugError');
+            
+            if (!slug) return;
+            
+            clearTimeout(slugCheckTimeout);
+            slugCheckTimeout = setTimeout(async () => {
+                spinner.classList.remove('hidden');
+                try {
+                    const response = await fetch(`/Dashboard/CheckSlug?slug=${encodeURIComponent(slug)}&excludeId=${id}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (!data.isAvailable) {
+                            error.textContent = "This URL slug is already taken.";
+                            error.classList.remove('hidden');
+                            document.getElementById('dashboardSlug').classList.add('ring-red-500', 'focus:ring-red-500');
+                        } else {
+                            error.classList.add('hidden');
+                            document.getElementById('dashboardSlug').classList.remove('ring-red-500', 'focus:ring-red-500');
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to check slug", e);
+                } finally {
+                    spinner.classList.add('hidden');
+                }
+            }, 500);
+        }
+
+        function clearErrors() {
+            document.getElementById('nameError').classList.add('hidden');
+            document.getElementById('slugError').classList.add('hidden');
+            document.getElementById('dashboardName').classList.remove('ring-red-500', 'focus:ring-red-500');
+            document.getElementById('dashboardSlug').classList.remove('ring-red-500', 'focus:ring-red-500');
+        }
+
+        const dashboardNames = ["Alpha Nexus", "Metrics Hub", "Executive View", "Command Center", "Operations Deck", "Financial Pulse", "Growth Engine", "Insight Matrix", "Data Core"];
+        function randomizeName() {
+            const random = dashboardNames[Math.floor(Math.random() * dashboardNames.length)];
+            const input = document.getElementById('dashboardName');
+            input.value = random;
+            generateSlug(random);
+            clearErrors();
+            checkSlugUnique();
+        }
+
+        function createWidget(urlBase) {
+            const slug = document.getElementById('dashboardSlug').value.trim();
+            if (!slug) {
+                document.getElementById('nameError').textContent = "Please set a Dashboard Name and Slug first.";
+                document.getElementById('nameError').classList.remove('hidden');
+                document.getElementById('dashboardName').focus();
+                return;
+            }
+            
+            const returnUrl = encodeURIComponent('/Dashboard/Builder?slug=' + slug);
+            const fullUrl = urlBase + (urlBase.includes('?') ? '&' : '?') + 'returnUrl=' + returnUrl + '&dashboardSlug=' + encodeURIComponent(slug);
+            
+            // Try saving the dashboard first to preserve current layout state
+            saveDashboard(fullUrl);
+        }
+
+        const rawComponentsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(allRawComponents.Select(r => new { r.Id, r.Name, r.Type })));
+        
+        let rawSelectInstance = null;
+
+        function openRawModal(type) {
+            const select = document.getElementById('rawComponentSelect');
+            
+            if (rawSelectInstance) {
+                rawSelectInstance.destroy();
+            }
+            
+            select.innerHTML = '<option value="">-- Select --</option>';
+            
+            const filtered = rawComponentsData.filter(r => r.Type === type);
+            if (filtered.length === 0) {
+                select.innerHTML = `<option value="">No ${type} components available.</option>`;
+                select.disabled = true;
+            } else {
+                select.disabled = false;
+                filtered.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r.Id;
+                    opt.textContent = r.Name;
+                    select.appendChild(opt);
+                });
+            }
+            
+            if (!select.disabled) {
+                rawSelectInstance = new TomSelect(select, {
+                    create: false,
+                    dropdownParent: "body",
+                    sortField: { field: "text", direction: "asc" }
+                });
+            }
+            
+            document.getElementById('rawModalTitle').textContent = `Add Existing ${type === 'RawHtml' ? 'Raw HTML' : 'JSON Config'} Component`;
+            document.getElementById('rawComponentSelect').setAttribute('data-type', type);
+            document.getElementById('rawComponentModal').classList.remove('hidden');
+        }
+
+        function closeRawModal() {
+            document.getElementById('rawComponentModal').classList.add('hidden');
+        }
+
+        function addSelectedRawComponent() {
+            const select = document.getElementById('rawComponentSelect');
+            const id = select.value;
+            if (!id) return;
+            
+            const name = rawSelectInstance ? rawSelectInstance.options[id].text : select.options[select.selectedIndex].text;
+            const type = select.getAttribute('data-type');
+            
+            const badgeClass = type === 'RawHtml' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800';
+            
+            const content = `
+                <div class="w-full h-full relative" data-type="${type}" data-raw-id="${id}">
+                    <button type="button" class="remove-widget-btn" onclick="removeWidget(this, '${Object.keys(grids)[0]}')"><i class="fa-solid fa-xmark"></i></button>
+                    <div class="w-full h-full flex flex-col bg-white">
+                        <div class="px-3 py-2 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                            <p class="text-xs font-semibold text-slate-600 truncate">${name}</p>
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-medium ${badgeClass}">${type}</span>
+                        </div>
+                        <div class="flex-1 p-4 flex items-center justify-center overflow-hidden bg-slate-50">
+                            <i class="fa-solid fa-code text-4xl text-slate-300"></i>
+                        </div>
+                    </div>
+                </div>`;
+            
+            const firstGridId = Object.keys(grids)[0];
+            grids[firstGridId].addWidget({w: 4, h: 4, content: content, id: id, autoPosition: true});
+            closeRawModal();
+        }
+
+        async function saveDashboard(redirectUrl = null) {
             const btn = document.getElementById('saveBtn');
             const originalHtml = btn.innerHTML;
             
@@ -304,37 +565,61 @@
             const slug = document.getElementById('dashboardSlug').value.trim();
             const id = document.getElementById('dashboardId').value;
             
-            if (!name || !slug) {
-                alert("Dashboard Name and URL Slug are required.");
-                return;
+            let hasError = false;
+            if (!name) {
+                const nameErr = document.getElementById('nameError');
+                nameErr.textContent = "Dashboard Name is required.";
+                nameErr.classList.remove('hidden');
+                document.getElementById('dashboardName').classList.add('ring-red-500', 'focus:ring-red-500');
+                hasError = true;
+            }
+            if (!slug) {
+                const slugErr = document.getElementById('slugError');
+                slugErr.textContent = "URL Slug is required.";
+                slugErr.classList.remove('hidden');
+                document.getElementById('dashboardSlug').classList.add('ring-red-500', 'focus:ring-red-500');
+                hasError = true;
             }
             
-            const nodes = grid.engine.nodes;
-            if (nodes.length === 0) {
-                alert("Please add at least one component to your dashboard.");
-                return;
+            if (!document.getElementById('slugError').classList.contains('hidden') && document.getElementById('slugError').textContent.includes('taken')) {
+                hasError = true;
             }
             
-            const components = nodes.map(n => ({
-                ComponentId: n.id,
-                X: n.x,
-                Y: n.y,
-                Width: n.w,
-                Height: n.h
-            }));
+            if (hasError) return;
             
             const payload = {
                 Id: id,
                 Name: name,
                 Slug: slug,
-                Sections: [
-                    {
-                        Id: "default",
-                        Name: "Main Layout",
-                        Components: components
-                    }
-                ]
+                Sections: []
             };
+
+            for (const [secId, g] of Object.entries(grids)) {
+                const wrapper = document.getElementById(`wrapper_${secId}`);
+                const secName = wrapper ? wrapper.querySelector('.section-name').value || "Section" : "Section";
+                
+                const components = g.engine.nodes.map(n => {
+                    const el = n.el.querySelector('[data-type]');
+                    const type = el ? el.getAttribute('data-type') : "Standard";
+                    const rawId = el ? el.getAttribute('data-raw-id') : null;
+                    
+                    return {
+                        ComponentId: type === 'Standard' ? n.id : '00000000-0000-0000-0000-000000000000',
+                        RawComponentId: type !== 'Standard' ? n.id : null,
+                        Type: type,
+                        X: n.x,
+                        Y: n.y,
+                        Width: n.w,
+                        Height: n.h
+                    };
+                });
+                
+                payload.Sections.push({
+                    Id: secId,
+                    Name: secName,
+                    Components: components
+                });
+            }
             
             try {
                 btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Saving...';
@@ -349,14 +634,20 @@
                 });
                 
                 if (response.ok) {
-                    window.location.href = '/Dashboard/Manage';
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                    } else {
+                        window.location.href = '/Dashboard/Manage';
+                    }
                 } else {
                     const text = await response.text();
-                    alert("Error saving dashboard: " + text);
+                    document.getElementById('nameError').textContent = "Error saving dashboard: " + text;
+                    document.getElementById('nameError').classList.remove('hidden');
                 }
             } catch (err) {
                 console.error(err);
-                alert("An error occurred while saving.");
+                document.getElementById('nameError').textContent = "An error occurred while saving.";
+                document.getElementById('nameError').classList.remove('hidden');
             } finally {
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
