@@ -1,0 +1,43 @@
+@model AzureTest.MVC.Models.HomeDashboardViewModel
+
+<!-- Debts Due Soon Widget -->
+<div class="col-span-1 bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+        <h5 class="text-lg font-semibold text-slate-800 m-0">Debts Due Soon</h5>
+        <a asp-controller="Debt" asp-action="Index" class="text-xs text-brand-600 hover:text-brand-500 font-medium">Manage &rarr;</a>
+    </div>
+    <div class="p-6 flex-1">
+        @if (!Model.PromissedDebts.Any())
+        {
+            <div class="text-center text-slate-400 mt-6">
+                <i class="fa-solid fa-calendar-check text-3xl mb-2 block"></i>
+                <p class="text-sm">No debts due soon.</p>
+            </div>
+        }
+        else
+        {
+            <div class="space-y-4">
+                @foreach (var d in Model.PromissedDebts)
+                {
+                    var isOverdue = d.PromissedReturnDate < DateTime.UtcNow;
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full @(isOverdue ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-600") flex items-center justify-center flex-shrink-0">
+                            <i class="fa-solid @(isOverdue ? "fa-triangle-exclamation" : "fa-clock")"></i>
+                        </div>
+                        <div class="flex-1 truncate">
+                            <p class="text-sm font-medium text-slate-700 truncate">@d.DebtPersonName</p>
+                            <p class="text-xs @(isOverdue ? "text-red-500 font-medium" : "text-slate-500")">Due: @d.PromissedReturnDate?.ToString("MMM dd")</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-slate-800">@d.Amount.ToString("C")</p>
+                            @if (d.Profit > 0)
+                            {
+                                <p class="text-xs text-emerald-600 font-medium">+@d.Profit.ToString("C")</p>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

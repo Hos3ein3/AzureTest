@@ -13,9 +13,9 @@ namespace AzureTest.Persistence.Repositories.NoSql;
 /// </summary>
 public class NullExpenseCategoryRepository : IExpenseCategoryRepository
 {
-    public Task<ExpenseCategory?> GetByIdAsync(Guid id) => Task.FromResult<ExpenseCategory?>(null);
+    public Task<ExpenseCategory?> GetByIdAsync(Guid id,CancellationToken cancellationToken = default) => Task.FromResult<ExpenseCategory?>(null);
 
-    public Task<IReadOnlyList<ExpenseCategory>> GetAllAsync() =>
+    public Task<IReadOnlyList<ExpenseCategory>> GetAllAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<ExpenseCategory>>(Array.Empty<ExpenseCategory>());
 
     public Task<IReadOnlyList<ExpenseCategory>> GetAllAvailableAsync() =>
@@ -24,11 +24,11 @@ public class NullExpenseCategoryRepository : IExpenseCategoryRepository
     public Task<IReadOnlyList<ExpenseCategory>> FindAsync(Expression<Func<ExpenseCategory, bool>> predicate) =>
         Task.FromResult<IReadOnlyList<ExpenseCategory>>(Array.Empty<ExpenseCategory>());
 
-    public Task AddAsync(ExpenseCategory document) => Task.CompletedTask;
+    public Task AddAsync(ExpenseCategory document,CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-    public Task UpdateAsync(Guid id, ExpenseCategory document) => Task.CompletedTask;
+    public Task UpdateAsync(Guid id, ExpenseCategory document,CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-    public Task RemoveAsync(Guid id) => Task.CompletedTask;
+    public Task RemoveAsync(Guid id,CancellationToken cancellationToken = default) => Task.CompletedTask;
 
     public Task<ExpenseCategory?> GetByNameAsync(string name, Guid userId) => Task.FromResult<ExpenseCategory?>(null);
 

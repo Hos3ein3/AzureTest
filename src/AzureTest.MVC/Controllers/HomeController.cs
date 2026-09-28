@@ -48,10 +48,23 @@ public class HomeController : Controller
         _expenseQuery = expenseQuery;
     }
 
-    public async Task<IActionResult> Index(string? userId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Index(
+        string? userId, 
+        [FromServices] AzureTest.Application.Messaging.IQueryHandler<AzureTest.Application.UserPreferences.Queries.GetUserPreferenceQuery, AzureTest.Domain.Documents.UserPreference> prefQuery,
+        [FromQuery] bool ignorePreference,
+        CancellationToken cancellationToken)
     {
         var currentUserIdStr = _userManager.GetUserId(User);
         var isAdmin = User.IsInRole("Admin");
+        
+        if (currentUserIdStr != null && !ignorePreference && string.IsNullOrWhiteSpace(userId))
+        {
+            var pref = await prefQuery.HandleAsync(new AzureTest.Application.UserPreferences.Queries.GetUserPreferenceQuery(Guid.Parse(currentUserIdStr)), cancellationToken);
+            if (pref != null && !string.IsNullOrWhiteSpace(pref.PreferredDashboard))
+            {
+                return Redirect($"/{pref.PreferredDashboard}");
+            }
+        }
         
         var targetUserIdStr = userId;
         if (string.IsNullOrWhiteSpace(userId) && !isAdmin)

@@ -115,6 +115,8 @@ builder.Services.AddControllersWithViews(options =>
 })
     .AddRazorRuntimeCompilation();
 
+builder.Services.AddScoped<AzureTest.MVC.Services.IDashboardDataLoader, AzureTest.MVC.Services.DashboardDataLoader>();
+
 // Add HealthChecks UI with In-Memory Storage
 builder.Services.AddHealthChecksUI(setup =>
 {
@@ -134,6 +136,34 @@ if (builder.Environment.IsEnvironment("ProductionSimulate"))
     await AzureTest.MVC.Infrastructure.ProductionSimulateSetup.ConfigureAsync(builder);
 // ── ProductionSimulateLocal: no container bootstrap needed — reads from appsettings.ProductionSimulateLocal.json ──
 
+// FIX: Rename mismatched widget partial views
+try 
+{
+    var widgetsDir = System.IO.Path.Combine(builder.Environment.ContentRootPath, "Views", "Shared", "Widgets");
+    var renames = new System.Collections.Generic.Dictionary<string, string>
+    {
+        { "_WidgetApplicationsByStatusChart.cshtml", "_WidgetApplicationByStatus.cshtml" },
+        { "_WidgetApplicationsOverTimeChart.cshtml", "_WidgetApplicationOverTime.cshtml" },
+        { "_WidgetApplicationSourcesChart.cshtml", "_WidgetApplicationSources.cshtml" },
+        { "_WidgetDebtsByPersonChart.cshtml", "_WidgetDebtsByPerson.cshtml" },
+        { "_WidgetExpensesByCategoryChart.cshtml", "_WidgetExpensesByCategory.cshtml" },
+        { "_WidgetHabitAdherenceChart.cshtml", "_WidgetHabitAdherence.cshtml" },
+        { "_WidgetMonthlyFinanceChart.cshtml", "_WidgetMonthlyCashFlow.cshtml" },
+        { "_WidgetTicketStatusChart.cshtml", "_WidgetSupportTickets.cshtml" },
+        { "_WidgetTopLocationsChart.cshtml", "_WidgetTopLocations.cshtml" },
+        { "_WidgetTopPositionsChart.cshtml", "_WidgetTopPositions.cshtml" }
+    };
+    foreach(var r in renames)
+    {
+        var oldPath = System.IO.Path.Combine(widgetsDir, r.Key);
+        var newPath = System.IO.Path.Combine(widgetsDir, r.Value);
+        if (System.IO.File.Exists(oldPath)) System.IO.File.Move(oldPath, newPath, true);
+    }
+} 
+catch (Exception ex) 
+{
+    Console.WriteLine("Failed to rename widgets: " + ex.Message);
+}
 
 var app = builder.Build();
 
@@ -222,6 +252,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
+
+app.MapControllerRoute(
+        name: "dashboard_dynamic",
+        pattern: "{slug}",
+        defaults: new { controller = "Dashboard", action = "ViewDashboard" },
+        constraints: new { slug = new AzureTest.MVC.Infrastructure.DashboardRouteConstraint() }
+    ).WithStaticAssets();
 
 app.MapControllerRoute(
         name: "default",

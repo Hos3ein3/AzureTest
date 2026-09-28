@@ -9,9 +9,9 @@ namespace AzureTest.Persistence.Repositories.NoSql;
 
 public class NullDebtPersonRepository : IDebtPersonRepository
 {
-    public Task<DebtPerson?> GetByIdAsync(Guid id) => Task.FromResult<DebtPerson?>(null);
+    public Task<DebtPerson?> GetByIdAsync(Guid id,CancellationToken cancellationToken = default) => Task.FromResult<DebtPerson?>(null);
 
-    public Task<IReadOnlyList<DebtPerson>> GetAllAsync() =>
+    public Task<IReadOnlyList<DebtPerson>> GetAllAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<DebtPerson>>(Array.Empty<DebtPerson>());
 
     public Task<IReadOnlyList<DebtPerson>> GetAllAvailableAsync() =>
@@ -20,11 +20,11 @@ public class NullDebtPersonRepository : IDebtPersonRepository
     public Task<IReadOnlyList<DebtPerson>> FindAsync(Expression<Func<DebtPerson, bool>> predicate) =>
         Task.FromResult<IReadOnlyList<DebtPerson>>(Array.Empty<DebtPerson>());
 
-    public Task AddAsync(DebtPerson document) => Task.CompletedTask;
+    public Task AddAsync(DebtPerson document,CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-    public Task UpdateAsync(Guid id, DebtPerson document) => Task.CompletedTask;
+    public Task UpdateAsync(Guid id, DebtPerson document,CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-    public Task RemoveAsync(Guid id) => Task.CompletedTask;
+    public Task RemoveAsync(Guid id,CancellationToken cancellationToken = default) => Task.CompletedTask;
 
     public Task<IReadOnlyList<DebtPerson>> SearchByNameAsync(string term) =>
         Task.FromResult<IReadOnlyList<DebtPerson>>(Array.Empty<DebtPerson>());

@@ -8,4 +8,6 @@ public class UserPreference
     public Guid UserId { get; set; }
     public string Language { get; set; } = string.Empty;
     public string ThemeColor { get; set; } = string.Empty;
+    public string Currency { get; set; } = "USD";
+    public string PreferredDashboard { get; set; } = string.Empty;
 }

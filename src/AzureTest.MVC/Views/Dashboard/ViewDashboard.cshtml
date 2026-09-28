@@ -1,0 +1,102 @@
+@model AzureTest.MVC.Controllers.DashboardViewModel
+@{
+    ViewData["Title"] = Model.Dashboard.Name;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var allComponents = ViewBag.AllComponents as Dictionary<Guid, AzureTest.Domain.Documents.DashboardComponent>;
+}
+
+@section Styles {
+    <link href="https://cdn.jsdelivr.net/npm/gridstack@8.2.3/dist/gridstack.min.css" rel="stylesheet"/>
+    <style>
+        .grid-stack-item-content {
+            background-color: transparent !important;
+            border: none !important;
+            overflow: visible !important;
+        }
+        
+        /* Ensure partials stretch to fill the grid item */
+        .grid-stack-item-content > div {
+            height: 100% !important;
+            margin: 0 !important;
+        }
+    </style>
+}
+
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+    <div>
+        <h1 class="text-3xl font-bold text-slate-800">@Model.Dashboard.Name</h1>
+        <div class="flex items-center text-sm text-slate-500 mt-1">
+            <span class="inline-flex items-center rounded-md bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-600/20 mr-2">Custom Layout</span>
+            <span>/@Model.Dashboard.Slug</span>
+        </div>
+        @if (Model.HomeModel.IsAdmin && !string.IsNullOrWhiteSpace(Model.HomeModel.CurrentUserName))
+        {
+            <p class="text-sm font-medium text-brand-600 mt-2">
+                <i class="fa-solid fa-eye mr-1"></i> Viewing: @Model.HomeModel.CurrentUserName
+            </p>
+        }
+    </div>
+    
+    <div class="flex gap-3 items-center">
+        @if (Model.HomeModel.IsAdmin)
+        {
+            <form method="get" class="flex items-center gap-2 mr-4">
+                <select name="targetUserId" class="block w-64 rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
+                    <option value="">-- All Users (Aggregate) --</option>
+                    @foreach (var user in Model.HomeModel.AvailableUsers)
+                    {
+                        if (user.Key == Model.HomeModel.CurrentUserId)
+                        {
+                            <option value="@user.Key" selected>@user.Value</option>
+                        }
+                        else
+                        {
+                            <option value="@user.Key">@user.Value</option>
+                        }
+                    }
+                </select>
+                <button type="submit" class="bg-slate-800 text-white px-3 py-2 rounded-md hover:bg-slate-700 text-sm font-medium transition-colors shadow-sm">
+                    Switch
+                </button>
+            </form>
+        }
+        <a asp-controller="Home" asp-action="Index" asp-route-ignorePreference="true" class="inline-flex items-center justify-center rounded-lg bg-white border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
+            <i class="fa-solid fa-table-cells-large mr-2"></i> Standard View
+        </a>
+        <a asp-controller="Dashboard" asp-action="Builder" asp-route-slug="@Model.Dashboard.Slug" class="inline-flex items-center justify-center rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition-all shadow-sm">
+            <i class="fa-solid fa-pen-to-square mr-2"></i> Edit Layout
+        </a>
+    </div>
+</div>
+
+<div class="grid-stack">
+    @if(Model.Dashboard.Sections.Any())
+    {
+        foreach(var c in Model.Dashboard.Sections[0].Components)
+        {
+            if (allComponents != null && allComponents.TryGetValue(c.ComponentId, out var comp))
+            {
+                <div class="grid-stack-item" gs-x="@c.X" gs-y="@c.Y" gs-w="@c.Width" gs-h="@c.Height" gs-no-resize="true" gs-no-move="true">
+                    <div class="grid-stack-item-content">
+                        @await Html.PartialAsync($"Widgets/{comp.PartialViewName}", Model.HomeModel)
+                    </div>
+                </div>
+            }
+        }
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@8.2.3/dist/gridstack-all.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            GridStack.init({
+                staticGrid: true, // Read-only mode
+                cellHeight: 80,
+                margin: 10,
+                float: true
+            });
+        });
+    </script>
+    @await Html.PartialAsync("Widgets/_DashboardScripts", Model.HomeModel)
+}

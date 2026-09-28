@@ -6,9 +6,11 @@ using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
 using AzureTest.Domain.Documents;
 
+using FluentValidation;
+
 namespace AzureTest.Application.UserPreferences.Commands;
 
-public sealed record UpdateUserPreferenceCommand(Guid UserId, string Language, string ThemeColor) : ICommand;
+public sealed record UpdateUserPreferenceCommand(Guid UserId, string Language, string ThemeColor, string Currency, string PreferredDashboard) : ICommand;
 
 public sealed class UpdateUserPreferenceCommandHandler : ICommandHandler<UpdateUserPreferenceCommand>
 {
@@ -33,6 +35,8 @@ public sealed class UpdateUserPreferenceCommandHandler : ICommandHandler<UpdateU
 
         pref.Language = request.Language;
         pref.ThemeColor = request.ThemeColor;
+        pref.Currency = request.Currency;
+        pref.PreferredDashboard = request.PreferredDashboard;
 
         if (isNew)
         {
@@ -46,5 +50,17 @@ public sealed class UpdateUserPreferenceCommandHandler : ICommandHandler<UpdateU
 
         var cacheKey = $"UserPref_{request.UserId}";
         await _redisService.SetAsync(cacheKey, pref, TimeSpan.FromHours(1));
+    }
+}
+
+public sealed class UpdateUserPreferenceCommandValidator : FluentValidation.AbstractValidator<UpdateUserPreferenceCommand>
+{
+    public UpdateUserPreferenceCommandValidator()
+    {
+        RuleFor(x => x.UserId).NotEmpty();
+        RuleFor(x => x.Language).MaximumLength(10);
+        RuleFor(x => x.ThemeColor).MaximumLength(50);
+        RuleFor(x => x.Currency).MaximumLength(10);
+        RuleFor(x => x.PreferredDashboard).MaximumLength(100);
     }
 }

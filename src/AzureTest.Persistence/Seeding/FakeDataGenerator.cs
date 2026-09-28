@@ -144,7 +144,11 @@ public static class FakeDataGenerator
 
         // ── Step 3 ── NoSQL Documents ─────────────────────────────────────────
 
-        // ── 3a. Companies (global, no owner) ─────────────────────────────────
+        // ── 3a. Dashboard Components ──────────────────────────────────────────
+        var dashboardComponents = BuildDashboardComponents();
+        foreach (var dc in dashboardComponents) await noSql.DashboardComponents.AddAsync(dc);
+
+        // ── 3b. Companies (global, no owner) ─────────────────────────────────
         var companies = BuildCompanies(CompanyCount);
         foreach (var c in companies) await noSql.Companies.AddAsync(c);
 
@@ -297,6 +301,39 @@ public static class FakeDataGenerator
     // ──────────────────────────────────────────────────────────────────────────
     // Builder helpers — every DateTime returned is UTC
     // ──────────────────────────────────────────────────────────────────────────
+
+    private static List<DashboardComponent> BuildDashboardComponents()
+    {
+        return new List<DashboardComponent>
+        {
+            new DashboardComponent { Name = "Active Processing", ImagePath = "/dashboardsamples/ActiveProcessing.png", PartialViewName = "_WidgetActiveProcessing", Category = "General", DefaultWidth = 3, DefaultHeight = 2 },
+            new DashboardComponent { Name = "Application By Status", ImagePath = "/dashboardsamples/ApplicationByStatus.png", PartialViewName = "_WidgetApplicationByStatus", Category = "Resume", DefaultWidth = 4, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Application Over Time", ImagePath = "/dashboardsamples/ApplicationOverTime.png", PartialViewName = "_WidgetApplicationOverTime", Category = "Resume", DefaultWidth = 8, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Application Sources", ImagePath = "/dashboardsamples/ApplicationSources.png", PartialViewName = "_WidgetApplicationSources", Category = "Resume", DefaultWidth = 4, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Daily Habits", ImagePath = "/dashboardsamples/DailyHabits.png", PartialViewName = "_WidgetDailyHabits", Category = "Habits", DefaultWidth = 4, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Debts By Person", ImagePath = "/dashboardsamples/DebtsByPerson.png", PartialViewName = "_WidgetDebtsByPerson", Category = "Debts", DefaultWidth = 6, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Debts Due Soon", ImagePath = "/dashboardsamples/DebtsDueSoon.png", PartialViewName = "_WidgetDebtsDueSoon", Category = "Debts", DefaultWidth = 4, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Expenses By Category", ImagePath = "/dashboardsamples/ExpensesByCategory.png", PartialViewName = "_WidgetExpensesByCategory", Category = "Expenses", DefaultWidth = 6, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Habit Adherence", ImagePath = "/dashboardsamples/HabitAdherence.png", PartialViewName = "_WidgetHabitAdherence", Category = "Habits", DefaultWidth = 4, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Interview Rate", ImagePath = "/dashboardsamples/InterviewRate.png", PartialViewName = "_WidgetInterviewRate", Category = "Resume", DefaultWidth = 3, DefaultHeight = 2 },
+            new DashboardComponent { Name = "Monthly Cash Flow", ImagePath = "/dashboardsamples/MonthlyCashFlow.png", PartialViewName = "_WidgetMonthlyCashFlow", Category = "Expenses", DefaultWidth = 4, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Monthly Expenses", ImagePath = "/dashboardsamples/MonthlyExoenses.png", PartialViewName = "_WidgetMonthlyExpenses", Category = "Expenses", DefaultWidth = 3, DefaultHeight = 2 },
+            new DashboardComponent { Name = "Occupied Storage", ImagePath = "/dashboardsamples/OccupiedStorage.png", PartialViewName = "_WidgetOccupiedStorage", Category = "General", DefaultWidth = 3, DefaultHeight = 2 },
+            new DashboardComponent { Name = "Outstanding Debt", ImagePath = "/dashboardsamples/OutStandingDebt.png", PartialViewName = "_WidgetOutstandingDebt", Category = "Debts", DefaultWidth = 3, DefaultHeight = 2 },
+            new DashboardComponent { Name = "Pending Tasks", ImagePath = "/dashboardsamples/PendingTasks.png", PartialViewName = "_WidgetPendingTasks", Category = "General", DefaultWidth = 4, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Recent Activity", ImagePath = "/dashboardsamples/RecentActivity.png", PartialViewName = "_WidgetRecentActivity", Category = "General", DefaultWidth = 4, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Recent Debts", ImagePath = "/dashboardsamples/RecentDebts.png", PartialViewName = "_WidgetRecentDebts", Category = "Debts", DefaultWidth = 4, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Recent Expenses", ImagePath = "/dashboardsamples/RecentExpenses.png", PartialViewName = "_WidgetRecentExpenses", Category = "Expenses", DefaultWidth = 4, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Registered Users", ImagePath = "/dashboardsamples/RegisteredUsers.png", PartialViewName = "_WidgetRegisteredUsers", Category = "Users", RequiredRole = "Admin", DefaultWidth = 3, DefaultHeight = 2 },
+            new DashboardComponent { Name = "Support Tickets", ImagePath = "/dashboardsamples/SupportTickets.png", PartialViewName = "_WidgetSupportTickets", Category = "Tickets", DefaultWidth = 4, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Top Locations", ImagePath = "/dashboardsamples/TopLocations.png", PartialViewName = "_WidgetTopLocations", Category = "Resume", DefaultWidth = 4, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Top Positions", ImagePath = "/dashboardsamples/TopPostions.png", PartialViewName = "_WidgetTopPositions", Category = "Resume", DefaultWidth = 4, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Total Applications", ImagePath = "/dashboardsamples/TotalApplications.png", PartialViewName = "_WidgetTotalApplications", Category = "Resume", DefaultWidth = 3, DefaultHeight = 2 },
+            new DashboardComponent { Name = "Total Companies", ImagePath = "/dashboardsamples/TotalCompanies.png", PartialViewName = "_WidgetTotalCompanies", Category = "Resume", DefaultWidth = 3, DefaultHeight = 2 },
+            new DashboardComponent { Name = "Unanswered Tickets", ImagePath = "/dashboardsamples/UnansweredTickets.png", PartialViewName = "_WidgetUnansweredTickets", Category = "Tickets", DefaultWidth = 4, DefaultHeight = 4 },
+            new DashboardComponent { Name = "Upcoming Events", ImagePath = "/dashboardsamples/UpcomingEvents.png", PartialViewName = "_WidgetUpcomingEvents", Category = "General", DefaultWidth = 4, DefaultHeight = 4 }
+        };
+    }
 
     private static List<Company> BuildCompanies(int count)
     {

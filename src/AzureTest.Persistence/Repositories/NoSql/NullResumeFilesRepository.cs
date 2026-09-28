@@ -13,9 +13,9 @@ namespace AzureTest.Persistence.Repositories.NoSql;
 /// </summary>
 public class NullResumeFilesRepository : IResumeFilesRepository
 {
-    public Task<ResumeFiles?> GetByIdAsync(Guid id) => Task.FromResult<ResumeFiles?>(null);
+    public Task<ResumeFiles?> GetByIdAsync(Guid id,CancellationToken cancellationToken = default) => Task.FromResult<ResumeFiles?>(null);
 
-    public Task<IReadOnlyList<ResumeFiles>> GetAllAsync() =>
+    public Task<IReadOnlyList<ResumeFiles>> GetAllAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<ResumeFiles>>(Array.Empty<ResumeFiles>());
 
     public Task<IReadOnlyList<ResumeFiles>> GetAllAvailableAsync()
@@ -24,11 +24,11 @@ public class NullResumeFilesRepository : IResumeFilesRepository
     public Task<IReadOnlyList<ResumeFiles>> FindAsync(Expression<Func<ResumeFiles, bool>> predicate) =>
         Task.FromResult<IReadOnlyList<ResumeFiles>>(Array.Empty<ResumeFiles>());
 
-    public Task AddAsync(ResumeFiles document) => Task.CompletedTask;
+    public Task AddAsync(ResumeFiles document,CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-    public Task UpdateAsync(Guid id, ResumeFiles document) => Task.CompletedTask;
+    public Task UpdateAsync(Guid id, ResumeFiles document,CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-    public Task RemoveAsync(Guid id) => Task.CompletedTask;
+    public Task RemoveAsync(Guid id,CancellationToken cancellationToken = default) => Task.CompletedTask;
 
     public Task<ResumeFiles?> GetByResumeIdAsync(Guid resumeId) => Task.FromResult<ResumeFiles?>(null);
 }

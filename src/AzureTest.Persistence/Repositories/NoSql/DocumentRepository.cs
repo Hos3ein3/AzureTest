@@ -17,16 +17,18 @@ public class DocumentRepository<TDocument> : IDocumentRepository<TDocument> wher
         _collection = database.GetCollection<TDocument>(collectionName);
     }
 
-    public virtual async Task<TDocument?> GetByIdAsync(Guid id)
+    public virtual async Task<TDocument?> GetByIdAsync(Guid id,CancellationToken cancellationToken)
     {
         // Use the BSON _id field name explicitly; the class map ensures Guid is mapped to _id
         var filter = Builders<TDocument>.Filter.Eq("_id", id);
-        return await _collection.Find(filter).FirstOrDefaultAsync();
+        return await _collection.Find(filter).FirstOrDefaultAsync(cancellationToken);
     }
 
-    public virtual async Task<IReadOnlyList<TDocument>> GetAllAsync()
+    
+
+    public virtual async Task<IReadOnlyList<TDocument>> GetAllAsync(CancellationToken cancellationToken)
     {
-        return await _collection.Find(_ => true).ToListAsync();
+        return await _collection.Find(_ => true).ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<TDocument>> GetAllAvailableAsync()
@@ -44,20 +46,20 @@ public class DocumentRepository<TDocument> : IDocumentRepository<TDocument> wher
         return await _collection.Find(predicate).ToListAsync();
     }
 
-    public virtual async Task AddAsync(TDocument document)
+    public virtual async Task AddAsync(TDocument document,CancellationToken cancellationToken )
     {
-        await _collection.InsertOneAsync(document);
+        await _collection.InsertOneAsync(document,cancellationToken);
     }
 
-    public virtual async Task UpdateAsync(Guid id, TDocument document)
+    public virtual async Task UpdateAsync(Guid id, TDocument document,CancellationToken cancellationToken )
     {
         var filter = Builders<TDocument>.Filter.Eq("_id", id);
-        await _collection.ReplaceOneAsync(filter, document, new ReplaceOptions { IsUpsert = false });
+        await _collection.ReplaceOneAsync(filter, document, new ReplaceOptions { IsUpsert = false },cancellationToken);
     }
 
-    public virtual async Task RemoveAsync(Guid id)
+    public virtual async Task RemoveAsync(Guid id,CancellationToken cancellationToken )
     {
         var filter = Builders<TDocument>.Filter.Eq("_id", id);
-        await _collection.DeleteOneAsync(filter);
+        await _collection.DeleteOneAsync(filter,cancellationToken);
     }
 }

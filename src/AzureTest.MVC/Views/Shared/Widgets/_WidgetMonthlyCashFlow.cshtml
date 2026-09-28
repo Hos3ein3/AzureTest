@@ -1,0 +1,21 @@
+@model AzureTest.MVC.Models.HomeDashboardViewModel
+
+<!-- Monthly Finance Chart -->
+<div class="col-span-1 lg:col-span-4">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+            <h5 class="text-lg font-semibold text-slate-800 m-0">Monthly Cash Flow</h5>
+            <i class="fa-solid fa-money-bill-trend-up text-slate-400"></i>
+        </div>
+        <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
+            @if (Model.MonthlyExpenses.Any() || Model.MonthlyDebts.Any())
+            {
+                <canvas id="monthlyFinanceChart"></canvas>
+            }
+            else
+            {
+                <p class="text-slate-400">No financial data available.</p>
+            }
+        </div>
+    </div>
+</div>

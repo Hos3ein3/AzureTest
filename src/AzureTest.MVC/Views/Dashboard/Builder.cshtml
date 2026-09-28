@@ -1,0 +1,392 @@
+@model AzureTest.Domain.Documents.UserDashboard
+@{
+    ViewData["Title"] = Model == null ? "Create Dashboard" : $"Edit Dashboard - {Model.Name}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var allComponents = ViewBag.Components as List<AzureTest.Domain.Documents.DashboardComponent>;
+}
+
+@section Styles {
+    <link href="https://cdn.jsdelivr.net/npm/gridstack@8.2.3/dist/gridstack.min.css" rel="stylesheet"/>
+    <style>
+        .grid-stack-item-content {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            border: 1px solid #f1f5f9;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            cursor: move;
+        }
+        .component-card {
+            cursor: grab;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .component-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .remove-widget-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 9999px;
+            width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ef4444;
+            cursor: pointer;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .grid-stack-item:hover .remove-widget-btn {
+            opacity: 1;
+        }
+        .widget-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 1rem;
+        }
+    </style>
+}
+
+<div class="flex flex-col lg:flex-row gap-6 h-[calc(100vh-8rem)]">
+    
+    <!-- Sidebar / Toolbox -->
+    <div class="w-full lg:w-80 bg-white rounded-xl shadow-sm border border-slate-100 flex flex-col overflow-hidden h-full">
+        <div class="p-4 border-b border-slate-100 bg-slate-50">
+            <h2 class="text-lg font-semibold text-slate-800">Components</h2>
+            <p class="text-xs text-slate-500 mt-1 mb-3">Drag items into the grid</p>
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <i class="fa-solid fa-search text-slate-400 text-sm"></i>
+                </div>
+                <input type="text" id="componentSearch" oninput="filterComponents()" class="block w-full rounded-md border-0 py-1.5 pl-9 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6" placeholder="Search components...">
+            </div>
+        </div>
+        
+        <div class="p-4 overflow-y-auto flex-1 custom-scrollbar">
+            @{
+                var groupedComponents = allComponents.GroupBy(c => c.Category).OrderBy(g => g.Key);
+            }
+            @foreach (var group in groupedComponents)
+            {
+                <div class="mb-6 component-group">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">@group.Key</h3>
+                    <div class="space-y-3">
+                        @foreach (var comp in group)
+                        {
+                            <div class="component-card bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center gap-3"
+                                 draggable="true" 
+                                 data-id="@comp.Id" 
+                                 data-name="@comp.Name"
+                                 data-w="@comp.DefaultWidth" 
+                                 data-h="@comp.DefaultHeight"
+                                 data-img="@comp.ImagePath"
+                                 ondragstart="handleDragStart(event)">
+                                <div class="w-10 h-10 rounded bg-white flex items-center justify-center shadow-sm flex-shrink-0 p-1">
+                                    <img src="@comp.ImagePath" alt="@comp.Name" class="max-w-full max-h-full object-contain" onerror="this.src='/img/placeholder.png'; this.onerror=null;" />
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-slate-700 truncate">@comp.Name</p>
+                                    <p class="text-[10px] text-slate-400 mt-0.5">@comp.DefaultWidth x @comp.DefaultHeight blocks</p>
+                                </div>
+                                <i class="fa-solid fa-grip-vertical text-slate-300"></i>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex flex-col h-full min-w-0">
+        
+        <!-- Toolbar -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 mb-4 flex items-center justify-between flex-wrap gap-4">
+            <div class="flex items-center gap-4 flex-1">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Dashboard Name</label>
+                    <input type="text" id="dashboardName" value="@(Model?.Name)" placeholder="e.g. My Overview" class="block w-full sm:w-64 rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6" oninput="generateSlug(this.value)" />
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">URL Slug</label>
+                    <div class="flex rounded-md shadow-sm">
+                        <span class="inline-flex items-center rounded-l-md border border-r-0 border-slate-300 px-3 text-slate-500 sm:text-sm bg-slate-50">
+                            /
+                        </span>
+                        <input type="text" id="dashboardSlug" value="@(Model?.Slug)" class="block w-full sm:w-48 min-w-0 flex-1 rounded-none rounded-r-md border-0 py-1.5 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6" />
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <a asp-action="Manage" class="text-sm font-semibold text-slate-500 hover:text-slate-700">Cancel</a>
+                <button type="button" onclick="saveDashboard()" id="saveBtn" class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 transition-colors">
+                    <i class="fa-solid fa-save mr-2"></i> Save Layout
+                </button>
+            </div>
+        </div>
+
+        <!-- Grid Area -->
+        <div class="flex-1 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 p-4 overflow-y-auto custom-scrollbar relative" id="gridContainer" ondrop="handleDrop(event)" ondragover="allowDrop(event)">
+            @if(Model == null || !Model.Sections.Any() || !Model.Sections[0].Components.Any())
+            {
+                <div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <div class="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-download text-slate-400 text-2xl"></i>
+                    </div>
+                    <p class="text-slate-500 font-medium">Drag components here to build your dashboard</p>
+                </div>
+            }
+            
+            <div class="grid-stack"></div>
+        </div>
+        
+    </div>
+</div>
+
+<input type="hidden" id="dashboardId" value="@(Model?.Id.ToString())" />
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@8.2.3/dist/gridstack-all.js"></script>
+    <script>
+        let grid;
+        
+        document.addEventListener('DOMContentLoaded', function () {
+            grid = GridStack.init({
+                cellHeight: 80,
+                margin: 10,
+                acceptWidgets: true,
+                float: true
+            });
+            
+            // Load existing data if editing
+            @if(Model != null && Model.Sections.Any())
+            {
+                <text>
+                document.getElementById('emptyState')?.remove();
+                
+                const existingWidgets = [];
+                @foreach(var c in Model.Sections.SelectMany(s => s.Components))
+                {
+                    var compInfo = allComponents.FirstOrDefault(x => x.Id == c.ComponentId);
+                    if(compInfo != null)
+                    {
+                        <text>
+                        existingWidgets.push({
+                            x: @c.X,
+                            y: @c.Y,
+                            w: @c.Width,
+                            h: @c.Height,
+                            id: '@c.ComponentId',
+                            content: `
+                                <div class="w-full h-full relative">
+                                    <button type="button" class="remove-widget-btn" onclick="removeWidget(this)"><i class="fa-solid fa-xmark"></i></button>
+                                    <div class="w-full h-full flex flex-col bg-white">
+                                        <div class="px-3 py-2 border-b border-slate-100 bg-slate-50/50">
+                                            <p class="text-xs font-semibold text-slate-600 truncate">@compInfo.Name</p>
+                                        </div>
+                                        <div class="flex-1 p-2 flex items-center justify-center overflow-hidden">
+                                            <img src="@compInfo.ImagePath" class="widget-img" alt="@compInfo.Name" onerror="this.src='/img/placeholder.png'; this.onerror=null;"/>
+                                        </div>
+                                    </div>
+                                </div>`
+                        });
+                        </text>
+                    }
+                }
+                
+                grid.load(existingWidgets);
+                </text>
+            }
+            
+            grid.on('change', function(event, items) {
+                checkEmptyState();
+            });
+            grid.on('added', function(event, items) {
+                checkEmptyState();
+            });
+            grid.on('removed', function(event, items) {
+                checkEmptyState();
+            });
+        });
+        
+        function checkEmptyState() {
+            const container = document.getElementById('gridContainer');
+            let emptyState = document.getElementById('emptyState');
+            
+            if (grid.engine.nodes.length === 0) {
+                if (!emptyState) {
+                    const div = document.createElement('div');
+                    div.id = 'emptyState';
+                    div.className = 'absolute inset-0 flex flex-col items-center justify-center pointer-events-none';
+                    div.innerHTML = `
+                        <div class="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                            <i class="fa-solid fa-download text-slate-400 text-2xl"></i>
+                        </div>
+                        <p class="text-slate-500 font-medium">Drag components here to build your dashboard</p>
+                    `;
+                    container.appendChild(div);
+                }
+            } else if (emptyState) {
+                emptyState.remove();
+            }
+        }
+        
+        function handleDragStart(ev) {
+            ev.dataTransfer.setData("id", ev.currentTarget.getAttribute("data-id"));
+            ev.dataTransfer.setData("w", ev.currentTarget.getAttribute("data-w"));
+            ev.dataTransfer.setData("h", ev.currentTarget.getAttribute("data-h"));
+            ev.dataTransfer.setData("name", ev.currentTarget.getAttribute("data-name"));
+            ev.dataTransfer.setData("img", ev.currentTarget.getAttribute("data-img"));
+        }
+        
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+        
+        function handleDrop(ev) {
+            ev.preventDefault();
+            const id = ev.dataTransfer.getData("id");
+            if (!id) return;
+            
+            const w = parseInt(ev.dataTransfer.getData("w")) || 4;
+            const h = parseInt(ev.dataTransfer.getData("h")) || 4;
+            const name = ev.dataTransfer.getData("name");
+            const img = ev.dataTransfer.getData("img");
+            
+            // Generate content
+            const content = `
+                <div class="w-full h-full relative">
+                    <button type="button" class="remove-widget-btn" onclick="removeWidget(this)"><i class="fa-solid fa-xmark"></i></button>
+                    <div class="w-full h-full flex flex-col bg-white">
+                        <div class="px-3 py-2 border-b border-slate-100 bg-slate-50/50">
+                            <p class="text-xs font-semibold text-slate-600 truncate">${name}</p>
+                        </div>
+                        <div class="flex-1 p-2 flex items-center justify-center overflow-hidden">
+                            <img src="${img}" class="widget-img" alt="${name}" onerror="this.src='/img/placeholder.png'; this.onerror=null;"/>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            grid.addWidget({w: w, h: h, content: content, id: id, autoPosition: true});
+        }
+        
+        function removeWidget(btn) {
+            const el = btn.closest('.grid-stack-item');
+            grid.removeWidget(el);
+        }
+        
+        function generateSlug(val) {
+            // Only auto-generate if we are creating new and slug is mostly empty
+            const slugInput = document.getElementById('dashboardSlug');
+            const isNew = !document.getElementById('dashboardId').value;
+            
+            if (isNew) {
+                slugInput.value = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+            }
+        }
+        
+        async function saveDashboard() {
+            const btn = document.getElementById('saveBtn');
+            const originalHtml = btn.innerHTML;
+            
+            const name = document.getElementById('dashboardName').value.trim();
+            const slug = document.getElementById('dashboardSlug').value.trim();
+            const id = document.getElementById('dashboardId').value;
+            
+            if (!name || !slug) {
+                alert("Dashboard Name and URL Slug are required.");
+                return;
+            }
+            
+            const nodes = grid.engine.nodes;
+            if (nodes.length === 0) {
+                alert("Please add at least one component to your dashboard.");
+                return;
+            }
+            
+            const components = nodes.map(n => ({
+                ComponentId: n.id,
+                X: n.x,
+                Y: n.y,
+                Width: n.w,
+                Height: n.h
+            }));
+            
+            const payload = {
+                Id: id,
+                Name: name,
+                Slug: slug,
+                Sections: [
+                    {
+                        Id: "default",
+                        Name: "Main Layout",
+                        Components: components
+                    }
+                ]
+            };
+            
+            try {
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Saving...';
+                btn.disabled = true;
+                
+                const response = await fetch('/Dashboard/Save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    window.location.href = '/Dashboard/Manage';
+                } else {
+                    const text = await response.text();
+                    alert("Error saving dashboard: " + text);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("An error occurred while saving.");
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        }
+        
+        function filterComponents() {
+            const query = document.getElementById('componentSearch').value.toLowerCase();
+            const groups = document.querySelectorAll('.component-group');
+            
+            groups.forEach(group => {
+                let hasVisible = false;
+                const cards = group.querySelectorAll('.component-card');
+                
+                cards.forEach(card => {
+                    const name = card.getAttribute('data-name').toLowerCase();
+                    if (name.includes(query)) {
+                        card.style.display = 'flex';
+                        hasVisible = true;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                
+                if (hasVisible) {
+                    group.style.display = 'block';
+                } else {
+                    group.style.display = 'none';
+                }
+            });
+        }
+    </script>
+}

@@ -12,6 +12,8 @@ public interface INoSqlUnitOfWork : IDisposable
     IDebtPersonRepository DebtPersons { get; }
     IExpenseCategoryRepository ExpenseCategories { get; }
     IUserPreferenceRepository UserPreferences { get; }
+    IDashboardComponentRepository DashboardComponents { get; }
+    IUserDashboardRepository UserDashboards { get; }
 
     Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -36,7 +36,9 @@ public class UserPreferenceController : Controller
         {
             userId = pref.UserId,
             language = string.IsNullOrWhiteSpace(pref.Language) ? "en" : pref.Language,
-            themeColor = string.IsNullOrWhiteSpace(pref.ThemeColor) ? "slate" : pref.ThemeColor
+            themeColor = string.IsNullOrWhiteSpace(pref.ThemeColor) ? "slate" : pref.ThemeColor,
+            currency = string.IsNullOrWhiteSpace(pref.Currency) ? "USD" : pref.Currency,
+            preferredDashboard = pref.PreferredDashboard ?? string.Empty
         });
     }
 
@@ -47,6 +49,9 @@ public class UserPreferenceController : Controller
         string? lang = jsonRequest?.Language;
         string? theme = jsonRequest?.ThemeColor;
 
+        string? currency = jsonRequest?.Currency;
+        string? preferredDashboard = jsonRequest?.PreferredDashboard;
+
         if (string.IsNullOrWhiteSpace(lang) && Request.HasFormContentType && Request.Form.ContainsKey("language"))
         {
             lang = Request.Form["language"];
@@ -55,20 +60,32 @@ public class UserPreferenceController : Controller
         {
             theme = Request.Form["themeColor"];
         }
+        if (string.IsNullOrWhiteSpace(currency) && Request.HasFormContentType && Request.Form.ContainsKey("currency"))
+        {
+            currency = Request.Form["currency"];
+        }
+        if (string.IsNullOrWhiteSpace(preferredDashboard) && Request.HasFormContentType && Request.Form.ContainsKey("preferredDashboard"))
+        {
+            preferredDashboard = Request.Form["preferredDashboard"];
+        }
 
         var language = string.IsNullOrWhiteSpace(lang) ? "en" : lang;
         var themeColor = string.IsNullOrWhiteSpace(theme) ? "slate" : theme;
+        var finalCurrency = string.IsNullOrWhiteSpace(currency) ? "USD" : currency;
+        var finalPreferredDashboard = preferredDashboard ?? string.Empty;
 
         await _updateUserPreferenceCommand.HandleAsync(
-            new UpdateUserPreferenceCommand(_currentUser.Id, language, themeColor),
+            new UpdateUserPreferenceCommand(_currentUser.Id, language, themeColor, finalCurrency, finalPreferredDashboard),
             cancellationToken);
 
-        return Json(new { success = true, language, themeColor });
+        return Json(new { success = true, language, themeColor, currency = finalCurrency, preferredDashboard = finalPreferredDashboard });
     }
 
     public class UpdatePreferenceRequest
     {
         public string? Language { get; set; }
         public string? ThemeColor { get; set; }
+        public string? Currency { get; set; }
+        public string? PreferredDashboard { get; set; }
     }
 }
