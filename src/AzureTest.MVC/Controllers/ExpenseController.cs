@@ -51,6 +51,11 @@ public class ExpenseController : Controller
     [HttpGet]
     public async Task<IActionResult> Index(GetAllExpensesFilters filters, CancellationToken cancellationToken)
     {
+        if (!_currentUser.Roles.Contains("Admin"))
+        {
+            filters.UserId = _currentUser.Id;
+        }
+
         var pagedExpenses = await _queries.GetAll.HandleAsync(new GetAllExpensesQuery(filters), cancellationToken);
         ViewBag.Filters = filters;
         return View(pagedExpenses);
@@ -174,20 +179,25 @@ public class ExpenseController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Analytics(CancellationToken cancellationToken)
+    public async Task<IActionResult> Analytics(Guid? userId, CancellationToken cancellationToken)
     {
-        var filters = new GetAllExpensesFilters { PageSize = 10000, UserId = _currentUser.Id };
-        var pagedExpenses = await _queries.GetAll.HandleAsync(new GetAllExpensesQuery(filters), cancellationToken);
+        var isAdmin = _currentUser.Roles.Contains("Admin");
+        // Non-admin strictly sees their own expenses; admin can view all or specific user
+        var targetUserId = !isAdmin ? _currentUser.Id : userId;
+
+        var filters = new GetAllExpensesFilters { PageSize = 10000, UserId = targetUserId };
+        var pagedExpenses = await _queries.GetAll.HandleAsync(new GetAllExpensesQuery(filters, targetUserId), cancellationToken);
         var expenses = pagedExpenses.Items.OrderByDescending(e => e.Date).ToList();
 
         var model = new ExpenseAnalyticsViewModel();
         
-        // Month over Month Calculations
+        // Month over Month Calculations (UTC consistent)
         var now = DateTime.UtcNow;
-        var thisMonthStart = new DateTime(now.Year, now.Month, 1);
+        var thisMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var nextMonthStart = thisMonthStart.AddMonths(1);
         var lastMonthStart = thisMonthStart.AddMonths(-1);
         
-        var expensesThisMonth = expenses.Where(e => e.Date >= thisMonthStart).ToList();
+        var expensesThisMonth = expenses.Where(e => e.Date >= thisMonthStart && e.Date < nextMonthStart).ToList();
         var expensesLastMonth = expenses.Where(e => e.Date >= lastMonthStart && e.Date < thisMonthStart).ToList();
 
         model.TotalThisMonth = expensesThisMonth.Sum(e => e.Amount);
@@ -214,7 +224,7 @@ public class ExpenseController : Controller
             .GroupBy(e => new { e.Date.Year, e.Date.Month })
             .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
             .ToDictionary(
-                g => new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM yyyy"), 
+                g => new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM yyyy", System.Globalization.CultureInfo.InvariantCulture), 
                 g => g.Sum(e => e.Amount)
             );
 
@@ -224,7 +234,7 @@ public class ExpenseController : Controller
             .OrderByDescending(g => g.Key.Year).ThenByDescending(g => g.Key.Month)
             .Select(g => new ExpenseMonthGroup
             {
-                MonthName = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMMM"),
+                MonthName = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMMM", System.Globalization.CultureInfo.InvariantCulture),
                 Year = g.Key.Year.ToString(),
                 TotalAmount = g.Sum(e => e.Amount),
                 Expenses = g.ToList()

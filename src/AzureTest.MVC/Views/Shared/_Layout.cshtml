@@ -38,6 +38,18 @@
 </head>
 <body class="h-full flex overflow-hidden text-gray-800 font-sans">
     
+    <!-- Global Page Loader Overlay -->
+    <div id="globalPageLoader" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs transition-opacity duration-200 opacity-0 pointer-events-none" style="display: none;" aria-hidden="true">
+        <div class="flex flex-col items-center bg-white/95 rounded-2xl p-6 shadow-2xl border border-slate-100 max-w-xs text-center">
+            <div class="relative w-12 h-12 mb-3">
+                <div class="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-brand-500 border-t-transparent animate-spin"></div>
+            </div>
+            <span class="text-sm font-semibold text-slate-800">Loading...</span>
+            <span class="text-xs text-slate-500 mt-1">Please wait while the page loads</span>
+        </div>
+    </div>
+
     <!-- Sidebar -->
     <aside class="w-64 bg-slate-900 text-white flex-shrink-0 hidden md:flex md:flex-col shadow-xl">
         <div class="h-16 flex items-center px-6 border-b border-slate-800">
@@ -261,9 +273,269 @@
         
     </div>
 
+    <!-- User Preference Modal -->
+    <div id="userPreferenceModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="prefModalTitle" role="dialog" aria-modal="true">
+        <!-- Backdrop -->
+        <div id="prefModalBackdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300 opacity-0"></div>
+
+        <div class="min-h-full flex items-center justify-center p-4 text-center sm:p-0">
+            <div id="prefModalDialog" class="relative bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-lg w-full scale-95 opacity-0 border border-slate-100">
+                <!-- Modal Header -->
+                <div class="bg-slate-900 px-6 py-4 flex items-center justify-between text-white">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center">
+                            <i class="fa-solid fa-sliders text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-semibold text-white leading-6" id="prefModalTitle">User Preferences</h3>
+                            <p class="text-xs text-slate-400">Customize your display language and theme</p>
+                        </div>
+                    </div>
+                    <button type="button" id="closePrefModalBtn" class="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-slate-800">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Modal Body -->
+                <form id="userPreferenceForm" class="p-6 space-y-5">
+                    <!-- Status message banner -->
+                    <div id="prefModalAlert" class="hidden p-3 rounded-lg text-xs font-medium flex items-center space-x-2"></div>
+
+                    <!-- Loading state indicator -->
+                    <div id="prefModalLoading" class="py-8 flex flex-col items-center justify-center space-y-3">
+                        <div class="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-xs text-slate-500 font-medium">Fetching your preferences...</span>
+                    </div>
+
+                    <!-- Fields container -->
+                    <div id="prefModalFields" class="hidden space-y-4">
+                        <!-- Language -->
+                        <div>
+                            <label for="prefLanguage" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                <i class="fa-solid fa-globe mr-1.5 text-brand-600"></i> Interface Language
+                            </label>
+                            <select id="prefLanguage" name="language" class="block w-full rounded-lg border-slate-300 text-sm py-2 px-3 focus:border-brand-500 focus:ring-brand-500 border bg-white">
+                                <option value="en">English (en)</option>
+                                <option value="nl">Dutch (nl)</option>
+                                <option value="es">Spanish (es)</option>
+                                <option value="fr">French (fr)</option>
+                                <option value="de">German (de)</option>
+                            </select>
+                        </div>
+
+                        <!-- Theme Color -->
+                        <div>
+                            <label for="prefThemeColor" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                <i class="fa-solid fa-palette mr-1.5 text-brand-600"></i> Theme Accent Color
+                            </label>
+                            <select id="prefThemeColor" name="themeColor" class="block w-full rounded-lg border-slate-300 text-sm py-2 px-3 focus:border-brand-500 focus:ring-brand-500 border bg-white">
+                                <option value="slate">Slate (Default Dark)</option>
+                                <option value="blue">Blue Ocean</option>
+                                <option value="emerald">Emerald Green</option>
+                                <option value="indigo">Indigo Modern</option>
+                                <option value="rose">Rose Elegance</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-3">
+                        <button type="button" id="cancelPrefModalBtn" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" id="savePrefModalBtn" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors disabled:opacity-50">
+                            <span id="savePrefBtnSpinner" class="hidden mr-2"><i class="fa-solid fa-spinner fa-spin"></i></span>
+                            <span id="savePrefBtnText">Save Preferences</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    <!-- Global Page Loader and Setting Modal Scripts -->
+    <script>
+        // Global Page Loader handling
+        (function () {
+            const loader = document.getElementById('globalPageLoader');
+            if (!loader) return;
+
+            function showLoader() {
+                loader.style.display = 'flex';
+                requestAnimationFrame(() => {
+                    loader.classList.remove('opacity-0', 'pointer-events-none');
+                    loader.classList.add('opacity-100');
+                    loader.removeAttribute('aria-hidden');
+                });
+            }
+
+            function hideLoader() {
+                loader.classList.remove('opacity-100');
+                loader.classList.add('opacity-0', 'pointer-events-none');
+                loader.setAttribute('aria-hidden', 'true');
+                setTimeout(() => {
+                    if (loader.classList.contains('opacity-0')) {
+                        loader.style.display = 'none';
+                    }
+                }, 250);
+            }
+
+            window.addEventListener('beforeunload', function () {
+                showLoader();
+            });
+
+            window.addEventListener('pageshow', function () {
+                hideLoader();
+            });
+        })();
+
+        // Setting Gear & User Preference Modal Logic
+        (function () {
+            const gearBtn = document.getElementById('settingGear');
+            const modal = document.getElementById('userPreferenceModal');
+            const backdrop = document.getElementById('prefModalBackdrop');
+            const dialog = document.getElementById('prefModalDialog');
+            const closeBtn = document.getElementById('closePrefModalBtn');
+            const cancelBtn = document.getElementById('cancelPrefModalBtn');
+            const form = document.getElementById('userPreferenceForm');
+            const loadingIndicator = document.getElementById('prefModalLoading');
+            const fieldsContainer = document.getElementById('prefModalFields');
+            const alertBox = document.getElementById('prefModalAlert');
+            const languageSelect = document.getElementById('prefLanguage');
+            const themeColorSelect = document.getElementById('prefThemeColor');
+            const saveBtn = document.getElementById('savePrefModalBtn');
+            const saveSpinner = document.getElementById('savePrefBtnSpinner');
+            const saveText = document.getElementById('savePrefBtnText');
+
+            if (!gearBtn || !modal) return;
+
+            function showAlert(msg, isSuccess) {
+                alertBox.textContent = msg;
+                alertBox.className = isSuccess 
+                    ? 'p-3 rounded-lg text-xs font-medium flex items-center space-x-2 bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'p-3 rounded-lg text-xs font-medium flex items-center space-x-2 bg-rose-50 text-rose-700 border border-rose-200';
+                alertBox.classList.remove('hidden');
+            }
+
+            function hideAlert() {
+                alertBox.classList.add('hidden');
+                alertBox.textContent = '';
+            }
+
+            function openModal() {
+                hideAlert();
+                modal.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    backdrop.classList.remove('opacity-0');
+                    dialog.classList.remove('opacity-0', 'scale-95');
+                    dialog.classList.add('opacity-100', 'scale-100');
+                });
+                fetchPreferences();
+            }
+
+            function closeModal() {
+                backdrop.classList.add('opacity-0');
+                dialog.classList.remove('opacity-100', 'scale-100');
+                dialog.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+
+            async function fetchPreferences() {
+                loadingIndicator.classList.remove('hidden');
+                fieldsContainer.classList.add('hidden');
+                saveBtn.disabled = true;
+
+                try {
+                    const response = await fetch('/UserPreference/Get', {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.language && languageSelect) {
+                            languageSelect.value = data.language;
+                        }
+                        if (data.themeColor && themeColorSelect) {
+                            themeColorSelect.value = data.themeColor;
+                        }
+                    } else {
+                        showAlert('Failed to load user preferences.', false);
+                    }
+                } catch (err) {
+                    console.error('Error fetching preferences:', err);
+                    showAlert('An unexpected error occurred while loading preferences.', false);
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                    fieldsContainer.classList.remove('hidden');
+                    saveBtn.disabled = false;
+                }
+            }
+
+            async function savePreferences(e) {
+                e.preventDefault();
+                hideAlert();
+                saveBtn.disabled = true;
+                saveSpinner.classList.remove('hidden');
+                saveText.textContent = 'Saving...';
+
+                const payload = {
+                    language: languageSelect.value,
+                    themeColor: themeColorSelect.value
+                };
+
+                try {
+                    const response = await fetch('/UserPreference/Update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        showAlert('Preferences updated successfully!', true);
+                        setTimeout(() => {
+                            closeModal();
+                        }, 900);
+                    } else {
+                        showAlert('Failed to save preferences. Please try again.', false);
+                    }
+                } catch (err) {
+                    console.error('Error saving preferences:', err);
+                    showAlert('Error updating preferences.', false);
+                } finally {
+                    saveBtn.disabled = false;
+                    saveSpinner.classList.add('hidden');
+                    saveText.textContent = 'Save Preferences';
+                }
+            }
+
+            gearBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                openModal();
+            });
+
+            if (closeBtn) closeBtn.addEventListener('click', closeModal);
+            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+            if (backdrop) backdrop.addEventListener('click', closeModal);
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    closeModal();
+                }
+            });
+
+            if (form) {
+                form.addEventListener('submit', savePreferences);
+            }
+        })();
+    </script>
 </body>
 </html>

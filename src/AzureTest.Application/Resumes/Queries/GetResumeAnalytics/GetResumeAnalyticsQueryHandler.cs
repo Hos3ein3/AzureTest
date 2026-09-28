@@ -12,6 +12,10 @@ using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Domain.Entities;
 using System;
 
+using AzureTest.Domain.Entities.Identity;
+
+using Microsoft.AspNetCore.Identity;
+
 namespace AzureTest.Application.Resumes.Queries.GetResumeAnalytics;
 
 public sealed record GetResumeAnalyticsQuery(string? UserId = null) : IQuery<ResumeAnalyticsDto>;
@@ -21,17 +25,20 @@ public sealed class GetResumeAnalyticsQueryHandler : BaseQueryHandler<GetResumeA
     private readonly IUnitOfWork _unitOfWork;
     private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly ICurrentUser _currentUser;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public GetResumeAnalyticsQueryHandler(
         IUnitOfWork unitOfWork,
         INoSqlUnitOfWork noSqlUnitOfWork,
         ICurrentUser currentUser,
+        UserManager<ApplicationUser>  userManager,
         ILogger<GetResumeAnalyticsQueryHandler> logger)
         : base(logger)
     {
         _unitOfWork = unitOfWork;
         _noSqlUnitOfWork = noSqlUnitOfWork;
         _currentUser = currentUser;
+        _userManager = userManager;
     }
 
     protected override async Task<ResumeAnalyticsDto> ExecuteAsync(GetResumeAnalyticsQuery query, CancellationToken cancellationToken)
@@ -39,8 +46,7 @@ public sealed class GetResumeAnalyticsQueryHandler : BaseQueryHandler<GetResumeA
         var allResumes = await _unitOfWork.Resumes.GetAllAsync();
         
         bool isAdmin = _currentUser.Roles.Contains("Admin");
-        var totalUsersCount = allResumes.Select(r => r.UserId).Distinct().Count();
-
+        var totalUsersCount = _userManager.Users.Count();
         List<Resume> resumes;
         if (isAdmin)
         {

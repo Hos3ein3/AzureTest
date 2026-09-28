@@ -16,7 +16,7 @@ namespace AzureTest.Application.Expenses.Queries;
 
 // ── Query ─────────────────────────────────────────────────────────────────────
 
-public sealed record GetAllExpensesQuery(GetAllExpensesFilters Filters) : IQuery<PagedResult<ExpenseDto>>;
+public sealed record GetAllExpensesQuery(GetAllExpensesFilters? Filters = null, Guid? UserId = null) : IQuery<PagedResult<ExpenseDto>>;
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
@@ -38,33 +38,45 @@ public sealed class GetAllExpensesQueryHandler : BaseQueryHandler<GetAllExpenses
         _currentUser = currentUser;
     }
 
-    protected override async Task<PagedResult<ExpenseDto>> ExecuteAsync(GetAllExpensesQuery query, CancellationToken cancellationToken)
+    protected override async Task<PagedResult<ExpenseDto>> ExecuteAsync(GetAllExpensesQuery request, CancellationToken cancellationToken)
     {
-        var targetUserId = query.Filters?.UserId ?? _currentUser.Id;
+        bool isAdmin = _currentUser.Roles.Contains("Admin");
 
-        var expensesQuery = await _unitOfWork.Expenses.FindAsync(e => !e.IsDeleted);
+        // Non-admins must strictly only see their own expenses to guarantee privacy
+        Guid? targetUserId = !isAdmin
+            ? _currentUser.Id
+            : (request.UserId ?? request.Filters?.UserId);
+
+        var expensesQuery = targetUserId.HasValue
+            ? await _unitOfWork.Expenses.FindAsync(e => !e.IsDeleted && e.UserId == targetUserId.Value)
+            : await _unitOfWork.Expenses.FindAsync(e => !e.IsDeleted);
+
         var expenses = expensesQuery.ToList();
-
-        if (query.Filters?.UserId != null || !_currentUser.Roles.Contains("Admin"))
-        {
-            expenses = expenses.Where(e => e.UserId == targetUserId).ToList();
-        }
-
         var queryable = expenses.AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(query.Filters?.SearchTerm))
+        if (request.Filters?.StartDate.HasValue == true)
         {
-            var term = query.Filters.SearchTerm.ToLower();
+            queryable = queryable.Where(e => e.Date >= request.Filters.StartDate.Value);
+        }
+
+        if (request.Filters?.EndDate.HasValue == true)
+        {
+            queryable = queryable.Where(e => e.Date <= request.Filters.EndDate.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Filters?.SearchTerm))
+        {
+            var term = request.Filters.SearchTerm.ToLower();
             queryable = queryable.Where(e => 
                 (!string.IsNullOrEmpty(e.Description) && e.Description.ToLower().Contains(term)));
         }
 
         int totalCount = queryable.Count();
-        int pageNumber = query.Filters?.PageNumber ?? 1;
-        int pageSize = query.Filters?.PageSize ?? 10;
+        int pageNumber = request.Filters?.PageNumber ?? 1;
+        int pageSize = request.Filters?.PageSize ?? 10;
         
-        string sortBy = (query.Filters?.SortBy ?? "Date").ToLower();
-        bool desc = query.Filters?.SortDescending ?? true;
+        string sortBy = (request.Filters?.SortBy ?? "Date").ToLower();
+        bool desc = request.Filters?.SortDescending ?? true;
 
         queryable = sortBy switch
         {
@@ -72,10 +84,9 @@ public sealed class GetAllExpensesQueryHandler : BaseQueryHandler<GetAllExpenses
             _ => desc ? queryable.OrderByDescending(e => e.Date) : queryable.OrderBy(e => e.Date)
         };
 
-        var pagedExpenses = queryable
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+        var pagedExpenses = (pageSize > 0)
+            ? queryable.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList()
+            : queryable.ToList();
 
         var dtos = pagedExpenses.Select(e => new ExpenseDto
         {
@@ -86,19 +97,41 @@ public sealed class GetAllExpensesQueryHandler : BaseQueryHandler<GetAllExpenses
             CategoryId = e.CategoryId
         }).ToList();
 
-        // Populate category names
-        foreach (var dto in dtos)
+        // Populate category names efficiently by batching distinct category IDs
+        try
         {
-            if (dto.CategoryId.HasValue)
+            var distinctCatIds = dtos
+                .Where(d => d.CategoryId.HasValue)
+                .Select(d => d.CategoryId!.Value)
+                .Distinct()
+                .ToList();
+
+            if (distinctCatIds.Count > 0)
             {
-                var category = await _noSqlUnitOfWork.ExpenseCategories.GetByIdAsync(dto.CategoryId.Value);
-                if (category != null)
+                var categoryMap = new Dictionary<Guid, string>();
+                foreach (var catId in distinctCatIds)
                 {
-                    dto.CategoryName = category.Name;
+                    var category = await _noSqlUnitOfWork.ExpenseCategories.GetByIdAsync(catId);
+                    if (category != null && !string.IsNullOrWhiteSpace(category.Name))
+                    {
+                        categoryMap[catId] = category.Name;
+                    }
+                }
+
+                foreach (var dto in dtos)
+                {
+                    if (dto.CategoryId.HasValue && categoryMap.TryGetValue(dto.CategoryId.Value, out var name))
+                    {
+                        dto.CategoryName = name;
+                    }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Failed to resolve expense category names");
+        }
 
-        return new PagedResult<ExpenseDto>(dtos, totalCount, pageNumber, pageSize);
+        return new PagedResult<ExpenseDto>(dtos, totalCount, pageNumber, pageSize > 0 ? pageSize : totalCount);
     }
 }

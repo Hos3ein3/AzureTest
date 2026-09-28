@@ -18,6 +18,8 @@ public static class DependencyInjection
 
         // Register all FluentValidation validators from the Contracts assembly
         services.AddValidatorsFromAssemblyContaining<CreateResumeDtoValidator>();
+        // Register FluentValidation validators from the Application assembly (Commands/Queries)
+        services.AddValidatorsFromAssembly(System.Reflection.Assembly.GetExecutingAssembly());
 
         // Register Resume unit aggregators
         services.AddScoped<IResumeCommandUnit, ResumeCommandUnit>();

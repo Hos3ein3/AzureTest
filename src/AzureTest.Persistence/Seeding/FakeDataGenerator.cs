@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AzureTest.Application.Configuration;
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Domain.Documents;
 using AzureTest.Domain.Entities;
@@ -103,8 +104,10 @@ public static class FakeDataGenerator
         AzureTestDbContext sqlContext,
         INoSqlUnitOfWork noSql,
         UserManager<ApplicationUser> userManager,
-        RoleManager<ApplicationRole> roleManager)
+        RoleManager<ApplicationRole> roleManager,
+        SimulateSetting? settings = null)
     {
+        settings ??= new SimulateSetting();
         Randomizer.Seed = new Random(Seed);
 
         // ── Step 1 ── Roles ──────────────────────────────────────────────────
@@ -120,6 +123,24 @@ public static class FakeDataGenerator
         var userId   = userUser.Id;
         var adminId  = adminUser.Id;
         var systemId = systemUser.Id;
+
+        var allUserIds = new List<Guid> { userId };
+
+        if (settings.AddSeedUser)
+        {
+            var userFaker = new Faker();
+            for (int i = 0; i < 50; i++)
+            {
+                var fakeUser = await EnsureUserAsync(
+                    userManager, 
+                    $"user{i}@azuretest.local", 
+                    "123456", 
+                    userFaker.Name.FirstName(), 
+                    userFaker.Name.LastName(), 
+                    "User");
+                allUserIds.Add(fakeUser.Id);
+            }
+        }
 
         // ── Step 3 ── NoSQL Documents ─────────────────────────────────────────
 

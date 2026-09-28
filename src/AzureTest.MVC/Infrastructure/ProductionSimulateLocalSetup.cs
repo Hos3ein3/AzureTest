@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AzureTest.Application.Configuration;
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Domain.Entities.Identity;
 using AzureTest.Persistence.Context;
@@ -73,6 +74,9 @@ public static class ProductionSimulateLocalSetup
             var roleManager    = services.GetRequiredService<RoleManager<ApplicationRole>>();
             bool alreadySeeded = await roleManager.Roles.AnyAsync();
 
+            var cfg             = services.GetRequiredService<IConfiguration>();
+            var simulateSetting = cfg.GetSection(SimulateSetting.SectionName).Get<SimulateSetting>() ?? new SimulateSetting();
+
             if (alreadySeeded)
             {
                 logger.LogInformation("ℹ️  ProductionSimulateLocal: Data already exists — skipping FakeDataGenerator.");
@@ -85,7 +89,7 @@ public static class ProductionSimulateLocalSetup
                 var noSql       = services.GetRequiredService<INoSqlUnitOfWork>();
                 var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
-                await FakeDataGenerator.SeedAsync(db, noSql, userManager, roleManager);
+                await FakeDataGenerator.SeedAsync(db, noSql, userManager, roleManager, simulateSetting);
 
                 logger.LogInformation(
                     "✅ ProductionSimulateLocal: Seeding complete.\n" +
@@ -98,7 +102,7 @@ public static class ProductionSimulateLocalSetup
             // Capture connection info NOW while the scope is still alive.
             // We use ApplicationStopping (not ApplicationStopped) so that the
             // service provider is still accessible during cleanup.
-            RegisterCleanupHook(app, logger, db.Database.GetConnectionString()!);
+            RegisterCleanupHook(app, logger, db.Database.GetConnectionString()!, simulateSetting);
         }
         catch (Exception ex)
         {
@@ -115,18 +119,17 @@ public static class ProductionSimulateLocalSetup
     // Cleanup — registered once, fires on ApplicationStopping
     // ──────────────────────────────────────────────────────────────────────────
 
-    private static void RegisterCleanupHook(WebApplication app, ILogger logger, string pgConnectionString)
+    private static void RegisterCleanupHook(WebApplication app, ILogger logger, string pgConnectionString, SimulateSetting simulateSetting)
     {
-        // Read Mongo + Redis connection strings from configuration
-        var cfg              = app.Services.GetRequiredService<IConfiguration>();
-        
-        var dropDatabases = cfg.GetValue<bool>("DropDatabasesOnShutdown");
-        if (!dropDatabases)
+        if (!simulateSetting.DropDatabasesOnShutdown &&
+            !simulateSetting.DropNoSqlOnShutdown &&
+            !simulateSetting.DropRedisCacheOnShutdown)
         {
-            logger.LogInformation("ℹ️  ProductionSimulateLocal: 'DropDatabasesOnShutdown' is false. Databases will NOT be dropped on shutdown.");
+            logger.LogInformation("ℹ️  ProductionSimulateLocal: All drop settings in SimulateSetting are false. Cleanup hook will NOT be registered.");
             return;
         }
 
+        var cfg              = app.Services.GetRequiredService<IConfiguration>();
         var mongoConnStr     = cfg.GetConnectionString("MongoDb")
                               ?? cfg["DatabaseSettings:MongoDb:ConnectionString"]
                               ?? "mongodb://localhost:27017";
@@ -136,17 +139,21 @@ public static class ProductionSimulateLocalSetup
                               ?? "localhost:6379";
 
         logger.LogInformation(
-            "🗑️  ProductionSimulateLocal: Cleanup hook registered ('DropDatabasesOnShutdown' is true).\n" +
-            "    Will DROP PostgreSQL DB, MongoDB DB '{MongoDb}', and FLUSH Redis on shutdown.",
-            mongoDbName);
-
+            "🗑️  ProductionSimulateLocal: Cleanup hook registered.\n" +
+            "    Drop SQL (PostgreSQL): {DropSql}\n" +
+            "    Drop NoSQL (MongoDB '{MongoDb}'): {DropNoSql}\n" +
+            "    Flush Redis: {DropRedis}",
+            simulateSetting.DropDatabasesOnShutdown,
+            mongoDbName,
+            simulateSetting.DropNoSqlOnShutdown,
+            simulateSetting.DropRedisCacheOnShutdown);
 
         // ApplicationStopping fires while the host is still running
         // (before DisposeAsync), so we can still create service scopes.
         app.Lifetime.ApplicationStopping.Register(() =>
         {
             // Run the async cleanup synchronously inside the sync Register callback
-            CleanupAsync(app, logger, pgConnectionString, mongoConnStr, mongoDbName, redisConnStr)
+            CleanupAsync(app, logger, pgConnectionString, mongoConnStr, mongoDbName, redisConnStr, simulateSetting)
                 .GetAwaiter()
                 .GetResult();
         });
@@ -158,61 +165,83 @@ public static class ProductionSimulateLocalSetup
         string pgConnectionString,
         string mongoConnStr,
         string mongoDbName,
-        string redisConnStr)
+        string redisConnStr,
+        SimulateSetting simulateSetting)
     {
         logger.LogInformation("🗑️  ProductionSimulateLocal: Application is stopping — cleaning up data stores…");
 
         // ── PostgreSQL: drop the entire database ─────────────────────────────
-        try
+        if (simulateSetting.DropDatabasesOnShutdown)
         {
-            using var scope = app.Services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AzureTestDbContext>();
-            logger.LogInformation("🗑️  Dropping PostgreSQL database…");
-            await db.Database.EnsureDeletedAsync();
-            logger.LogInformation("✅ PostgreSQL database dropped.");
+            try
+            {
+                using var scope = app.Services.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<AzureTestDbContext>();
+                logger.LogInformation("🗑️  Dropping PostgreSQL database…");
+                await db.Database.EnsureDeletedAsync();
+                logger.LogInformation("✅ PostgreSQL database dropped.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "⚠️  Failed to drop PostgreSQL database: {Message}", ex.Message);
+            }
         }
-        catch (Exception ex)
+        else
         {
-            logger.LogError(ex, "⚠️  Failed to drop PostgreSQL database: {Message}", ex.Message);
+            logger.LogInformation("ℹ️  ProductionSimulateLocal: 'DropDatabasesOnShutdown' is false — skipping PostgreSQL cleanup.");
         }
 
         // ── MongoDB: drop the entire database ────────────────────────────────
-        try
+        if (simulateSetting.DropNoSqlOnShutdown)
         {
-            logger.LogInformation("🗑️  Dropping MongoDB database '{DbName}'…", mongoDbName);
-            var mongoClient = new MongoClient(mongoConnStr);
-            await mongoClient.DropDatabaseAsync(mongoDbName);
-            logger.LogInformation("✅ MongoDB database '{DbName}' dropped.", mongoDbName);
+            try
+            {
+                logger.LogInformation("🗑️  Dropping MongoDB database '{DbName}'…", mongoDbName);
+                var mongoClient = new MongoClient(mongoConnStr);
+                await mongoClient.DropDatabaseAsync(mongoDbName);
+                logger.LogInformation("✅ MongoDB database '{DbName}' dropped.", mongoDbName);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "⚠️  Failed to drop MongoDB database: {Message}", ex.Message);
+            }
         }
-        catch (Exception ex)
+        else
         {
-            logger.LogError(ex, "⚠️  Failed to drop MongoDB database: {Message}", ex.Message);
+            logger.LogInformation("ℹ️  ProductionSimulateLocal: 'DropNoSqlOnShutdown' is false — skipping MongoDB cleanup.");
         }
 
         // ── Redis: flush all keys ─────────────────────────────────────────────
-        try
+        if (simulateSetting.DropRedisCacheOnShutdown)
         {
-            logger.LogInformation("🗑️  Flushing Redis (FLUSHALL)…");
-
-            // Parse the connection string to a proper format if needed
-            // (Bogus generates "host:port" which StackExchange.Redis accepts directly)
-            using var redis = await StackExchange.Redis.ConnectionMultiplexer.ConnectAsync(
-                redisConnStr + ",allowAdmin=true");
-
-            foreach (var endpoint in redis.GetEndPoints())
+            try
             {
-                var server = redis.GetServer(endpoint);
-                if (server.IsConnected)
-                    await server.FlushAllDatabasesAsync();
+                logger.LogInformation("🗑️  Flushing Redis (FLUSHALL)…");
+
+                // Parse the connection string to a proper format if needed
+                // (Bogus generates "host:port" which StackExchange.Redis accepts directly)
+                using var redis = await StackExchange.Redis.ConnectionMultiplexer.ConnectAsync(
+                    redisConnStr + ",allowAdmin=true");
+
+                foreach (var endpoint in redis.GetEndPoints())
+                {
+                    var server = redis.GetServer(endpoint);
+                    if (server.IsConnected)
+                        await server.FlushAllDatabasesAsync();
+                }
+                logger.LogInformation("✅ Redis flushed.");
             }
-            logger.LogInformation("✅ Redis flushed.");
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "⚠️  Failed to flush Redis: {Message}", ex.Message);
+            }
         }
-        catch (Exception ex)
+        else
         {
-            logger.LogError(ex, "⚠️  Failed to flush Redis: {Message}", ex.Message);
+            logger.LogInformation("ℹ️  ProductionSimulateLocal: 'DropRedisCacheOnShutdown' is false — skipping Redis cleanup.");
         }
 
-        logger.LogInformation("✅ ProductionSimulateLocal: All data stores cleaned up.");
+        logger.LogInformation("✅ ProductionSimulateLocal: All configured data stores cleaned up.");
     }
 
     // ──────────────────────────────────────────────────────────────────────────

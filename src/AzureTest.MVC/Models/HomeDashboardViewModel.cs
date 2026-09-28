@@ -22,6 +22,12 @@ public class HomeDashboardViewModel
     public Dictionary<string, decimal> ExpensesByCategory { get; set; } = new();
     public Dictionary<string, decimal> DebtsByPerson { get; set; } = new();
     
+    // New Graph Data
+    public Dictionary<string, int> HabitAdherence { get; set; } = new();
+    public Dictionary<string, int> TicketStatusCounts { get; set; } = new();
+    public Dictionary<string, decimal> MonthlyExpenses { get; set; } = new();
+    public Dictionary<string, decimal> MonthlyDebts { get; set; } = new();
+    
     public bool IsViewingOtherUser { get; set; }
     
     public decimal TotalOutstandingDebt { get; set; }
