@@ -1,6 +1,7 @@
 @using AzureTest.Application.Interfaces.Services
 @using AzureTest.Infrastructure.Services
 @inject  ICurrentUser _CurrentUser
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment _HostEnv
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-gray-50">
 <head>
@@ -120,6 +121,15 @@
                         <span class="ml-2 font-medium">Events</span>
                     </a>
                 </li>
+                @if (!_HostEnv.IsProduction())
+                {
+                    <li>
+                        <a asp-area="" asp-controller="SampleNote" asp-action="Index" class="flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("SampleNote")">
+                            <i class="fa-solid fa-flask w-6 @GetActiveIconClasses("SampleNote")"></i>
+                            <span class="ml-2 font-medium">Sample Notes <span class="text-xs text-yellow-300 ml-1">(Dev)</span></span>
+                        </a>
+                    </li>
+                }
                 <li>
                     <a asp-area="" asp-controller="Habit" asp-action="Index" class="flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Habit")">
                         <i class="fa-solid fa-seedling w-6 @GetActiveIconClasses("Habit")"></i>

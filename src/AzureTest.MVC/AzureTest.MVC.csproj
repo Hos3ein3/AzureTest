@@ -13,6 +13,8 @@
         <PackageReference Include="AspNetCore.HealthChecks.UI.Client" />
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" />
         <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" />
+      
+        <PackageReference Include="FluentValidation" />
         <PackageReference Include="FluentValidation.AspNetCore" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
         <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />

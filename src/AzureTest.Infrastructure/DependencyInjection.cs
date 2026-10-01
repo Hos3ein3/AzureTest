@@ -68,6 +68,8 @@ public static class DependencyInjection
         // Register CurrentUser and HttpContextAccessor
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
+        services.AddScoped<AzureTest.Application.Interfaces.Services.IValidationService, AzureTest.Infrastructure.Services.ValidationService>();
+        services.AddSingleton<AzureTest.Application.Interfaces.Services.ISampleNoteStore, AzureTest.Infrastructure.Services.SampleNoteStore>();
         services.AddTransient<AzureTest.Infrastructure.Seeding.IdentityDataSeeder>();
 
         services.AddOptions<MongoDbSettings>()

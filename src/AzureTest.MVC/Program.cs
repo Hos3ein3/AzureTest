@@ -117,6 +117,7 @@ builder.Services.AddControllersWithViews(options =>
 })
     .AddRazorRuntimeCompilation();
 
+
 builder.Services.AddScoped<AzureTest.MVC.Services.IDashboardDataLoader, AzureTest.MVC.Services.DashboardDataLoader>();
 
 // Add HealthChecks UI with In-Memory Storage

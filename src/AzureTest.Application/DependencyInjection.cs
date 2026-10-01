@@ -5,6 +5,7 @@ using AzureTest.Application.Debts;
 using AzureTest.Application.Debts.Interfaces;
 using AzureTest.Application.Expenses.Units;
 using AzureTest.Application.Resumes;
+using AzureTest.Application.SampleNotes;
 using AzureTest.Application.Users;
 using AzureTest.Contracts.Validators.Resumes;
 using FluentValidation;
@@ -48,6 +49,10 @@ public static class DependencyInjection
         services.AddScoped<IDebtQueryUnit, DebtQueryUnit>();
         services.AddScoped<IExpenseQueryUnit, ExpenseQueryUnit>();
         services.AddScoped<IExpenseCommandUnit, ExpenseCommandUnit>();
+
+        // SampleNote dev playground
+        services.AddScoped<ISampleNoteCommandUnit, SampleNoteCommandUnit>();
+        services.AddScoped<ISampleNoteQueryUnit, SampleNoteQueryUnit>();
 
         return services;
     }
