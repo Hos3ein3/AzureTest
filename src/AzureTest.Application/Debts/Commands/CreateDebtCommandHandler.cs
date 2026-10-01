@@ -1,8 +1,10 @@
+using AzureTest.Application.Abstractions;
+
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AzureTest.Application.Abstractions;
+
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Interfaces.Services;
@@ -26,7 +28,7 @@ public sealed record CreateDebtCommand(
     string? NewDebtPersonName,
     string? Description,
     bool IsDone
-) : ICommand<Guid>;
+) : ICommand<Result<Guid>>;
 
 // ── Validator ─────────────────────────────────────────────────────────────────
 
@@ -46,7 +48,7 @@ public sealed class CreateDebtCommandValidator : AbstractValidator<CreateDebtCom
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-public sealed class CreateDebtCommandHandler : BaseCommandHandler<CreateDebtCommand, Guid>
+public sealed class CreateDebtCommandHandler : BaseCommandHandler<CreateDebtCommand, Result<Guid>>
 {
     private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly ICurrentUser _currentUser;
@@ -62,7 +64,7 @@ public sealed class CreateDebtCommandHandler : BaseCommandHandler<CreateDebtComm
         _currentUser = currentUser;
     }
 
-    protected override async Task<Guid> ExecuteAsync(CreateDebtCommand command, CancellationToken cancellationToken)
+    protected override async Task<Result<Guid>> ExecuteAsync(CreateDebtCommand command, CancellationToken cancellationToken)
     {
         Guid? debtPersonId = command.DebtPersonId;
 
@@ -91,9 +93,9 @@ public sealed class CreateDebtCommandHandler : BaseCommandHandler<CreateDebtComm
         {
             UserId = _currentUser.Id,
             Amount = command.Amount,
-            DateOfBorrow = command.DateOfBorrow,
-            DateOfReturn = command.DateOfReturn,
-            PromissedReturnDate = command.PromissedReturnDate,
+            DateOfBorrow = command.DateOfBorrow.ToUniversalTime(),
+            DateOfReturn = command.DateOfReturn?.ToUniversalTime(),
+            PromissedReturnDate = command.PromissedReturnDate?.ToUniversalTime(),
             Profit = command.Profit,
             DebtPersonId = debtPersonId!.Value,
             Description = command.Description,

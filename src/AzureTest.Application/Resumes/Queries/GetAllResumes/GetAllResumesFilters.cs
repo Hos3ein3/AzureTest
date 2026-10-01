@@ -1,3 +1,5 @@
+
+
 using AzureTest.Domain.Enums;
 
 namespace AzureTest.Application.Resumes.Queries.GetAllResumes;

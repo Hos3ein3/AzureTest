@@ -8,4 +8,8 @@
         <PackageReference Include="FluentValidation.AspNetCore" />
     </ItemGroup>
 
+    <ItemGroup>
+        <Compile Include="..\AzureTest.Infrastructure\Configuration\DashboardSettings.cs" Link="DashboardSettings.cs" />
+    </ItemGroup>
+
 </Project>

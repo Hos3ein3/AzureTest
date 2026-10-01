@@ -1,3 +1,5 @@
+
+
 using AzureTest.Domain.Enums;
 
 namespace AzureTest.Contracts.DTOs.Resumes;

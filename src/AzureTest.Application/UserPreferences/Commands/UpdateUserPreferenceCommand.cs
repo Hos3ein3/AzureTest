@@ -1,3 +1,5 @@
+using AzureTest.Application.Abstractions;
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,7 +25,7 @@ public sealed class UpdateUserPreferenceCommandHandler : ICommandHandler<UpdateU
         _redisService = redisService;
     }
 
-    public async Task HandleAsync(UpdateUserPreferenceCommand request, CancellationToken cancellationToken)
+    public async Task<Result> HandleAsync(UpdateUserPreferenceCommand request, CancellationToken cancellationToken)
     {
         var pref = await _noSqlUnitOfWork.UserPreferences.GetByUserIdAsync(request.UserId, cancellationToken);
         bool isNew = false;
@@ -50,6 +52,7 @@ public sealed class UpdateUserPreferenceCommandHandler : ICommandHandler<UpdateU
 
         var cacheKey = $"UserPref_{request.UserId}";
         await _redisService.SetAsync(cacheKey, pref, TimeSpan.FromHours(1));
+        return Result.Success();
     }
 }
 

@@ -1,7 +1,9 @@
+using AzureTest.Application.Abstractions;
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using AzureTest.Application.Abstractions;
+
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
@@ -12,7 +14,7 @@ namespace AzureTest.Application.Debts.Commands;
 
 // ── Command ───────────────────────────────────────────────────────────────────
 
-public sealed record DeleteDebtCommand(Guid Id) : ICommand<bool>;
+public sealed record DeleteDebtCommand(Guid Id) : ICommand<Result<bool>>;
 
 // ── Validator ─────────────────────────────────────────────────────────────────
 
@@ -26,7 +28,7 @@ public sealed class DeleteDebtCommandValidator : AbstractValidator<DeleteDebtCom
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-public sealed class DeleteDebtCommandHandler : BaseCommandHandler<DeleteDebtCommand, bool>
+public sealed class DeleteDebtCommandHandler : BaseCommandHandler<DeleteDebtCommand, Result<bool>>
 {
     private readonly ICurrentUser _currentUser;
 
@@ -39,7 +41,7 @@ public sealed class DeleteDebtCommandHandler : BaseCommandHandler<DeleteDebtComm
         _currentUser = currentUser;
     }
 
-    protected override async Task<bool> ExecuteAsync(DeleteDebtCommand command, CancellationToken cancellationToken)
+    protected override async Task<Result<bool>> ExecuteAsync(DeleteDebtCommand command, CancellationToken cancellationToken)
     {
         var debt = await UnitOfWork.Debts.GetByIdAsync(command.Id);
         if (debt == null)

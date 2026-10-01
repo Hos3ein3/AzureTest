@@ -1,3 +1,6 @@
+using AzureTest.Application.Abstractions;
+
+
 using AzureTest.Application.Messaging;
 using AzureTest.Application.Resumes.Commands.CreateResume;
 using AzureTest.Application.Resumes.Commands.DeleteResume;
@@ -8,16 +11,16 @@ namespace AzureTest.Application.Resumes;
 
 public sealed class ResumeCommandUnit : IResumeCommandUnit
 {
-    public ICommandHandler<CreateResumeCommand, Guid> Create { get; }
-    public ICommandHandler<UpdateResumeCommand,bool> Update { get; }
+    public ICommandHandler<CreateResumeCommand, Result<Guid>> Create { get; }
+    public ICommandHandler<UpdateResumeCommand, Result<bool>> Update { get; }
     public ICommandHandler<UpdateResumeStatusCommand> UpdateStatus { get; }
-    public ICommandHandler<DeleteResumeCommand,bool> Delete { get; }
+    public ICommandHandler<DeleteResumeCommand, Result<bool>> Delete { get; }
 
     public ResumeCommandUnit(
-        ICommandHandler<CreateResumeCommand, Guid> create,
-        ICommandHandler<UpdateResumeCommand,bool> update,
+        ICommandHandler<CreateResumeCommand, Result<Guid>> create,
+        ICommandHandler<UpdateResumeCommand, Result<bool>> update,
         ICommandHandler<UpdateResumeStatusCommand> updateStatus,
-        ICommandHandler<DeleteResumeCommand,bool> delete)
+        ICommandHandler<DeleteResumeCommand, Result<bool>> delete)
     {
         Create = create;
         Update = update;

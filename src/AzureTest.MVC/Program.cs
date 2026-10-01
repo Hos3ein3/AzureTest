@@ -1,3 +1,5 @@
+
+
 using AzureTest.Application;
 using AzureTest.Infrastructure;
 using AzureTest.Infrastructure.Configuration;
@@ -118,11 +120,16 @@ builder.Services.AddControllersWithViews(options =>
 builder.Services.AddScoped<AzureTest.MVC.Services.IDashboardDataLoader, AzureTest.MVC.Services.DashboardDataLoader>();
 
 // Add HealthChecks UI with In-Memory Storage
+var hcSettings = builder.Configuration.GetSection("HealthChecksUI").Get<HealthCheckUISettings>();
 builder.Services.AddHealthChecksUI(setup =>
 {
     setup.AddHealthCheckEndpoint("AzureTest Health", "/health");
-})
-.AddInMemoryStorage();
+    if (hcSettings != null)
+    {
+        setup.SetEvaluationTimeInSeconds(hcSettings.EvaluationTimeInSeconds);
+        setup.SetMinimumSecondsBetweenFailureNotifications(hcSettings.MinimumSecondsBetweenFailureNotifications);
+    }
+}).AddInMemoryStorage();
 
 #pragma warning disable EXTEXP0018 // Type is for evaluation purposes only and is subject to change or removal in future updates.
 builder.Services.AddHybridCache();

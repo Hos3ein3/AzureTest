@@ -1,28 +1,28 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using AzureTest.Application.Abstractions;
-using AzureTest.Application.Interfaces.Data;
+
+using FluentValidation;
+
 using AzureTest.Application.Interfaces.Data.NoSql;
+using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
 using AzureTest.Domain.Documents;
 using Microsoft.Extensions.Logging;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Threading;
+using System;
 
 namespace AzureTest.Application.Companies.Commands.CrawlIndCompanies;
 
-public sealed record CrawlIndCompaniesCommand() : ICommand<CrawlIndCompaniesResult>;
-
+public sealed record CrawlIndCompaniesCommand() : ICommand<Result<CrawlIndCompaniesResult>>;
 public sealed record CrawlIndCompaniesResult(int NewlyAdded, int TotalProcessed);
-
-public sealed class CrawlIndCompaniesCommandHandler : BaseCommandHandler<CrawlIndCompaniesCommand, CrawlIndCompaniesResult>
+public sealed class CrawlIndCompaniesCommandHandler : BaseCommandHandler<CrawlIndCompaniesCommand, Result<CrawlIndCompaniesResult>>
 {
     private readonly IIndCrawlerService _indCrawlerService;
     private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly AzureTest.Application.Interfaces.Services.ICompanyCacheService _cacheService;
-
     public CrawlIndCompaniesCommandHandler(
         IUnitOfWork unitOfWork,
         IIndCrawlerService indCrawlerService,
@@ -35,22 +35,18 @@ public sealed class CrawlIndCompaniesCommandHandler : BaseCommandHandler<CrawlIn
         _noSqlUnitOfWork = noSqlUnitOfWork;
         _cacheService = cacheService;
     }
-
-    protected override async Task<CrawlIndCompaniesResult> ExecuteAsync(CrawlIndCompaniesCommand command, CancellationToken cancellationToken)
+    protected override async Task<Result<CrawlIndCompaniesResult>> ExecuteAsync(CrawlIndCompaniesCommand command, CancellationToken cancellationToken)
     {
         string? excelFilePath = null;
         try
         {
             excelFilePath = await _indCrawlerService.CrawlAndSaveToExcelAsync(cancellationToken);
             var parsedCompanies = await _indCrawlerService.ReadCompaniesFromExcelAsync(excelFilePath, cancellationToken);
-
             var existingCompanies = await _noSqlUnitOfWork.Companies.GetAllAsync();
             var existingByKvk = existingCompanies
                 .Where(c => !string.IsNullOrWhiteSpace(c.KvkNumber))
                 .ToDictionary(c => c.KvkNumber!, c => c);
-
             int newAddedCount = 0;
-
             foreach (var parsed in parsedCompanies)
             {
                 if (existingByKvk.TryGetValue(parsed.KvkNumber, out var existing))
@@ -75,7 +71,6 @@ public sealed class CrawlIndCompaniesCommandHandler : BaseCommandHandler<CrawlIn
                     newAddedCount++;
                 }
             }
-
             if (newAddedCount > 0 || existingCompanies.Count != existingByKvk.Count)
             {
                 // In a more precise implementation, we'd check if any existing companies were actually updated.
@@ -83,7 +78,6 @@ public sealed class CrawlIndCompaniesCommandHandler : BaseCommandHandler<CrawlIn
             }
             // Always invalidate to be safe, since updates might have happened.
             await _cacheService.InvalidateCompaniesAsync(cancellationToken);
-
             return new CrawlIndCompaniesResult(newAddedCount, parsedCompanies.Count);
         }
         finally
@@ -94,5 +88,13 @@ public sealed class CrawlIndCompaniesCommandHandler : BaseCommandHandler<CrawlIn
                 catch { /* ignore cleanup errors */ }
             }
         }
+    }
+}
+
+public sealed class CrawlIndCompaniesCommandValidator : AbstractValidator<CrawlIndCompaniesCommand>
+{
+    public CrawlIndCompaniesCommandValidator()
+    {
+
     }
 }

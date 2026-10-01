@@ -1,3 +1,6 @@
+using AzureTest.Application.Abstractions;
+
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,14 +52,14 @@ public class CompanyController : Controller
         var result =
             await _companyCommandUnit.CrawlCompanies.HandleAsync(new CrawlIndCompaniesCommand(), cancellationToken);
 
-        if (result.TotalProcessed> 0)
+        if (result.Value.TotalProcessed> 0)
         {
             TempData["SuccessMessage"] =
-                $"Crawl completed successfully! Processed {result.TotalProcessed} companies. Added {result.NewlyAdded} new companies.";
+                $"Crawl completed successfully! Processed {result.Value.TotalProcessed} companies. Added {result.Value.NewlyAdded} new companies.";
         }
         else
         {
-            TempData["ErrorMessage"] = $"Crawl failed: {result.TotalProcessed}";
+            TempData["ErrorMessage"] = $"Crawl failed: {result.Value.TotalProcessed}";
         }
 
         return RedirectToAction(nameof(Index));
@@ -114,7 +117,7 @@ public class CompanyController : Controller
         if (ModelState.IsValid)
         {
             var result = await _companyCommandUnit.UpdateCompany.HandleAsync(new UpdateCompanyCommand(dto), cancellationToken);
-            if (result)
+            if (result.IsSuccess)
                 return RedirectToAction(nameof(Index));
 
             //ModelState.AddModelError(string.Empty, result.Error);
@@ -138,7 +141,7 @@ public class CompanyController : Controller
     public async Task<IActionResult> DeleteConfirmed(Guid id, CancellationToken cancellationToken)
     {
         var result = await _companyCommandUnit.DeleteCompany.HandleAsync(new DeleteCompanyCommand(id), cancellationToken);
-        if (!result)
+        if (result.IsFailure)
         {
             //TempData["ErrorMessage"] = result.Error;
             return RedirectToAction(nameof(Delete), new { id });

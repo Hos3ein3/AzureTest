@@ -1,8 +1,9 @@
+using AzureTest.Application.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using AzureTest.Application.Abstractions;
+
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Messaging;
@@ -36,7 +37,7 @@ public sealed class UpdateResumeStatusCommandHandler : BaseCommandHandler<Update
         _currentUser = currentUser;
     }
 
-    protected override async Task ExecuteAsync(UpdateResumeStatusCommand command, CancellationToken cancellationToken)
+    protected override async Task<Result> ExecuteAsync(UpdateResumeStatusCommand command, CancellationToken cancellationToken)
     {
         var resume = await UnitOfWork.Resumes.GetByIdAsync(command.Dto.Id)
             ?? throw new KeyNotFoundException($"Resume with ID {command.Dto.Id} was not found.");
@@ -64,5 +65,6 @@ public sealed class UpdateResumeStatusCommandHandler : BaseCommandHandler<Update
         resume.UpdateStatus(command.Dto.Status);
 
         UnitOfWork.Resumes.Update(resume);
+        return Result.Success();
     }
 }

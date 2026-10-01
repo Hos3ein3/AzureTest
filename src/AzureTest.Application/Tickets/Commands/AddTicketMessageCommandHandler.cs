@@ -1,7 +1,9 @@
+using AzureTest.Application.Abstractions;
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using AzureTest.Application.Abstractions;
+
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Domain.Entities;
 using AzureTest.Domain.Enums;

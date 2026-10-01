@@ -1,3 +1,6 @@
+using AzureTest.Application.Abstractions;
+
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,16 +21,18 @@ public sealed class DeleteUserDashboardCommandHandler : ICommandHandler<DeleteUs
         _noSqlUnitOfWork = noSqlUnitOfWork;
     }
 
-    public async Task HandleAsync(DeleteUserDashboardCommand request, CancellationToken cancellationToken)
+    public async Task<Result> HandleAsync(DeleteUserDashboardCommand request, CancellationToken cancellationToken)
     {
         var dashboard = await _noSqlUnitOfWork.UserDashboards.GetByIdAsync(request.Id, cancellationToken);
         if (dashboard == null || dashboard.UserId != request.UserId)
         {
             throw new Exception("Dashboard not found or access denied.");
+        return Result.Success();
         }
 
         await _noSqlUnitOfWork.UserDashboards.RemoveAsync(request.Id, cancellationToken);
         await _noSqlUnitOfWork.SaveChangesAsync(cancellationToken);
+        return Result.Success();
     }
 }
 

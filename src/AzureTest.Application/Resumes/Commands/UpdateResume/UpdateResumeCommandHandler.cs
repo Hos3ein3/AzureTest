@@ -1,4 +1,6 @@
 using AzureTest.Application.Abstractions;
+
+
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Messaging;
@@ -12,11 +14,11 @@ namespace AzureTest.Application.Resumes.Commands.UpdateResume;
 
 // ── Command ───────────────────────────────────────────────────────────────────
 
-public sealed record UpdateResumeCommand(UpdateResumeDto Dto) : ICommand<bool>;
+public sealed record UpdateResumeCommand(UpdateResumeDto Dto) : ICommand<Result<bool>>;
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-public sealed class UpdateResumeCommandHandler : BaseCommandHandler<UpdateResumeCommand,bool>
+public sealed class UpdateResumeCommandHandler : BaseCommandHandler<UpdateResumeCommand, Result<bool>>
 {
 
     private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
@@ -33,7 +35,7 @@ public sealed class UpdateResumeCommandHandler : BaseCommandHandler<UpdateResume
         _currentUser = currentUser;
     }
 
-    protected override async Task<bool> ExecuteAsync(UpdateResumeCommand command, CancellationToken cancellationToken)
+    protected override async Task<Result<bool>> ExecuteAsync(UpdateResumeCommand command, CancellationToken cancellationToken)
     {
         var dto = command.Dto;
         

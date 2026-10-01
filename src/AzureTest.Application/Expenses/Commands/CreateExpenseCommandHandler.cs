@@ -1,7 +1,9 @@
+using AzureTest.Application.Abstractions;
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using AzureTest.Application.Abstractions;
+
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Interfaces.Services;
@@ -16,7 +18,7 @@ namespace AzureTest.Application.Expenses.Commands;
 
 // ── Command ───────────────────────────────────────────────────────────────────
 
-public sealed record CreateExpenseCommand(CreateExpenseDto Dto) : ICommand<Guid>;
+public sealed record CreateExpenseCommand(CreateExpenseDto Dto) : ICommand<Result<Guid>>;
 
 // ── Validator ─────────────────────────────────────────────────────────────────
 
@@ -35,7 +37,7 @@ public sealed class CreateExpenseCommandValidator : AbstractValidator<CreateExpe
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-public sealed class CreateExpenseCommandHandler : BaseCommandHandler<CreateExpenseCommand, Guid>
+public sealed class CreateExpenseCommandHandler : BaseCommandHandler<CreateExpenseCommand, Result<Guid>>
 {
     private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly ICurrentUser _currentUser;
@@ -51,7 +53,7 @@ public sealed class CreateExpenseCommandHandler : BaseCommandHandler<CreateExpen
         _currentUser = currentUser;
     }
 
-    protected override async Task<Guid> ExecuteAsync(CreateExpenseCommand command, CancellationToken cancellationToken)
+    protected override async Task<Result<Guid>> ExecuteAsync(CreateExpenseCommand command, CancellationToken cancellationToken)
     {
         var dto = command.Dto;
         Guid? categoryId = dto.CategoryId;

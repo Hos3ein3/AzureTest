@@ -1,4 +1,6 @@
-namespace AzureTest.Application.Users.Commands.LoginUser;
+
+
+namespace AzureTest.Contracts.DTOs.Users;
 
 public record LoginUserResult(bool Success, string? Token, string? RefreshToken, string[]? Errors = null)
 {

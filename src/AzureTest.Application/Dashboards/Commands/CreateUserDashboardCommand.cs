@@ -1,3 +1,5 @@
+using AzureTest.Application.Abstractions;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,7 +45,7 @@ public sealed class CreateUserDashboardCommandHandler : ICommandHandler<CreateUs
         _noSqlUnitOfWork = noSqlUnitOfWork;
     }
 
-    public async Task HandleAsync(CreateUserDashboardCommand request, CancellationToken cancellationToken)
+    public async Task<Result> HandleAsync(CreateUserDashboardCommand request, CancellationToken cancellationToken)
     {
         var dashboard = new UserDashboard
         {
@@ -69,6 +71,7 @@ public sealed class CreateUserDashboardCommandHandler : ICommandHandler<CreateUs
 
         await _noSqlUnitOfWork.UserDashboards.AddAsync(dashboard, cancellationToken);
         await _noSqlUnitOfWork.SaveChangesAsync(cancellationToken);
+        return Result.Success();
     }
 }
 

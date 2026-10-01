@@ -1,3 +1,5 @@
+
+
 using AzureTest.Application;
 using AzureTest.Infrastructure;
 using AzureTest.Infrastructure.Configuration;

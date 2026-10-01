@@ -1,3 +1,5 @@
+
+
 namespace AzureTest.Application.Configuration;
 
 /// <summary>

@@ -1,0 +1,70 @@
+@model AzureTest.Contracts.DTOs.Events.EventDto
+@{
+    ViewData["Title"] = "Event Details";
+}
+
+<nav aria-label="breadcrumb" class="mb-6">
+    <ol class="flex items-center space-x-2 text-sm text-slate-500">
+        <li><a asp-action="Index" class="hover:text-brand-600">Events</a></li>
+        <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
+        <li class="font-medium text-slate-800" aria-current="page">Details</li>
+    </ol>
+</nav>
+
+<div class="max-w-3xl bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+        <h5 class="text-sm font-semibold text-slate-800 m-0">Event Details</h5>
+        <div class="flex items-center space-x-2">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="text-brand-600 hover:text-brand-900 text-sm font-medium">Edit</a>
+        </div>
+    </div>
+    
+    <div class="p-6">
+        <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+            <div class="sm:col-span-2">
+                <dt class="text-sm font-medium text-slate-500">Title</dt>
+                <dd class="mt-1 text-lg font-semibold text-slate-900 flex items-center">
+                    @if (!string.IsNullOrEmpty(Model.Color))
+                    {
+                        <div class="w-4 h-4 rounded-full mr-3" style="background-color: @Model.Color"></div>
+                    }
+                    @Model.Title
+                </dd>
+            </div>
+            
+            <div class="sm:col-span-2">
+                <dt class="text-sm font-medium text-slate-500">Description</dt>
+                <dd class="mt-1 text-sm text-slate-900 whitespace-pre-wrap">@(string.IsNullOrEmpty(Model.Description) ? "No description provided." : Model.Description)</dd>
+            </div>
+            
+            <div>
+                <dt class="text-sm font-medium text-slate-500">Start Date</dt>
+                <dd class="mt-1 text-sm text-slate-900">@Model.StartDate.ToString("F")</dd>
+            </div>
+            
+            <div>
+                <dt class="text-sm font-medium text-slate-500">End Date</dt>
+                <dd class="mt-1 text-sm text-slate-900">@Model.EndDate.ToString("F")</dd>
+            </div>
+            
+            <div>
+                <dt class="text-sm font-medium text-slate-500">All Day</dt>
+                <dd class="mt-1 text-sm text-slate-900">
+                    @if (Model.IsAllDay)
+                    {
+                        <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">Yes</span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">No</span>
+                    }
+                </dd>
+            </div>
+        </dl>
+    </div>
+    <div class="px-6 py-4 bg-slate-50 border-t border-slate-100">
+        <a asp-action="Index" class="inline-flex justify-center rounded-lg border border-slate-300 bg-white py-2 px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
+            Back to List
+        </a>
+    </div>
+</div>

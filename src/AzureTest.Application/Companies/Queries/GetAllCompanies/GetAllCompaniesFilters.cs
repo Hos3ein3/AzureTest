@@ -1,9 +1,11 @@
+
 namespace AzureTest.Application.Companies.Queries.GetAllCompanies;
 
-public sealed record GetAllCompaniesFilters(
-    string? Name = null,
-    bool? IsINDMember = null,
-    string? Location = null,
-    int PageNumber = 1,
-    int PageSize = 10
-);
+public class GetAllCompaniesFilters
+{
+    public string? Name { get; set; }
+    public string? Location { get; set; }
+    public bool? IsINDMember { get; set; }
+    public int? PageNumber { get; set; }
+    public int? PageSize { get; set; }
+}

@@ -59,7 +59,7 @@
             <span class="text-xl font-bold tracking-wider">Tracker<span class="text-brand-500">Pro</span></span>
         </div>
         
-        <nav class="flex-1 overflow-y-auto py-4">
+        <nav class="flex-1 overflow-y-auto py-4 scrollbar-hide">
             @{
                 var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
                 
@@ -115,6 +115,12 @@
                     </a>
                 </li>
                 <li>
+                    <a asp-area="" asp-controller="Event" asp-action="Index" class="flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Event")">
+                        <i class="fa-regular fa-calendar-days w-6 @GetActiveIconClasses("Event")"></i>
+                        <span class="ml-2 font-medium">Events</span>
+                    </a>
+                </li>
+                <li>
                     <a asp-area="" asp-controller="Habit" asp-action="Index" class="flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Habit")">
                         <i class="fa-solid fa-seedling w-6 @GetActiveIconClasses("Habit")"></i>
                         <span class="ml-2 font-medium">Habits</span>
@@ -142,8 +148,18 @@
                                 </a>
                             </li>
                             <li>
+                                <a asp-controller="ExpenseCategory" asp-action="Index" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+                                    Categories
+                                </a>
+                            </li>
+                            <li>
                                 <a asp-controller="Debt" asp-action="Index" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
                                     Debts
+                                </a>
+                            </li>
+                            <li>
+                                <a asp-controller="DebtPerson" asp-action="Index" class="flex items-center px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+                                    Persons
                                 </a>
                             </li>
                         </ul>

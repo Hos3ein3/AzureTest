@@ -1,3 +1,6 @@
+using AzureTest.Application.Abstractions;
+
+
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -128,7 +131,6 @@ public static class ProductionSimulateLocalSetup
             logger.LogInformation("ℹ️  ProductionSimulateLocal: All drop settings in SimulateSetting are false. Cleanup hook will NOT be registered.");
             return;
         }
-
         var cfg              = app.Services.GetRequiredService<IConfiguration>();
         var mongoConnStr     = cfg.GetConnectionString("MongoDb")
                               ?? cfg["DatabaseSettings:MongoDb:ConnectionString"]

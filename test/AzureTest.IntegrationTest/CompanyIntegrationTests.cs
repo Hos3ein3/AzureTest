@@ -43,7 +43,7 @@ public class CompanyIntegrationTests : IClassFixture<IntegrationTestWebAppFactor
         var command = new CreateCompanyCommand(newCompanyDto);
 
         // Act
-        var companyId = await commandUnit.CreateCompany.HandleAsync(command, default);
+        var companyId = (await commandUnit.CreateCompany.HandleAsync(command, default)).Value;
 
         // Assert
         Assert.NotEqual(System.Guid.Empty, companyId);

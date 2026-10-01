@@ -1,3 +1,7 @@
+using AzureTest.Application.Abstractions;
+
+
+using AzureTest.Contracts.DTOs.Users;
 using AzureTest.Application.Messaging;
 using AzureTest.Application.Users.Commands.LoginUser;
 using AzureTest.Application.Users.Commands.LogoutUser;
@@ -15,11 +19,10 @@ namespace AzureTest.Application.Users;
 
 public interface IUserCommandUnit
 {
-    ICommandHandler<LoginUserCommand, LoginUserResult> Login { get; }
-    ICommandHandler<LogoutUserCommand, bool> Logout { get; }
-    ICommandHandler<RegisterUserCommand, (bool Success, string[] Errors)> Register { get; }
-    ICommandHandler<RefreshTokenCommand, RefreshTokenResult> RefreshToken { get; }
-    
+    ICommandHandler<LoginUserCommand, Result<LoginUserResult>> Login { get; }
+    ICommandHandler<LogoutUserCommand, Result<bool>> Logout { get; }
+    ICommandHandler<RegisterUserCommand> Register { get; }
+    ICommandHandler<RefreshTokenCommand, Result<RefreshTokenResult>> RefreshToken { get; }
     // Admin Commands
     ICommandHandler<CreateUserCommand, (bool Success, string[] Errors)> CreateUser { get; }
     ICommandHandler<UpdateUserCommand, (bool Success, string[] Errors)> UpdateUser { get; }

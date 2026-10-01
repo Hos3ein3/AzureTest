@@ -1,3 +1,5 @@
+using AzureTest.Application.Abstractions;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -91,7 +93,7 @@ public class CreateRawComponentCommandHandler : ICommandHandler<CreateRawCompone
         _unitOfWork = unitOfWork;
     }
 
-    public async Task HandleAsync(CreateRawComponentCommand command, CancellationToken cancellationToken = default)
+    public async Task<Result> HandleAsync(CreateRawComponentCommand command, CancellationToken cancellationToken = default)
     {
         var component = new DashboardRawComponent
         {
@@ -104,6 +106,7 @@ public class CreateRawComponentCommandHandler : ICommandHandler<CreateRawCompone
         };
 
         await _unitOfWork.DashboardRawComponents.AddAsync(component, cancellationToken);
+        return Result.Success();
     }
 }
 
@@ -118,9 +121,10 @@ public class DeleteRawComponentCommandHandler : ICommandHandler<DeleteRawCompone
         _unitOfWork = unitOfWork;
     }
 
-    public async Task HandleAsync(DeleteRawComponentCommand command, CancellationToken cancellationToken = default)
+    public async Task<Result> HandleAsync(DeleteRawComponentCommand command, CancellationToken cancellationToken = default)
     {
         await _unitOfWork.DashboardRawComponents.RemoveAsync(command.Id, cancellationToken);
+        return Result.Success();
     }
 }
 
@@ -163,10 +167,10 @@ public class UpdateRawComponentCommandHandler : ICommandHandler<UpdateRawCompone
         _unitOfWork = unitOfWork;
     }
 
-    public async Task HandleAsync(UpdateRawComponentCommand command, CancellationToken cancellationToken = default)
+    public async Task<Result> HandleAsync(UpdateRawComponentCommand command, CancellationToken cancellationToken = default)
     {
         var component = await _unitOfWork.DashboardRawComponents.GetByIdAsync(command.Id, cancellationToken);
-        if (component == null) return;
+        if (component == null) return Result.Failure("Not found");
         
         component.Name = command.Name;
         component.Type = command.Type;
@@ -176,5 +180,6 @@ public class UpdateRawComponentCommandHandler : ICommandHandler<UpdateRawCompone
         component.RequiredRole = command.RequiredRole ?? string.Empty;
         
         await _unitOfWork.DashboardRawComponents.UpdateAsync(component.Id, component, cancellationToken);
+        return Result.Success();
     }
 }

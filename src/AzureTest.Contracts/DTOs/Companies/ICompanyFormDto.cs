@@ -1,3 +1,5 @@
+
+
 namespace AzureTest.Contracts.DTOs.Companies;
 
 public interface ICompanyFormDto

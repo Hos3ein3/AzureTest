@@ -1,3 +1,7 @@
+using AzureTest.Application.Abstractions;
+
+
+using AzureTest.Contracts.DTOs.Users;
 using AzureTest.Application.Messaging;
 using AzureTest.Application.Users.Commands.LoginUser;
 using AzureTest.Application.Users.Commands.LogoutUser;
@@ -15,23 +19,21 @@ namespace AzureTest.Application.Users;
 
 public class UserCommandUnit : IUserCommandUnit
 {
-    public ICommandHandler<LoginUserCommand, LoginUserResult> Login { get; }
-    public ICommandHandler<LogoutUserCommand, bool> Logout { get; }
-    public ICommandHandler<RegisterUserCommand, (bool Success, string[] Errors)> Register { get; }
-    public ICommandHandler<RefreshTokenCommand, RefreshTokenResult> RefreshToken { get; }
-
+    public ICommandHandler<LoginUserCommand, Result<LoginUserResult>> Login { get; }
+    public ICommandHandler<LogoutUserCommand, Result<bool>> Logout { get; }
+    public ICommandHandler<RegisterUserCommand> Register { get; }
+    public ICommandHandler<RefreshTokenCommand, Result<RefreshTokenResult>> RefreshToken { get; }
     public ICommandHandler<CreateUserCommand, (bool Success, string[] Errors)> CreateUser { get; }
     public ICommandHandler<UpdateUserCommand, (bool Success, string[] Errors)> UpdateUser { get; }
     public ICommandHandler<DeleteUserCommand, (bool Success, string[] Errors)> DeleteUser { get; }
     public ICommandHandler<ToggleUserLockoutCommand, (bool Success, string[] Errors)> ToggleUserLockout { get; }
     public ICommandHandler<CreateRoleCommand, (bool Success, string[] Errors)> CreateRole { get; }
     public ICommandHandler<AssignRolesToUserCommand, (bool Success, string[] Errors)> AssignRolesToUser { get; }
-
     public UserCommandUnit(
-        ICommandHandler<LoginUserCommand, LoginUserResult> login,
-        ICommandHandler<LogoutUserCommand, bool> logout,
-        ICommandHandler<RegisterUserCommand, (bool Success, string[] Errors)> register,
-        ICommandHandler<RefreshTokenCommand, RefreshTokenResult> refreshToken,
+        ICommandHandler<LoginUserCommand, Result<LoginUserResult>> login,
+        ICommandHandler<LogoutUserCommand, Result<bool>> logout,
+        ICommandHandler<RegisterUserCommand> register,
+        ICommandHandler<RefreshTokenCommand, Result<RefreshTokenResult>> refreshToken,
         ICommandHandler<CreateUserCommand, (bool Success, string[] Errors)> createUser,
         ICommandHandler<UpdateUserCommand, (bool Success, string[] Errors)> updateUser,
         ICommandHandler<DeleteUserCommand, (bool Success, string[] Errors)> deleteUser,

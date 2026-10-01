@@ -1,3 +1,6 @@
+using AzureTest.Application.Abstractions;
+
+
 using System;
 using System.Linq;
 using System.Threading;
@@ -54,10 +57,53 @@ public class DebtController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(CancellationToken cancellationToken)
+    public async Task<IActionResult> Index(int page = 1, string sort = "DateOfBorrow", string dir = "desc", string search = "", CancellationToken cancellationToken = default)
     {
         var debts = await _queries.GetAll.HandleAsync(new GetAllDebtsQuery(), cancellationToken);
-        return View(debts);
+        
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            debts = debts.Where(d => (d.Description != null && d.Description.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                                     (d.DebtPersonName != null && d.DebtPersonName.Contains(search, StringComparison.OrdinalIgnoreCase)))
+                         .ToList();
+        }
+
+        debts = sort switch
+        {
+            "DebtPersonName" => dir == "asc" ? debts.OrderBy(d => d.DebtPersonName).ToList() : debts.OrderByDescending(d => d.DebtPersonName).ToList(),
+            "Amount" => dir == "asc" ? debts.OrderBy(d => d.Amount).ToList() : debts.OrderByDescending(d => d.Amount).ToList(),
+            "DateOfReturn" => dir == "asc" ? debts.OrderBy(d => d.DateOfReturn).ToList() : debts.OrderByDescending(d => d.DateOfReturn).ToList(),
+            "Description" => dir == "asc" ? debts.OrderBy(d => d.Description).ToList() : debts.OrderByDescending(d => d.Description).ToList(),
+            _ => dir == "asc" ? debts.OrderBy(d => d.DateOfBorrow).ToList() : debts.OrderByDescending(d => d.DateOfBorrow).ToList()
+        };
+
+        int pageSize = 10;
+        var totalPages = (int)Math.Ceiling(debts.Count / (double)pageSize);
+        var pagedDebts = debts.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        ViewBag.CurrentPage = page;
+        ViewBag.TotalPages = totalPages;
+        ViewBag.CurrentSort = sort;
+        ViewBag.CurrentDir = dir;
+        ViewBag.CurrentSearch = search;
+
+        return View(pagedDebts);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var cmd = new DeleteDebtCommand(id);
+        var validation = await _deleteValidator.ValidateAsync(cmd, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return BadRequest();
+        }
+
+        await _commands.Delete.HandleAsync(cmd, cancellationToken);
+        TempData["Success"] = "Debt deleted successfully.";
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpGet]

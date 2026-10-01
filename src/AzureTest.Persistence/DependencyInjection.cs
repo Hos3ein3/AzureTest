@@ -1,3 +1,5 @@
+
+
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Persistence.Configurations.NoSql;
@@ -61,13 +63,18 @@ public static class DependencyInjection
 
         // ── MongoDB / NoSQL ───────────────────────────────────────────────────
         var mongoConnectionString = configuration.GetConnectionString("MongoDb");
-        var mongoDatabaseName = configuration["MongoDb:DatabaseName"] ?? "AzureTestDb";
 
         if (!string.IsNullOrWhiteSpace(mongoConnectionString))
         {
-            services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoConnectionString));
+            services.AddSingleton<IMongoClient>(sp => 
+            {
+                return new MongoClient(mongoConnectionString);
+            });
             services.AddScoped(sp =>
-                sp.GetRequiredService<IMongoClient>().GetDatabase(mongoDatabaseName));
+            {
+                var dbName = configuration.GetSection("MongoDb")["DatabaseName"];
+                return sp.GetRequiredService<IMongoClient>().GetDatabase(dbName);
+            });
 
             services.AddScoped<IResumeFilesRepository, ResumeFilesRepository>();
             services.AddScoped<ICompanyRepository, CompanyRepository>();

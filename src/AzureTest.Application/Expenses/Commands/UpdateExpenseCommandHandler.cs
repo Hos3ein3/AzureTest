@@ -1,7 +1,9 @@
+using AzureTest.Application.Abstractions;
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using AzureTest.Application.Abstractions;
+
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Interfaces.Services;
@@ -15,7 +17,7 @@ namespace AzureTest.Application.Expenses.Commands;
 
 // ── Command ───────────────────────────────────────────────────────────────────
 
-public sealed record UpdateExpenseCommand(UpdateExpenseDto Dto) : ICommand<bool>;
+public sealed record UpdateExpenseCommand(UpdateExpenseDto Dto) : ICommand<Result<bool>>;
 
 // ── Validator ─────────────────────────────────────────────────────────────────
 
@@ -35,7 +37,7 @@ public sealed class UpdateExpenseCommandValidator : AbstractValidator<UpdateExpe
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-public sealed class UpdateExpenseCommandHandler : BaseCommandHandler<UpdateExpenseCommand, bool>
+public sealed class UpdateExpenseCommandHandler : BaseCommandHandler<UpdateExpenseCommand, Result<bool>>
 {
     private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly ICurrentUser _currentUser;
@@ -51,7 +53,7 @@ public sealed class UpdateExpenseCommandHandler : BaseCommandHandler<UpdateExpen
         _currentUser = currentUser;
     }
 
-    protected override async Task<bool> ExecuteAsync(UpdateExpenseCommand command, CancellationToken cancellationToken)
+    protected override async Task<Result<bool>> ExecuteAsync(UpdateExpenseCommand command, CancellationToken cancellationToken)
     {
         var dto = command.Dto;
         

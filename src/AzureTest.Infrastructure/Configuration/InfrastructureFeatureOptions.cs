@@ -1,3 +1,5 @@
+
+
 namespace AzureTest.Infrastructure.Configuration;
 
 public class InfrastructureFeatureOptions

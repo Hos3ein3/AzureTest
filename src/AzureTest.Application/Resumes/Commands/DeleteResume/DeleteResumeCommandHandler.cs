@@ -1,4 +1,6 @@
 using AzureTest.Application.Abstractions;
+
+
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Messaging;
 using AzureTest.Application.Interfaces.Services;
@@ -8,11 +10,11 @@ namespace AzureTest.Application.Resumes.Commands.DeleteResume;
 
 // ── Command ───────────────────────────────────────────────────────────────────
 
-public sealed record DeleteResumeCommand(Guid Id) : ICommand<bool>;
+public sealed record DeleteResumeCommand(Guid Id) : ICommand<Result<bool>>;
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-public sealed class DeleteResumeCommandHandler : BaseCommandHandler<DeleteResumeCommand,bool>
+public sealed class DeleteResumeCommandHandler : BaseCommandHandler<DeleteResumeCommand, Result<bool>>
 {
 
     private readonly ICurrentUser _currentUser;
@@ -26,7 +28,7 @@ public sealed class DeleteResumeCommandHandler : BaseCommandHandler<DeleteResume
         _currentUser = currentUser;
     }
 
-    protected override async Task<bool> ExecuteAsync(DeleteResumeCommand command, CancellationToken cancellationToken)
+    protected override async Task<Result<bool>> ExecuteAsync(DeleteResumeCommand command, CancellationToken cancellationToken)
     {
         var resume = await UnitOfWork.Resumes.GetByIdAsync(command.Id)
             ?? throw new KeyNotFoundException($"Resume with ID {command.Id} was not found.");

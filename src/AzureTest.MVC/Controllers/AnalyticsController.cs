@@ -1,3 +1,6 @@
+using AzureTest.Application.Abstractions;
+
+
 using AzureTest.Application.Resumes;
 using AzureTest.Application.Resumes.Queries.GetResumeAnalytics;
 using Microsoft.AspNetCore.Mvc;

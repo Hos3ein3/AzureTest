@@ -1,23 +1,24 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using AzureTest.Application.Abstractions;
-using AzureTest.Application.Interfaces.Data;
+
+using FluentValidation;
+
 using AzureTest.Application.Interfaces.Data.NoSql;
+using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.Companies;
 using AzureTest.Domain.Documents;
 using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
+using System.Threading;
+using System;
 
 namespace AzureTest.Application.Companies.Commands.CreateCompany;
 
-public sealed record CreateCompanyCommand(CreateCompanyDto Dto) : ICommand<Guid>;
-
-public sealed class CreateCompanyCommandHandler : BaseCommandHandler<CreateCompanyCommand, Guid>
+public sealed record CreateCompanyCommand(CreateCompanyDto Dto) : ICommand<Result<Guid>>;
+public sealed class CreateCompanyCommandHandler : BaseCommandHandler<CreateCompanyCommand, Result<Guid>>
 {
     private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly AzureTest.Application.Interfaces.Services.ICompanyCacheService _cacheService;
-
     public CreateCompanyCommandHandler(
         IUnitOfWork unitOfWork,
         INoSqlUnitOfWork noSqlUnitOfWork,
@@ -28,8 +29,7 @@ public sealed class CreateCompanyCommandHandler : BaseCommandHandler<CreateCompa
         _noSqlUnitOfWork = noSqlUnitOfWork;
         _cacheService = cacheService;
     }
-
-    protected override async Task<Guid> ExecuteAsync(CreateCompanyCommand command, CancellationToken cancellationToken)
+    protected override async Task<Result<Guid>> ExecuteAsync(CreateCompanyCommand command, CancellationToken cancellationToken)
     {
         var company = new Company
         {
@@ -38,10 +38,16 @@ public sealed class CreateCompanyCommandHandler : BaseCommandHandler<CreateCompa
             IsINDMember = command.Dto.IsINDMember,
             Location = command.Dto.Location,
         };
-
         await _noSqlUnitOfWork.Companies.AddAsync(company);
         await _cacheService.InvalidateCompaniesAsync(cancellationToken);
-        
         return company.Id;
+    }
+}
+
+public sealed class CreateCompanyCommandValidator : AbstractValidator<CreateCompanyCommand>
+{
+    public CreateCompanyCommandValidator()
+    {
+
     }
 }

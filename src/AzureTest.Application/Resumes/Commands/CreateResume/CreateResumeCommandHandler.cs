@@ -1,4 +1,6 @@
 using AzureTest.Application.Abstractions;
+
+
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Messaging;
@@ -12,11 +14,11 @@ namespace AzureTest.Application.Resumes.Commands.CreateResume;
 
 // ── Command ───────────────────────────────────────────────────────────────────
 
-public sealed record CreateResumeCommand(CreateResumeDto Dto) : ICommand<Guid>;
+public sealed record CreateResumeCommand(CreateResumeDto Dto) : ICommand<Result<Guid>>;
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-public sealed class CreateResumeCommandHandler : BaseCommandHandler<CreateResumeCommand, Guid>
+public sealed class CreateResumeCommandHandler : BaseCommandHandler<CreateResumeCommand, Result<Guid>>
 {
 
     private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
@@ -33,7 +35,7 @@ public sealed class CreateResumeCommandHandler : BaseCommandHandler<CreateResume
         _currentUser = currentUser;
     }
 
-    protected override async Task<Guid> ExecuteAsync(CreateResumeCommand command, CancellationToken cancellationToken)
+    protected override async Task<Result<Guid>> ExecuteAsync(CreateResumeCommand command, CancellationToken cancellationToken)
     {
         var dto = command.Dto;
 

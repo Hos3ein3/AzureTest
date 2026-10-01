@@ -138,7 +138,7 @@ public class ResumeController : Controller
 
         // Always create the ResumeFiles document in MongoDB, uploading any attached files
         var createUploadDto = new UploadResumeFilesDto(
-            id,
+            id.Value,
             cvFile?.OpenReadStream(), cvFile?.FileName, cvFile?.ContentType,
             clFile?.OpenReadStream(), clFile?.FileName, clFile?.ContentType
         );

@@ -46,7 +46,7 @@ public class AuthController : Controller
     public async Task<IActionResult> Login(string email, string password, CancellationToken cancellationToken)
     {
         var result = await _commands.Login.HandleAsync(new LoginUserCommand(email, password), cancellationToken);
-        if (result.Success)
+        if (result.IsSuccess && result.Value.Success)
         {
             if (_featureOptions.UseJWT)
             {
@@ -58,10 +58,10 @@ public class AuthController : Controller
                     SameSite = SameSiteMode.Strict,
                     Expires = DateTime.UtcNow.AddDays(1)
                 };
-                Response.Cookies.Append("jwt", result.Token!, cookieOptions);
-                if (!string.IsNullOrEmpty(result.RefreshToken))
+                Response.Cookies.Append("jwt", result.Value.Token!, cookieOptions);
+                if (!string.IsNullOrEmpty(result.Value.RefreshToken))
                 {
-                    Response.Cookies.Append("refreshToken", result.RefreshToken, cookieOptions);
+                    Response.Cookies.Append("refreshToken", result.Value.RefreshToken, cookieOptions);
                 }
             }
             else
@@ -76,9 +76,9 @@ public class AuthController : Controller
             
             return RedirectToAction("Index", "Home");
         }
-        if (result.Errors != null)
+        if (result.IsSuccess && result.Value.Errors != null)
         {
-            foreach (var error in result.Errors)
+            foreach (var error in result.Value.Errors)
             {
                 ModelState.AddModelError(string.Empty, error);
             }
@@ -107,17 +107,14 @@ public class AuthController : Controller
         var lastName = nameParts.Length > 1 ? nameParts[1] : string.Empty;
 
         var result = await _commands.Register.HandleAsync(new RegisterUserCommand(email, password, firstName, lastName), cancellationToken);
-        if (result.Success)
+        if (result.IsSuccess)
         {
             return RedirectToAction(nameof(Login));
         }
 
-        if (result.Errors != null)
+        if (result.Error != null)
         {
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error);
-            }
+            ModelState.AddModelError(string.Empty, result.Error);
         }
         return View();
     }
@@ -160,7 +157,7 @@ public class AuthController : Controller
 
         var result = await _commands.RefreshToken.HandleAsync(new RefreshTokenCommand(jwt, refreshToken), cancellationToken);
 
-        if (result.Success)
+        if (result.IsSuccess && result.Value.Success)
         {
             var cookieOptions = new CookieOptions
             {
@@ -170,11 +167,11 @@ public class AuthController : Controller
                 Expires = DateTime.UtcNow.AddDays(1)
             };
             
-            Response.Cookies.Append("jwt", result.Token!, cookieOptions);
+            Response.Cookies.Append("jwt", result.Value.Token!, cookieOptions);
             
-            if (!string.IsNullOrEmpty(result.RefreshToken))
+            if (!string.IsNullOrEmpty(result.Value.RefreshToken))
             {
-                Response.Cookies.Append("refreshToken", result.RefreshToken, cookieOptions);
+                Response.Cookies.Append("refreshToken", result.Value.RefreshToken, cookieOptions);
             }
             
             return Ok();

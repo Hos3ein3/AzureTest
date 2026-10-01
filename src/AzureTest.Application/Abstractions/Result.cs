@@ -1,3 +1,5 @@
+using AzureTest.Application.Abstractions;
+
 namespace AzureTest.Application.Abstractions;
 
 /// <summary>

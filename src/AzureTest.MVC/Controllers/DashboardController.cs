@@ -1,3 +1,6 @@
+using AzureTest.Application.Abstractions;
+
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -27,10 +30,13 @@ public class DashboardController : Controller
     private readonly IQueryHandler<GetUserDashboardBySlugQuery, UserDashboard?> _getBySlugHandler;
     private readonly IQueryHandler<GetDashboardComponentsQuery, IEnumerable<DashboardComponent>> _getComponentsHandler;
     private readonly ICommandHandler<CreateUserDashboardCommand> _createDashboardHandler;
+    private readonly FluentValidation.IValidator<CreateUserDashboardCommand> _createValidator;
+    private readonly FluentValidation.IValidator<UpdateUserDashboardCommand> _updateValidator;
     private readonly ICommandHandler<UpdateUserDashboardCommand> _updateDashboardHandler;
     private readonly ICommandHandler<DeleteUserDashboardCommand> _deleteDashboardHandler;
     private readonly IQueryHandler<GetUserPreferenceQuery, UserPreference> _getPreferenceHandler;
     private readonly ICommandHandler<UpdateUserPreferenceCommand> _updatePreferenceHandler;
+    private readonly Microsoft.Extensions.Options.IOptions<AzureTest.Infrastructure.Configuration.DashboardSettings> _dashboardSettings;
 
     private readonly IQueryHandler<GetAllRawComponentsQuery, IReadOnlyList<DashboardRawComponent>> _getAllRawComponentsHandler;
     private readonly IDashboardDataLoader _dataLoader;
@@ -41,10 +47,13 @@ public class DashboardController : Controller
         IQueryHandler<GetUserDashboardBySlugQuery, UserDashboard?> getBySlugHandler,
         IQueryHandler<GetDashboardComponentsQuery, IEnumerable<DashboardComponent>> getComponentsHandler,
         ICommandHandler<CreateUserDashboardCommand> createDashboardHandler,
+        FluentValidation.IValidator<CreateUserDashboardCommand> createValidator,
+        FluentValidation.IValidator<UpdateUserDashboardCommand> updateValidator,
         ICommandHandler<UpdateUserDashboardCommand> updateDashboardHandler,
         ICommandHandler<DeleteUserDashboardCommand> deleteDashboardHandler,
         IQueryHandler<GetUserPreferenceQuery, UserPreference> getPreferenceHandler,
         ICommandHandler<UpdateUserPreferenceCommand> updatePreferenceHandler,
+        Microsoft.Extensions.Options.IOptions<AzureTest.Infrastructure.Configuration.DashboardSettings> dashboardSettings,
 
         IQueryHandler<GetAllRawComponentsQuery, IReadOnlyList<DashboardRawComponent>> getAllRawComponentsHandler,
         IDashboardDataLoader dataLoader)
@@ -54,10 +63,13 @@ public class DashboardController : Controller
         _getBySlugHandler = getBySlugHandler;
         _getComponentsHandler = getComponentsHandler;
         _createDashboardHandler = createDashboardHandler;
+        _createValidator = createValidator;
+        _updateValidator = updateValidator;
         _updateDashboardHandler = updateDashboardHandler;
         _deleteDashboardHandler = deleteDashboardHandler;
         _getPreferenceHandler = getPreferenceHandler;
         _updatePreferenceHandler = updatePreferenceHandler;
+        _dashboardSettings = dashboardSettings;
 
         _getAllRawComponentsHandler = getAllRawComponentsHandler;
         _dataLoader = dataLoader;
@@ -128,11 +140,15 @@ public class DashboardController : Controller
             if (string.IsNullOrEmpty(payload.Id) || payload.Id == Guid.Empty.ToString()) // create new
             {
                 var cmd = new CreateUserDashboardCommand(userId, payload.Name, payload.Slug, payload.Sections);
+                var validation = await _createValidator.ValidateAsync(cmd, cancellationToken);
+                if (!validation.IsValid) return BadRequest(string.Join(", ", validation.Errors.Select(e => e.ErrorMessage)));
                 await _createDashboardHandler.HandleAsync(cmd, cancellationToken);
             }
             else // update existing
             {
                 var cmd = new UpdateUserDashboardCommand(Guid.Parse(payload.Id), userId, payload.Name, payload.Slug, payload.Sections);
+                var validation = await _updateValidator.ValidateAsync(cmd, cancellationToken);
+                if (!validation.IsValid) return BadRequest(string.Join(", ", validation.Errors.Select(e => e.ErrorMessage)));
                 await _updateDashboardHandler.HandleAsync(cmd, cancellationToken);
             }
 
@@ -199,7 +215,9 @@ public class DashboardController : Controller
         var dashboards = await _getDashboardsHandler.HandleAsync(new GetUserDashboardsQuery(userId), cancellationToken);
         var isTaken = dashboards.Any(d => string.Equals(d.Slug, slug, StringComparison.OrdinalIgnoreCase) && d.Id != excludeId);
         
-        return Json(new { isAvailable = !isTaken });
+        var isReserved = _dashboardSettings.Value.ReservedSlugs.Contains(slug, StringComparer.OrdinalIgnoreCase);
+
+        return Json(new { isAvailable = !isTaken && !isReserved });
     }
 
     [HttpGet]
@@ -222,7 +240,7 @@ public class DashboardController : Controller
         var dashboard = await _getBySlugHandler.HandleAsync(new GetUserDashboardBySlugQuery(layoutOwnerId, slug), cancellationToken);
         if (dashboard == null)
         {
-            return NotFound("Dashboard not found or you don't have permission to view it.");
+            return NotFound();
         }
 
         var allComponents = await _getComponentsHandler.HandleAsync(new GetDashboardComponentsQuery(), cancellationToken);

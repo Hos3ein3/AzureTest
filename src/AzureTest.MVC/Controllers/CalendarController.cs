@@ -1,3 +1,6 @@
+using AzureTest.Application.Abstractions;
+
+
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -84,16 +87,21 @@ public class CalendarController : Controller
                 type = "task"
             });
 
-        // 3. Get Debts with PromissedReturnDate
+        // 3. Get Debts
         var debts = await _debtQuery.GetAll.HandleAsync(new GetAllDebtsQuery(userId), default);
         var debtEvents = debts
-            .Where(d => d.PromissedReturnDate.HasValue && d.PromissedReturnDate.Value >= start && d.PromissedReturnDate.Value <= end)
             .Select(d => new
             {
-                id = $"debt_{d.Id}",
-                title = $"Debt: {d.DebtPersonName} ({(d.Amount > 0 ? "Owe" : "Owed")})",
-                start = d.PromissedReturnDate!.Value.ToString("O"),
-                end = d.PromissedReturnDate!.Value.ToString("O"),
+                debt = d,
+                eventDate = d.PromissedReturnDate ?? d.DateOfReturn ?? d.DateOfBorrow
+            })
+            .Where(d => d.eventDate >= start && d.eventDate <= end)
+            .Select(d => new
+            {
+                id = $"debt_{d.debt.Id}",
+                title = d.debt.Amount > 0 ? "Debt (Owe)" : "Debt (Owed)",
+                start = d.eventDate.ToString("O"),
+                end = d.eventDate.ToString("O"),
                 allDay = true,
                 color = "#ef4444", // red
                 type = "debt"

@@ -1,3 +1,5 @@
+
+
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Infrastructure.Configuration;
 using AzureTest.Infrastructure.Services;
@@ -68,8 +70,50 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddTransient<AzureTest.Infrastructure.Seeding.IdentityDataSeeder>();
 
-        services.Configure<AzureTest.Infrastructure.Configuration.JwtSettings>(configuration.GetSection(AzureTest.Infrastructure.Configuration.JwtSettings.SectionName));
+        services.AddOptions<MongoDbSettings>()
+            .Configure<IConfiguration>((options, config) => {
+                config.GetSection("MongoDb").Bind(options);
+                options.ConnectionString = config.GetConnectionString("MongoDb") ?? string.Empty;
+            })
+            .Validate(opts => {
+                var res = new AzureTest.Infrastructure.Configuration.Validators.MongoDbSettingsValidator().Validate(opts);
+                if(!res.IsValid) throw new System.Exception(string.Join(", ", res.Errors));
+                return true;
+            })
+            .ValidateOnStart();
+
+        services.AddOptions<AzureTest.Infrastructure.Configuration.JwtSettings>()
+            .Bind(configuration.GetSection(AzureTest.Infrastructure.Configuration.JwtSettings.SectionName))
+            .Validate(opts => {
+                var res = new AzureTest.Infrastructure.Configuration.Validators.JwtSettingsValidator().Validate(opts);
+                if(!res.IsValid) throw new System.Exception(string.Join(", ", res.Errors));
+                return true;
+            })
+            .ValidateOnStart();
+
+        services.AddOptions<AzureTest.Infrastructure.Configuration.IdentitySettings>()
+            .Bind(configuration.GetSection(AzureTest.Infrastructure.Configuration.IdentitySettings.SectionName))
+            .Validate(opts => {
+                var res = new AzureTest.Infrastructure.Configuration.Validators.IdentitySettingsValidator().Validate(opts);
+                if(!res.IsValid) throw new System.Exception(string.Join(", ", res.Errors));
+                return true;
+            })
+            .ValidateOnStart();
+
+        services.AddOptions<HealthCheckUISettings>()
+            .Bind(configuration.GetSection("HealthChecksUI"))
+            .Validate(opts => {
+                var res = new HealthCheckUISettingsValidator().Validate(opts);
+                if(!res.IsValid) throw new System.Exception(string.Join(", ", res.Errors));
+                return true;
+            })
+            .ValidateOnStart();
+
         services.Configure<InfrastructureFeatureOptions>(configuration.GetSection("FeatureManagement"));
+
+        services.AddOptions<DashboardSettings>()
+            .BindConfiguration("Dashboard")
+            .ValidateOnStart();
 
         return services;
     }

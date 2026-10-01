@@ -7,7 +7,7 @@
             <h5 class="text-lg font-semibold text-slate-800 m-0">Expenses by Category</h5>
             <i class="fa-solid fa-chart-pie text-slate-400"></i>
         </div>
-        <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
+        <div class="p-6 flex-1 relative min-h-[300px] w-full">
             @if (Model.ExpensesByCategory.Any())
             {
                 <canvas id="expenseChart"></canvas>

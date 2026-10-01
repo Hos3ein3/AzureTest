@@ -55,7 +55,7 @@ public class CompanyCommandsTests
         var result = await handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
-        result.Should().NotBeEmpty();
+        result.Value.Should().NotBeEmpty();
         _mockCompanyRepository.Verify(x => x.AddAsync(It.Is<Company>(c => c.CompanyName == "Test Company")), Times.Once);
         _mockCacheService.Verify(x => x.InvalidateCompaniesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _mockUnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once); // BaseCommandHandler calls CommitAsync
@@ -90,7 +90,7 @@ public class CompanyCommandsTests
         var result = await handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
-        result.Should().BeTrue();
+        result.IsSuccess.Should().BeTrue();
         _mockCompanyRepository.Verify(x => x.UpdateAsync(companyId, It.Is<Company>(c => c.CompanyName == "New Name")), Times.Once);
         _mockCacheService.Verify(x => x.InvalidateCompaniesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _mockUnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -124,7 +124,7 @@ public class CompanyCommandsTests
         var result = await handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
-        result.Should().BeTrue();
+        result.IsSuccess.Should().BeTrue();
         _mockCompanyRepository.Verify(x => x.RemoveAsync(companyId), Times.Once);
         _mockCacheService.Verify(x => x.InvalidateCompaniesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _mockUnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);

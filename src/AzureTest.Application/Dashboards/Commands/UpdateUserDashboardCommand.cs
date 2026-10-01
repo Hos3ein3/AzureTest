@@ -1,3 +1,6 @@
+using AzureTest.Application.Abstractions;
+
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,12 +29,13 @@ public sealed class UpdateUserDashboardCommandHandler : ICommandHandler<UpdateUs
         _noSqlUnitOfWork = noSqlUnitOfWork;
     }
 
-    public async Task HandleAsync(UpdateUserDashboardCommand request, CancellationToken cancellationToken)
+    public async Task<Result> HandleAsync(UpdateUserDashboardCommand request, CancellationToken cancellationToken)
     {
         var dashboard = await _noSqlUnitOfWork.UserDashboards.GetByIdAsync(request.Id, cancellationToken);
         if (dashboard == null || dashboard.UserId != request.UserId)
         {
             throw new Exception("Dashboard not found or access denied.");
+        return Result.Success();
         }
 
         dashboard.Name = request.Name;
@@ -54,16 +58,20 @@ public sealed class UpdateUserDashboardCommandHandler : ICommandHandler<UpdateUs
 
         await _noSqlUnitOfWork.UserDashboards.UpdateAsync(dashboard.Id,dashboard, cancellationToken);
         await _noSqlUnitOfWork.SaveChangesAsync(cancellationToken);
+        return Result.Success();
     }
 }
 
 public sealed class UpdateUserDashboardCommandValidator : AbstractValidator<UpdateUserDashboardCommand>
 {
-    public UpdateUserDashboardCommandValidator()
+    public UpdateUserDashboardCommandValidator(Microsoft.Extensions.Options.IOptions<AzureTest.Infrastructure.Configuration.DashboardSettings> dashboardSettings)
     {
         RuleFor(x => x.Id).NotEmpty();
         RuleFor(x => x.UserId).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Slug).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.Slug)
+            .Must(slug => !dashboardSettings.Value.ReservedSlugs.Contains(slug, StringComparer.OrdinalIgnoreCase))
+            .WithMessage("This dashboard route name is reserved or not allowed.");
     }
 }

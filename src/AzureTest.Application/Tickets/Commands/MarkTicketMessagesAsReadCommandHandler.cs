@@ -1,8 +1,10 @@
+using AzureTest.Application.Abstractions;
+
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AzureTest.Application.Abstractions;
+
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Interfaces.Data;
 using Microsoft.Extensions.Logging;
@@ -26,6 +28,7 @@ public class MarkTicketMessagesAsReadCommandHandler : BaseCommandHandler<MarkTic
         foreach(var m in msgs)
         {
             m.MarkAsRead();
+        return Result.Success();
         }
         
         

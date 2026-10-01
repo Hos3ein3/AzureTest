@@ -1,3 +1,5 @@
+
+
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 
 using AzureTest.Infrastructure.Configuration;

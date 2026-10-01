@@ -47,7 +47,7 @@ public class ResumeIntegrationTests : IClassFixture<IntegrationTestWebAppFactory
         var command = new CreateResumeCommand(newResumeDto);
 
         // Act
-        var resumeId = await commandUnit.Create.HandleAsync(command, default);
+        var resumeId = (await commandUnit.Create.HandleAsync(command, default)).Value;
 
         // Assert
         Assert.NotEqual(Guid.Empty, resumeId);

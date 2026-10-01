@@ -10,6 +10,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Compile Remove="Configuration\DashboardSettings.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="AspNetCore.HealthChecks.Npgsql" />
         <PackageReference Include="AspNetCore.HealthChecks.MongoDb" />
         <PackageReference Include="AspNetCore.HealthChecks.Redis" />

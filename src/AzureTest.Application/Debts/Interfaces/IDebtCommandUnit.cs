@@ -1,3 +1,6 @@
+using AzureTest.Application.Abstractions;
+
+
 using System;
 using AzureTest.Application.Debts.Commands;
 using AzureTest.Application.Messaging;
@@ -6,7 +9,7 @@ namespace AzureTest.Application.Debts;
 
 public interface IDebtCommandUnit
 {
-    ICommandHandler<CreateDebtCommand, Guid> Create { get; }
-    ICommandHandler<UpdateDebtCommand, bool> Update { get; }
-    ICommandHandler<DeleteDebtCommand, bool> Delete { get; }
+    ICommandHandler<CreateDebtCommand, Result<Guid>> Create { get; }
+    ICommandHandler<UpdateDebtCommand, Result<bool>> Update { get; }
+    ICommandHandler<DeleteDebtCommand, Result<bool>> Delete { get; }
 }

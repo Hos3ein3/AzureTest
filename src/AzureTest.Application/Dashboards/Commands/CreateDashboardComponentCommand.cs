@@ -1,3 +1,5 @@
+using AzureTest.Application.Abstractions;
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,7 +29,7 @@ public sealed class CreateDashboardComponentCommandHandler : ICommandHandler<Cre
         _noSqlUnitOfWork = noSqlUnitOfWork;
     }
 
-    public async Task HandleAsync(CreateDashboardComponentCommand request, CancellationToken cancellationToken)
+    public async Task<Result> HandleAsync(CreateDashboardComponentCommand request, CancellationToken cancellationToken)
     {
         var component = new DashboardComponent
         {
@@ -43,6 +45,7 @@ public sealed class CreateDashboardComponentCommandHandler : ICommandHandler<Cre
 
         await _noSqlUnitOfWork.DashboardComponents.AddAsync(component, cancellationToken);
         await _noSqlUnitOfWork.SaveChangesAsync(cancellationToken);
+        return Result.Success();
     }
 }
 

@@ -1,3 +1,5 @@
+using AzureTest.Application.Abstractions;
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,7 +43,7 @@ public class CreateDashboardComponentCommandHandler : ICommandHandler<CreateDash
         _unitOfWork = unitOfWork;
     }
 
-    public async Task HandleAsync(CreateDashboardComponentCommand command, CancellationToken cancellationToken = default)
+    public async Task<Result> HandleAsync(CreateDashboardComponentCommand command, CancellationToken cancellationToken = default)
     {
         var component = new DashboardComponent
         {
@@ -56,6 +58,7 @@ public class CreateDashboardComponentCommandHandler : ICommandHandler<CreateDash
         };
 
         await _unitOfWork.DashboardComponents.AddAsync(component, cancellationToken);
+        return Result.Success();
     }
 }
 
@@ -94,10 +97,10 @@ public class UpdateDashboardComponentCommandHandler : ICommandHandler<UpdateDash
         _unitOfWork = unitOfWork;
     }
 
-    public async Task HandleAsync(UpdateDashboardComponentCommand command, CancellationToken cancellationToken = default)
+    public async Task<Result> HandleAsync(UpdateDashboardComponentCommand command, CancellationToken cancellationToken = default)
     {
         var component = await _unitOfWork.DashboardComponents.GetByIdAsync(command.Id, cancellationToken);
-        if (component == null) return;
+        if (component == null) return Result.Failure("Not found");
 
         component.Name = command.Name;
         component.Description = command.Description ?? "";
@@ -109,6 +112,7 @@ public class UpdateDashboardComponentCommandHandler : ICommandHandler<UpdateDash
         component.DefaultHeight = command.DefaultHeight;
 
         await _unitOfWork.DashboardComponents.UpdateAsync(component.Id,component, cancellationToken);
+        return Result.Success();
     }
 }
 
@@ -132,8 +136,9 @@ public class DeleteDashboardComponentCommandHandler : ICommandHandler<DeleteDash
         _unitOfWork = unitOfWork;
     }
 
-    public async Task HandleAsync(DeleteDashboardComponentCommand command, CancellationToken cancellationToken = default)
+    public async Task<Result> HandleAsync(DeleteDashboardComponentCommand command, CancellationToken cancellationToken = default)
     {
         await _unitOfWork.DashboardComponents.RemoveAsync(command.Id, cancellationToken);
+        return Result.Success();
     }
 }

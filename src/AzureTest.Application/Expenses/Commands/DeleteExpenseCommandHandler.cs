@@ -1,7 +1,9 @@
+using AzureTest.Application.Abstractions;
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using AzureTest.Application.Abstractions;
+
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
@@ -12,7 +14,7 @@ namespace AzureTest.Application.Expenses.Commands;
 
 // ── Command ───────────────────────────────────────────────────────────────────
 
-public sealed record DeleteExpenseCommand(Guid Id) : ICommand<bool>;
+public sealed record DeleteExpenseCommand(Guid Id) : ICommand<Result<bool>>;
 
 // ── Validator ─────────────────────────────────────────────────────────────────
 
@@ -26,7 +28,7 @@ public sealed class DeleteExpenseCommandValidator : AbstractValidator<DeleteExpe
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-public sealed class DeleteExpenseCommandHandler : BaseCommandHandler<DeleteExpenseCommand, bool>
+public sealed class DeleteExpenseCommandHandler : BaseCommandHandler<DeleteExpenseCommand, Result<bool>>
 {
     private readonly ICurrentUser _currentUser;
 
@@ -39,7 +41,7 @@ public sealed class DeleteExpenseCommandHandler : BaseCommandHandler<DeleteExpen
         _currentUser = currentUser;
     }
 
-    protected override async Task<bool> ExecuteAsync(DeleteExpenseCommand command, CancellationToken cancellationToken)
+    protected override async Task<Result<bool>> ExecuteAsync(DeleteExpenseCommand command, CancellationToken cancellationToken)
     {
         var expense = await UnitOfWork.Expenses.GetByIdAsync(command.Id);
         if (expense == null || expense.UserId != _currentUser.Id)

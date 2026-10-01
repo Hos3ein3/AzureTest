@@ -1,7 +1,9 @@
+using AzureTest.Application.Abstractions;
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using AzureTest.Application.Abstractions;
+
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Domain.Entities;
 using AzureTest.Application.Interfaces.Data;
@@ -9,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AzureTest.Application.Tickets.Commands;
 
-public class CreateTicketCommandHandler : BaseCommandHandler<CreateTicketCommand, Guid>
+public class CreateTicketCommandHandler : BaseCommandHandler<CreateTicketCommand, Result<Guid>>
 {
 
     private readonly ICurrentUser _currentUser;
@@ -21,7 +23,7 @@ public class CreateTicketCommandHandler : BaseCommandHandler<CreateTicketCommand
         _notificationService = notificationService;
     }
 
-    protected override async Task<Guid> ExecuteAsync(CreateTicketCommand command, CancellationToken cancellationToken)
+    protected override async Task<Result<Guid>> ExecuteAsync(CreateTicketCommand command, CancellationToken cancellationToken)
     {
         var t = Ticket.Create(command.Subject, command.Content, command.Priority, _currentUser.Id);
         UnitOfWork.Tickets.Add(t);

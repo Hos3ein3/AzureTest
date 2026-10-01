@@ -1,3 +1,5 @@
+
+
 using System;
 
 namespace AzureTest.Contracts.DTOs.Companies;

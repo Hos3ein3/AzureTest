@@ -1,3 +1,5 @@
+
+
 namespace AzureTest.Domain.Documents;
 
 public class Company

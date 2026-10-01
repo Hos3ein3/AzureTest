@@ -1,3 +1,6 @@
+using AzureTest.Application.Abstractions;
+
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,9 +11,9 @@ using AzureTest.Domain.Documents;
 
 namespace AzureTest.Application.DebtPersons.Commands;
 
-public record CreateDebtPersonCommand(Guid UserId, string Name) : ICommand<Guid>;
+public record CreateDebtPersonCommand(Guid UserId, string Name) : ICommand<Result<Guid>>;
 
-public class CreateDebtPersonCommandHandler : ICommandHandler<CreateDebtPersonCommand, Guid>
+public class CreateDebtPersonCommandHandler : ICommandHandler<CreateDebtPersonCommand, Result<Guid>>
 {
     private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly IRedisService _redisService;
@@ -21,7 +24,7 @@ public class CreateDebtPersonCommandHandler : ICommandHandler<CreateDebtPersonCo
         _redisService = redisService;
     }
 
-    public async Task<Guid> HandleAsync(CreateDebtPersonCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> HandleAsync(CreateDebtPersonCommand request, CancellationToken cancellationToken)
     {
         var person = new DebtPerson
         {
@@ -34,7 +37,7 @@ public class CreateDebtPersonCommandHandler : ICommandHandler<CreateDebtPersonCo
 
         await _redisService.RemoveAsync($"DebtPersons_{request.UserId}");
 
-        return person.Id;
+        return Result.Success(person.Id);
     }
 }
 
@@ -51,16 +54,17 @@ public class UpdateDebtPersonCommandHandler : ICommandHandler<UpdateDebtPersonCo
         _redisService = redisService;
     }
 
-    public async Task HandleAsync(UpdateDebtPersonCommand request, CancellationToken cancellationToken)
+    public async Task<Result> HandleAsync(UpdateDebtPersonCommand request, CancellationToken cancellationToken)
     {
         var person = await _noSqlUnitOfWork.DebtPersons.GetByIdAsync(request.Id);
-        if (person == null || person.UserId != request.UserId) return;
+        if (person == null || person.UserId != request.UserId) return Result.Failure("Error");
 
         person.FullName = request.Name;
         await _noSqlUnitOfWork.DebtPersons.UpdateAsync(request.Id, person);
         await _noSqlUnitOfWork.SaveChangesAsync(cancellationToken);
 
         await _redisService.RemoveAsync($"DebtPersons_{request.UserId}");
+        return Result.Success();
     }
 }
 
@@ -77,14 +81,15 @@ public class DeleteDebtPersonCommandHandler : ICommandHandler<DeleteDebtPersonCo
         _redisService = redisService;
     }
 
-    public async Task HandleAsync(DeleteDebtPersonCommand request, CancellationToken cancellationToken)
+    public async Task<Result> HandleAsync(DeleteDebtPersonCommand request, CancellationToken cancellationToken)
     {
         var person = await _noSqlUnitOfWork.DebtPersons.GetByIdAsync(request.Id);
-        if (person == null || person.UserId != request.UserId) return;
+        if (person == null || person.UserId != request.UserId) return Result.Failure("Error");
 
         await _noSqlUnitOfWork.DebtPersons.RemoveAsync(request.Id);
         await _noSqlUnitOfWork.SaveChangesAsync(cancellationToken);
 
         await _redisService.RemoveAsync($"DebtPersons_{request.UserId}");
+        return Result.Success();
     }
 }

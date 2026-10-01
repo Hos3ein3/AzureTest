@@ -1,3 +1,5 @@
+
+
 namespace AzureTest.Contracts.DTOs.Expenses;
 
 public class GetAllExpensesFilters

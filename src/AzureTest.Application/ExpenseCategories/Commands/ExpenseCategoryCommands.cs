@@ -1,3 +1,6 @@
+using AzureTest.Application.Abstractions;
+
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,9 +11,9 @@ using AzureTest.Domain.Documents;
 
 namespace AzureTest.Application.ExpenseCategories.Commands;
 
-public record CreateExpenseCategoryCommand(Guid UserId, string Name) : ICommand<Guid>;
+public record CreateExpenseCategoryCommand(Guid UserId, string Name) : ICommand<Result<Guid>>;
 
-public class CreateExpenseCategoryCommandHandler : ICommandHandler<CreateExpenseCategoryCommand, Guid>
+public class CreateExpenseCategoryCommandHandler : ICommandHandler<CreateExpenseCategoryCommand, Result<Guid>>
 {
     private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly IRedisService _redisService;
@@ -21,7 +24,7 @@ public class CreateExpenseCategoryCommandHandler : ICommandHandler<CreateExpense
         _redisService = redisService;
     }
 
-    public async Task<Guid> HandleAsync(CreateExpenseCategoryCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> HandleAsync(CreateExpenseCategoryCommand request, CancellationToken cancellationToken)
     {
         var category = new ExpenseCategory
         {
@@ -34,7 +37,7 @@ public class CreateExpenseCategoryCommandHandler : ICommandHandler<CreateExpense
 
         await _redisService.RemoveAsync($"ExpCats_{request.UserId}");
 
-        return category.Id;
+        return Result.Success(category.Id);
     }
 }
 
@@ -51,16 +54,17 @@ public class UpdateExpenseCategoryCommandHandler : ICommandHandler<UpdateExpense
         _redisService = redisService;
     }
 
-    public async Task HandleAsync(UpdateExpenseCategoryCommand request, CancellationToken cancellationToken)
+    public async Task<Result> HandleAsync(UpdateExpenseCategoryCommand request, CancellationToken cancellationToken)
     {
         var category = await _noSqlUnitOfWork.ExpenseCategories.GetByIdAsync(request.Id);
-        if (category == null || category.UserId != request.UserId) return;
+        if (category == null || category.UserId != request.UserId) return Result.Failure("Error");
 
         category.Name = request.Name;
         await _noSqlUnitOfWork.ExpenseCategories.UpdateAsync(request.Id, category);
         await _noSqlUnitOfWork.SaveChangesAsync(cancellationToken);
 
         await _redisService.RemoveAsync($"ExpCats_{request.UserId}");
+        return Result.Success();
     }
 }
 
@@ -77,14 +81,15 @@ public class DeleteExpenseCategoryCommandHandler : ICommandHandler<DeleteExpense
         _redisService = redisService;
     }
 
-    public async Task HandleAsync(DeleteExpenseCategoryCommand request, CancellationToken cancellationToken)
+    public async Task<Result> HandleAsync(DeleteExpenseCategoryCommand request, CancellationToken cancellationToken)
     {
         var category = await _noSqlUnitOfWork.ExpenseCategories.GetByIdAsync(request.Id);
-        if (category == null || category.UserId != request.UserId) return;
+        if (category == null || category.UserId != request.UserId) return Result.Failure("Error");
 
         await _noSqlUnitOfWork.ExpenseCategories.RemoveAsync(request.Id);
         await _noSqlUnitOfWork.SaveChangesAsync(cancellationToken);
 
         await _redisService.RemoveAsync($"ExpCats_{request.UserId}");
+        return Result.Success();
     }
 }
