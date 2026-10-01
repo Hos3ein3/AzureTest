@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
 
+using AzureTest.Persistence.Seeding;
+
 namespace AzureTest.Infrastructure.Seeding;
 
 public class IdentityDataSeeder
@@ -111,6 +113,13 @@ public class IdentityDataSeeder
             if (userUser != null)
             {
                 await SeedDashboardComponentsAsync(userUser.Id);
+                
+            }
+            var existingComps = await _noSqlUnitOfWork.DashboardComponents.GetAllAsync(default);
+            if (!existingComps.Any())
+            {
+                var dashboardComponents = FakeDataGenerator.BuildDashboardComponents();
+                foreach (var dc in dashboardComponents) await _noSqlUnitOfWork.DashboardComponents.AddAsync(dc);
             }
             
             // Hotfix: update existing 'Current Time' widget if it uses old HTML
@@ -129,7 +138,7 @@ public class IdentityDataSeeder
             _logger.LogError(ex, "Error while seeding Identity data.");
         }
     }
-
+    
     private async Task SeedDashboardComponentsAsync(System.Guid userId)
     {
         var existingDashboard = await _noSqlUnitOfWork.UserDashboards.GetByUserIdAndSlugAsync(userId, "dynamic-analytics");
