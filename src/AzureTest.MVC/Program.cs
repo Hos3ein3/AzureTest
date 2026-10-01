@@ -1,3 +1,7 @@
+using WebMarkupMin.AspNetCore8;
+using WebMarkupMin.Core;
+using Microsoft.AspNetCore.DataProtection;
+
 
 
 using AzureTest.Application;
@@ -93,6 +97,11 @@ if (infraOptions.UseJWT)
 else
 {
     // Normal Identity Cookie Authentication
+    builder.Services.Configure<Microsoft.AspNetCore.Identity.SecurityStampValidatorOptions>(options =>
+    {
+        options.ValidationInterval = TimeSpan.FromHours(12);
+    });
+
     builder.Services.ConfigureApplicationCookie(options =>
     {
         options.LoginPath = "/Auth/Login";
@@ -108,6 +117,9 @@ else
 builder.Services.AddFeatureManagement();
 
 // Add services to the container.
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "keys")));
+
 builder.Services.AddControllersWithViews(options => 
 {
     var policy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
@@ -138,6 +150,33 @@ builder.Services.AddHybridCache();
 
 builder.Services.AddExceptionHandler<AzureTest.MVC.Infrastructure.GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+
+// --- HTML, CSS, JS Minification (Only enabled in Production) ---
+if (builder.Environment.IsProduction())
+{
+    // WebOptimizer for CSS & JS minification
+    builder.Services.AddWebOptimizer(pipeline =>
+    {
+        pipeline.MinifyJsFiles("js/**/*.js");
+        pipeline.MinifyCssFiles("css/**/*.css");
+    });
+
+    // WebMarkupMin for HTML minification
+    builder.Services.AddWebMarkupMin(options =>
+    {
+        options.AllowMinificationInDevelopmentEnvironment = false;
+        options.AllowCompressionInDevelopmentEnvironment = false;
+    })
+    .AddHtmlMinification(options =>
+    {
+        options.MinificationSettings.RemoveRedundantAttributes = true;
+        options.MinificationSettings.RemoveHttpProtocolFromAttributes = true;
+        options.MinificationSettings.RemoveHttpsProtocolFromAttributes = true;
+        options.MinificationSettings.RemoveHtmlComments = true;
+    })
+    .AddHttpCompression();
+}
+
 
 // ── ProductionSimulate: start Testcontainers & override connection strings ────
 if (builder.Environment.IsEnvironment("ProductionSimulate"))
@@ -280,6 +319,13 @@ else
 app.UseStatusCodePagesWithReExecute("/Error/{0}");
 
 app.UseHttpsRedirection();
+
+if (app.Environment.IsProduction())
+{
+    app.UseWebOptimizer();
+    app.UseWebMarkupMin();
+}
+
 app.UseRouting();
 
 app.UseAuthentication();

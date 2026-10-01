@@ -23,6 +23,10 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     private IDashboardComponentRepository? _dashboardComponents;
     private IDashboardRawComponentRepository? _dashboardRawComponents;
     private IUserDashboardRepository? _userDashboards;
+    private IJobSearchHistoryRepository? _jobSearchHistories;
+    private IIdeaRepository? _ideas;
+
+
 
     public NoSqlUnitOfWork(IMongoClient mongoClient, IMongoDatabase database)
     {
@@ -39,6 +43,10 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     public IDashboardComponentRepository DashboardComponents => _dashboardComponents ??= new DashboardComponentRepository(_database);
     public IDashboardRawComponentRepository DashboardRawComponents => _dashboardRawComponents ??= new DashboardRawComponentRepository(_database);
     public IUserDashboardRepository UserDashboards => _userDashboards ??= new UserDashboardRepository(_database);
+    public IJobSearchHistoryRepository JobSearchHistories => _jobSearchHistories ??= new JobSearchHistoryRepository(_database);
+    public IIdeaRepository Ideas => _ideas ??= new IdeaRepository(_database);
+
+
 
     public async Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

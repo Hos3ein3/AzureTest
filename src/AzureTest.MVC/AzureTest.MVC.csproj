@@ -5,12 +5,14 @@
         <ProjectReference Include="..\AzureTest.Domain\AzureTest.Domain.csproj" />
         <ProjectReference Include="..\AzureTest.Infrastructure\AzureTest.Infrastructure.csproj" />
         <ProjectReference Include="..\AzureTest.Persistence\AzureTest.Persistence.csproj" />
-    </ItemGroup>
+      <PackageReference Include="WebMarkupMin.AspNetCore8" />
+  </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="AspNetCore.HealthChecks.UI" />
         <PackageReference Include="AspNetCore.HealthChecks.UI.InMemory.Storage" />
         <PackageReference Include="AspNetCore.HealthChecks.UI.Client" />
+        <PackageReference Include="LigerShark.WebOptimizer.Core" />
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" />
         <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" />
       
@@ -19,8 +21,8 @@
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
         <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />
         <PackageReference Include="Testcontainers.PostgreSql" />
-        <PackageReference Include="Testcontainers.MongoDb"  />
-        <PackageReference Include="Testcontainers.Redis"  />
+        <PackageReference Include="Testcontainers.MongoDb" />
+        <PackageReference Include="Testcontainers.Redis" />
     </ItemGroup>
 
     <ItemGroup>

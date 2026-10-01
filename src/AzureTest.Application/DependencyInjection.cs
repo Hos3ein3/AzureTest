@@ -54,6 +54,16 @@ public static class DependencyInjection
         services.AddScoped<ISampleNoteCommandUnit, SampleNoteCommandUnit>();
         services.AddScoped<ISampleNoteQueryUnit, SampleNoteQueryUnit>();
 
+        // Job Crawler
+        services.AddScoped<AzureTest.Application.JobCrawler.IJobCrawlerCommandUnit, AzureTest.Application.JobCrawler.JobCrawlerCommandUnit>();
+        services.AddScoped<AzureTest.Application.JobCrawler.IJobCrawlerQueryUnit, AzureTest.Application.JobCrawler.JobCrawlerQueryUnit>();
+
+        // Idea Tracker
+        services.AddScoped<AzureTest.Application.IdeaTracker.IIdeaCommandUnit, AzureTest.Application.IdeaTracker.IdeaCommandUnit>();
+        services.AddScoped<AzureTest.Application.IdeaTracker.IIdeaQueryUnit, AzureTest.Application.IdeaTracker.IdeaQueryUnit>();
+
+
+
         return services;
     }
 }

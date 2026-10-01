@@ -25,6 +25,24 @@ public static class MongoDbClassMaps
             // Ensure Guid values are serialized as strings (not binary) in MongoDB
             BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
 
+            if (!BsonClassMap.IsClassMapRegistered(typeof(JobSearchHistory)))
+            {
+            if (!BsonClassMap.IsClassMapRegistered(typeof(AzureTest.Domain.Documents.Idea)))
+            {
+                BsonClassMap.RegisterClassMap<AzureTest.Domain.Documents.Idea>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.SetIgnoreExtraElements(true);
+                });
+            }
+
+                BsonClassMap.RegisterClassMap<JobSearchHistory>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.SetIgnoreExtraElements(true);
+                });
+            }
+
             // Map ResumeFiles document
             if (!BsonClassMap.IsClassMapRegistered(typeof(ResumeFiles)))
             {
