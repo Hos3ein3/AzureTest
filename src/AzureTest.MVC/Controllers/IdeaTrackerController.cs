@@ -8,6 +8,7 @@ using AzureTest.Application.Interfaces.Services;
 using AzureTest.Contracts.DTOs.IdeaTracker;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using System.IO;
@@ -15,7 +16,9 @@ using System.IO;
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class IdeaTrackerController : Controller
+[DisplayName("Idea Tracker")]
+[Description("Manage and control Idea Tracker operations.")]
+    public class IdeaTrackerController : Controller
 {
     private readonly ICurrentUser _currentUser;
     private readonly IIdeaCommandUnit _commands;
@@ -33,6 +36,8 @@ public class IdeaTrackerController : Controller
         _env = env;
     }
 
+    [DisplayName("Index")]
+    [Description("View a list of Idea Tracker.")]
     public async Task<IActionResult> Index(string search, int? status, CancellationToken ct)
     {
         var filter = new IdeaFilter(_currentUser.Id, search, status);
@@ -44,6 +49,8 @@ public class IdeaTrackerController : Controller
         return View(result.Value);
     }
 
+    [DisplayName("Details")]
+    [Description("View details of a Idea Tracker.")]
     public async Task<IActionResult> Details(Guid id, CancellationToken ct)
     {
         var result = await _queries.GetIdeaById.HandleAsync(new GetIdeaByIdQuery(_currentUser.Id, id), ct);
@@ -76,12 +83,16 @@ public class IdeaTrackerController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Create")]
+    [Description("Create a new Idea Tracker.")]
     public IActionResult Create(Guid? parentId)
     {
         return View(new CreateIdeaDto { ParentId = parentId });
     }
 
     [HttpPost]
+    [DisplayName("Create")]
+    [Description("Create a new Idea Tracker.")]
     public async Task<IActionResult> Create(CreateIdeaDto dto, CancellationToken ct)
     {
         var validation = await _validation.ValidateAsync(dto, ct);
@@ -102,6 +113,8 @@ public class IdeaTrackerController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Idea Tracker.")]
     public async Task<IActionResult> Edit(Guid id, CancellationToken ct)
     {
         var result = await _queries.GetIdeaById.HandleAsync(new GetIdeaByIdQuery(_currentUser.Id, id), ct);
@@ -124,6 +137,8 @@ public class IdeaTrackerController : Controller
     }
 
     [HttpPost]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Idea Tracker.")]
     public async Task<IActionResult> Edit(UpdateIdeaDto dto, CancellationToken ct)
     {
         var validation = await _validation.ValidateAsync(dto, ct);
@@ -147,6 +162,8 @@ public class IdeaTrackerController : Controller
 
     [HttpPost]
     [IgnoreAntiforgeryToken]
+    [DisplayName("Upload Image")]
+    [Description("Execute Upload Image operation for Idea Tracker.")]
     public async Task<IActionResult> UploadImage(IFormFile image)
     {
         if (image == null || image.Length == 0) return BadRequest();
@@ -164,6 +181,8 @@ public class IdeaTrackerController : Controller
         
         return Json(new { location = $"/uploads/ideas/{fileName}" });
     }
+    [DisplayName("Delete")]
+    [Description("Delete a Idea Tracker.")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         await _commands.Delete.HandleAsync(new DeleteIdeaCommand(_currentUser.Id, id), ct);

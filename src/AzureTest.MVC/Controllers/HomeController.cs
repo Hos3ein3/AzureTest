@@ -3,6 +3,7 @@ using AzureTest.Application.Abstractions;
 
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using AzureTest.MVC.Models;
 
 using Microsoft.AspNetCore.Authorization;
@@ -20,7 +21,9 @@ using AzureTest.Application.Tickets;
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class HomeController : Controller
+[DisplayName("Home")]
+[Description("Manage and control Home operations.")]
+    public class HomeController : Controller
 {
     private readonly IResumeQueryUnit _queries;
     private readonly UserManager<ApplicationUser> _userManager;
@@ -51,6 +54,8 @@ public class HomeController : Controller
         _expenseQuery = expenseQuery;
     }
 
+    [DisplayName("Index")]
+    [Description("View a list of Home.")]
     public async Task<IActionResult> Index(
         string? userId, 
         [FromServices] AzureTest.Application.Messaging.IQueryHandler<AzureTest.Application.UserPreferences.Queries.GetUserPreferenceQuery, AzureTest.Domain.Documents.UserPreference> prefQuery,
@@ -215,6 +220,8 @@ public class HomeController : Controller
         return View(model);
     }
 
+    [DisplayName("Privacy")]
+    [Description("Execute Privacy operation for Home.")]
     public IActionResult Privacy()
     {
         return View();
@@ -222,6 +229,8 @@ public class HomeController : Controller
 
     [AllowAnonymous]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    [DisplayName("Error")]
+    [Description("Execute Error operation for Home.")]
     public IActionResult Error()
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });

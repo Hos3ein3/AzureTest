@@ -12,11 +12,14 @@ using AzureTest.Application.Dashboards.Queries;
 using AzureTest.Domain.Documents;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class UserPreferenceController : Controller
+[DisplayName("User Preference")]
+[Description("Manage and control User Preference operations.")]
+    public class UserPreferenceController : Controller
 {
     private readonly ICurrentUser _currentUser;
     private readonly IQueryHandler<GetUserPreferenceQuery, UserPreference> _getUserPreferenceQuery;
@@ -36,6 +39,8 @@ public class UserPreferenceController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Get")]
+    [Description("Execute Get operation for User Preference.")]
     public async Task<IActionResult> Get(CancellationToken cancellationToken)
     {
         var pref = await _getUserPreferenceQuery.HandleAsync(new GetUserPreferenceQuery(_currentUser.Id), cancellationToken);
@@ -54,6 +59,8 @@ public class UserPreferenceController : Controller
 
     [HttpPost]
     [IgnoreAntiforgeryToken]
+    [DisplayName("Update")]
+    [Description("Modify an existing User Preference.")]
     public async Task<IActionResult> Update([FromBody] UpdatePreferenceRequest? jsonRequest, CancellationToken cancellationToken)
     {
         string? lang = jsonRequest?.Language;

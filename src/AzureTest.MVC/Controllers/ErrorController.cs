@@ -2,13 +2,18 @@ using AzureTest.Application.Abstractions;
 
 
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 
 namespace AzureTest.MVC.Controllers;
 
 [Route("Error")]
-public class ErrorController : Controller
+[DisplayName("Error")]
+[Description("Manage and control Error operations.")]
+    public class ErrorController : Controller
 {
     [Route("")]
+    [DisplayName("Index")]
+    [Description("View a list of Error.")]
     public IActionResult Index()
     {
         // Global Exception Page (500)
@@ -16,6 +21,8 @@ public class ErrorController : Controller
     }
 
     [Route("{statusCode}")]
+    [DisplayName("Http Status Code Handler")]
+    [Description("Execute Http Status Code Handler operation for Error.")]
     public IActionResult HttpStatusCodeHandler(int statusCode)
     {
         return statusCode switch

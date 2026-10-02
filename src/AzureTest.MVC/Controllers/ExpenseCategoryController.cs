@@ -9,11 +9,14 @@ using AzureTest.Application.Interfaces.Services;
 using AzureTest.Domain.Documents;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class ExpenseCategoryController : Controller
+[DisplayName("Expense Category")]
+[Description("Manage and control Expense Category operations.")]
+    public class ExpenseCategoryController : Controller
 {
     private readonly INoSqlUnitOfWork _unitOfWork;
     private readonly ICurrentUser _currentUser;
@@ -25,6 +28,8 @@ public class ExpenseCategoryController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Index")]
+    [Description("View a list of Expense Category.")]
     public async Task<IActionResult> Index()
     {
         var categories = await _unitOfWork.ExpenseCategories.GetAllAsync();
@@ -33,6 +38,8 @@ public class ExpenseCategoryController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Create")]
+    [Description("Create a new Expense Category.")]
     public IActionResult Create()
     {
         return View();
@@ -40,6 +47,8 @@ public class ExpenseCategoryController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Create")]
+    [Description("Create a new Expense Category.")]
     public async Task<IActionResult> Create(ExpenseCategory category)
     {
         if (!ModelState.IsValid)
@@ -53,6 +62,8 @@ public class ExpenseCategoryController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Expense Category.")]
     public async Task<IActionResult> Edit(Guid id)
     {
         var category = await _unitOfWork.ExpenseCategories.GetByIdAsync(id);
@@ -64,6 +75,8 @@ public class ExpenseCategoryController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Expense Category.")]
     public async Task<IActionResult> Edit(Guid id, ExpenseCategory model)
     {
         if (id != model.Id) return BadRequest();

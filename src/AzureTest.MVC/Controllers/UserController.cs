@@ -16,12 +16,15 @@ using AzureTest.Application.Users.Queries.GetUserById;
 using AzureTest.MVC.ViewModels.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize(Roles = "Admin")]
-public class UserController : Controller
+[DisplayName("User")]
+[Description("Manage and control User operations.")]
+    public class UserController : Controller
 {
     private readonly IUserQueryUnit _queryUnit;
     private readonly IUserCommandUnit _commandUnit;
@@ -33,6 +36,8 @@ public class UserController : Controller
     }
 
     // GET: User
+    [DisplayName("Index")]
+    [Description("View a list of User.")]
     public async Task<IActionResult> Index(string? searchTerm, string? role, string? sortBy, bool sortDescending = false, int pageNumber = 1, int pageSize = 10)
     {
         var query = new GetAllUsersQuery(searchTerm, role, sortBy, sortDescending, pageNumber, pageSize);
@@ -55,6 +60,8 @@ public class UserController : Controller
     }
 
     // GET: User/Create
+    [DisplayName("Create")]
+    [Description("Create a new User.")]
     public async Task<IActionResult> Create()
     {
         var roles = await _queryUnit.GetAllRoles.HandleAsync(new GetAllRolesQuery());
@@ -68,6 +75,8 @@ public class UserController : Controller
     // POST: User/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Create")]
+    [Description("Create a new User.")]
     public async Task<IActionResult> Create(UserCreateViewModel model)
     {
         if (!ModelState.IsValid)
@@ -97,6 +106,8 @@ public class UserController : Controller
     }
 
     // GET: User/Edit/5
+    [DisplayName("Edit")]
+    [Description("Modify an existing User.")]
     public async Task<IActionResult> Edit(Guid id)
     {
         var user = await _queryUnit.GetUserById.HandleAsync(new GetUserByIdQuery(id));
@@ -118,6 +129,8 @@ public class UserController : Controller
     // POST: User/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Edit")]
+    [Description("Modify an existing User.")]
     public async Task<IActionResult> Edit(Guid id, UserEditViewModel model)
     {
         if (id != model.Id) return BadRequest();
@@ -140,6 +153,8 @@ public class UserController : Controller
     }
 
     // GET: User/ManageRoles/5
+    [DisplayName("Manage Roles")]
+    [Description("Execute Manage Roles operation for User.")]
     public async Task<IActionResult> ManageRoles(Guid id)
     {
         var user = await _queryUnit.GetUserById.HandleAsync(new GetUserByIdQuery(id));
@@ -162,6 +177,8 @@ public class UserController : Controller
     // POST: User/ManageRoles/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Manage Roles")]
+    [Description("Execute Manage Roles operation for User.")]
     public async Task<IActionResult> ManageRoles(Guid userId, UserRolesViewModel model)
     {
         if (userId != model.UserId) return BadRequest();
@@ -186,6 +203,8 @@ public class UserController : Controller
     // POST: User/ToggleLockout/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Toggle Lockout")]
+    [Description("Execute Toggle Lockout operation for User.")]
     public async Task<IActionResult> ToggleLockout(Guid id)
     {
         var command = new ToggleUserLockoutCommand(id);
@@ -202,6 +221,8 @@ public class UserController : Controller
     // POST: User/Delete/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete")]
+    [Description("Delete a User.")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var command = new DeleteUserCommand(id);

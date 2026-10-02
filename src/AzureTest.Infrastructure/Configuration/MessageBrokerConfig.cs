@@ -12,21 +12,26 @@ public static class MessageBrokerConfig
     {
         var enableRabbitMQ = configuration.GetValue<bool>("FeatureManagement:EnableRabbitMQ");
 
-        if (enableRabbitMQ)
+        services.AddMassTransit(x =>
         {
-            services.AddMassTransit(x =>
+            
+            if (enableRabbitMQ)
             {
-                // Register consumers here when needed, e.g.:
-                // x.AddConsumer<MyConsumer>();
-
                 x.UsingRabbitMq((context, cfg) =>
                 {
                     var connectionString = configuration.GetConnectionString("RabbitMQ") ?? "amqp://guest:guest@localhost:5672";
                     cfg.Host(connectionString);
                     cfg.ConfigureEndpoints(context);
                 });
-            });
-        }
+            }
+            else
+            {
+                x.UsingInMemory((context, cfg) =>
+                {
+                    cfg.ConfigureEndpoints(context);
+                });
+            }
+        });
 
         return services;
     }

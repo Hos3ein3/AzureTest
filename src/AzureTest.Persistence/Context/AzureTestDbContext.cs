@@ -48,6 +48,8 @@ public class AzureTestDbContext : IdentityDbContext<ApplicationUser, Application
     public DbSet<TicketMessage> TicketMessages => Set<TicketMessage>();
     public DbSet<Debt> Debts => Set<Debt>();
     public DbSet<Expense> Expenses => Set<Expense>();
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

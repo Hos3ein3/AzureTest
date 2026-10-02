@@ -6,13 +6,16 @@ using AzureTest.Application.Interfaces.Services;
 using AzureTest.Contracts.DTOs.IdeaTracker;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using AzureTest.Application.Messaging;
 using AzureTest.Application.Abstractions;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class IdeaSectionController : Controller
+[DisplayName("Idea Section")]
+[Description("Manage and control Idea Section operations.")]
+    public class IdeaSectionController : Controller
 {
     private readonly ICurrentUser _currentUser;
     private readonly IIdeaSectionCommandUnit _commands;
@@ -28,12 +31,16 @@ public class IdeaSectionController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Create")]
+    [Description("Create a new Idea Section.")]
     public IActionResult Create(Guid ideaPageId)
     {
         return View(new CreateIdeaSectionDto { IdeaPageId = ideaPageId });
     }
 
     [HttpPost]
+    [DisplayName("Create")]
+    [Description("Create a new Idea Section.")]
     public async Task<IActionResult> Create(CreateIdeaSectionDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return View(dto);
@@ -49,6 +56,8 @@ public class IdeaSectionController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Idea Section.")]
     public async Task<IActionResult> Edit(Guid id, CancellationToken ct)
     {
         var result = await _queries.GetIdeaSectionById.HandleAsync(new GetIdeaSectionByIdQuery(_currentUser.Id, id), ct);
@@ -66,6 +75,8 @@ public class IdeaSectionController : Controller
     }
 
     [HttpPost]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Idea Section.")]
     public async Task<IActionResult> Edit(UpdateIdeaSectionDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return View(dto);
@@ -81,6 +92,8 @@ public class IdeaSectionController : Controller
     }
 
     [HttpPost]
+    [DisplayName("Delete")]
+    [Description("Delete a Idea Section.")]
     public async Task<IActionResult> Delete(Guid id, Guid ideaPageId, CancellationToken ct)
     {
         await _commands.Delete.HandleAsync(new DeleteIdeaSectionCommand(_currentUser.Id, id), ct);
@@ -89,6 +102,8 @@ public class IdeaSectionController : Controller
 
     [HttpPost]
     [IgnoreAntiforgeryToken]
+    [DisplayName("Update Layout")]
+    [Description("Modify an existing Idea Section.")]
     public async Task<IActionResult> UpdateLayout([FromBody] UpdateIdeaSectionLayoutDto dto, [FromServices] ICommandHandler<UpdateIdeaSectionLayoutCommand, Result> handler, CancellationToken ct)
     {
         var result = await handler.HandleAsync(new UpdateIdeaSectionLayoutCommand(_currentUser.Id, dto), ct);

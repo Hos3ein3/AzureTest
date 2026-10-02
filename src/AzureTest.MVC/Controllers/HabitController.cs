@@ -10,11 +10,14 @@ using AzureTest.Application.Interfaces.Services;
 using AzureTest.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class HabitController : Controller
+[DisplayName("Habit")]
+[Description("Manage and control Habit operations.")]
+    public class HabitController : Controller
 {
     private readonly IHabitQueryUnit _habitQuery;
     private readonly IHabitCommandUnit _habitCommand;
@@ -27,6 +30,8 @@ public class HabitController : Controller
         _currentUser = currentUser;
     }
 
+    [DisplayName("Index")]
+    [Description("View a list of Habit.")]
     public async Task<IActionResult> Index()
     {
         var habits = await _habitQuery.GetAllHabits.HandleAsync(new GetAllHabitsQuery(_currentUser.Id), default);
@@ -35,6 +40,8 @@ public class HabitController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Create")]
+    [Description("Create a new Habit.")]
     public async Task<IActionResult> Create(string name, string? description, HabitType type, HabitFrequency frequency, double goal)
     {
         if (ModelState.IsValid)
@@ -46,6 +53,8 @@ public class HabitController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Log")]
+    [Description("Execute Log operation for Habit.")]
     public async Task<IActionResult> Log(Guid id, bool booleanValue, double numericValue, string? notes)
     {
         await _habitCommand.LogHabit.HandleAsync(new LogHabitCommand(id, DateTime.UtcNow, booleanValue, numericValue, notes), default);
@@ -54,6 +63,8 @@ public class HabitController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete")]
+    [Description("Delete a Habit.")]
     public async Task<IActionResult> Delete(Guid id)
     {
         await _habitCommand.DeleteHabit.HandleAsync(new DeleteHabitCommand(id), default);

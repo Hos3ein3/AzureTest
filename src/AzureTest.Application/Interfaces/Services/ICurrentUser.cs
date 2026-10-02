@@ -14,4 +14,5 @@ public interface ICurrentUser
     string LastName { get; }
     string FullName { get; }
     System.Collections.Generic.IReadOnlyList<string> Roles { get; }
+    System.Collections.Generic.IReadOnlyList<string> Permissions { get; }
 }

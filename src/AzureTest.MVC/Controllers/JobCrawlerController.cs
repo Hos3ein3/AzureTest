@@ -4,12 +4,15 @@ using AzureTest.Application.JobCrawler.Commands;
 using AzureTest.Application.JobCrawler.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using System.Text.Json;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class JobCrawlerController : Controller
+[DisplayName("Job Crawler")]
+[Description("Manage and control Job Crawler operations.")]
+    public class JobCrawlerController : Controller
 {
     private readonly ICurrentUser _currentUser;
     private readonly IJobCrawlerCommandUnit _commands;
@@ -22,12 +25,16 @@ public class JobCrawlerController : Controller
         _queries = queries;
     }
 
+    [DisplayName("Index")]
+    [Description("View a list of Job Crawler.")]
     public IActionResult Index()
     {
         return View();
     }
 
     [HttpPost]
+    [DisplayName("Crawl")]
+    [Description("Execute Crawl operation for Job Crawler.")]
     public async Task<IActionResult> Crawl([FromBody] CrawlRequest request, CancellationToken ct)
     {
         var results = new List<object>();
@@ -117,6 +124,8 @@ public class JobCrawlerController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Get History")]
+    [Description("Execute Get History operation for Job Crawler.")]
     public async Task<IActionResult> GetHistory(CancellationToken ct)
     {
         if (_currentUser.Id == Guid.Empty) return Json(new { success = false });

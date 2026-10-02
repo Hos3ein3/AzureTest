@@ -10,11 +10,14 @@ using AzureTest.Application.Tasks.Queries;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class TaskController : Controller
+[DisplayName("Task")]
+[Description("Manage and control Task operations.")]
+    public class TaskController : Controller
 {
     private readonly ITaskQueryUnit _taskQuery;
     private readonly ITaskCommandUnit _taskCommand;
@@ -27,6 +30,8 @@ public class TaskController : Controller
         _currentUser = currentUser;
     }
 
+    [DisplayName("Index")]
+    [Description("View a list of Task.")]
     public async Task<IActionResult> Index()
     {
         var tasks = await _taskQuery.GetAllTasks.HandleAsync(new GetAllTasksQuery(_currentUser.Id), default);
@@ -35,6 +40,8 @@ public class TaskController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Create")]
+    [Description("Create a new Task.")]
     public async Task<IActionResult> Create(string title, string? description, DateTime? startDate, DateTime? endDate, string? priority)
     {
         if (!string.IsNullOrWhiteSpace(title))
@@ -46,6 +53,8 @@ public class TaskController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Toggle")]
+    [Description("Execute Toggle operation for Task.")]
     public async Task<IActionResult> Toggle(Guid id)
     {
         await _taskCommand.ToggleTask.HandleAsync(new ToggleTaskCommand(id), default);
@@ -54,6 +63,8 @@ public class TaskController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete")]
+    [Description("Delete a Task.")]
     public async Task<IActionResult> Delete(Guid id)
     {
         await _taskCommand.DeleteTask.HandleAsync(new DeleteTaskCommand(id), default);

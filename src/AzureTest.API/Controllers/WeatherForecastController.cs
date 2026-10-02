@@ -1,12 +1,15 @@
 
 
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 
 namespace AzureTest.API.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class WeatherForecastController : ControllerBase
+[DisplayName("Weather Forecast")]
+[Description("Manage and control Weather Forecast operations.")]
+    public class WeatherForecastController : ControllerBase
 {
     private static readonly string[] Summaries =
     [

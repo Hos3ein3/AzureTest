@@ -16,11 +16,14 @@ using AzureTest.Application.Debts.Queries;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class CalendarController : Controller
+[DisplayName("Calendar")]
+[Description("Manage and control Calendar operations.")]
+    public class CalendarController : Controller
 {
     private readonly IEventQueryUnit _eventQuery;
     private readonly IEventCommandUnit _eventCommand;
@@ -45,12 +48,16 @@ public class CalendarController : Controller
         _currentUser = currentUser;
     }
 
+    [DisplayName("Index")]
+    [Description("View a list of Calendar.")]
     public IActionResult Index()
     {
         return View();
     }
 
     [HttpGet]
+    [DisplayName("Get Events")]
+    [Description("Execute Get Events operation for Calendar.")]
     public async Task<IActionResult> GetEvents(DateTime start, DateTime end)
     {
         var userId = _currentUser.Id;

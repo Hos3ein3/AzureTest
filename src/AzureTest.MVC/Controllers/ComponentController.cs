@@ -11,6 +11,7 @@ using AzureTest.Application.Messaging;
 using AzureTest.Domain.Documents;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
@@ -19,7 +20,9 @@ using System.IO;
 namespace AzureTest.MVC.Controllers;
 
 [Authorize(Roles = "Admin")]
-public class ComponentController : Controller
+[DisplayName("Component")]
+[Description("Manage and control Component operations.")]
+    public class ComponentController : Controller
 {
     private readonly IQueryHandler<GetAllComponentsQuery, AzureTest.Contracts.DTOs.Common.PagedResult<DashboardComponent>> _getAllComponentsQuery;
     private readonly IQueryHandler<GetComponentByIdQuery, DashboardComponent?> _getComponentByIdQuery;
@@ -47,6 +50,8 @@ public class ComponentController : Controller
         _webHostEnvironment = webHostEnvironment;
     }
 
+    [DisplayName("Index")]
+    [Description("View a list of Component.")]
     public async Task<IActionResult> Index(CancellationToken cancellationToken, string? searchTerm = null, string? category = null, string? sortBy = null, bool sortDescending = false, int pageNumber = 1, int pageSize = 10)
     {
         var query = new GetAllComponentsQuery(searchTerm, category, sortBy, sortDescending, pageNumber, pageSize);
@@ -63,6 +68,8 @@ public class ComponentController : Controller
         return View(components);
     }
 
+    [DisplayName("Create")]
+    [Description("Create a new Component.")]
     public IActionResult Create(string? returnUrl)
     {
         ViewBag.ReturnUrl = returnUrl;
@@ -71,6 +78,8 @@ public class ComponentController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Create")]
+    [Description("Create a new Component.")]
     public async Task<IActionResult> Create(DashboardComponent model, IFormFile? imageFile, string? returnUrl, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) 
@@ -114,6 +123,8 @@ public class ComponentController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [DisplayName("Edit")]
+    [Description("Modify an existing Component.")]
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
         var component = await _getComponentByIdQuery.HandleAsync(new GetComponentByIdQuery(id), cancellationToken);
@@ -124,6 +135,8 @@ public class ComponentController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Component.")]
     public async Task<IActionResult> Edit(DashboardComponent model, IFormFile? imageFile, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid) return View(model);
@@ -166,6 +179,8 @@ public class ComponentController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete")]
+    [Description("Delete a Component.")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _deleteCommand.HandleAsync(new DeleteDashboardComponentCommand(id), cancellationToken);

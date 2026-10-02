@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using Microsoft.AspNetCore.Authorization;
 using AzureTest.Application.Events;
 using AzureTest.Application.Events.Queries;
@@ -16,7 +17,9 @@ using AzureTest.Contracts.DTOs.Common;
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class EventController : Controller
+[DisplayName("Event")]
+[Description("Manage and control Event operations.")]
+    public class EventController : Controller
 {
     private readonly IEventQueryUnit _queryUnit;
     private readonly IEventCommandUnit _commandUnit;
@@ -29,6 +32,8 @@ public class EventController : Controller
         _currentUser = currentUser;
     }
 
+    [DisplayName("Index")]
+    [Description("View a list of Event.")]
     public async Task<IActionResult> Index(string searchString, string sortOrder, int? pageNumber)
     {
         ViewData["CurrentSort"] = sortOrder;
@@ -63,6 +68,8 @@ public class EventController : Controller
         return View(pagedList);
     }
 
+    [DisplayName("Create")]
+    [Description("Create a new Event.")]
     public IActionResult Create()
     {
         return View();
@@ -70,6 +77,8 @@ public class EventController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Create")]
+    [Description("Create a new Event.")]
     public async Task<IActionResult> Create(CreateEventCommand command)
     {
         if (ModelState.IsValid)
@@ -80,6 +89,8 @@ public class EventController : Controller
         return View(command);
     }
 
+    [DisplayName("Edit")]
+    [Description("Modify an existing Event.")]
     public async Task<IActionResult> Edit(Guid id)
     {
         var ev = await _queryUnit.GetEventById.HandleAsync(new GetEventByIdQuery(id, _currentUser.Id), default);
@@ -91,6 +102,8 @@ public class EventController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Event.")]
     public async Task<IActionResult> Edit(Guid id, UpdateEventCommand command)
     {
         if (id != command.Id) return NotFound();
@@ -103,6 +116,8 @@ public class EventController : Controller
         return View(command);
     }
 
+    [DisplayName("Details")]
+    [Description("View details of a Event.")]
     public async Task<IActionResult> Details(Guid id)
     {
         var ev = await _queryUnit.GetEventById.HandleAsync(new GetEventByIdQuery(id, _currentUser.Id), default);
@@ -112,6 +127,8 @@ public class EventController : Controller
 
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete Confirmed")]
+    [Description("Delete a Event.")]
     public async Task<IActionResult> DeleteConfirmed(Guid id)
     {
         await _commandUnit.DeleteEvent.HandleAsync(new DeleteEventCommand(id), default);

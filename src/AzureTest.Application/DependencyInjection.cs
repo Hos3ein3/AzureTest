@@ -49,6 +49,8 @@ public static class DependencyInjection
         services.AddScoped<IDebtQueryUnit, DebtQueryUnit>();
         services.AddScoped<IExpenseQueryUnit, ExpenseQueryUnit>();
         services.AddScoped<IExpenseCommandUnit, ExpenseCommandUnit>();
+        services.AddScoped<AzureTest.Application.Permissions.IPermissionQueryUnit, AzureTest.Application.Permissions.PermissionQueryUnit>();
+        services.AddScoped<AzureTest.Application.Permissions.IPermissionCommandUnit, AzureTest.Application.Permissions.PermissionCommandUnit>();
 
         // SampleNote dev playground
         services.AddScoped<ISampleNoteCommandUnit, SampleNoteCommandUnit>();

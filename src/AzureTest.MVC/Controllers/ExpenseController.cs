@@ -14,11 +14,14 @@ using AzureTest.Contracts.DTOs.Expenses;
 using AzureTest.MVC.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class ExpenseController : Controller
+[DisplayName("Expense")]
+[Description("Manage and control Expense operations.")]
+    public class ExpenseController : Controller
 {
     private readonly IExpenseCommandUnit _commands;
     private readonly IExpenseQueryUnit _queries;
@@ -52,6 +55,8 @@ public class ExpenseController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Index")]
+    [Description("View a list of Expense.")]
     public async Task<IActionResult> Index(GetAllExpensesFilters filters, CancellationToken cancellationToken)
     {
         if (!_currentUser.Roles.Contains("Admin"))
@@ -65,6 +70,8 @@ public class ExpenseController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Details")]
+    [Description("View details of a Expense.")]
     public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
     {
         var expense = await _queries.GetById.HandleAsync(new GetExpenseByIdQuery(id), cancellationToken);
@@ -73,6 +80,8 @@ public class ExpenseController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Create")]
+    [Description("Create a new Expense.")]
     public async Task<IActionResult> Create(CancellationToken cancellationToken)
     {
         await LoadCategoriesViewBagAsync();
@@ -81,6 +90,8 @@ public class ExpenseController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Create")]
+    [Description("Create a new Expense.")]
     public async Task<IActionResult> Create(CreateExpenseDto dto, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
@@ -107,6 +118,8 @@ public class ExpenseController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Expense.")]
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
         var expense = await _queries.GetById.HandleAsync(new GetExpenseByIdQuery(id), cancellationToken);
@@ -126,6 +139,8 @@ public class ExpenseController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Expense.")]
     public async Task<IActionResult> Edit(Guid id, UpdateExpenseDto dto, CancellationToken cancellationToken)
     {
         if (id != dto.Id) return BadRequest();
@@ -154,6 +169,8 @@ public class ExpenseController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Delete")]
+    [Description("Delete a Expense.")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var expense = await _queries.GetById.HandleAsync(new GetExpenseByIdQuery(id), cancellationToken);
@@ -163,6 +180,8 @@ public class ExpenseController : Controller
 
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete Confirmed")]
+    [Description("Delete a Expense.")]
     public async Task<IActionResult> DeleteConfirmed(Guid id, CancellationToken cancellationToken)
     {
         await _commands.Delete.HandleAsync(new DeleteExpenseCommand(id), cancellationToken);
@@ -171,6 +190,8 @@ public class ExpenseController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Search Expense Categories")]
+    [Description("Execute Search Expense Categories operation for Expense.")]
     public async Task<IActionResult> SearchExpenseCategories(string term, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(term) || term.Length < 1)
@@ -182,6 +203,8 @@ public class ExpenseController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Analytics")]
+    [Description("Execute Analytics operation for Expense.")]
     public async Task<IActionResult> Analytics(Guid? userId, CancellationToken cancellationToken)
     {
         var isAdmin = _currentUser.Roles.Contains("Admin");

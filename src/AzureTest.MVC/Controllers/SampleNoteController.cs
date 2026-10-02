@@ -6,11 +6,14 @@ using AzureTest.Contracts.DTOs.SampleNotes;
 using AzureTest.MVC.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class SampleNoteController : Controller
+[DisplayName("Sample Note")]
+[Description("Manage and control Sample Note operations.")]
+    public class SampleNoteController : Controller
 {
     private readonly IValidationService _validationService;
     private readonly ISampleNoteCommandUnit _commands;
@@ -27,6 +30,8 @@ public class SampleNoteController : Controller
     }
 
     // GET /SampleNote
+    [DisplayName("Index")]
+    [Description("View a list of Sample Note.")]
     public async Task<IActionResult> Index([FromQuery] SampleNoteFilter filter, CancellationToken ct)
     {
         var notes = await _queries.GetAll.HandleAsync(new GetAllSampleNotesQuery(filter), ct);
@@ -35,11 +40,15 @@ public class SampleNoteController : Controller
     }
 
     // GET /SampleNote/Create
+    [DisplayName("Create")]
+    [Description("Create a new Sample Note.")]
     public IActionResult Create() => View(new CreateSampleNoteDto());
 
     // POST /SampleNote/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Create")]
+    [Description("Create a new Sample Note.")]
     public async Task<IActionResult> Create(CreateSampleNoteDto dto, CancellationToken ct)
     {
         // Step 1: Validate the DTO using IValidationService (auto-finds CreateSampleNoteDtoValidator via DI)
@@ -54,6 +63,8 @@ public class SampleNoteController : Controller
     }
 
     // GET /SampleNote/Edit/{id}
+    [DisplayName("Edit")]
+    [Description("Modify an existing Sample Note.")]
     public async Task<IActionResult> Edit(Guid id, CancellationToken ct)
     {
         var note = await _queries.GetById.HandleAsync(new GetSampleNoteByIdQuery(id), ct);
@@ -74,6 +85,8 @@ public class SampleNoteController : Controller
     // POST /SampleNote/Edit
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Sample Note.")]
     public async Task<IActionResult> Edit(UpdateSampleNoteDto dto, CancellationToken ct)
     {
         // Step 1: Validate the DTO
@@ -96,6 +109,8 @@ public class SampleNoteController : Controller
     // POST /SampleNote/Delete/{id}
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete")]
+    [Description("Delete a Sample Note.")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         await _commands.Delete.HandleAsync(new DeleteSampleNoteCommand(id), ct);

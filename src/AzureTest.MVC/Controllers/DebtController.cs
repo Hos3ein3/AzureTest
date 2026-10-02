@@ -14,11 +14,14 @@ using AzureTest.Application.Interfaces.Data.NoSql;
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class DebtController : Controller
+[DisplayName("Debt")]
+[Description("Manage and control Debt operations.")]
+    public class DebtController : Controller
 {
     private readonly IDebtCommandUnit _commands;
     private readonly IDebtQueryUnit _queries;
@@ -57,6 +60,8 @@ public class DebtController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Index")]
+    [Description("View a list of Debt.")]
     public async Task<IActionResult> Index(int page = 1, string sort = "DateOfBorrow", string dir = "desc", string search = "", CancellationToken cancellationToken = default)
     {
         var debts = await _queries.GetAll.HandleAsync(new GetAllDebtsQuery(), cancellationToken);
@@ -92,6 +97,8 @@ public class DebtController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete")]
+    [Description("Delete a Debt.")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var cmd = new DeleteDebtCommand(id);
@@ -107,6 +114,8 @@ public class DebtController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Create")]
+    [Description("Create a new Debt.")]
     public async Task<IActionResult> Create(CancellationToken cancellationToken)
     {
         await LoadDebtPersonsViewBagAsync();
@@ -116,6 +125,8 @@ public class DebtController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Create")]
+    [Description("Create a new Debt.")]
     public async Task<IActionResult> Create(CreateDebtCommand dto, CancellationToken cancellationToken)
     {
         var validation = await _createValidator.ValidateAsync(dto, cancellationToken);
@@ -133,6 +144,8 @@ public class DebtController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Details")]
+    [Description("View details of a Debt.")]
     public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
     {
         var debt = await _queries.GetById.HandleAsync(new GetDebtByIdQuery(id), cancellationToken);
@@ -141,6 +154,8 @@ public class DebtController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Debt.")]
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
         var debt = await _queries.GetById.HandleAsync(new GetDebtByIdQuery(id), cancellationToken);
@@ -164,6 +179,8 @@ public class DebtController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Debt.")]
     public async Task<IActionResult> Edit(Guid id, UpdateDebtCommand dto, CancellationToken cancellationToken)
     {
         if (id != dto.Id) return BadRequest();
@@ -183,6 +200,8 @@ public class DebtController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Search Debt Persons")]
+    [Description("Execute Search Debt Persons operation for Debt.")]
     public async Task<IActionResult> SearchDebtPersons(string term, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(term) || term.Length < 1)

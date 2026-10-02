@@ -5,15 +5,20 @@ using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 
 namespace AzureTest.MVC.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [AllowAnonymous] // Allow anyone to hit this for testing purposes
-public class SampleDataController : ControllerBase
+[DisplayName("Sample Data")]
+[Description("Manage and control Sample Data operations.")]
+    public class SampleDataController : ControllerBase
 {
     [HttpGet("revenue")]
+    [DisplayName("Get Revenue Data")]
+    [Description("Execute Get Revenue Data operation for Sample Data.")]
     public IActionResult GetRevenueData()
     {
         // Generates random revenue data for the last 6 months
@@ -34,6 +39,8 @@ public class SampleDataController : ControllerBase
     }
     
     [HttpGet("users")]
+    [DisplayName("Get User Growth Data")]
+    [Description("Execute Get User Growth Data operation for Sample Data.")]
     public IActionResult GetUserGrowthData()
     {
         var random = new Random();
@@ -52,6 +59,8 @@ public class SampleDataController : ControllerBase
     }
     
     [HttpGet("server-load")]
+    [DisplayName("Get Server Load")]
+    [Description("Execute Get Server Load operation for Sample Data.")]
     public IActionResult GetServerLoad()
     {
         var random = new Random();
@@ -64,6 +73,8 @@ public class SampleDataController : ControllerBase
     }
 
     [HttpGet("support-tickets")]
+    [DisplayName("Get Support Tickets")]
+    [Description("Execute Get Support Tickets operation for Sample Data.")]
     public IActionResult GetSupportTickets()
     {
         var random = new Random();
@@ -77,6 +88,8 @@ public class SampleDataController : ControllerBase
     }
 
     [HttpGet("traffic-sources")]
+    [DisplayName("Get Traffic Sources")]
+    [Description("Execute Get Traffic Sources operation for Sample Data.")]
     public IActionResult GetTrafficSources()
     {
         var random = new Random();
@@ -90,6 +103,8 @@ public class SampleDataController : ControllerBase
     }
 
     [HttpGet("conversion-rate")]
+    [DisplayName("Get Conversion Rate")]
+    [Description("Execute Get Conversion Rate operation for Sample Data.")]
     public IActionResult GetConversionRate()
     {
         var random = new Random();
@@ -103,6 +118,8 @@ public class SampleDataController : ControllerBase
     }
 
     [HttpGet("customer-satisfaction")]
+    [DisplayName("Get Customer Satisfaction")]
+    [Description("Execute Get Customer Satisfaction operation for Sample Data.")]
     public IActionResult GetCustomerSatisfaction()
     {
         var random = new Random();
@@ -117,6 +134,8 @@ public class SampleDataController : ControllerBase
     }
 
     [HttpGet("monthly-expenses")]
+    [DisplayName("Get Monthly Expenses")]
+    [Description("Execute Get Monthly Expenses operation for Sample Data.")]
     public IActionResult GetMonthlyExpenses()
     {
         var random = new Random();
@@ -130,6 +149,8 @@ public class SampleDataController : ControllerBase
     }
 
     [HttpGet("product-sales")]
+    [DisplayName("Get Product Sales")]
+    [Description("Execute Get Product Sales operation for Sample Data.")]
     public IActionResult GetProductSales()
     {
         var random = new Random();
@@ -142,6 +163,8 @@ public class SampleDataController : ControllerBase
     }
 
     [HttpGet("churn-rate")]
+    [DisplayName("Get Churn Rate")]
+    [Description("Execute Get Churn Rate operation for Sample Data.")]
     public IActionResult GetChurnRate()
     {
         var random = new Random();
@@ -154,6 +177,8 @@ public class SampleDataController : ControllerBase
     }
 
     [HttpGet("active-sessions")]
+    [DisplayName("Get Active Sessions")]
+    [Description("Execute Get Active Sessions operation for Sample Data.")]
     public IActionResult GetActiveSessions()
     {
         var random = new Random();
@@ -166,6 +191,8 @@ public class SampleDataController : ControllerBase
     }
 
     [HttpGet("bug-reports")]
+    [DisplayName("Get Bug Reports")]
+    [Description("Execute Get Bug Reports operation for Sample Data.")]
     public IActionResult GetBugReports()
     {
         var random = new Random();

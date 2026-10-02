@@ -117,6 +117,10 @@ public static class DependencyInjection
             .BindConfiguration("Dashboard")
             .ValidateOnStart();
 
+        services.AddSingleton<AzureTest.Application.Messaging.IEventDispatcher, AzureTest.Infrastructure.Services.EventDispatcher>();
+        services.AddTransient<AzureTest.Application.Messaging.IEventHandler<AzureTest.Application.Permissions.RolePermissionsChangedEvent>, AzureTest.Application.Permissions.RolePermissionsChangedEventHandler>();
+        services.AddTransient<AzureTest.Application.Messaging.IEventHandler<AzureTest.Application.Users.UserRegisteredEvent>, AzureTest.Application.Users.UserRegisteredEventHandler>();
+
         return services;
     }
 }

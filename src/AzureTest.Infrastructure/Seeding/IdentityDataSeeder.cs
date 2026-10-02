@@ -2,6 +2,8 @@
 
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Domain.Documents;
+using AzureTest.Application.Interfaces.Data;
+using AzureTest.Domain.Entities;
 using AzureTest.Domain.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -18,17 +20,20 @@ public class IdentityDataSeeder
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<ApplicationRole> _roleManager;
     private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<IdentityDataSeeder> _logger;
 
     public IdentityDataSeeder(
         UserManager<ApplicationUser> userManager,
         RoleManager<ApplicationRole> roleManager,
         INoSqlUnitOfWork noSqlUnitOfWork,
+        IUnitOfWork unitOfWork,
         ILogger<IdentityDataSeeder> logger)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _noSqlUnitOfWork = noSqlUnitOfWork;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
@@ -89,7 +94,27 @@ public class IdentityDataSeeder
                     
                 }
             }
-            var userUserEmail = "mohammadhosein.behzadifard@gmail.com";
+            
+            // Create support user
+            var supportUserEmail = "support@azuretest.local";
+            if (await _userManager.FindByEmailAsync(supportUserEmail) == null)
+            {
+                var supportUser = new ApplicationUser
+                {
+                    UserName = supportUserEmail,
+                    Email = supportUserEmail,
+                    FirstName = "Support",
+                    LastName = "Staff",
+                    EmailConfirmed = true
+                };
+
+                var result = await _userManager.CreateAsync(supportUser, "123456");
+                if (result.Succeeded)
+                {
+                    await _userManager.AddToRoleAsync(supportUser, "User");
+                }
+            }
+var userUserEmail = "mohammadhosein.behzadifard@gmail.com";
             var userUser = await _userManager.FindByEmailAsync(userUserEmail);
             if (userUser == null)
             {

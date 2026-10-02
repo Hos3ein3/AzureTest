@@ -6,13 +6,16 @@ using AzureTest.Application.Interfaces.Services;
 using AzureTest.Contracts.DTOs.IdeaTracker;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using AzureTest.Application.Messaging;
 using AzureTest.Application.Abstractions;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class IdeaPageController : Controller
+[DisplayName("Idea Page")]
+[Description("Manage and control Idea Page operations.")]
+    public class IdeaPageController : Controller
 {
     private readonly ICurrentUser _currentUser;
     private readonly IIdeaPageCommandUnit _commands;
@@ -28,6 +31,8 @@ public class IdeaPageController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Details")]
+    [Description("View details of a Idea Page.")]
     public async Task<IActionResult> Details(Guid id, CancellationToken ct)
     {
         var result = await _queries.GetIdeaPageById.HandleAsync(new GetIdeaPageByIdQuery(_currentUser.Id, id), ct);
@@ -49,12 +54,16 @@ public class IdeaPageController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Create")]
+    [Description("Create a new Idea Page.")]
     public IActionResult Create(Guid ideaId)
     {
         return View(new CreateIdeaPageDto { IdeaId = ideaId });
     }
 
     [HttpPost]
+    [DisplayName("Create")]
+    [Description("Create a new Idea Page.")]
     public async Task<IActionResult> Create(CreateIdeaPageDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return View(dto);
@@ -70,6 +79,8 @@ public class IdeaPageController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Idea Page.")]
     public async Task<IActionResult> Edit(Guid id, CancellationToken ct)
     {
         var result = await _queries.GetIdeaPageById.HandleAsync(new GetIdeaPageByIdQuery(_currentUser.Id, id), ct);
@@ -86,6 +97,8 @@ public class IdeaPageController : Controller
     }
 
     [HttpPost]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Idea Page.")]
     public async Task<IActionResult> Edit(UpdateIdeaPageDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return View(dto);
@@ -101,6 +114,8 @@ public class IdeaPageController : Controller
     }
 
     [HttpPost]
+    [DisplayName("Delete")]
+    [Description("Delete a Idea Page.")]
     public async Task<IActionResult> Delete(Guid id, Guid ideaId, CancellationToken ct)
     {
         await _commands.Delete.HandleAsync(new DeleteIdeaPageCommand(_currentUser.Id, id), ct);
@@ -109,6 +124,8 @@ public class IdeaPageController : Controller
 
     [HttpPost]
     [IgnoreAntiforgeryToken]
+    [DisplayName("Update Layout")]
+    [Description("Modify an existing Idea Page.")]
     public async Task<IActionResult> UpdateLayout([FromBody] UpdateIdeaPageLayoutDto dto, [FromServices] ICommandHandler<UpdateIdeaPageLayoutCommand, Result> handler, CancellationToken ct)
     {
         var result = await handler.HandleAsync(new UpdateIdeaPageLayoutCommand(_currentUser.Id, dto), ct);

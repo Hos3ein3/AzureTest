@@ -1,6 +1,7 @@
-
-
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using AzureTest.Application.Permissions;
 
 namespace AzureTest.MVC.ViewModels.Roles;
 
@@ -10,4 +11,7 @@ public class RoleCreateViewModel
     [Display(Name = "Role Name")]
     [StringLength(50, MinimumLength = 2)]
     public string RoleName { get; set; } = null!;
+    
+    public List<Guid> SelectedPermissions { get; set; } = new();
+    public List<PermissionDto> AvailablePermissions { get; set; } = new();
 }

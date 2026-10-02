@@ -6,36 +6,50 @@ using AzureTest.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using Microsoft.Extensions.Options;
 
 using AzureTest.Application.Users.Commands.LoginUser;
 using AzureTest.Application.Users.Commands.RegisterUser;
 using AzureTest.Application.Users.Commands.LogoutUser;
 using AzureTest.Application.Users.Commands.RefreshToken;
+using AzureTest.Application.Interfaces.Data;
+using AzureTest.Application.Interfaces.Services;
+using AzureTest.Contracts.DTOs.Users;
 
 namespace AzureTest.MVC.Controllers;
 
 [AllowAnonymous]
-public class AuthController : Controller
+[DisplayName("Auth")]
+[Description("Manage and control Auth operations.")]
+    public class AuthController : Controller
 {
     private readonly IUserCommandUnit _commands;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly InfrastructureFeatureOptions _featureOptions;
+    private readonly IRedisService _redisService;
+    private readonly IUnitOfWork _unitOfWork;
 
     public AuthController(
         IUserCommandUnit commands,
         SignInManager<ApplicationUser> signInManager,
         UserManager<ApplicationUser> userManager,
-        IOptions<InfrastructureFeatureOptions> featureOptions)
+        IOptions<InfrastructureFeatureOptions> featureOptions,
+        IRedisService redisService,
+        IUnitOfWork unitOfWork)
     {
         _commands = commands;
         _signInManager = signInManager;
         _userManager = userManager;
         _featureOptions = featureOptions.Value;
+        _redisService = redisService;
+        _unitOfWork = unitOfWork;
     }
 
     [HttpGet]
+    [DisplayName("Login")]
+    [Description("Execute Login operation for Auth.")]
     public IActionResult Login()
     {
         return View();
@@ -43,6 +57,8 @@ public class AuthController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Login")]
+    [Description("Execute Login operation for Auth.")]
     public async Task<IActionResult> Login(string email, string password, CancellationToken cancellationToken)
     {
         var result = await _commands.Login.HandleAsync(new LoginUserCommand(email, password), cancellationToken);
@@ -74,7 +90,36 @@ public class AuthController : Controller
                 }
             }
             
+            
+            var userObj = await _userManager.FindByEmailAsync(email);
+            if (userObj != null)
+            {
+                var roles = await _userManager.GetRolesAsync(userObj);
+                var permissions = new System.Collections.Generic.List<string>();
+                foreach (var role in roles)
+                {
+                    var rolePerms = await _unitOfWork.RolePermissions.GetPermissionsByRoleAsync(role);
+                    permissions.AddRange(System.Linq.Enumerable.Select(rolePerms, rp => rp.Permission.ControllerName + "/" + rp.Permission.ActionName));
+                }
+                
+                var sessionDto = new UserSessionCacheDto
+                {
+                    Id = userObj.Id,
+                    Email = userObj.Email,
+                    PhoneNumber = userObj.PhoneNumber,
+                    ProfileImage = userObj.ProfileImage,
+                    FirstName = userObj.FirstName,
+                    LastName = userObj.LastName,
+                    FullName = userObj.FullName,
+                    Roles = System.Linq.Enumerable.ToList(roles),
+                    Permissions = System.Linq.Enumerable.ToList(System.Linq.Enumerable.Distinct(permissions))
+                };
+                
+                await _redisService.SetAsync($"User_Info_{userObj.Id}", sessionDto, TimeSpan.FromDays(7));
+            }
+            
             return RedirectToAction("Index", "Home");
+
         }
         if (result.IsSuccess && result.Value.Errors != null)
         {
@@ -87,6 +132,8 @@ public class AuthController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Register")]
+    [Description("Execute Register operation for Auth.")]
     public IActionResult Register()
     {
         return View();
@@ -94,6 +141,8 @@ public class AuthController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Register")]
+    [Description("Execute Register operation for Auth.")]
     public async Task<IActionResult> Register(string name, string email, string password, string confirmPassword, CancellationToken cancellationToken)
     {
         if (password != confirmPassword)
@@ -120,9 +169,20 @@ public class AuthController : Controller
     }
 
     [HttpPost]
+    [DisplayName("Logout")]
+    [Description("Execute Logout operation for Auth.")]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
+        
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+                     ?? User.FindFirst("sub")?.Value;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            await _redisService.RemoveAsync($"User_Info_{userId}");
+        }
+        
         await _commands.Logout.HandleAsync(new LogoutUserCommand(), cancellationToken);
+
         
         if (_featureOptions.UseJWT)
         {
@@ -145,6 +205,8 @@ public class AuthController : Controller
 
     [HttpPost]
     [Route("refresh-token")]
+    [DisplayName("Refresh Token")]
+    [Description("Execute Refresh Token operation for Auth.")]
     public async Task<IActionResult> RefreshToken(CancellationToken cancellationToken)
     {
         var jwt = Request.Cookies["jwt"];

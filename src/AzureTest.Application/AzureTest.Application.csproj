@@ -3,7 +3,8 @@
     <ItemGroup>
         <ProjectReference Include="..\AzureTest.Contracts\AzureTest.Contracts.csproj" />
         <ProjectReference Include="..\AzureTest.Domain\AzureTest.Domain.csproj" />
-    </ItemGroup>
+        <PackageReference Include="MassTransit" />
+  </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="FluentValidation" />

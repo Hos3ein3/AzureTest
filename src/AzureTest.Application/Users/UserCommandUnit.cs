@@ -3,6 +3,7 @@ using AzureTest.Application.Abstractions;
 
 using AzureTest.Contracts.DTOs.Users;
 using AzureTest.Application.Messaging;
+
 using AzureTest.Application.Users.Commands.LoginUser;
 using AzureTest.Application.Users.Commands.LogoutUser;
 using AzureTest.Application.Users.Commands.RefreshToken;

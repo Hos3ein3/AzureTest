@@ -9,11 +9,14 @@ using AzureTest.Application.Interfaces.Services;
 using AzureTest.Domain.Documents;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class DebtPersonController : Controller
+[DisplayName("Debt Person")]
+[Description("Manage and control Debt Person operations.")]
+    public class DebtPersonController : Controller
 {
     private readonly INoSqlUnitOfWork _unitOfWork;
     private readonly ICurrentUser _currentUser;
@@ -25,6 +28,8 @@ public class DebtPersonController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Index")]
+    [Description("View a list of Debt Person.")]
     public async Task<IActionResult> Index()
     {
         var persons = await _unitOfWork.DebtPersons.GetAllAsync();
@@ -33,6 +38,8 @@ public class DebtPersonController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Create")]
+    [Description("Create a new Debt Person.")]
     public IActionResult Create()
     {
         return View();
@@ -40,6 +47,8 @@ public class DebtPersonController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Create")]
+    [Description("Create a new Debt Person.")]
     public async Task<IActionResult> Create(DebtPerson person)
     {
         if (!ModelState.IsValid)
@@ -53,6 +62,8 @@ public class DebtPersonController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Debt Person.")]
     public async Task<IActionResult> Edit(Guid id)
     {
         var person = await _unitOfWork.DebtPersons.GetByIdAsync(id);
@@ -64,6 +75,8 @@ public class DebtPersonController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Debt Person.")]
     public async Task<IActionResult> Edit(Guid id, DebtPerson model)
     {
         if (id != model.Id) return BadRequest();

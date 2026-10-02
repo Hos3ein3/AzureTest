@@ -126,11 +126,14 @@ builder.Services.AddControllersWithViews(options =>
         .RequireAuthenticatedUser()
         .Build();
     options.Filters.Add(new Microsoft.AspNetCore.Mvc.Authorization.AuthorizeFilter(policy));
+    options.Filters.Add(typeof(AzureTest.MVC.Filters.DynamicAuthorizationFilter));
 })
     .AddRazorRuntimeCompilation();
 
 
 builder.Services.AddScoped<AzureTest.MVC.Services.IDashboardDataLoader, AzureTest.MVC.Services.DashboardDataLoader>();
+builder.Services.AddScoped<AzureTest.Application.Interfaces.Services.IPermissionScanner, AzureTest.MVC.Services.PermissionScanner>();
+builder.Services.AddScoped<AzureTest.MVC.Filters.DynamicAuthorizationFilter>();
 
 // Add HealthChecks UI with In-Memory Storage
 var hcSettings = builder.Configuration.GetSection("HealthChecksUI").Get<HealthCheckUISettings>();

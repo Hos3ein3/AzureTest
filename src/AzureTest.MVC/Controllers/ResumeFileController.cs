@@ -9,6 +9,7 @@ using AzureTest.Application.Resumes;
 using AzureTest.Application.Resumes.Queries.GetAllResumeFiles;
 using AzureTest.Application.Resumes.Queries.GetResumeFileById;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -20,7 +21,9 @@ using AzureTest.MVC.Models;
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class ResumeFileController : Controller
+[DisplayName("Resume File")]
+[Description("Manage and control Resume File operations.")]
+    public class ResumeFileController : Controller
 {
     private readonly IResumeFileQueryUnit _queries;
     private readonly IResumeDocumentService _documentService;
@@ -44,6 +47,8 @@ public class ResumeFileController : Controller
 
     // GET: /ResumeFile
     [HttpGet]
+    [DisplayName("Index")]
+    [Description("View a list of Resume File.")]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
         var allFiles = await _queries.GetAll.HandleAsync(new GetAllResumeFilesQuery(), cancellationToken);
@@ -53,6 +58,8 @@ public class ResumeFileController : Controller
 
     // GET: /ResumeFile/Download/{id}?type=cv|cl
     [HttpGet]
+    [DisplayName("Download")]
+    [Description("Execute Download operation for Resume File.")]
     public async Task<IActionResult> Download(Guid id, string type, CancellationToken cancellationToken)
     {
         var result = await _documentService.DownloadFileAsync(id, type, cancellationToken);
@@ -63,6 +70,8 @@ public class ResumeFileController : Controller
 
     // GET: /ResumeFile/Delete/{id}
     [HttpGet]
+    [DisplayName("Delete")]
+    [Description("Delete a Resume File.")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var fileRecord = await _queries.GetById.HandleAsync(new GetResumeFileByIdQuery(id), cancellationToken);
@@ -73,6 +82,8 @@ public class ResumeFileController : Controller
     // POST: /ResumeFile/Delete/{id}
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete Confirmed")]
+    [Description("Delete a Resume File.")]
     public async Task<IActionResult> DeleteConfirmed(Guid id, CancellationToken cancellationToken)
     {
         var fileRecord = await _queries.GetById.HandleAsync(new GetResumeFileByIdQuery(id), cancellationToken);
@@ -87,6 +98,8 @@ public class ResumeFileController : Controller
     // POST: /ResumeFile/SyncSizes
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Sync Sizes")]
+    [Description("Execute Sync Sizes operation for Resume File.")]
     public async Task<IActionResult> SyncSizes(CancellationToken cancellationToken)
     {
         int count = await _documentService.SyncAllFileSizesAsync(cancellationToken);
@@ -96,6 +109,8 @@ public class ResumeFileController : Controller
 
     // GET: /ResumeFile/Explorer
     [HttpGet]
+    [DisplayName("Explorer")]
+    [Description("Execute Explorer operation for Resume File.")]
     public async Task<IActionResult> Explorer(string? folder, CancellationToken cancellationToken)
     {
         bool isAdmin = _currentUser.Roles.Contains("Admin");
@@ -169,6 +184,8 @@ public class ResumeFileController : Controller
 
     // GET: /ResumeFile/Preview
     [HttpGet]
+    [DisplayName("Preview")]
+    [Description("View details of a Resume File.")]
     public IActionResult Preview(string folder, string fileName)
     {
         bool isAdmin = _currentUser.Roles.Contains("Admin");
@@ -183,6 +200,8 @@ public class ResumeFileController : Controller
     // POST: /ResumeFile/DeletePhysicalFile
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete Physical File")]
+    [Description("Delete a Resume File.")]
     public async Task<IActionResult> DeletePhysicalFile(string folder, string fileName, Guid? documentId, string type, CancellationToken cancellationToken)
     {
         bool isAdmin = _currentUser.Roles.Contains("Admin");

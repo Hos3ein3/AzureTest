@@ -2,6 +2,7 @@ using AzureTest.Application.Abstractions;
 
 
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using AzureTest.Domain.Entities.Identity;
@@ -23,7 +24,9 @@ using System.Collections.Generic;
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class DashboardController : Controller
+[DisplayName("Dashboard")]
+[Description("Manage and control Dashboard operations.")]
+    public class DashboardController : Controller
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IQueryHandler<GetUserDashboardsQuery, IEnumerable<UserDashboard>> _getDashboardsHandler;
@@ -76,6 +79,8 @@ public class DashboardController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Manage")]
+    [Description("Execute Manage operation for Dashboard.")]
     public async Task<IActionResult> Manage(CancellationToken cancellationToken)
     {
         var userIdStr = _userManager.GetUserId(User);
@@ -90,6 +95,8 @@ public class DashboardController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Builder")]
+    [Description("Execute Builder operation for Dashboard.")]
     public async Task<IActionResult> Builder(string? slug, CancellationToken cancellationToken)
     {
         var userIdStr = _userManager.GetUserId(User);
@@ -126,6 +133,8 @@ public class DashboardController : Controller
     }
 
     [HttpPost]
+    [DisplayName("Save")]
+    [Description("Execute Save operation for Dashboard.")]
     public async Task<IActionResult> Save([FromBody] SaveDashboardPayload payload, CancellationToken cancellationToken)
     {
         var userIdStr = _userManager.GetUserId(User);
@@ -166,6 +175,8 @@ public class DashboardController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete")]
+    [Description("Delete a Dashboard.")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var userIdStr = _userManager.GetUserId(User);
@@ -192,6 +203,8 @@ public class DashboardController : Controller
     
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Set Default")]
+    [Description("Execute Set Default operation for Dashboard.")]
     public async Task<IActionResult> SetDefault(string slug, CancellationToken cancellationToken)
     {
         var userIdStr = _userManager.GetUserId(User);
@@ -206,6 +219,8 @@ public class DashboardController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Check Slug")]
+    [Description("Execute Check Slug operation for Dashboard.")]
     public async Task<IActionResult> CheckSlug(string slug, Guid? excludeId, CancellationToken cancellationToken)
     {
         var userIdStr = _userManager.GetUserId(User);
@@ -221,6 +236,8 @@ public class DashboardController : Controller
     }
 
     [HttpGet]
+    [DisplayName("View Dashboard")]
+    [Description("View details of a Dashboard.")]
     public async Task<IActionResult> ViewDashboard(string slug, string? targetUserId, CancellationToken cancellationToken)
     {
         var currentUserIdStr = _userManager.GetUserId(User);

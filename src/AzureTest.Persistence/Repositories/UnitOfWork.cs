@@ -24,6 +24,9 @@ public class UnitOfWork : IUnitOfWork
     private IDebtRepository? _debts;
     private IExpenseRepository? _expenses;
 
+    private IPermissionRepository? _permissions;
+    private IRolePermissionRepository? _rolePermissions;
+
     public UnitOfWork(AzureTestDbContext dbContext)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
@@ -38,6 +41,8 @@ public class UnitOfWork : IUnitOfWork
     public IResumeRepository Resumes => _resumes ??= new ResumeRepository(_dbContext);
     public IDebtRepository Debts => _debts ??= new DebtRepository(_dbContext);
     public IExpenseRepository Expenses => _expenses ??= new ExpenseRepository(_dbContext);
+    public IPermissionRepository Permissions => _permissions ??= new PermissionRepository(_dbContext);
+    public IRolePermissionRepository RolePermissions => _rolePermissions ??= new RolePermissionRepository(_dbContext);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

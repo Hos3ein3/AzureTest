@@ -13,12 +13,15 @@ using AzureTest.Application.Messaging;
 using AzureTest.Domain.Documents;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize(Roles = "Admin")]
-public class RawComponentController : Controller
+[DisplayName("Raw Component")]
+[Description("Manage and control Raw Component operations.")]
+    public class RawComponentController : Controller
 {
     private readonly IQueryHandler<GetUserDashboardsQuery, IEnumerable<UserDashboard>> _getDashboardsQuery;
     private readonly IQueryHandler<GetRawComponentByIdQuery, DashboardRawComponent?> _getByIdQuery;
@@ -44,12 +47,16 @@ public class RawComponentController : Controller
     }
     
     [HttpGet]
+    [DisplayName("Index")]
+    [Description("View a list of Raw Component.")]
     public IActionResult Index()
     {
         return RedirectToAction("Index", "Component");
     }
 
     [HttpGet]
+    [DisplayName("Create")]
+    [Description("Create a new Raw Component.")]
     public IActionResult Create(string? type, string? returnUrl, CancellationToken cancellationToken)
     {
         ViewBag.ReturnUrl = returnUrl;
@@ -59,6 +66,8 @@ public class RawComponentController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Create")]
+    [Description("Create a new Raw Component.")]
     public async Task<IActionResult> Create(DashboardRawComponent model, string? returnUrl, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(model.Name))
@@ -100,6 +109,8 @@ public class RawComponentController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Raw Component.")]
     public async Task<IActionResult> Edit(Guid id, string? returnUrl, CancellationToken cancellationToken)
     {
         var component = await _getByIdQuery.HandleAsync(new GetRawComponentByIdQuery(id), cancellationToken);
@@ -111,6 +122,8 @@ public class RawComponentController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Raw Component.")]
     public async Task<IActionResult> Edit(Guid id, DashboardRawComponent model, string? returnUrl, CancellationToken cancellationToken)
     {
         if (id != model.Id) return BadRequest();
@@ -152,6 +165,8 @@ public class RawComponentController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete")]
+    [Description("Delete a Raw Component.")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _deleteCommand.HandleAsync(new DeleteRawComponentCommand(id), cancellationToken);

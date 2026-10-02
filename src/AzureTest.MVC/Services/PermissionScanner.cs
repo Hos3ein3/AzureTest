@@ -1,0 +1,70 @@
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Reflection;
+using Microsoft.AspNetCore.Mvc;
+using AzureTest.Application.Interfaces.Services;
+using AzureTest.Contracts.DTOs.Permissions;
+
+namespace AzureTest.MVC.Services;
+
+public class PermissionScanner : IPermissionScanner
+{
+    public List<DiscoveredPermissionDto> ScanPermissions()
+    {
+        var permissions = new List<DiscoveredPermissionDto>();
+        var assembly = Assembly.GetExecutingAssembly(); // AzureTest.MVC
+
+        var controllers = assembly.GetTypes()
+            .Where(type => typeof(Controller).IsAssignableFrom(type) || typeof(ControllerBase).IsAssignableFrom(type))
+            .Where(type => !type.IsAbstract);
+
+        foreach (var controller in controllers)
+        {
+            var controllerName = controller.Name.Replace("Controller", "");
+            var controllerDisplayNameAttr = controller.GetCustomAttribute<DisplayNameAttribute>();
+            var controllerDescAttr = controller.GetCustomAttribute<DescriptionAttribute>();
+
+            var cDisplayName = controllerDisplayNameAttr?.DisplayName ?? controllerName;
+            var cDesc = controllerDescAttr?.Description ?? "";
+
+            // Get all public methods that return IActionResult or Task<IActionResult> etc.
+            var actions = controller.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                .Where(m => !m.IsSpecialName && 
+                            (m.ReturnType == typeof(IActionResult) || 
+                             m.ReturnType == typeof(Task<IActionResult>) ||
+                             m.ReturnType.Name.Contains("ActionResult")))
+                .ToList();
+
+            
+            foreach (var action in actions)
+            {
+                var actionName = action.Name;
+                var actionDisplayNameAttr = action.GetCustomAttribute<DisplayNameAttribute>();
+                var actionDescAttr = action.GetCustomAttribute<DescriptionAttribute>();
+
+                // Skip if DisplayName or Description is missing (inner API)
+                if (actionDisplayNameAttr == null || actionDescAttr == null)
+                {
+                    continue;
+                }
+
+                var aDisplayName = actionDisplayNameAttr.DisplayName;
+                var aDesc = actionDescAttr.Description;
+
+                if (!permissions.Any(p => p.ControllerName == controllerName && p.ActionName == actionName))
+                {
+                    permissions.Add(new DiscoveredPermissionDto(
+                        controllerName,
+                        actionName,
+                        $"{cDisplayName} - {aDisplayName}",
+                        aDesc
+                    ));
+                }
+            }
+
+        }
+
+        return permissions;
+    }
+}

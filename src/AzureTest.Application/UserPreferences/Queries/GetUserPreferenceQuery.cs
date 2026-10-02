@@ -30,16 +30,25 @@ public sealed class GetUserPreferenceQueryHandler : IQueryHandler<GetUserPrefere
             return cached;
         }
 
+        
         var pref = await _noSqlUnitOfWork.UserPreferences.GetByUserIdAsync(request.UserId, cancellationToken);
         if (pref == null)
         {
-            pref = new UserPreference { UserId = request.UserId };
+            pref = new UserPreference 
+            { 
+                Id = Guid.CreateVersion7(),
+                UserId = request.UserId,
+                ThemeColor = "blue",
+                Language = "en",
+                Currency = "USD",
+                PreferredDashboard = ""
+            };
+            await _noSqlUnitOfWork.UserPreferences.AddAsync(pref, cancellationToken);
+            await _noSqlUnitOfWork.SaveChangesAsync(cancellationToken);
         }
-        else
-        {
-            await _redisService.SetAsync(cacheKey, pref, TimeSpan.FromHours(1));
-        }
-
+        
+        await _redisService.SetAsync(cacheKey, pref, TimeSpan.FromHours(1));
         return pref;
+
     }
 }

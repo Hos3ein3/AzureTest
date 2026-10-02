@@ -17,6 +17,8 @@ public interface IUnitOfWork : IDisposable
     IResumeRepository Resumes { get; }
     IDebtRepository Debts { get; }
     IExpenseRepository Expenses { get; }
+    IPermissionRepository Permissions { get; }
+    IRolePermissionRepository RolePermissions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

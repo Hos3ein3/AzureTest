@@ -1,0 +1,205 @@
+using System;
+using System.Threading.Tasks;
+using AzureTest.Application.Interfaces.Services;
+using AzureTest.Application.Permissions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace AzureTest.MVC.Controllers;
+
+[Authorize(Roles = "Admin")]
+public class PermissionController : Controller
+{
+    private readonly IPermissionQueryUnit _queryUnit;
+    private readonly IPermissionCommandUnit _commandUnit;
+    private readonly IPermissionScanner _scanner;
+    private readonly IRedisService _redisService;
+
+    public PermissionController(
+        IPermissionQueryUnit queryUnit,
+        IPermissionCommandUnit commandUnit,
+        IPermissionScanner scanner, IRedisService redisService)
+    {
+        _queryUnit = queryUnit;
+        _commandUnit = commandUnit;
+        _scanner = scanner;
+        _redisService = redisService;
+    }
+
+    
+    public IActionResult Create()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(string controllerName, string actionName, string displayName, string description)
+    {
+        var command = new CreatePermissionCommand(controllerName, actionName, displayName, description);
+        var result = await _commandUnit.CreatePermission.HandleAsync(command);
+        
+        if (result.IsSuccess)
+        {
+            await _redisService.RemoveAsync("AllPermissions");
+            TempData["SuccessMessage"] = "Permission created successfully.";
+            return RedirectToAction(nameof(Index));
+        }
+        
+        TempData["ErrorMessage"] = result.Message ?? "Failed to create permission.";
+        return View();
+    }
+
+    public async Task<IActionResult> Index(int page = 1, string sort = "ControllerName", string dir = "asc", string search = "", CancellationToken cancellationToken = default)
+    {
+        var result = await _queryUnit.GetPermissions.HandleAsync(new GetPermissionsQuery(), cancellationToken);
+        var permissions = result.AsEnumerable();
+        
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            permissions = permissions.Where(p => 
+                (p.ControllerName != null && p.ControllerName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (p.ActionName != null && p.ActionName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (p.DisplayName != null && p.DisplayName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (p.Description != null && p.Description.Contains(search, StringComparison.OrdinalIgnoreCase))
+            );
+        }
+
+        permissions = sort switch
+        {
+            "ActionName" => dir == "asc" ? permissions.OrderBy(p => p.ActionName) : permissions.OrderByDescending(p => p.ActionName),
+            "DisplayName" => dir == "asc" ? permissions.OrderBy(p => p.DisplayName) : permissions.OrderByDescending(p => p.DisplayName),
+            "IsRestricted" => dir == "asc" ? permissions.OrderBy(p => p.IsRestricted) : permissions.OrderByDescending(p => p.IsRestricted),
+            _ => dir == "asc" ? permissions.OrderBy(p => p.ControllerName).ThenBy(p => p.ActionName) : permissions.OrderByDescending(p => p.ControllerName).ThenByDescending(p => p.ActionName),
+        };
+
+        int pageSize = 15;
+        var totalItems = permissions.Count();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+        page = Math.Max(1, Math.Min(page, totalPages > 0 ? totalPages : 1));
+
+        var paginated = permissions.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        ViewBag.CurrentPage = page;
+        ViewBag.TotalPages = totalPages;
+        ViewBag.Sort = sort;
+        ViewBag.Dir = dir;
+        ViewBag.Search = search;
+
+        return View(paginated);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Sync()
+    {
+        var discovered = _scanner.ScanPermissions();
+        var command = new SyncPermissionsCommand(discovered);
+        var result = await _commandUnit.SyncPermissions.HandleAsync(command);
+
+        if (result.IsSuccess)
+        {
+            await _redisService.RemoveAsync("AllPermissions");
+            TempData["SuccessMessage"] = "Permissions synced successfully.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? "Failed to sync permissions.";
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleRestriction(Guid id, bool isRestricted)
+    {
+        var command = new TogglePermissionRestrictionCommand(id, isRestricted);
+        var result = await _commandUnit.TogglePermissionRestriction.HandleAsync(command);
+        
+                if (result.IsSuccess)
+        {
+            await _redisService.RemoveAsync("AllPermissions");
+            TempData["SuccessMessage"] = "Restriction toggled.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? "Failed to toggle.";
+        }
+            
+        return RedirectToAction(nameof(Index));
+    }
+
+    
+    public async Task<IActionResult> RolePermissions(string roleName)
+    {
+        var allPermissions = await _queryUnit.GetPermissions.HandleAsync(new GetPermissionsQuery());
+        var assignedPermissions = await _queryUnit.GetRolePermissions.HandleAsync(new GetRolePermissionsQuery(roleName));
+        var assignedIds = System.Linq.Enumerable.ToHashSet(System.Linq.Enumerable.Select(assignedPermissions, rp => rp.PermissionId));
+
+        var model = new AzureTest.MVC.ViewModels.Permissions.RolePermissionsViewModel
+        {
+            RoleName = roleName,
+            Permissions = System.Linq.Enumerable.ToList(System.Linq.Enumerable.OrderBy(System.Linq.Enumerable.Select(allPermissions, p => new AzureTest.MVC.ViewModels.Permissions.RolePermissionItemViewModel
+            {
+                PermissionId = p.Id,
+                ControllerName = p.ControllerName,
+                ActionName = p.ActionName,
+                DisplayName = p.DisplayName,
+                Description = p.Description,
+                IsRestricted = p.IsRestricted,
+                IsAssigned = assignedIds.Contains(p.Id)
+            }), p => p.ControllerName).ThenBy(p => p.ActionName))
+        };
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateRolePermissions(string roleName, System.Collections.Generic.List<Guid> selectedPermissions)
+    {
+        var assignedPermissions = await _queryUnit.GetRolePermissions.HandleAsync(new GetRolePermissionsQuery(roleName));
+        var currentlyAssigned = System.Linq.Enumerable.ToHashSet(System.Linq.Enumerable.Select(assignedPermissions, rp => rp.PermissionId));
+        selectedPermissions = selectedPermissions ?? new System.Collections.Generic.List<Guid>();
+
+        // Add new
+        foreach(var id in selectedPermissions)
+        {
+            if(!currentlyAssigned.Contains(id))
+            {
+                await _commandUnit.AssignRolePermission.HandleAsync(new AssignRolePermissionCommand(roleName, id));
+            }
+        }
+
+        // Remove old
+        foreach(var id in currentlyAssigned)
+        {
+            if(!selectedPermissions.Contains(id))
+            {
+                await _commandUnit.RemoveRolePermission.HandleAsync(new RemoveRolePermissionCommand(roleName, id));
+            }
+        }
+
+        await _redisService.RemoveAsync($"RolePermissions_{roleName}");
+        TempData["SuccessMessage"] = "Role permissions updated successfully.";
+        return RedirectToAction(nameof(RolePermissions), new { roleName });
+    }
+
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AssignRolePermission(string roleName, Guid permissionId)
+    {
+        var result = await _commandUnit.AssignRolePermission.HandleAsync(new AssignRolePermissionCommand(roleName, permissionId));
+        return RedirectToAction(nameof(RolePermissions), new { roleName });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveRolePermission(string roleName, Guid permissionId)
+    {
+        var result = await _commandUnit.RemoveRolePermission.HandleAsync(new RemoveRolePermissionCommand(roleName, permissionId));
+        return RedirectToAction(nameof(RolePermissions), new { roleName });
+    }
+}

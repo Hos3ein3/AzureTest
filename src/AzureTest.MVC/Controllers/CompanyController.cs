@@ -15,6 +15,7 @@ using AzureTest.Application.Companies.Queries.GetCompanyById;
 using AzureTest.Contracts.DTOs.Companies;
 
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using Microsoft.Extensions.Logging;
 
 using Microsoft.AspNetCore.Authorization;
@@ -22,7 +23,9 @@ using Microsoft.AspNetCore.Authorization;
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class CompanyController : Controller
+[DisplayName("Company")]
+[Description("Manage and control Company operations.")]
+    public class CompanyController : Controller
 {
     private readonly ICompanyCommandUnit _companyCommandUnit;
     private readonly ICompanyQueryUnit _companyQueryUnit;
@@ -37,6 +40,8 @@ public class CompanyController : Controller
     }
 
     // GET: /Company
+    [DisplayName("Index")]
+    [Description("View a list of Company.")]
     public async Task<IActionResult> Index(GetAllCompaniesFilters filters,CancellationToken cancellationToken)
     {
         var pagedCompanies = await _companyQueryUnit.GetAll.HandleAsync(new GetAllCompaniesQuery(filters), cancellationToken);
@@ -47,6 +52,8 @@ public class CompanyController : Controller
     // POST: /Company/Crawl
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Crawl")]
+    [Description("Execute Crawl operation for Company.")]
     public async Task<IActionResult> Crawl(CancellationToken cancellationToken)
     {
         var result =
@@ -66,6 +73,8 @@ public class CompanyController : Controller
     }
 
     // GET: /Company/Details/5
+    [DisplayName("Details")]
+    [Description("View details of a Company.")]
     public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
     {
         var company = await _companyQueryUnit.GetById.HandleAsync(new GetCompanyByIdQuery(id), cancellationToken);
@@ -75,6 +84,8 @@ public class CompanyController : Controller
     }
 
     // GET: /Company/Create
+    [DisplayName("Create")]
+    [Description("Create a new Company.")]
     public IActionResult Create()
     {
         return View();
@@ -83,6 +94,8 @@ public class CompanyController : Controller
     // POST: /Company/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Create")]
+    [Description("Create a new Company.")]
     public async Task<IActionResult> Create(CreateCompanyDto dto, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
@@ -98,6 +111,8 @@ public class CompanyController : Controller
     }
 
     // GET: /Company/Edit/5
+    [DisplayName("Edit")]
+    [Description("Modify an existing Company.")]
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
         var company = await _companyQueryUnit.GetById.HandleAsync(new GetCompanyByIdQuery(id), cancellationToken);
@@ -110,6 +125,8 @@ public class CompanyController : Controller
     // POST: /Company/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Company.")]
     public async Task<IActionResult> Edit(Guid id, UpdateCompanyDto dto, CancellationToken cancellationToken)
     {
         if (id != dto.Id) return BadRequest();
@@ -127,6 +144,8 @@ public class CompanyController : Controller
     }
 
     // GET: /Company/Delete/5
+    [DisplayName("Delete")]
+    [Description("Delete a Company.")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var company = await _companyQueryUnit.GetById.HandleAsync(new GetCompanyByIdQuery(id), cancellationToken);
@@ -138,6 +157,8 @@ public class CompanyController : Controller
     // POST: /Company/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete Confirmed")]
+    [Description("Delete a Company.")]
     public async Task<IActionResult> DeleteConfirmed(Guid id, CancellationToken cancellationToken)
     {
         var result = await _companyCommandUnit.DeleteCompany.HandleAsync(new DeleteCompanyCommand(id), cancellationToken);

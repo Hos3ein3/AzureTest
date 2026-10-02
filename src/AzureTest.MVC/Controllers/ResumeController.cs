@@ -9,6 +9,7 @@ using AzureTest.Application.Resumes.Queries.GetAllResumes;
 using AzureTest.Application.Resumes.Queries.GetResumeById;
 using AzureTest.Contracts.DTOs.Resumes;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 using Microsoft.AspNetCore.Http;
 
 using Microsoft.Extensions.Caching.Memory;
@@ -18,7 +19,9 @@ using Microsoft.AspNetCore.Authorization;
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class ResumeController : Controller
+[DisplayName("Resume")]
+[Description("Manage and control Resume operations.")]
+    public class ResumeController : Controller
 {
     private readonly IResumeCommandUnit _commands;
     private readonly IResumeQueryUnit _queries;
@@ -83,6 +86,8 @@ public class ResumeController : Controller
 
     // GET: /Resume
     [HttpGet]
+    [DisplayName("Index")]
+    [Description("View a list of Resume.")]
     public async Task<IActionResult> Index(GetAllResumesFilters filters, CancellationToken cancellationToken)
     {
         var pagedResumes = await _queries.GetAll.HandleAsync(new GetAllResumesQuery(filters), cancellationToken);
@@ -92,6 +97,8 @@ public class ResumeController : Controller
 
     // GET: /Resume/Details/{id}
     [HttpGet]
+    [DisplayName("Details")]
+    [Description("View details of a Resume.")]
     public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
     {
         var resume = await _queries.GetById.HandleAsync(new GetResumeByIdQuery(id), cancellationToken);
@@ -110,6 +117,8 @@ public class ResumeController : Controller
 
     // GET: /Resume/Create
     [HttpGet]
+    [DisplayName("Create")]
+    [Description("Create a new Resume.")]
     public async Task<IActionResult> Create(CancellationToken cancellationToken)
     {
         await LoadCompaniesViewBagAsync();
@@ -120,6 +129,8 @@ public class ResumeController : Controller
     // POST: /Resume/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Create")]
+    [Description("Create a new Resume.")]
     public async Task<IActionResult> Create(CreateResumeDto dto, IFormFile? cvFile, IFormFile? clFile, CancellationToken cancellationToken)
     {
         var validation = await _validators.Create.ValidateAsync(dto, cancellationToken);
@@ -152,6 +163,8 @@ public class ResumeController : Controller
 
     // GET: /Resume/Edit/{id}
     [HttpGet]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Resume.")]
     public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken)
     {
         var resume = await _queries.GetById.HandleAsync(new GetResumeByIdQuery(id), cancellationToken);
@@ -180,6 +193,8 @@ public class ResumeController : Controller
     // POST: /Resume/Edit/{id}
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Edit")]
+    [Description("Modify an existing Resume.")]
     public async Task<IActionResult> Edit(Guid id, UpdateResumeDto dto, IFormFile? cvFile, IFormFile? clFile, CancellationToken cancellationToken)
     {
         if (id != dto.Id) return BadRequest();
@@ -215,6 +230,8 @@ public class ResumeController : Controller
     // POST: /Resume/UpdateStatus
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Update Status")]
+    [Description("Modify an existing Resume.")]
     public async Task<IActionResult> UpdateStatus(UpdateResumeStatusDto dto, CancellationToken cancellationToken)
     {
         bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
@@ -243,6 +260,8 @@ public class ResumeController : Controller
 
     // GET: /Resume/Delete/{id}
     [HttpGet]
+    [DisplayName("Delete")]
+    [Description("Delete a Resume.")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var resume = await _queries.GetById.HandleAsync(new GetResumeByIdQuery(id), cancellationToken);
@@ -253,6 +272,8 @@ public class ResumeController : Controller
     // POST: /Resume/Delete/{id}
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete Confirmed")]
+    [Description("Delete a Resume.")]
     public async Task<IActionResult> DeleteConfirmed(Guid id, CancellationToken cancellationToken)
     {
         await _commands.Delete.HandleAsync(new DeleteResumeCommand(id), cancellationToken);
@@ -263,6 +284,8 @@ public class ResumeController : Controller
 
     // GET: /Resume/DownloadFile/{id}?type=cv
     [HttpGet]
+    [DisplayName("Download File")]
+    [Description("Execute Download File operation for Resume.")]
     public async Task<IActionResult> DownloadFile(Guid id, string type, bool inline = false, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(type) || (type.ToLower() != "cv" && type.ToLower() != "cl"))
@@ -288,6 +311,8 @@ public class ResumeController : Controller
     // POST: /Resume/DeleteFile/{id}?type=cv
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Delete File")]
+    [Description("Delete a Resume.")]
     public async Task<IActionResult> DeleteFile(Guid id, string type, string returnUrl, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(type) || (type.ToLower() != "cv" && type.ToLower() != "cl"))
@@ -311,6 +336,8 @@ public class ResumeController : Controller
 
     // GET: /Resume/SearchCompanies?term=acme
     [HttpGet]
+    [DisplayName("Search Companies")]
+    [Description("Execute Search Companies operation for Resume.")]
     public async Task<IActionResult> SearchCompanies(string term, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(term) || term.Length < 1)
@@ -323,6 +350,8 @@ public class ResumeController : Controller
 
     // GET: /Resume/GetTitle/{id}
     [HttpGet]
+    [DisplayName("Get Title")]
+    [Description("Execute Get Title operation for Resume.")]
     public async Task<IActionResult> GetTitle(Guid id, CancellationToken cancellationToken)
     {
         var resume = await _queries.GetById.HandleAsync(new GetResumeByIdQuery(id), cancellationToken);
@@ -332,6 +361,8 @@ public class ResumeController : Controller
 
     // GET: /Resume/Kanban
     [HttpGet]
+    [DisplayName("Kanban")]
+    [Description("Execute Kanban operation for Resume.")]
     public async Task<IActionResult> Kanban(CancellationToken cancellationToken)
     {
         // Fetch all resumes with a large page size so all appear on the Kanban board

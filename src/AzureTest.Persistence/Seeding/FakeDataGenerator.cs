@@ -121,6 +121,7 @@ public static class FakeDataGenerator
         var userUser   = await EnsureUserAsync(userManager, "user@azuretest.local",   "123456", "Regular", "User",   "User");
         var adminUser  = await EnsureUserAsync(userManager, "admin@azuretest.local",  "123456", "Admin",   "Admin",  "Admin");
         var systemUser = await EnsureUserAsync(userManager, "system@azuretest.local", "123456", "System",  "System", "System");
+        var supportUser = await EnsureUserAsync(userManager, "support@azuretest.local", "123456", "Support", "Staff", "User");
 
         var userId   = userUser.Id;
         var adminId  = adminUser.Id;

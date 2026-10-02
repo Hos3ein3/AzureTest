@@ -21,6 +21,63 @@
             <p class="text-xs text-slate-500 mt-2">Roles are used to define groups of permissions (e.g. Admin, Manager, User).</p>
         </div>
 
+        
+        <div class="mb-8 border-t border-slate-100 pt-6">
+            
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-slate-800">Initial Permissions (Optional)</h3>
+                <div class="relative w-64">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-search text-slate-400 text-sm"></i>
+                    </div>
+                    <input type="text" id="permissionSearch" class="block w-full pl-9 pr-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-brand-500 focus:border-brand-500" placeholder="Search permissions...">
+                </div>
+            </div>
+
+            
+            @if(Model.AvailablePermissions != null && Model.AvailablePermissions.Any())
+            {
+                var grouped = Model.AvailablePermissions.GroupBy(p => p.ControllerName);
+                <div class="space-y-6 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                    @foreach(var group in grouped)
+                    {
+                        <div class="border border-slate-200 rounded-lg overflow-hidden perm-group">
+                            <div class="bg-slate-50 px-4 py-2 border-b border-slate-200 flex justify-between items-center">
+                                <h4 class="font-bold text-slate-700 text-sm">@group.Key</h4>
+                                <label class="flex items-center cursor-pointer text-xs font-medium text-brand-600 hover:text-brand-800">
+                                    <input type="checkbox" class="form-checkbox h-3.5 w-3.5 text-brand-600 rounded border-slate-300 mr-1.5 toggle-group" data-group="@group.Key" />
+                                    Select All
+                                </label>
+                            </div>
+                            <div class="divide-y divide-slate-100">
+                                @foreach(var perm in group)
+                                {
+                                    <label class="px-4 py-3 flex items-start cursor-pointer hover:bg-slate-50 transition-colors perm-item ">
+                                        <div class="flex-shrink-0 mt-0.5 mr-3">
+                                            <input type="checkbox" name="SelectedPermissions" value="@perm.Id"  class="form-checkbox h-4 w-4 text-brand-600 rounded border-slate-300 shadow-sm focus:ring-brand-500 group-cb-@group.Key" />
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center text-sm font-medium text-slate-900">
+                                                @perm.DisplayName
+                                                @if (!perm.IsRestricted) { <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800">Unrestricted</span> }
+                                            </div>
+                                            <div class="text-xs text-slate-500 mt-0.5">@perm.Description</div>
+                                        </div>
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="p-4 bg-amber-50 text-amber-800 rounded-lg text-sm border border-amber-200">
+                    No synced permissions available. Create the role first, then sync endpoints from the Permissions page.
+                </div>
+            }
+        </div>
+
         <div class="flex items-center justify-end space-x-3 pt-6 border-t border-slate-100">
             <a asp-action="Index" class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">Cancel</a>
             <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-brand-600 border border-transparent rounded-lg hover:bg-brand-700 transition-colors shadow-sm flex items-center">

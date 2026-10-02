@@ -16,11 +16,14 @@ using AzureTest.Contracts.DTOs.Tickets;
 using AzureTest.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize]
-public class TicketController : Controller
+[DisplayName("Ticket")]
+[Description("Manage and control Ticket operations.")]
+    public class TicketController : Controller
 {
     private readonly ITicketQueryUnit _ticketQuery;
     private readonly ITicketCommandUnit _ticketCommand;
@@ -39,6 +42,8 @@ public class TicketController : Controller
         _currentUser = currentUser;
     }
 
+    [DisplayName("Index")]
+    [Description("View a list of Ticket.")]
     public async Task<IActionResult> Index(
         string? status = null,
         string? priority = null,
@@ -48,8 +53,8 @@ public class TicketController : Controller
         int? pageNumber = null,
         int pageSize = 10)
     {
-        bool isAdmin = _currentUser.Roles.Contains("Admin");
-        var tickets = await _ticketQuery.GetAllTickets.HandleAsync(new GetAllTicketsQuery(isAdmin ? null : _currentUser.Id), default);
+        bool isStaff = _currentUser.Roles.Contains("Admin") || _currentUser.Roles.Contains("Support");
+        var tickets = await _ticketQuery.GetAllTickets.HandleAsync(new GetAllTicketsQuery(isStaff ? null : _currentUser.Id), default);
 
         IEnumerable<TicketDto> query = tickets;
 
@@ -83,7 +88,7 @@ public class TicketController : Controller
         var items = ticketList.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
         var pagedResult = new PagedResult<TicketDto>(items, totalCount, currentPage, pageSize);
 
-        ViewBag.IsAdmin = isAdmin;
+        ViewBag.IsAdmin = isStaff;
         ViewBag.Status = status;
         ViewBag.Priority = priority;
         ViewBag.SortBy = sortBy ?? "date";
@@ -94,6 +99,8 @@ public class TicketController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Create")]
+    [Description("Create a new Ticket.")]
     public IActionResult Create()
     {
         return View();
@@ -101,21 +108,25 @@ public class TicketController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Create")]
+    [Description("Create a new Ticket.")]
     public async Task<IActionResult> Create(string subject, string content, TicketPriority priority)
     {
         if (ModelState.IsValid)
         {
             var ticketId = await _ticketCommand.CreateTicket.HandleAsync(new CreateTicketCommand(subject, content, priority), default);
-            return RedirectToAction(nameof(Details), new { id = ticketId });
+            return RedirectToAction(nameof(Details), new { id = ticketId.Value });
         }
         return View();
     }
 
     [HttpGet]
+    [DisplayName("Details")]
+    [Description("View details of a Ticket.")]
     public async Task<IActionResult> Details(Guid id)
     {
-        bool isAdmin = _currentUser.Roles.Contains("Admin");
-        var ticket = await _ticketQuery.GetTicketById.HandleAsync(new GetTicketByIdQuery(id, isAdmin ? null : _currentUser.Id), default);
+        bool isStaff = _currentUser.Roles.Contains("Admin") || _currentUser.Roles.Contains("Support");
+        var ticket = await _ticketQuery.GetTicketById.HandleAsync(new GetTicketByIdQuery(id, isStaff ? null : _currentUser.Id), default);
         
         if (ticket == null) return NotFound();
 
@@ -127,13 +138,15 @@ public class TicketController : Controller
 
         var creator = await _userQuery.GetUserById.HandleAsync(new GetUserByIdQuery(ticket.UserId), default);
 
-        ViewBag.IsAdmin = isAdmin;
+        ViewBag.IsAdmin = isStaff;
         ViewBag.Creator = creator;
         return View(ticket);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [DisplayName("Add Message")]
+    [Description("Create a new Ticket.")]
     public async Task<IActionResult> AddMessage(Guid ticketId, string content)
     {
         if (!string.IsNullOrWhiteSpace(content))
@@ -145,7 +158,9 @@ public class TicketController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize(Roles = "Admin")]
+    
+    [DisplayName("Update Status")]
+    [Description("Modify an existing Ticket.")]
     public async Task<IActionResult> UpdateStatus(Guid ticketId, TicketStatus status)
     {
         await _ticketCommand.UpdateTicketStatus.HandleAsync(new UpdateTicketStatusCommand(ticketId, status), default);
