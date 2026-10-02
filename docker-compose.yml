@@ -192,3 +192,4 @@ volumes:
   redisdata:
   prometheusdata:
   grafanadata:
+  tempodata:
