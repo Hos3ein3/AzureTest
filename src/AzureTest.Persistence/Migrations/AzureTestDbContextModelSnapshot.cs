@@ -457,7 +457,7 @@ namespace AzureTest.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Permissions");
+                    b.ToTable("Permissions", "identity");
                 });
 
             modelBuilder.Entity("AzureTest.Domain.Entities.Resume", b =>
@@ -555,7 +555,7 @@ namespace AzureTest.Persistence.Migrations
 
                     b.HasIndex("PermissionId");
 
-                    b.ToTable("RolePermissions");
+                    b.ToTable("RolePermissions", "identity");
                 });
 
             modelBuilder.Entity("AzureTest.Domain.Entities.TaskItem", b =>
