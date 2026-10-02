@@ -1,17 +1,14 @@
 using System;
 using System.Collections.Generic;
 
+using AzureTest.Domain.Enums;
+
 namespace AzureTest.Domain.Documents;
 
-public enum IdeaStatus { Inbox = 0, Refinement = 1, InProgress = 2, Completed = 3, Archived = 4 }
-public enum IdeaPriority { Low = 0, Medium = 1, High = 2, Urgent = 3 }
 
-public class IdeaTask
-{
-    public Guid Id { get; init; } = Guid.NewGuid();
-    public string Description { get; set; } = string.Empty;
-    public bool IsCompleted { get; set; }
-}
+
+
+
 
 public class Idea
 {

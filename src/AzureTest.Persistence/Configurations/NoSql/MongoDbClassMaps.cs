@@ -35,6 +35,22 @@ public static class MongoDbClassMaps
                     cm.SetIgnoreExtraElements(true);
                 });
             }
+            if (!BsonClassMap.IsClassMapRegistered(typeof(AzureTest.Domain.Documents.IdeaPage)))
+            {
+                BsonClassMap.RegisterClassMap<AzureTest.Domain.Documents.IdeaPage>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.SetIgnoreExtraElements(true);
+                });
+            }
+            if (!BsonClassMap.IsClassMapRegistered(typeof(AzureTest.Domain.Documents.IdeaSection)))
+            {
+                BsonClassMap.RegisterClassMap<AzureTest.Domain.Documents.IdeaSection>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.SetIgnoreExtraElements(true);
+                });
+            }
 
                 BsonClassMap.RegisterClassMap<JobSearchHistory>(cm =>
                 {

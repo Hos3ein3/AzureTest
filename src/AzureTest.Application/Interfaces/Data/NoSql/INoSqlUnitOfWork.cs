@@ -19,7 +19,8 @@ public interface INoSqlUnitOfWork : IDisposable
     IUserDashboardRepository UserDashboards { get; }
     IJobSearchHistoryRepository JobSearchHistories { get; }
     IIdeaRepository Ideas { get; }
-
+    IIdeaPageRepository IdeaPages { get; }
+    IIdeaSectionRepository IdeaSections { get; }
 
     Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

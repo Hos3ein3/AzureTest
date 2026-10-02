@@ -61,6 +61,10 @@ public static class DependencyInjection
         // Idea Tracker
         services.AddScoped<AzureTest.Application.IdeaTracker.IIdeaCommandUnit, AzureTest.Application.IdeaTracker.IdeaCommandUnit>();
         services.AddScoped<AzureTest.Application.IdeaTracker.IIdeaQueryUnit, AzureTest.Application.IdeaTracker.IdeaQueryUnit>();
+        services.AddScoped<AzureTest.Application.IdeaTracker.IIdeaPageCommandUnit, AzureTest.Application.IdeaTracker.IdeaPageCommandUnit>();
+        services.AddScoped<AzureTest.Application.IdeaTracker.IIdeaPageQueryUnit, AzureTest.Application.IdeaTracker.IdeaPageQueryUnit>();
+        services.AddScoped<AzureTest.Application.IdeaTracker.IIdeaSectionCommandUnit, AzureTest.Application.IdeaTracker.IdeaSectionCommandUnit>();
+        services.AddScoped<AzureTest.Application.IdeaTracker.IIdeaSectionQueryUnit, AzureTest.Application.IdeaTracker.IdeaSectionQueryUnit>();
 
 
 

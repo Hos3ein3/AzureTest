@@ -25,6 +25,8 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     private IUserDashboardRepository? _userDashboards;
     private IJobSearchHistoryRepository? _jobSearchHistories;
     private IIdeaRepository? _ideas;
+    private IIdeaPageRepository? _ideaPages;
+    private IIdeaSectionRepository? _ideaSections;
 
 
 
@@ -45,6 +47,8 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     public IUserDashboardRepository UserDashboards => _userDashboards ??= new UserDashboardRepository(_database);
     public IJobSearchHistoryRepository JobSearchHistories => _jobSearchHistories ??= new JobSearchHistoryRepository(_database);
     public IIdeaRepository Ideas => _ideas ??= new IdeaRepository(_database);
+    public IIdeaPageRepository IdeaPages => _ideaPages ??= new IdeaPageRepository(_database);
+    public IIdeaSectionRepository IdeaSections => _ideaSections ??= new IdeaSectionRepository(_database);
 
 
 

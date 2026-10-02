@@ -3,49 +3,21 @@ import re
 with open('/Users/mohammadhosein/Development/AzureTest/src/AzureTest.MVC/Views/IdeaTracker/Details.cshtml', 'r') as f:
     content = f.read()
 
-# Replace everything from @section Scripts to the end of the file
-scripts_block = """@section Scripts {
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            buildTableOfContents();
+sub_ideas = re.search(r'(<!-- Sub-Pages Section -->.*?)(<!-- Document Pages Section -->)', content, re.DOTALL)
+doc_pages = re.search(r'(<!-- Document Pages Section -->.*?)(</div>\s*<!-- Sticky Table of Contents \(Right Sidebar\) -->)', content, re.DOTALL)
 
-            function buildTableOfContents() {
-                const tocContainer = document.getElementById('toc-container');
-                const contentContainer = document.getElementById('content-container');
-                const headers = contentContainer.querySelectorAll('h1, h2, h3, h4');
-                
-                if (headers.length === 0) {
-                    tocContainer.innerHTML = '<p class="text-xs text-slate-400 italic">No headings found.</p>';
-                    return;
-                }
-
-                headers.forEach((header, index) => {
-                    // Create an anchor id if it doesn't have one
-                    if (!header.id) {
-                        const anchorId = 'heading-' + index;
-                        header.id = anchorId;
-                    }
-
-                    const a = document.createElement('a');
-                    a.href = '#' + header.id;
-                    a.textContent = header.textContent;
-                    a.className = 'block py-1 hover:text-brand-600 transition-colors truncate toc-item';
-                    
-                    // Indent based on heading level
-                    const level = parseInt(header.tagName.substring(1));
-                    if (level === 3) a.classList.add('ml-3');
-                    if (level === 4) a.classList.add('ml-6');
-
-                    tocContainer.appendChild(a);
-                });
-            }
-        });
-    </script>
-}
-"""
-
-content = re.sub(r'@section Scripts \{.*', scripts_block, content, flags=re.DOTALL)
-
-with open('/Users/mohammadhosein/Development/AzureTest/src/AzureTest.MVC/Views/IdeaTracker/Details.cshtml', 'w') as f:
-    f.write(content)
+if sub_ideas and doc_pages:
+    new_content = content.replace(sub_ideas.group(1), "")
+    new_content = new_content.replace(doc_pages.group(1), doc_pages.group(1) + "\n" + sub_ideas.group(1))
+    
+    # "when I click on Document Pages, it doesnt open" -> Need to fix the title link
+    # Find: <div class="flex-1 min-w-0">\s*<h4 class="font-bold text-slate-900 truncate">@pageDto.Title</h4>
+    # Replace with: <div class="flex-1 min-w-0">\s*<a asp-controller="IdeaPage" asp-action="Details" asp-route-id="@pageDto.Id" class="font-bold text-slate-900 truncate hover:text-brand-600 block">@pageDto.Title</a>
+    
+    new_content = re.sub(r'<h4 class="font-bold text-slate-900 truncate">@pageDto\.Title</h4>',
+                         r'<a asp-controller="IdeaPage" asp-action="Details" asp-route-id="@pageDto.Id" class="font-bold text-slate-900 truncate hover:text-brand-600 block">@pageDto.Title</a>',
+                         new_content)
+    
+    with open('/Users/mohammadhosein/Development/AzureTest/src/AzureTest.MVC/Views/IdeaTracker/Details.cshtml', 'w') as f:
+        f.write(new_content)
 

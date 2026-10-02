@@ -61,6 +61,17 @@ public class IdeaTrackerController : Controller
             ViewBag.SubPages = new List<IdeaDto>();
         }
 
+        var ideaPageQueryUnit = HttpContext.RequestServices.GetService(typeof(IIdeaPageQueryUnit)) as IIdeaPageQueryUnit;
+        if (ideaPageQueryUnit != null)
+        {
+            var pagesResult = await ideaPageQueryUnit.GetIdeaPages.HandleAsync(new GetIdeaPagesQuery(_currentUser.Id, id), ct);
+            ViewBag.Pages = pagesResult.IsSuccess ? pagesResult.Value : new List<IdeaPageDto>();
+        }
+        else
+        {
+            ViewBag.Pages = new List<IdeaPageDto>();
+        }
+
         return View(result.Value);
     }
 

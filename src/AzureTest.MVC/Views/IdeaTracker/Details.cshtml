@@ -1,5 +1,6 @@
 @using AzureTest.Contracts.DTOs.IdeaTracker
 @using AzureTest.Domain.Documents
+@using AzureTest.Domain.Enums
 @model IdeaDto
 @{
     ViewData["Title"] = Model.Title;
@@ -63,14 +64,54 @@
             <!-- Editor.js ReadOnly Container -->
             <div id="content-container" class="prose prose-slate prose-img:rounded-xl prose-img:shadow-sm max-w-none">@Html.Raw(Model.Content)</div>
 
-            <!-- Sub-Pages Section -->
+            <!-- Document Pages Section -->
             <div class="mt-16 pt-8 border-t border-slate-200">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                        <i class="fa-regular fa-folder-open text-brand-500"></i> Sub-Pages
+                        <i class="fa-regular fa-file-lines text-brand-500"></i> Document Pages
+                    </h3>
+                    <a asp-controller="IdeaPage" asp-action="Create" asp-route-ideaId="@Model.Id" class="text-sm font-medium text-brand-600 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition">
+                        <i class="fa-solid fa-plus mr-1"></i> Add Page
+                    </a>
+                </div>
+                
+                @{ var ideaPages = ViewBag.Pages as List<IdeaPageDto> ?? new List<IdeaPageDto>(); }
+                @if (ideaPages.Any())
+                {
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        @foreach(var pageDto in ideaPages)
+                        {
+                            <div class="flex items-center p-3 rounded-lg border border-slate-200 hover:border-brand-300 hover:shadow-md transition bg-slate-50 group">
+                                <div class="w-10 h-10 rounded bg-white shadow-sm flex items-center justify-center text-lg mr-3 shrink-0">
+                                    <i class="fa-regular fa-file text-slate-600 group-hover:text-brand-500 transition-colors"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <a asp-controller="IdeaPage" asp-action="Details" asp-route-id="@pageDto.Id" class="font-bold text-slate-900 truncate hover:text-brand-600 block">@pageDto.Title</a>
+                                </div>
+                                <div class="ml-2 flex gap-2">
+                                    <a asp-controller="IdeaPage" asp-action="Edit" asp-route-id="@pageDto.Id" class="text-slate-400 hover:text-brand-600"><i class="fa-solid fa-pen"></i></a>
+                                    <form asp-controller="IdeaPage" asp-action="Delete" asp-route-id="@pageDto.Id" asp-route-ideaId="@Model.Id" method="post" onsubmit="return confirm('Delete this page?');" class="inline">
+                                        <button type="submit" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash"></i></button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-sm text-slate-500 italic bg-slate-50 p-4 rounded-lg border border-dashed border-slate-300 text-center">No document pages attached to this idea yet.</p>
+                }
+            </div>
+        
+<!-- Sub-Pages Section -->
+            <div class="mt-16 pt-8 border-t border-slate-200">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-regular fa-folder-open text-brand-500"></i> Sub-Ideas
                     </h3>
                     <a asp-action="Create" asp-route-parentId="@Model.Id" class="text-sm font-medium text-brand-600 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition">
-                        <i class="fa-solid fa-plus mr-1"></i> Add Page
+                        <i class="fa-solid fa-plus mr-1"></i> Add Sub-Idea
                     </a>
                 </div>
                 
@@ -93,10 +134,11 @@
                 }
                 else
                 {
-                    <p class="text-sm text-slate-500 italic bg-slate-50 p-4 rounded-lg border border-dashed border-slate-300 text-center">No sub-pages attached to this idea yet.</p>
+                    <p class="text-sm text-slate-500 italic bg-slate-50 p-4 rounded-lg border border-dashed border-slate-300 text-center">No sub-ideas attached to this idea yet.</p>
                 }
             </div>
-        </div>
+
+            </div>
 
         <!-- Sticky Table of Contents (Right Sidebar) -->
         <div class="hidden xl:block w-64 shrink-0 pl-10 pt-10">

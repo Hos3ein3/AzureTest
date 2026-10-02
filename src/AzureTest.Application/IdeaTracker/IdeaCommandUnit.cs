@@ -6,6 +6,8 @@ using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.IdeaTracker;
 using AzureTest.Domain.Documents;
+using AzureTest.Domain.Enums;
+
 using FluentValidation;
 
 namespace AzureTest.Application.IdeaTracker;

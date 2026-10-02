@@ -30,8 +30,7 @@ public class GetIdeasQueryHandler : BaseQueryHandler<GetIdeasQuery, Result<List<
         
         if (!string.IsNullOrWhiteSpace(query.Filter.Search))
         {
-            records = records.Where(x => x.Title.Contains(query.Filter.Search, StringComparison.OrdinalIgnoreCase) || 
-                                         x.Content.Contains(query.Filter.Search, StringComparison.OrdinalIgnoreCase)).ToList();
+            records = records.Where(x => (x.Title != null && x.Title != null && x.Title.Contains(query.Filter.Search, StringComparison.OrdinalIgnoreCase)) || (x.Content != null && x.Content != null && x.Content.Contains(query.Filter.Search, StringComparison.OrdinalIgnoreCase))).ToList();
         }
         if (query.Filter.Status.HasValue)
         {
