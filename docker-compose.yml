@@ -26,8 +26,6 @@ services:
   # ── PostgreSQL Database & Admin ────────────────────────────────────────────
   postgres:
     image: postgres:15-alpine
-    pull_policy: if_not_present
-
     container_name: azuretest-postgres
     environment:
       POSTGRES_USER: postgres
@@ -42,8 +40,6 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
-    pull_policy: if_not_present
-
     container_name: azuretest-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
@@ -58,8 +54,6 @@ services:
   # ── MongoDB & Express ──────────────────────────────────────────────────────
   mongo:
     image: mongo:6
-    pull_policy: if_not_present
-
     container_name: azuretest-mongo
     ports:
       - "27017:27017"
@@ -70,8 +64,6 @@ services:
 
   mongo-express:
     image: mongo-express
-    pull_policy: if_not_present
-
     container_name: azuretest-mongo-express
     environment:
       ME_CONFIG_MONGODB_SERVER: mongo
@@ -88,8 +80,6 @@ services:
   # ── Redis & Dashboard ──────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    pull_policy: if_not_present
-
     container_name: azuretest-redis
     ports:
       - "6379:6379"
@@ -100,8 +90,6 @@ services:
 
   redisinsight:
     image: redis/redisinsight:latest
-    pull_policy: if_not_present
-
     container_name: azuretest-redisinsight
     ports:
       - "5540:5540"
@@ -113,8 +101,6 @@ services:
   # ── RabbitMQ ───────────────────────────────────────────────────────────────
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    pull_policy: if_not_present
-
     container_name: azuretest-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: guest
@@ -128,8 +114,6 @@ services:
   # ── Observability: Prometheus & Node Exporter ──────────────────────────────
   prometheus:
     image: prom/prometheus:latest
-    pull_policy: if_not_present
-
     container_name: azuretest-prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
@@ -141,8 +125,6 @@ services:
 
   node-exporter:
     image: prom/node-exporter:latest
-    pull_policy: if_not_present
-
     container_name: azuretest-node-exporter
     ports:
       - "9100:9100"
@@ -152,8 +134,6 @@ services:
   # ── Observability: Loki & Promtail ─────────────────────────────────────────
   loki:
     image: grafana/loki:latest
-    pull_policy: if_not_present
-
     container_name: azuretest-loki
     ports:
       - "3100:3100"
@@ -163,8 +143,6 @@ services:
 
   tempo:
     image: grafana/tempo:latest
-    pull_policy: if_not_present
-
     container_name: azuretest-tempo
     command: -config.file=/etc/tempo.yaml
     volumes:
@@ -179,8 +157,6 @@ services:
 
   promtail:
     image: grafana/promtail:latest
-    pull_policy: if_not_present
-
     container_name: azuretest-promtail
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -192,8 +168,6 @@ services:
   # ── Observability: Grafana ─────────────────────────────────────────────────
   grafana:
     image: grafana/grafana:latest
-    pull_policy: if_not_present
-
     container_name: azuretest-grafana
     environment:
       - GF_SECURITY_ADMIN_USER=admin
@@ -218,4 +192,3 @@ volumes:
   redisdata:
   prometheusdata:
   grafanadata:
-  tempodata:
