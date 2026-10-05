@@ -52,7 +52,7 @@
     };
 
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 transition-all duration-300 transform translate-y-0 opacity-100">
-        <div class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg shadow-lg ring-1 @bgColor">
+        <div class="pointer-events-auto min-w-[300px] max-w-md overflow-hidden rounded-lg shadow-lg ring-1 @bgColor">
             <div class="p-4">
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
@@ -60,7 +60,7 @@
                             @Html.Raw(iconSvg)
                         </svg>
                     </div>
-                    <div class="ml-3 w-0 flex-1 pt-0.5">
+                    <div class="ml-3 flex-1 pt-0.5 overflow-hidden break-words">
                         @if (!string.IsNullOrEmpty(toast.Title))
                         {
                             <p class="text-sm font-semibold mb-1">@toast.Title</p>

@@ -168,6 +168,15 @@ namespace AzureTest.MVC.Controllers;
         return View();
     }
 
+    [HttpGet]
+    [AllowAnonymous]
+    [DisplayName("Access Denied")]
+    [Description("Show access denied page.")]
+    public IActionResult AccessDenied()
+    {
+        return View();
+    }
+
     [HttpPost]
     [DisplayName("Logout")]
     [Description("Execute Logout operation for Auth.")]

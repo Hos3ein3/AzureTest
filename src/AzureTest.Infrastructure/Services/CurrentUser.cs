@@ -105,4 +105,65 @@ public class CurrentUser : ICurrentUser
     public System.Collections.Generic.IReadOnlyList<string> Permissions =>
         GetCachedSession()?.Permissions
         ?? new System.Collections.Generic.List<string>();
+
+    public bool IsAdmin
+    {
+        get
+        {
+            return Roles.Contains("Admin");
+        }
+    }
+
+    // ─── HasAccess overloads ────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public bool HasAccess() => CheckAccess(_httpContextAccessor, null);
+
+    /// <inheritdoc/>
+    public bool HasAccess(string url) => CheckAccess(_httpContextAccessor, url);
+
+    /// <inheritdoc/>
+    public bool HasAccess(IHttpContextAccessor httpContextAccessor, string? url = null)
+        => CheckAccess(httpContextAccessor, url);
+
+    // ─── Core logic ─────────────────────────────────────────────────────────────
+
+    private bool CheckAccess(IHttpContextAccessor accessor, string? url)
+    {
+        // Admin always bypasses all checks
+        if (Roles.Contains("Admin")) return true;
+
+        var httpContext = accessor.HttpContext;
+
+        // Determine the target URL
+        var targetUrl = url ?? httpContext?.Request.Path.Value ?? "/";
+        if (string.IsNullOrWhiteSpace(targetUrl) || targetUrl == "/")
+            targetUrl = "Home/Index";
+
+        // Extract controller and action from URL
+        var parts = targetUrl.TrimStart('/').Split('?')[0].Split('/');
+        var controller = parts.Length > 0 && !string.IsNullOrWhiteSpace(parts[0]) ? parts[0] : "Home";
+        var action     = parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]) ? parts[1] : "Index";
+
+        // Users with the "User" role get automatic access to reserved slugs (Home, Ticket, etc.)
+        if (Roles.Contains("User") && httpContext != null)
+        {
+           
+           var feature=httpContext.RequestServices
+               .GetService<Microsoft.Extensions.Options.IOptions<AzureTest.Infrastructure.Configuration.InfrastructureFeatureOptions>>();
+           if (feature!.Value.EnableUserAccessToDashboardSlugs)
+           {
+               var options = httpContext.RequestServices
+                   .GetService<Microsoft.Extensions.Options.IOptions<AzureTest.Infrastructure.Configuration.DashboardSettings>>();
+               var reserved = options?.Value.ReservedSlugs ?? new System.Collections.Generic.List<string>();
+               if (reserved.Contains(controller, StringComparer.OrdinalIgnoreCase))
+                   return true;
+           }
+           
+        }
+
+        // Fall back to explicit permission check: "Controller/Action"
+        var permissionKey = $"{controller}/{action}";
+        return Permissions.Any(p => p.Equals(permissionKey, StringComparison.OrdinalIgnoreCase));
+    }
 }

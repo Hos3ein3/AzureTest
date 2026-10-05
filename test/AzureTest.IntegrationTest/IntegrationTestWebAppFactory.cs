@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Threading.Tasks;
 using AzureTest.Persistence.Context;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -110,7 +111,12 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
         public string FullName => "Test User";
         public System.Collections.Generic.IReadOnlyList<string> Roles => new System.Collections.Generic.List<string> { "User" };
         public System.Collections.Generic.IReadOnlyList<string> Permissions => new System.Collections.Generic.List<string>();
+        public bool IsAdmin => false;
+        public bool HasAccess() => true;
+        public bool HasAccess(string url) => true;
+        public bool HasAccess(Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, string? url = null) => true;
     }
+
 
     private class DummyNotificationService : AzureTest.Application.Interfaces.Services.INotificationService
     {

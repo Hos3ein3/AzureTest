@@ -35,6 +35,7 @@ public class CreateDebtPersonCommandHandler : ICommandHandler<CreateDebtPersonCo
         await _noSqlUnitOfWork.DebtPersons.AddAsync(person);
         await _noSqlUnitOfWork.SaveChangesAsync(cancellationToken);
 
+        _redisService.GenerateKey(IRedisService.DebtPersons_Key, request.UserId.ToString());
         await _redisService.RemoveAsync($"DebtPersons_{request.UserId}");
 
         return Result.Success(person.Id);

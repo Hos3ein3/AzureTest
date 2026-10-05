@@ -234,6 +234,14 @@
                                         <div><span class="text-slate-400">Max Height:</span> <span id="rawMaxH" class="font-medium"></span></div>
                                         <div class="col-span-2 mt-1"><span class="text-slate-400">Resizable:</span> <span id="rawResizable" class="font-medium"></span></div>
                                     </div>
+
+                                    <div id="rawComponentPreviewContainer" class="mt-4 pt-3 border-t border-slate-200">
+                                        <p class="text-xs text-slate-500 mb-2 font-medium uppercase tracking-wider flex justify-between">
+                                            <span>Preview</span>
+                                            <span id="rawViewName" class="text-brand-600 lowercase bg-brand-50 px-1.5 py-0.5 rounded text-[10px] hidden"></span>
+                                        </p>
+                                        <div id="rawPreviewContent" class="text-xs text-slate-600 bg-white border border-slate-200 rounded p-3 overflow-y-auto max-h-48 break-words custom-scrollbar font-mono whitespace-pre-wrap"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -525,7 +533,7 @@
             saveDashboard(fullUrl);
         }
 
-        const rawComponentsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(allRawComponents.Select(r => new { r.Id, r.Name, r.Type, r.MinWidth, r.MaxWidth, r.MinHeight, r.MaxHeight, r.IsResizable })));
+        const rawComponentsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(allRawComponents.Select(r => new { r.Id, r.Name, r.Type, r.MinWidth, r.MaxWidth, r.MinHeight, r.MaxHeight, r.IsResizable, r.HtmlContent, r.JsonConfiguration, r.ViewName })));
         
         let rawSelectInstance = null;
 
@@ -584,6 +592,34 @@
                 document.getElementById('rawMinH').textContent = comp.MinHeight > 0 ? comp.MinHeight : 'None';
                 document.getElementById('rawMaxH').textContent = comp.MaxHeight > 0 ? comp.MaxHeight : 'None';
                 document.getElementById('rawResizable').innerHTML = comp.IsResizable ? '<span class="text-green-600">Yes</span>' : '<span class="text-red-500">No (Fixed)</span>';
+                
+                // Update Preview
+                const previewContent = document.getElementById('rawPreviewContent');
+                const viewNameBadge = document.getElementById('rawViewName');
+                
+                if (comp.Type === 'RawHtml') {
+                    viewNameBadge.classList.add('hidden');
+                    previewContent.innerHTML = comp.HtmlContent || '<span class="text-slate-400 italic">No HTML content available.</span>';
+                } else if (comp.Type === 'JsonConfig') {
+                    if (comp.ViewName) {
+                        viewNameBadge.textContent = comp.ViewName;
+                        viewNameBadge.classList.remove('hidden');
+                    } else {
+                        viewNameBadge.classList.add('hidden');
+                    }
+                    
+                    if (comp.JsonConfiguration) {
+                        try {
+                            const parsed = JSON.parse(comp.JsonConfiguration);
+                            previewContent.textContent = JSON.stringify(parsed, null, 2);
+                        } catch(e) {
+                            previewContent.textContent = comp.JsonConfiguration;
+                        }
+                    } else {
+                        previewContent.innerHTML = '<span class="text-slate-400 italic">No JSON config available.</span>';
+                    }
+                }
+                
                 detailsDiv.classList.remove('hidden');
             } else {
                 detailsDiv.classList.add('hidden');

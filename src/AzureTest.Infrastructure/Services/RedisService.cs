@@ -11,6 +11,10 @@ namespace AzureTest.Infrastructure.Services;
 public class RedisService : IRedisService
 {
     private readonly IDistributedCache _cache;
+    
+    
+
+    //public 
 
     public RedisService(IDistributedCache cache)
     {
@@ -44,4 +48,6 @@ public class RedisService : IRedisService
     {
         await _cache.RemoveAsync(key);
     }
+
+    
 }

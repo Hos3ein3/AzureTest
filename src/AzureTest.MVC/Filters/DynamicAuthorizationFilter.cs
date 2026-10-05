@@ -40,6 +40,27 @@ public class DynamicAuthorizationFilter : IAsyncAuthorizationFilter
         {
             return;
         }
+        
+        if (context.ActionDescriptor is ControllerActionDescriptor tempDescriptor)
+        {
+            if (user.IsInRole("User"))
+            {
+                var feature=context.HttpContext.RequestServices
+                    .GetService<Microsoft.Extensions.Options.IOptions<AzureTest.Infrastructure.Configuration.InfrastructureFeatureOptions>>();
+                if (feature!.Value.EnableUserAccessToDashboardSlugs)
+                {
+                    var options = context.HttpContext.RequestServices
+                        .GetService<Microsoft.Extensions.Options.IOptions<
+                            AzureTest.Infrastructure.Configuration.DashboardSettings>>();
+                    var reserved = options?.Value.ReservedSlugs ?? new List<string>();
+
+                    if (reserved.Contains(tempDescriptor.ControllerName, System.StringComparer.OrdinalIgnoreCase))
+                    {
+                        return;
+                    }
+                }
+            }
+        }
 
         if (context.ActionDescriptor is ControllerActionDescriptor descriptor)
         {

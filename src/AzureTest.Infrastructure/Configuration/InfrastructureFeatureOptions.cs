@@ -5,6 +5,7 @@ namespace AzureTest.Infrastructure.Configuration;
 public class InfrastructureFeatureOptions
 {
     // HealthChecks Features
+    public bool EnableUserAccessToDashboardSlugs { get; set; } = false;
     public bool EnableHealthCheck { get; set; } = true;
     public bool EnableHealthCheckUI { get; set; } = true;
     public bool EnableHealthChecksSql { get; set; } = true;
