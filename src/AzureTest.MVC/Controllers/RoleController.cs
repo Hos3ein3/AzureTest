@@ -69,7 +69,7 @@ namespace AzureTest.MVC.Controllers;
             return View(model);
         }
 
-        var command = new CreateRoleCommand(model.RoleName);
+        var command = new CreateRoleCommand(model.RoleName, model.Priority);
         var result = await _commandUnit.CreateRole.HandleAsync(command);
 
         if (result.Success)

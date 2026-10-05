@@ -60,6 +60,10 @@ public static class DependencyInjection
         services.AddScoped<AzureTest.Application.JobCrawler.IJobCrawlerCommandUnit, AzureTest.Application.JobCrawler.JobCrawlerCommandUnit>();
         services.AddScoped<AzureTest.Application.JobCrawler.IJobCrawlerQueryUnit, AzureTest.Application.JobCrawler.JobCrawlerQueryUnit>();
 
+        // House Crawler
+        services.AddScoped<AzureTest.Application.HouseCrawler.Interfaces.IHouseCrawlerCommandUnit, AzureTest.Application.HouseCrawler.HouseCrawlerCommandUnit>();
+        services.AddScoped<AzureTest.Application.HouseCrawler.Interfaces.IHouseCrawlerQueryUnit, AzureTest.Application.HouseCrawler.HouseCrawlerQueryUnit>();
+
         // Idea Tracker
         services.AddScoped<AzureTest.Application.IdeaTracker.IIdeaCommandUnit, AzureTest.Application.IdeaTracker.IdeaCommandUnit>();
         services.AddScoped<AzureTest.Application.IdeaTracker.IIdeaQueryUnit, AzureTest.Application.IdeaTracker.IdeaQueryUnit>();

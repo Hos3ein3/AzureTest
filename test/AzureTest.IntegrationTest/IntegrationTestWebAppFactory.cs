@@ -90,7 +90,30 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
             {
                 services.Remove(seederDescriptor);
             }
+            // Register stub ICurrentUser
+            services.AddScoped<AzureTest.Application.Interfaces.Services.ICurrentUser, TestCurrentUser>();
+            
+            // Register stub INotificationService
+            services.AddScoped<AzureTest.Application.Interfaces.Services.INotificationService, DummyNotificationService>();
         });
+    }
+
+    private class TestCurrentUser : AzureTest.Application.Interfaces.Services.ICurrentUser
+    {
+        public static readonly Guid UserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        public Guid Id => UserId;
+        public string Email => "test@test.com";
+        public string? PhoneNumber => null;
+        public string? ProfileImage => null;
+        public string FirstName => "Test";
+        public string LastName => "User";
+        public string FullName => "Test User";
+        public System.Collections.Generic.IReadOnlyList<string> Roles => new System.Collections.Generic.List<string> { "User" };
+        public System.Collections.Generic.IReadOnlyList<string> Permissions => new System.Collections.Generic.List<string>();
+    }
+
+    private class DummyNotificationService : AzureTest.Application.Interfaces.Services.INotificationService
+    {
     }
 
     private class DummyCompanyCacheService : AzureTest.Application.Interfaces.Services.ICompanyCacheService

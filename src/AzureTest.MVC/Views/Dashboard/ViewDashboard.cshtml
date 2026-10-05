@@ -113,7 +113,7 @@
                                             <script>
                                                 document.addEventListener("DOMContentLoaded", function () {
                                                     try {
-                                                        const config = JSON.parse('@Html.Raw(rawComp.JsonConfiguration.Replace("'", "\\'").Replace("\n", ""))');
+                                                        const config = JSON.parse(`@Html.Raw(rawComp.JsonConfiguration.Replace("'", "\\'").Replace("\n", ""))`);
                                                         
                                                         const isPie = config.chartType === 'pie' || config.chartType === 'doughnut';
                                                         const bgColors = isPie ? ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6', '#f43f5e', '#0ea5e9'] : (config.themeColor || '#3b82f6');
@@ -140,6 +140,23 @@
                                                                     }
                                                                 }
                                                             });
+                                                            return;
+                                                        }
+
+                                                        let fetchUrl = config.endpointUrl;
+                                                        const viewName = '@Html.Raw(rawComp.ViewName ?? "")';
+                                                        if (viewName) {
+                                                            fetchUrl += (fetchUrl.includes('?') ? '&' : '?') + 'viewName=' + encodeURIComponent(viewName);
+                                                            fetch(fetchUrl)
+                                                                .then(res => res.text())
+                                                                .then(html => {
+                                                                    document.getElementById('title-@rawComp.Id').style.display = 'none';
+                                                                    document.getElementById('widget-@rawComp.Id').innerHTML = html;
+                                                                })
+                                                                .catch(err => {
+                                                                    console.error('Error fetching view', err);
+                                                                    document.getElementById('widget-@rawComp.Id').innerHTML = '<p class="text-red-500 text-xs p-2">Error loading view.</p>';
+                                                                });
                                                             return;
                                                         }
 

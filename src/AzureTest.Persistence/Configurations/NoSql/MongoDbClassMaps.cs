@@ -52,6 +52,20 @@ public static class MongoDbClassMaps
                 });
             }
 
+                                BsonClassMap.RegisterClassMap<HouseSearchHistory>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.MapIdProperty(c => c.Id);
+                    cm.SetIgnoreExtraElements(true);
+                });
+
+                BsonClassMap.RegisterClassMap<HouseCrawlerCredential>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.MapIdProperty(c => c.Id);
+                    cm.SetIgnoreExtraElements(true);
+                });
+
                 BsonClassMap.RegisterClassMap<JobSearchHistory>(cm =>
                 {
                     cm.AutoMap();

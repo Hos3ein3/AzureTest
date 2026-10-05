@@ -1,7 +1,5 @@
-
-
 using System;
 
 namespace AzureTest.Contracts.DTOs.Users;
 
-public sealed record RoleDto(Guid Id, string Name);
+public sealed record RoleDto(Guid Id, string Name, int Priority);

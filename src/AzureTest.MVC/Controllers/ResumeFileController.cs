@@ -113,7 +113,7 @@ namespace AzureTest.MVC.Controllers;
     [Description("Execute Explorer operation for Resume File.")]
     public async Task<IActionResult> Explorer(string? folder, CancellationToken cancellationToken)
     {
-        bool isAdmin = _currentUser.Roles.Contains("Admin");
+        bool isAdmin = _currentUser.Roles.Contains("Admin") || _currentUser.Permissions.Contains("ResumeFile/Delete");
         string currentFolder = isAdmin && !string.IsNullOrWhiteSpace(folder) 
             ? folder 
             : _currentUser.Id.ToString();
@@ -188,7 +188,7 @@ namespace AzureTest.MVC.Controllers;
     [Description("View details of a Resume File.")]
     public IActionResult Preview(string folder, string fileName)
     {
-        bool isAdmin = _currentUser.Roles.Contains("Admin");
+        bool isAdmin = _currentUser.Roles.Contains("Admin") || _currentUser.Permissions.Contains("ResumeFile/Delete");
         if (!isAdmin && folder != _currentUser.Id.ToString())
             return Forbid();
 
@@ -204,7 +204,7 @@ namespace AzureTest.MVC.Controllers;
     [Description("Delete a Resume File.")]
     public async Task<IActionResult> DeletePhysicalFile(string folder, string fileName, Guid? documentId, string type, CancellationToken cancellationToken)
     {
-        bool isAdmin = _currentUser.Roles.Contains("Admin");
+        bool isAdmin = _currentUser.Roles.Contains("Admin") || _currentUser.Permissions.Contains("ResumeFile/Delete");
         if (!isAdmin && folder != _currentUser.Id.ToString())
             return Forbid();
 

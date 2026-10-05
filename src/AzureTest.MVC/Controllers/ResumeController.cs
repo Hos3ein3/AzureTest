@@ -1,4 +1,5 @@
 using AzureTest.Application.Resumes;
+using AzureTest.MVC.Extensions;
 using AzureTest.Application.Resumes.Commands.CreateResume;
 using AzureTest.Application.Resumes.Commands.DeleteResume;
 using AzureTest.Application.Resumes.Commands.UpdateResume;
@@ -29,6 +30,7 @@ namespace AzureTest.MVC.Controllers;
     private readonly IResumeDocumentService _documentService;
     private readonly ICompanyRepository _companyRepository;
     private readonly IMemoryCache _cache;
+    private readonly IValidationService _validationService;
 
     public ResumeController(
         IResumeCommandUnit commands,
@@ -36,7 +38,7 @@ namespace AzureTest.MVC.Controllers;
         IResumeValidationUnit validators,
         IResumeDocumentService documentService,
         ICompanyRepository companyRepository,
-        IMemoryCache cache)
+        IMemoryCache cache, IValidationService validationService)
     {
         _commands = commands;
         _queries = queries;
@@ -44,6 +46,7 @@ namespace AzureTest.MVC.Controllers;
         _documentService = documentService;
         _companyRepository = companyRepository;
         _cache = cache;
+        _validationService = validationService;
     }
 
     private async Task LoadLocationsViewBagAsync(CancellationToken cancellationToken)
@@ -133,19 +136,30 @@ namespace AzureTest.MVC.Controllers;
     [Description("Create a new Resume.")]
     public async Task<IActionResult> Create(CreateResumeDto dto, IFormFile? cvFile, IFormFile? clFile, CancellationToken cancellationToken)
     {
-        var validation = await _validators.Create.ValidateAsync(dto, cancellationToken);
-        if (!validation.IsValid)
+        var val= await _validationService.ValidateAsync(dto, cancellationToken);
+        if (val.IsFailure)
         {
-            foreach (var error in validation.Errors)
-                ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
             await LoadCompaniesViewBagAsync();
             await LoadLocationsViewBagAsync(cancellationToken);
-            return View(dto);
+            return val.ToFormResult(this, dto, nameof(Index));
         }
+        
+        
+            
+        
+        
 
         // Convert to UTC before saving
         var commandDto = dto with { CreatedOn = dto.CreatedOn.ToUniversalTime() };
         var id = await _commands.Create.HandleAsync(new CreateResumeCommand(commandDto), cancellationToken);
+
+        if (id.IsFailure)
+        {
+            
+            await LoadCompaniesViewBagAsync();
+            await LoadLocationsViewBagAsync(cancellationToken);
+            return id.ToFormResult(this, dto, nameof(Index));
+        }
 
         // Always create the ResumeFiles document in MongoDB, uploading any attached files
         var createUploadDto = new UploadResumeFilesDto(
@@ -158,7 +172,7 @@ namespace AzureTest.MVC.Controllers;
         _cache.Remove("ResumeLocations"); // Invalidate cache so new locations appear
 
         TempData["Success"] = "Resume created successfully.";
-        return RedirectToAction(nameof(Details), new { id });
+        return RedirectToAction(nameof(Details), new { id.Value });
     }
 
     // GET: /Resume/Edit/{id}
@@ -211,7 +225,20 @@ namespace AzureTest.MVC.Controllers;
 
         // Convert to UTC before saving
         var commandDto = dto with { CreatedOn = dto.CreatedOn.ToUniversalTime() };
-        await _commands.Update.HandleAsync(new UpdateResumeCommand(commandDto), cancellationToken);
+        var result = await _commands.Update.HandleAsync(new UpdateResumeCommand(commandDto), cancellationToken);
+        
+        if (result.IsFailure)
+        {
+            if (result.ValidationErrors.Count > 0)
+                result.AddToModelState(ModelState);
+            else
+                ModelState.AddModelError(string.Empty, result.Message ?? result.Error ?? "Failed to update resume.");
+            
+            ViewBag.Files = await _documentService.GetFileMetadataByResumeIdAsync(id, cancellationToken);
+            await LoadCompaniesViewBagAsync();
+            await LoadLocationsViewBagAsync(cancellationToken);
+            return View(dto);
+        }
 
         // Always update the ResumeFiles document in MongoDB (upserts if missing), replacing any attached files
         var editUploadDto = new UploadResumeFilesDto(
@@ -247,8 +274,15 @@ namespace AzureTest.MVC.Controllers;
             return RedirectToAction(nameof(Details), new { id = dto.Id });
         }
 
-        await _commands.UpdateStatus.HandleAsync(new UpdateResumeStatusCommand(dto), cancellationToken);
+        var result = await _commands.UpdateStatus.HandleAsync(new UpdateResumeStatusCommand(dto), cancellationToken);
         
+        if (result.IsFailure)
+        {
+            if (isAjax) return Json(new { success = false, message = result.Message ?? result.Error });
+            TempData["Error"] = result.Message ?? result.Error ?? "Failed to update status.";
+            return RedirectToAction(nameof(Details), new { id = dto.Id });
+        }
+
         if (isAjax)
         {
             return Json(new { success = true, status = dto.Status.ToString() });
@@ -276,7 +310,12 @@ namespace AzureTest.MVC.Controllers;
     [Description("Delete a Resume.")]
     public async Task<IActionResult> DeleteConfirmed(Guid id, CancellationToken cancellationToken)
     {
-        await _commands.Delete.HandleAsync(new DeleteResumeCommand(id), cancellationToken);
+        var result = await _commands.Delete.HandleAsync(new DeleteResumeCommand(id), cancellationToken);
+        if (result.IsFailure)
+        {
+            TempData["Error"] = result.Message ?? result.Error ?? "Failed to delete resume.";
+            return RedirectToAction(nameof(Index));
+        }
         await _documentService.DeleteAllFilesByResumeIdAsync(id, cancellationToken);
         TempData["Success"] = "Resume deleted successfully.";
         return RedirectToAction(nameof(Index));

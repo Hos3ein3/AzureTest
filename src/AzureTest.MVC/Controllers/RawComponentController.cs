@@ -92,8 +92,14 @@ namespace AzureTest.MVC.Controllers;
             model.Type,
             model.HtmlContent,
             model.JsonConfiguration,
+            model.ViewName,
             model.Category,
-            model.RequiredRole
+            model.RequiredRole ?? "",
+            model.MinWidth,
+            model.MaxWidth,
+            model.MinHeight,
+            model.MaxHeight,
+            model.IsResizable
         );
 
         await _createCommand.HandleAsync(command, cancellationToken);
@@ -149,8 +155,14 @@ namespace AzureTest.MVC.Controllers;
             model.Type,
             model.HtmlContent,
             model.JsonConfiguration,
+            model.ViewName,
             model.Category,
-            model.RequiredRole
+            model.RequiredRole ?? "",
+            model.MinWidth,
+            model.MaxWidth,
+            model.MinHeight,
+            model.MaxHeight,
+            model.IsResizable
         );
 
         await _updateCommand.HandleAsync(command, cancellationToken);

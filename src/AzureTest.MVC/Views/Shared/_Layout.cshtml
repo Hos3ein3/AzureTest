@@ -166,6 +166,12 @@
                     </a>
                 </li>
                 <li>
+                    <a asp-area="" asp-controller="HouseCrawler" asp-action="Index" data-title="House Crawler" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("HouseCrawler")">
+                        <i class="fa-solid fa-house-chimney w-6 @GetActiveIconClasses("HouseCrawler")"></i>
+                        <span class="ml-2 font-medium sidebar-text overflow-hidden whitespace-nowrap transition-all duration-300">House Crawler</span>
+                    </a>
+                </li>
+                <li>
                     <a asp-area="" asp-controller="Company" asp-action="Index" data-title="Companies" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Company")">
                         <i class="fa-solid fa-building w-6 @GetActiveIconClasses("Company")"></i>
                         <span class="ml-2 font-medium sidebar-text overflow-hidden whitespace-nowrap transition-all duration-300">Companies</span>

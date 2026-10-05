@@ -27,6 +27,6 @@ internal sealed class GetAllRolesQueryHandler : BaseQueryHandler<GetAllRolesQuer
     protected override async Task<IReadOnlyList<RoleDto>> ExecuteAsync(GetAllRolesQuery query, CancellationToken cancellationToken)
     {
         var roles = await _roleManager.Roles.ToListAsync(cancellationToken);
-        return roles.Select(r => new RoleDto(r.Id, r.Name ?? string.Empty)).ToList();
+        return roles.Select(r => new RoleDto(r.Id, r.Name ?? string.Empty, r.Priority)).ToList();
     }
 }

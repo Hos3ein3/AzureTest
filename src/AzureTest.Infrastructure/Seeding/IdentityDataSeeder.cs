@@ -22,19 +22,22 @@ public class IdentityDataSeeder
     private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<IdentityDataSeeder> _logger;
+    private readonly Microsoft.Extensions.Options.IOptions<AzureTest.Infrastructure.Configuration.DashboardSettings> _dashboardSettings;
 
     public IdentityDataSeeder(
         UserManager<ApplicationUser> userManager,
         RoleManager<ApplicationRole> roleManager,
         INoSqlUnitOfWork noSqlUnitOfWork,
         IUnitOfWork unitOfWork,
-        ILogger<IdentityDataSeeder> logger)
+        ILogger<IdentityDataSeeder> logger,
+        Microsoft.Extensions.Options.IOptions<AzureTest.Infrastructure.Configuration.DashboardSettings> dashboardSettings)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _noSqlUnitOfWork = noSqlUnitOfWork;
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _dashboardSettings = dashboardSettings;
     }
 
     public async Task SeedAsync()
@@ -51,8 +54,39 @@ public class IdentityDataSeeder
             if (!await _roleManager.RoleExistsAsync(adminRoleName))
                 await _roleManager.CreateAsync(new ApplicationRole { Name = adminRoleName });
 
+            
             if (!await _roleManager.RoleExistsAsync(userRoleName))
                 await _roleManager.CreateAsync(new ApplicationRole { Name = userRoleName });
+
+            // Assign Dashboard reserved slugs permissions to User role
+            var userRole = await _roleManager.FindByNameAsync(userRoleName);
+            if (userRole != null)
+            {
+                var reservedControllers = _dashboardSettings.Value?.ReservedSlugs ?? new List<string>();
+                var allPermissions = await _unitOfWork.Permissions.GetAllPermissionsAsync();
+                
+                // Get current role permissions
+                var currentRolePermissions = await _unitOfWork.RolePermissions.GetPermissionsByRoleAsync(userRoleName);
+                var currentPermIds = new System.Collections.Generic.HashSet<Guid>(currentRolePermissions.Select(rp => rp.PermissionId));
+
+                foreach (var perm in allPermissions)
+                {
+                    if (reservedControllers.Contains(perm.ControllerName, StringComparer.OrdinalIgnoreCase))
+                    {
+                        if (!currentPermIds.Contains(perm.Id))
+                        {
+                            _unitOfWork.RolePermissions.Add(new RolePermission
+                            {
+                                
+                                RoleName = userRole.Name,
+                                PermissionId = perm.Id
+                            });
+                        }
+                    }
+                }
+                await _unitOfWork.SaveChangesAsync();
+            }
+
 
             // Create system user
             var systemUserEmail = "system@azuretest.local";
@@ -185,35 +219,35 @@ var userUserEmail = "mohammadhosein.behzadifard@gmail.com";
         // JSON Configs for Real Data via AnalyticsEndpointController
         var jsonConfigs = new[]
         {
-            new { Name = "Status Breakdown", Url = "/api/analyticsendpoint/status-counts", Type = "doughnut", Color = "#3b82f6" },
-            new { Name = "Applications By Date", Url = "/api/analyticsendpoint/applications-by-date", Type = "line", Color = "#10b981" },
-            new { Name = "Top Positions", Url = "/api/analyticsendpoint/position-counts", Type = "bar", Color = "#8b5cf6" },
-            new { Name = "Top Locations", Url = "/api/analyticsendpoint/location-counts", Type = "bar", Color = "#f59e0b" },
-            new { Name = "Application Sources", Url = "/api/analyticsendpoint/source-counts", Type = "pie", Color = "#ec4899" },
-            new { Name = "Expenses by Category", Url = "/api/analyticsendpoint/expenses-by-category", Type = "doughnut", Color = "#f43f5e" },
-            new { Name = "Debts by Person", Url = "/api/analyticsendpoint/debts-by-person", Type = "bar", Color = "#14b8a6" },
-            new { Name = "Ticket Status", Url = "/api/analyticsendpoint/ticket-status-counts", Type = "doughnut", Color = "#0284c7" },
-            new { Name = "Habit Adherence", Url = "/api/analyticsendpoint/habit-adherence", Type = "pie", Color = "#10b981" },
-            new { Name = "Monthly Expenses", Url = "/api/analyticsendpoint/monthly-expenses", Type = "line", Color = "#f43f5e" },
-            new { Name = "Monthly Debts", Url = "/api/analyticsendpoint/monthly-debts", Type = "line", Color = "#8b5cf6" },
+            new { Name = "Status Breakdown", Url = "/api/analytics/status-counts", Type = "doughnut", Color = "#3b82f6" },
+            new { Name = "Applications By Date", Url = "/api/analytics/applications-by-date", Type = "line", Color = "#10b981" },
+            new { Name = "Top Positions", Url = "/api/analytics/position-counts", Type = "bar", Color = "#8b5cf6" },
+            new { Name = "Top Locations", Url = "/api/analytics/location-counts", Type = "bar", Color = "#f59e0b" },
+            new { Name = "Application Sources", Url = "/api/analytics/source-counts", Type = "pie", Color = "#ec4899" },
+            new { Name = "Expenses by Category", Url = "/api/analytics/expenses-by-category", Type = "doughnut", Color = "#f43f5e" },
+            new { Name = "Debts by Person", Url = "/api/analytics/debts-by-person", Type = "bar", Color = "#14b8a6" },
+            new { Name = "Ticket Status", Url = "/api/analytics/ticket-status-counts", Type = "doughnut", Color = "#0284c7" },
+            new { Name = "Habit Adherence", Url = "/api/analytics/habit-adherence", Type = "pie", Color = "#10b981" },
+            new { Name = "Monthly Expenses", Url = "/api/analytics/monthly-expenses", Type = "line", Color = "#f43f5e" },
+            new { Name = "Monthly Debts", Url = "/api/analytics/monthly-debts", Type = "line", Color = "#8b5cf6" },
             // KPIs
-            new { Name = "Total Applications", Url = "/api/analyticsendpoint/total-applications", Type = "kpi", Color = "#3b82f6" },
-            new { Name = "Active Processing", Url = "/api/analyticsendpoint/active-processing", Type = "kpi", Color = "#10b981" },
-            new { Name = "Interview Rate", Url = "/api/analyticsendpoint/interview-rate", Type = "kpi", Color = "#f59e0b" },
-            new { Name = "Total Companies", Url = "/api/analyticsendpoint/total-companies", Type = "kpi", Color = "#6366f1" },
-            new { Name = "Registered Users", Url = "/api/analyticsendpoint/registered-users", Type = "kpi", Color = "#ec4899" },
-            new { Name = "Occupied Storage", Url = "/api/analyticsendpoint/occupied-storage", Type = "kpi", Color = "#8b5cf6" },
-            new { Name = "Outstanding Debt", Url = "/api/analyticsendpoint/outstanding-debt", Type = "kpi", Color = "#ef4444" },
-            new { Name = "Expenses This Month", Url = "/api/analyticsendpoint/expenses-this-month", Type = "kpi", Color = "#f97316" },
-            new { Name = "Unanswered Tickets", Url = "/api/analyticsendpoint/unanswered-tickets", Type = "kpi", Color = "#0ea5e9" },
+            new { Name = "Total Applications", Url = "/api/analytics/total-applications", Type = "kpi", Color = "#3b82f6" },
+            new { Name = "Active Processing", Url = "/api/analytics/active-processing", Type = "kpi", Color = "#10b981" },
+            new { Name = "Interview Rate", Url = "/api/analytics/interview-rate", Type = "kpi", Color = "#f59e0b" },
+            new { Name = "Total Companies", Url = "/api/analytics/total-companies", Type = "kpi", Color = "#6366f1" },
+            new { Name = "Registered Users", Url = "/api/analytics/registered-users", Type = "kpi", Color = "#ec4899" },
+            new { Name = "Occupied Storage", Url = "/api/analytics/occupied-storage", Type = "kpi", Color = "#8b5cf6" },
+            new { Name = "Outstanding Debt", Url = "/api/analytics/outstanding-debt", Type = "kpi", Color = "#ef4444" },
+            new { Name = "Expenses This Month", Url = "/api/analytics/expenses-this-month", Type = "kpi", Color = "#f97316" },
+            new { Name = "Unanswered Tickets", Url = "/api/analytics/unanswered-tickets", Type = "kpi", Color = "#0ea5e9" },
             // Lists
-            new { Name = "Pending Tasks", Url = "/api/analyticsendpoint/pending-tasks", Type = "list", Color = "#3b82f6" },
-            new { Name = "Upcoming Events", Url = "/api/analyticsendpoint/upcoming-events", Type = "list", Color = "#10b981" },
-            new { Name = "Daily Habits", Url = "/api/analyticsendpoint/daily-habits", Type = "list", Color = "#f59e0b" },
-            new { Name = "Recent Debts", Url = "/api/analyticsendpoint/recent-debts", Type = "list", Color = "#ef4444" },
-            new { Name = "Recent Expenses", Url = "/api/analyticsendpoint/recent-expenses", Type = "list", Color = "#ec4899" },
-            new { Name = "Debts Due Soon", Url = "/api/analyticsendpoint/debts-due-soon", Type = "list", Color = "#f43f5e" },
-            new { Name = "Recent Activity", Url = "/api/analyticsendpoint/recent-activity", Type = "list", Color = "#6366f1" }
+            new { Name = "Pending Tasks", Url = "/api/analytics/pending-tasks", Type = "list", Color = "#3b82f6" },
+            new { Name = "Upcoming Events", Url = "/api/analytics/upcoming-events", Type = "list", Color = "#10b981" },
+            new { Name = "Daily Habits", Url = "/api/analytics/daily-habits", Type = "list", Color = "#f59e0b" },
+            new { Name = "Recent Debts", Url = "/api/analytics/recent-debts", Type = "list", Color = "#ef4444" },
+            new { Name = "Recent Expenses", Url = "/api/analytics/recent-expenses", Type = "list", Color = "#ec4899" },
+            new { Name = "Debts Due Soon", Url = "/api/analytics/debts-due-soon", Type = "list", Color = "#f43f5e" },
+            new { Name = "Recent Activity", Url = "/api/analytics/recent-activity", Type = "list", Color = "#6366f1" }
         };
 
         foreach (var j in jsonConfigs)
@@ -256,7 +290,10 @@ var userUserEmail = "mohammadhosein.behzadifard@gmail.com";
                 Name = h.Item1,
                 Type = "RawHtml",
                 Category = "Widgets",
-                HtmlContent = h.Item2
+                HtmlContent = h.Item2,
+                MinWidth = 2,
+                MinHeight = 2,
+                IsResizable = true
             });
         }
         

@@ -59,7 +59,7 @@ namespace AzureTest.MVC.Controllers;
     [Description("View a list of Expense.")]
     public async Task<IActionResult> Index(GetAllExpensesFilters filters, CancellationToken cancellationToken)
     {
-        if (!_currentUser.Roles.Contains("Admin"))
+        if (!_currentUser.Roles.Contains("Admin") && !_currentUser.Permissions.Contains("Expense/Analytics"))
         {
             filters.UserId = _currentUser.Id;
         }
@@ -207,7 +207,7 @@ namespace AzureTest.MVC.Controllers;
     [Description("Execute Analytics operation for Expense.")]
     public async Task<IActionResult> Analytics(Guid? userId, CancellationToken cancellationToken)
     {
-        var isAdmin = _currentUser.Roles.Contains("Admin");
+        var isAdmin = _currentUser.Roles.Contains("Admin") || _currentUser.Permissions.Contains("Expense/Analytics");
         // Non-admin strictly sees their own expenses; admin can view all or specific user
         var targetUserId = !isAdmin ? _currentUser.Id : userId;
 

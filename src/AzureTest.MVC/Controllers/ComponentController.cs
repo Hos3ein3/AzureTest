@@ -24,21 +24,19 @@ namespace AzureTest.MVC.Controllers;
 [Description("Manage and control Component operations.")]
     public class ComponentController : Controller
 {
-    private readonly IQueryHandler<GetAllComponentsQuery, AzureTest.Contracts.DTOs.Common.PagedResult<DashboardComponent>> _getAllComponentsQuery;
+    private readonly IQueryHandler<GetAllComponentsQuery, AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.Dashboards.UnifiedComponentDto>> _getAllComponentsQuery;
     private readonly IQueryHandler<GetComponentByIdQuery, DashboardComponent?> _getComponentByIdQuery;
     private readonly ICommandHandler<CreateDashboardComponentCommand> _createCommand;
     private readonly ICommandHandler<UpdateDashboardComponentCommand> _updateCommand;
     private readonly ICommandHandler<DeleteDashboardComponentCommand> _deleteCommand;
-    private readonly IQueryHandler<GetAllRawComponentsQuery, IReadOnlyList<DashboardRawComponent>> _getAllRawComponentsQuery;
     private readonly IWebHostEnvironment _webHostEnvironment;
 
     public ComponentController(
-        IQueryHandler<GetAllComponentsQuery, AzureTest.Contracts.DTOs.Common.PagedResult<DashboardComponent>> getAllComponentsQuery,
+        IQueryHandler<GetAllComponentsQuery, AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.Dashboards.UnifiedComponentDto>> getAllComponentsQuery,
         IQueryHandler<GetComponentByIdQuery, DashboardComponent?> getComponentByIdQuery,
         ICommandHandler<CreateDashboardComponentCommand> createCommand,
         ICommandHandler<UpdateDashboardComponentCommand> updateCommand,
         ICommandHandler<DeleteDashboardComponentCommand> deleteCommand,
-        IQueryHandler<GetAllRawComponentsQuery, IReadOnlyList<DashboardRawComponent>> getAllRawComponentsQuery,
         IWebHostEnvironment webHostEnvironment)
     {
         _getAllComponentsQuery = getAllComponentsQuery;
@@ -46,24 +44,23 @@ namespace AzureTest.MVC.Controllers;
         _createCommand = createCommand;
         _updateCommand = updateCommand;
         _deleteCommand = deleteCommand;
-        _getAllRawComponentsQuery = getAllRawComponentsQuery;
         _webHostEnvironment = webHostEnvironment;
     }
 
     [DisplayName("Index")]
     [Description("View a list of Component.")]
-    public async Task<IActionResult> Index(CancellationToken cancellationToken, string? searchTerm = null, string? category = null, string? sortBy = null, bool sortDescending = false, int pageNumber = 1, int pageSize = 10)
+    public async Task<IActionResult> Index(CancellationToken cancellationToken, string? search = null, string? category = null, string? type = null, string sort = "Name", string dir = "asc", int page = 1)
     {
-        var query = new GetAllComponentsQuery(searchTerm, category, sortBy, sortDescending, pageNumber, pageSize);
+        var query = new GetAllComponentsQuery(search, category, type, sort, dir, page, 10);
         var components = await _getAllComponentsQuery.HandleAsync(query, cancellationToken);
         
-        ViewBag.SearchTerm = searchTerm;
+        ViewBag.CurrentSearch = search;
         ViewBag.Category = category;
-        ViewBag.SortBy = sortBy;
-        ViewBag.SortDescending = sortDescending;
-        
-        var rawComponents = await _getAllRawComponentsQuery.HandleAsync(new GetAllRawComponentsQuery(), cancellationToken);
-        ViewBag.RawComponents = rawComponents;
+        ViewBag.CurrentType = type;
+        ViewBag.CurrentSort = sort;
+        ViewBag.CurrentDir = dir;
+        ViewBag.CurrentPage = page;
+        ViewBag.TotalPages = components.TotalPages;
         
         return View(components);
     }
@@ -109,7 +106,12 @@ namespace AzureTest.MVC.Controllers;
             model.RequiredRole ?? "",
             model.PartialViewName,
             model.DefaultWidth,
-            model.DefaultHeight
+            model.DefaultHeight,
+            model.MinWidth,
+            model.MaxWidth,
+            model.MinHeight,
+            model.MaxHeight,
+            model.IsResizable
         );
 
         await _createCommand.HandleAsync(cmd, cancellationToken);
@@ -169,7 +171,12 @@ namespace AzureTest.MVC.Controllers;
             model.RequiredRole ?? "",
             model.PartialViewName,
             model.DefaultWidth,
-            model.DefaultHeight
+            model.DefaultHeight,
+            model.MinWidth,
+            model.MaxWidth,
+            model.MinHeight,
+            model.MaxHeight,
+            model.IsResizable
         );
 
         await _updateCommand.HandleAsync(cmd, cancellationToken);

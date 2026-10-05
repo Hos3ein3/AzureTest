@@ -22,6 +22,7 @@ public static class DependencyInjection
         
         // ── Crawler Service ───────────────────────────────────────────────────
         services.AddHttpClient<IIndCrawlerService, IndCrawlerService>();
+        services.AddScoped<AzureTest.Application.Interfaces.Services.IHouseCrawlerService, AzureTest.Infrastructure.Services.HouseCrawlerService>();
 
         // ── Caching ───────────────────────────────────────────────────────────
         var redisConnectionString = configuration.GetConnectionString("Redis");

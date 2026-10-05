@@ -1,5 +1,3 @@
-
-
 using System;
 using Microsoft.AspNetCore.Identity;
 
@@ -14,4 +12,7 @@ public class ApplicationRole : IdentityRole<Guid>
     public ApplicationRole(string roleName) : base(roleName)
     {
     }
+
+    // Role priority to determine hierarchy (e.g. SEO Specialist > Writer)
+    public int Priority { get; set; }
 }

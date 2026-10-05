@@ -157,4 +157,11 @@ public class SimulateSetting
         get => AddSeedTicketMessage;
         set => AddSeedTicketMessage = value;
     }
+
+    public bool AddSeedIdea { get; set; } = true;
+    public bool AddSeedIdeas
+    {
+        get => AddSeedIdea;
+        set => AddSeedIdea = value;
+    }
 }

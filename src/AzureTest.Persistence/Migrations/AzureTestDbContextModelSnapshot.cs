@@ -309,6 +309,9 @@ namespace AzureTest.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedName")
@@ -457,7 +460,7 @@ namespace AzureTest.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Permissions", "identity");
+                    b.ToTable("Permissions", "Identity");
                 });
 
             modelBuilder.Entity("AzureTest.Domain.Entities.Resume", b =>
@@ -555,7 +558,7 @@ namespace AzureTest.Persistence.Migrations
 
                     b.HasIndex("PermissionId");
 
-                    b.ToTable("RolePermissions", "identity");
+                    b.ToTable("RolePermissions", "Identity");
                 });
 
             modelBuilder.Entity("AzureTest.Domain.Entities.TaskItem", b =>

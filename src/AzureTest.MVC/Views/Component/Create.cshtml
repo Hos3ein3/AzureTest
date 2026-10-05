@@ -78,6 +78,36 @@
                     <input asp-for="DefaultHeight" type="number" min="1" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" />
                     <span asp-validation-for="DefaultHeight" class="text-xs text-red-500"></span>
                 </div>
+                <div>
+                    <label asp-for="MinWidth" class="block text-sm font-medium text-slate-700">Min Width (1-12)</label>
+                    <input asp-for="MinWidth" type="number" min="0" max="12" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" />
+                    <span asp-validation-for="MinWidth" class="text-xs text-red-500"></span>
+                </div>
+
+                <div>
+                    <label asp-for="MaxWidth" class="block text-sm font-medium text-slate-700">Max Width (1-12)</label>
+                    <input asp-for="MaxWidth" type="number" min="0" max="12" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" />
+                    <span asp-validation-for="MaxWidth" class="text-xs text-red-500"></span>
+                </div>
+
+                <div>
+                    <label asp-for="MinHeight" class="block text-sm font-medium text-slate-700">Min Height</label>
+                    <input asp-for="MinHeight" type="number" min="0" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" />
+                    <span asp-validation-for="MinHeight" class="text-xs text-red-500"></span>
+                </div>
+
+                <div>
+                    <label asp-for="MaxHeight" class="block text-sm font-medium text-slate-700">Max Height</label>
+                    <input asp-for="MaxHeight" type="number" min="0" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" />
+                    <span asp-validation-for="MaxHeight" class="text-xs text-red-500"></span>
+                </div>
+
+                <div class="md:col-span-2 flex items-center">
+                    <input asp-for="IsResizable" type="checkbox" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-slate-300 rounded" />
+                    <label asp-for="IsResizable" class="ml-2 block text-sm font-medium text-slate-700">Is Resizable?</label>
+                    <span asp-validation-for="IsResizable" class="text-xs text-red-500"></span>
+                </div>
+
             </div>
 
             <div class="flex justify-end pt-5 border-t border-slate-100">

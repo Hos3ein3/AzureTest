@@ -46,6 +46,7 @@ internal sealed class AssignRolesToUserCommandHandler : ICommandHandler<AssignRo
             }
         }
         _logger.LogInformation("Admin updated roles for user {UserId}", command.UserId);
+        await _userManager.UpdateSecurityStampAsync(user);
         return (true, Array.Empty<string>());
     }
 }

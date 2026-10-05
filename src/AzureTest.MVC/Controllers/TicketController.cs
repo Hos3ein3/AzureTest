@@ -53,7 +53,7 @@ namespace AzureTest.MVC.Controllers;
         int? pageNumber = null,
         int pageSize = 10)
     {
-        bool isStaff = _currentUser.Roles.Contains("Admin") || _currentUser.Roles.Contains("Support");
+        bool isStaff = _currentUser.Roles.Contains("Admin") || _currentUser.Permissions.Contains("Ticket/UpdateStatus");
         var tickets = await _ticketQuery.GetAllTickets.HandleAsync(new GetAllTicketsQuery(isStaff ? null : _currentUser.Id), default);
 
         IEnumerable<TicketDto> query = tickets;
@@ -125,7 +125,7 @@ namespace AzureTest.MVC.Controllers;
     [Description("View details of a Ticket.")]
     public async Task<IActionResult> Details(Guid id)
     {
-        bool isStaff = _currentUser.Roles.Contains("Admin") || _currentUser.Roles.Contains("Support");
+        bool isStaff = _currentUser.Roles.Contains("Admin") || _currentUser.Permissions.Contains("Ticket/UpdateStatus");
         var ticket = await _ticketQuery.GetTicketById.HandleAsync(new GetTicketByIdQuery(id, isStaff ? null : _currentUser.Id), default);
         
         if (ticket == null) return NotFound();
@@ -166,4 +166,32 @@ namespace AzureTest.MVC.Controllers;
         await _ticketCommand.UpdateTicketStatus.HandleAsync(new UpdateTicketStatusCommand(ticketId, status), default);
         return RedirectToAction(nameof(Details), new { id = ticketId });
     }
+
+    
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Report Bug")]
+    [Description("Automatically generate a bug ticket from an error page.")]
+    public async Task<IActionResult> ReportBug(string requestId, string exceptionMessage, string innerExceptionMessage)
+    {
+        var subject = $"Automated Bug Report - Req: {requestId}";
+        var content = $@"An automated bug report was generated.
+
+Exception:
+{exceptionMessage}
+
+Inner Exception:
+{innerExceptionMessage}";
+        
+        var ticketId = await _ticketCommand.CreateTicket.HandleAsync(new CreateTicketCommand(subject, content, TicketPriority.High), default);
+        
+        if (ticketId.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "Bug report submitted successfully! Thank you.";
+            return RedirectToAction(nameof(Details), new { id = ticketId.Value });
+        }
+        
+        return RedirectToAction("Index", "Home");
+    }
 }
+

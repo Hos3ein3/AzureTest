@@ -1,5 +1,4 @@
 using AzureTest.Application.Abstractions;
-
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,13 +12,18 @@ namespace AzureTest.Application.Dashboards.Components.Commands;
 // CREATE
 public record CreateDashboardComponentCommand(
     string Name,
-    string Description,
-    string ImagePath,
+    string? Description,
+    string? ImagePath,
     string Category,
-    string RequiredRole,
+    string? RequiredRole,
     string PartialViewName,
     int DefaultWidth,
-    int DefaultHeight
+    int DefaultHeight,
+    int MinWidth,
+    int MaxWidth,
+    int MinHeight,
+    int MaxHeight,
+    bool IsResizable
 ) : ICommand;
 
 public class CreateDashboardComponentCommandValidator : AbstractValidator<CreateDashboardComponentCommand>
@@ -27,10 +31,15 @@ public class CreateDashboardComponentCommandValidator : AbstractValidator<Create
     public CreateDashboardComponentCommandValidator()
     {
         RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
-        RuleFor(x => x.PartialViewName).NotEmpty().MaximumLength(100);
-        RuleFor(x => x.Category).NotEmpty().MaximumLength(50);
+        RuleFor(x => x.PartialViewName).MaximumLength(100);
+        RuleFor(x => x.Category).MaximumLength(50);
         RuleFor(x => x.DefaultWidth).GreaterThan(0);
         RuleFor(x => x.DefaultHeight).GreaterThan(0);
+        RuleFor(x => x.MinWidth).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MaxWidth).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MinHeight).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MaxHeight).GreaterThanOrEqualTo(0);
+       
     }
 }
 
@@ -54,7 +63,12 @@ public class CreateDashboardComponentCommandHandler : ICommandHandler<CreateDash
             RequiredRole = command.RequiredRole ?? "",
             PartialViewName = command.PartialViewName,
             DefaultWidth = command.DefaultWidth,
-            DefaultHeight = command.DefaultHeight
+            DefaultHeight = command.DefaultHeight,
+            MinWidth = command.MinWidth,
+            MaxWidth = command.MaxWidth,
+            MinHeight = command.MinHeight,
+            MaxHeight = command.MaxHeight,
+            IsResizable = command.IsResizable
         };
 
         await _unitOfWork.DashboardComponents.AddAsync(component, cancellationToken);
@@ -66,13 +80,18 @@ public class CreateDashboardComponentCommandHandler : ICommandHandler<CreateDash
 public record UpdateDashboardComponentCommand(
     Guid Id,
     string Name,
-    string Description,
-    string ImagePath,
+    string? Description,
+    string? ImagePath,
     string Category,
-    string RequiredRole,
+    string? RequiredRole,
     string PartialViewName,
     int DefaultWidth,
-    int DefaultHeight
+    int DefaultHeight,
+    int MinWidth,
+    int MaxWidth,
+    int MinHeight,
+    int MaxHeight,
+    bool IsResizable
 ) : ICommand;
 
 public class UpdateDashboardComponentCommandValidator : AbstractValidator<UpdateDashboardComponentCommand>
@@ -85,6 +104,10 @@ public class UpdateDashboardComponentCommandValidator : AbstractValidator<Update
         RuleFor(x => x.Category).NotEmpty().MaximumLength(50);
         RuleFor(x => x.DefaultWidth).GreaterThan(0);
         RuleFor(x => x.DefaultHeight).GreaterThan(0);
+        RuleFor(x => x.MinWidth).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MaxWidth).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MinHeight).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MaxHeight).GreaterThanOrEqualTo(0);
     }
 }
 
@@ -110,6 +133,11 @@ public class UpdateDashboardComponentCommandHandler : ICommandHandler<UpdateDash
         component.PartialViewName = command.PartialViewName;
         component.DefaultWidth = command.DefaultWidth;
         component.DefaultHeight = command.DefaultHeight;
+        component.MinWidth = command.MinWidth;
+        component.MaxWidth = command.MaxWidth;
+        component.MinHeight = command.MinHeight;
+        component.MaxHeight = command.MaxHeight;
+        component.IsResizable = command.IsResizable;
 
         await _unitOfWork.DashboardComponents.UpdateAsync(component.Id,component, cancellationToken);
         return Result.Success();

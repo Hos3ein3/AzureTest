@@ -54,16 +54,6 @@ public class AzureTestDbContext : IdentityDbContext<ApplicationUser, Application
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
-        // Identity Schema Mapping
-        modelBuilder.Entity<ApplicationUser>().ToTable("Users", "Identity");
-        modelBuilder.Entity<ApplicationRole>().ToTable("Roles", "Identity");
-        modelBuilder.Entity<IdentityUserRole<Guid>>().ToTable("UserRoles", "Identity");
-        modelBuilder.Entity<IdentityUserClaim<Guid>>().ToTable("UserClaims", "Identity");
-        modelBuilder.Entity<IdentityUserLogin<Guid>>().ToTable("UserLogins", "Identity");
-        modelBuilder.Entity<IdentityRoleClaim<Guid>>().ToTable("RoleClaims", "Identity");
-        modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("UserTokens", "Identity");
-        modelBuilder.Entity<RefreshToken>().ToTable("RefreshTokens", "Identity");
 
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 

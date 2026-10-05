@@ -71,7 +71,8 @@
 </div>
 
 <div class="mb-6">
-    <label asp-for="Location" class="block text-sm font-medium text-slate-700 mb-1">Location</label>
+    <label asp-for="Location" class="block text-sm font-medium text-slate-700 mb-1">Location
+        <span class="text-red-500">*</span></label>
     <input asp-for="Location" list="locationOptions" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="e.g. Remote, New York, NY" />
     <datalist id="locationOptions">
         @if (ViewBag.Locations != null)
@@ -87,7 +88,8 @@
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
     <div>
-        <label asp-for="JobLink" class="block text-sm font-medium text-slate-700 mb-1">Job Link</label>
+        <label asp-for="JobLink" class="block text-sm font-medium text-slate-700 mb-1">Job Link
+            <span class="text-red-500">*</span></label>
         <input asp-for="JobLink" type="url" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="https://..." />
         <span asp-validation-for="JobLink" class="text-red-500 text-xs mt-1 block"></span>
     </div>
@@ -105,7 +107,8 @@
 </div>
 
 <div class="mb-6">
-    <label asp-for="Description" class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+    <label asp-for="Description" class="block text-sm font-medium text-slate-700 mb-1">Description
+        <span class="text-red-500">*</span></label>
     <textarea asp-for="Description" rows="4" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border"
               placeholder="Job description or notes about the role..."></textarea>
     <span asp-validation-for="Description" class="text-red-500 text-xs mt-1 block"></span>

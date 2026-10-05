@@ -9,18 +9,25 @@ using System.Threading.Tasks;
 using AzureTest.MVC.Services;
 using System.Collections.Generic;
 
+using AzureTest.Application.Messaging;
+using AzureTest.Application.Resumes.Queries.GetResumeById;
+using AzureTest.Contracts.DTOs.Resumes;
+
 namespace AzureTest.MVC.Controllers.Api
 {
     [Authorize]
     [ApiController]
-    [Route("api/[controller]")]
-    public class AnalyticsEndpointController : ControllerBase
+    [Route("api/analytics")]
+    public class AnalyticsEndpointController : Controller
     {
         private readonly IDashboardDataLoader _dataLoader;
+        private readonly IQueryHandler<GetResumeByIdQuery, ResumeDto?> _getAnalyticsQuery;
+        
 
-        public AnalyticsEndpointController(IDashboardDataLoader dataLoader)
+        public AnalyticsEndpointController(IDashboardDataLoader dataLoader, IQueryHandler<GetResumeByIdQuery, ResumeDto?> getAnalyticsQuery)
         {
             _dataLoader = dataLoader;
+            _getAnalyticsQuery = getAnalyticsQuery;
         }
 
         [HttpGet("status-counts")]
@@ -230,6 +237,22 @@ namespace AzureTest.MVC.Controllers.Api
             var data = await _dataLoader.LoadDataAsync(User, null, cancellationToken);
             var result = data.Analytics.RecentActivities.Select(a => new { title = a.PositionTitle, subtitle = a.CompanyName + " - " + a.Status });
             return Ok(result);
+        }
+        [HttpGet("resume-analytic/{id}")]
+        public async Task<IActionResult> GetResumeInfo(Guid id, [FromQuery] string? viewName, CancellationToken cancellationToken)
+        {
+            var data = await _getAnalyticsQuery.HandleAsync(new GetResumeByIdQuery(id), cancellationToken);
+            if (data == null)
+            {
+                return NotFound("Resume not found.");
+            }
+
+            if (!string.IsNullOrEmpty(viewName))
+            {
+                return PartialView($"~/Views/Shared/Widgets/{viewName}.cshtml", data);
+            }
+
+            return Ok(data);
         }
     }
 }

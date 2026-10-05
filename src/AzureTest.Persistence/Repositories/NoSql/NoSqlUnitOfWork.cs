@@ -27,6 +27,8 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     private IIdeaRepository? _ideas;
     private IIdeaPageRepository? _ideaPages;
     private IIdeaSectionRepository? _ideaSections;
+    private IHouseSearchHistoryRepository? _houseSearchHistories;
+    private IHouseCrawlerCredentialRepository? _houseCrawlerCredentials;
 
 
 
@@ -49,6 +51,8 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     public IIdeaRepository Ideas => _ideas ??= new IdeaRepository(_database);
     public IIdeaPageRepository IdeaPages => _ideaPages ??= new IdeaPageRepository(_database);
     public IIdeaSectionRepository IdeaSections => _ideaSections ??= new IdeaSectionRepository(_database);
+    public IHouseSearchHistoryRepository HouseSearchHistories => _houseSearchHistories ??= new HouseSearchHistoryRepository(_database);
+    public IHouseCrawlerCredentialRepository HouseCrawlerCredentials => _houseCrawlerCredentials ??= new HouseCrawlerCredentialRepository(_database);
 
 
 

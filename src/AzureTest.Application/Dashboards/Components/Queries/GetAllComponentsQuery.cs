@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -5,13 +6,13 @@ using System.Threading.Tasks;
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.Common;
-using AzureTest.Domain.Documents;
+using AzureTest.Contracts.DTOs.Dashboards;
 
 namespace AzureTest.Application.Dashboards.Components.Queries;
 
-public record GetAllComponentsQuery(string? SearchTerm = null, string? Category = null, string? SortBy = null, bool SortDescending = false, int PageNumber = 1, int PageSize = 10) : IQuery<PagedResult<DashboardComponent>>;
+public record GetAllComponentsQuery(string? Search = null, string? Category = null, string? Type = null, string? Sort = null, string? Dir = null, int Page = 1, int PageSize = 10) : IQuery<PagedResult<UnifiedComponentDto>>;
 
-public class GetAllComponentsQueryHandler : IQueryHandler<GetAllComponentsQuery, PagedResult<DashboardComponent>>
+public class GetAllComponentsQueryHandler : IQueryHandler<GetAllComponentsQuery, PagedResult<UnifiedComponentDto>>
 {
     private readonly INoSqlUnitOfWork _unitOfWork;
 
@@ -20,15 +21,41 @@ public class GetAllComponentsQueryHandler : IQueryHandler<GetAllComponentsQuery,
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<PagedResult<DashboardComponent>> HandleAsync(GetAllComponentsQuery query, CancellationToken cancellationToken = default)
+    public async Task<PagedResult<UnifiedComponentDto>> HandleAsync(GetAllComponentsQuery query, CancellationToken cancellationToken = default)
     {
-        var all = await _unitOfWork.DashboardComponents.GetAllAsync(cancellationToken);
-        var filtered = all.AsQueryable();
+        var standardComps = await _unitOfWork.DashboardComponents.GetAllAsync(cancellationToken);
+        var rawComps = await _unitOfWork.DashboardRawComponents.GetAllAsync(cancellationToken);
 
-        if (!string.IsNullOrWhiteSpace(query.SearchTerm))
+        var unifiedList = new List<UnifiedComponentDto>();
+
+        unifiedList.AddRange(standardComps.Select(c => new UnifiedComponentDto
         {
-            var lowerSearch = query.SearchTerm.ToLower();
-            filtered = filtered.Where(c => c.Name.ToLower().Contains(lowerSearch) || c.Description.ToLower().Contains(lowerSearch) || c.PartialViewName.ToLower().Contains(lowerSearch));
+            Id = c.Id,
+            Name = c.Name,
+            Description = c.Description ?? "",
+            Type = "Standard",
+            Category = c.Category ?? "General",
+            RequiredRole = c.RequiredRole ?? "",
+            IsRaw = false
+        }));
+
+        unifiedList.AddRange(rawComps.Select(c => new UnifiedComponentDto
+        {
+            Id = c.Id,
+            Name = c.Name,
+            Description = c.Type == "RawHtml" ? "Raw HTML Snippet" : "JSON Configuration",
+            Type = c.Type,
+            Category = c.Category ?? "General",
+            RequiredRole = c.RequiredRole ?? "",
+            IsRaw = true
+        }));
+
+        var filtered = unifiedList.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var lowerSearch = query.Search.ToLower();
+            filtered = filtered.Where(c => c.Name.ToLower().Contains(lowerSearch) || c.Description.ToLower().Contains(lowerSearch) || c.Type.ToLower().Contains(lowerSearch));
         }
 
         if (!string.IsNullOrWhiteSpace(query.Category))
@@ -37,15 +64,21 @@ public class GetAllComponentsQueryHandler : IQueryHandler<GetAllComponentsQuery,
             filtered = filtered.Where(c => c.Category.ToLower() == lowerCat);
         }
 
-        if (!string.IsNullOrWhiteSpace(query.SortBy))
+        if (!string.IsNullOrWhiteSpace(query.Type))
         {
-            var sort = query.SortBy.ToLower();
+            var lowerType = query.Type.ToLower();
+            filtered = filtered.Where(c => c.Type.ToLower() == lowerType);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Sort))
+        {
+            var sort = query.Sort.ToLower();
             if (sort == "name")
-                filtered = query.SortDescending ? filtered.OrderByDescending(c => c.Name) : filtered.OrderBy(c => c.Name);
+                filtered = query.Dir == "desc" ? filtered.OrderByDescending(c => c.Name) : filtered.OrderBy(c => c.Name);
             else if (sort == "category")
-                filtered = query.SortDescending ? filtered.OrderByDescending(c => c.Category) : filtered.OrderBy(c => c.Category);
-            else if (sort == "partialviewname")
-                filtered = query.SortDescending ? filtered.OrderByDescending(c => c.PartialViewName) : filtered.OrderBy(c => c.PartialViewName);
+                filtered = query.Dir == "desc" ? filtered.OrderByDescending(c => c.Category) : filtered.OrderBy(c => c.Category);
+            else if (sort == "type")
+                filtered = query.Dir == "desc" ? filtered.OrderByDescending(c => c.Type) : filtered.OrderBy(c => c.Type);
         }
         else
         {
@@ -53,8 +86,8 @@ public class GetAllComponentsQueryHandler : IQueryHandler<GetAllComponentsQuery,
         }
 
         var totalCount = filtered.Count();
-        var pagedItems = filtered.Skip((query.PageNumber - 1) * query.PageSize).Take(query.PageSize).ToList();
+        var pagedItems = filtered.Skip((query.Page - 1) * query.PageSize).Take(query.PageSize).ToList();
 
-        return new PagedResult<DashboardComponent>(pagedItems, totalCount, query.PageNumber, query.PageSize);
+        return new PagedResult<UnifiedComponentDto>(pagedItems, totalCount, query.Page, query.PageSize);
     }
 }

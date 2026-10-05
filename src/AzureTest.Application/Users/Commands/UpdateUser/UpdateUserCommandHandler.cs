@@ -41,6 +41,7 @@ internal sealed class UpdateUserCommandHandler : ICommandHandler<UpdateUserComma
             return (false, errors);
         }
         _logger.LogInformation("Admin updated user {UserId}", command.Id);
+        await _userManager.UpdateSecurityStampAsync(user);
         return (true, Array.Empty<string>());
     }
 }

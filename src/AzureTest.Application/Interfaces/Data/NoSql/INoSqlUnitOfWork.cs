@@ -22,5 +22,8 @@ public interface INoSqlUnitOfWork : IDisposable
     IIdeaPageRepository IdeaPages { get; }
     IIdeaSectionRepository IdeaSections { get; }
 
+    IHouseSearchHistoryRepository HouseSearchHistories { get; }
+    IHouseCrawlerCredentialRepository HouseCrawlerCredentials { get; }
+
     Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

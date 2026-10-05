@@ -8,21 +8,7 @@ public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
 {
     public void Configure(EntityTypeBuilder<Permission> builder)
     {
-        builder.ToTable("Permissions", "identity");
+        builder.ToTable("Permissions", "Identity");
         builder.HasKey(p => p.Id);
-    }
-}
-
-public class RolePermissionConfiguration : IEntityTypeConfiguration<RolePermission>
-{
-    public void Configure(EntityTypeBuilder<RolePermission> builder)
-    {
-        builder.ToTable("RolePermissions", "identity");
-        builder.HasKey(rp => rp.Id);
-        
-        builder.HasOne(rp => rp.Permission)
-               .WithMany()
-               .HasForeignKey(rp => rp.PermissionId)
-               .OnDelete(DeleteBehavior.Cascade);
     }
 }

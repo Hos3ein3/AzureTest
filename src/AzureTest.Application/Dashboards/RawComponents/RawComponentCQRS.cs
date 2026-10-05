@@ -61,8 +61,14 @@ public record CreateRawComponentCommand(
     string Type,
     string? HtmlContent,
     string? JsonConfiguration,
+    string? ViewName,
     string? Category,
-    string RequiredRole
+    string? RequiredRole,
+    int MinWidth,
+    int MaxWidth,
+    int MinHeight,
+    int MaxHeight,
+    bool IsResizable
 ) : ICommand;
 
 public class CreateRawComponentCommandValidator : AbstractValidator<CreateRawComponentCommand>
@@ -81,6 +87,11 @@ public class CreateRawComponentCommandValidator : AbstractValidator<CreateRawCom
             .NotEmpty()
             .When(x => x.Type == "JsonConfig")
             .WithMessage("JsonConfiguration is required for JsonConfig type.");
+            
+        RuleFor(x => x.MinWidth).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MaxWidth).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MinHeight).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MaxHeight).GreaterThanOrEqualTo(0);
     }
 }
 
@@ -101,8 +112,14 @@ public class CreateRawComponentCommandHandler : ICommandHandler<CreateRawCompone
             Type = command.Type,
             HtmlContent = command.HtmlContent,
             JsonConfiguration = command.JsonConfiguration,
+            ViewName = command.ViewName,
             Category = command.Category,
-            RequiredRole = command.RequiredRole ?? string.Empty
+            RequiredRole = command.RequiredRole ?? string.Empty,
+            MinWidth = command.MinWidth,
+            MaxWidth = command.MaxWidth,
+            MinHeight = command.MinHeight,
+            MaxHeight = command.MaxHeight,
+            IsResizable = command.IsResizable
         };
 
         await _unitOfWork.DashboardRawComponents.AddAsync(component, cancellationToken);
@@ -134,8 +151,14 @@ public record UpdateRawComponentCommand(
     string Type,
     string? HtmlContent,
     string? JsonConfiguration,
+    string? ViewName,
     string? Category,
-    string RequiredRole
+    string? RequiredRole,
+    int MinWidth,
+    int MaxWidth,
+    int MinHeight,
+    int MaxHeight,
+    bool IsResizable
 ) : ICommand;
 
 public class UpdateRawComponentCommandValidator : AbstractValidator<UpdateRawComponentCommand>
@@ -155,6 +178,11 @@ public class UpdateRawComponentCommandValidator : AbstractValidator<UpdateRawCom
             .NotEmpty()
             .When(x => x.Type == "JsonConfig")
             .WithMessage("JsonConfiguration is required for JsonConfig type.");
+            
+        RuleFor(x => x.MinWidth).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MaxWidth).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MinHeight).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.MaxHeight).GreaterThanOrEqualTo(0);
     }
 }
 
@@ -176,8 +204,14 @@ public class UpdateRawComponentCommandHandler : ICommandHandler<UpdateRawCompone
         component.Type = command.Type;
         component.HtmlContent = command.HtmlContent;
         component.JsonConfiguration = command.JsonConfiguration;
+        component.ViewName = command.ViewName;
         component.Category = command.Category;
         component.RequiredRole = command.RequiredRole ?? string.Empty;
+        component.MinWidth = command.MinWidth;
+        component.MaxWidth = command.MaxWidth;
+        component.MinHeight = command.MinHeight;
+        component.MaxHeight = command.MaxHeight;
+        component.IsResizable = command.IsResizable;
         
         await _unitOfWork.DashboardRawComponents.UpdateAsync(component.Id, component, cancellationToken);
         return Result.Success();

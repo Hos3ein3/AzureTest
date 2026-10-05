@@ -11,7 +11,7 @@ using System;
 
 namespace AzureTest.Application.Users.Commands.CreateRole;
 
-public sealed record CreateRoleCommand(string RoleName) : ICommand<(bool Success, string[] Errors)>;
+public sealed record CreateRoleCommand(string RoleName, int Priority) : ICommand<(bool Success, string[] Errors)>;
 internal sealed class CreateRoleCommandHandler : ICommandHandler<CreateRoleCommand, (bool Success, string[] Errors)>
 {
     private readonly RoleManager<ApplicationRole> _roleManager;
@@ -28,7 +28,7 @@ internal sealed class CreateRoleCommandHandler : ICommandHandler<CreateRoleComma
         var roleExists = await _roleManager.RoleExistsAsync(command.RoleName);
         if (roleExists)
             return (false, new[] { $"Role '{command.RoleName}' already exists." });
-        var role = new ApplicationRole(command.RoleName);
+        var role = new ApplicationRole(command.RoleName) { Priority = command.Priority };
         var result = await _roleManager.CreateAsync(role);
         if (!result.Succeeded)
         {

@@ -229,10 +229,21 @@ namespace AzureTest.MVC.Controllers;
 
     [AllowAnonymous]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    
     [DisplayName("Error")]
     [Description("Execute Error operation for Home.")]
     public IActionResult Error()
     {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        var exceptionHandlerPathFeature = HttpContext.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+        var exception = exceptionHandlerPathFeature?.Error;
+        
+        var model = new ErrorViewModel 
+        { 
+            RequestId = System.Diagnostics.Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+            ExceptionMessage = exception?.Message,
+            InnerExceptionMessage = exception?.InnerException?.Message,
+            StackTrace = exception?.StackTrace
+        };
+        return View(model);
     }
 }
