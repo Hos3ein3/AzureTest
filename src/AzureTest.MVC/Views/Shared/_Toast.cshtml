@@ -1,0 +1,94 @@
+@using AzureTest.MVC.Models
+@using AzureTest.Application.Abstractions
+
+@{
+    ToastMessage? toast = null;
+    
+    // Check strongly-typed toast first
+    if (TempData["ToastMessage"] is string json)
+    {
+        toast = ToastMessage.FromJson(json);
+    }
+    // Fallback for legacy TempData["Success"] and TempData["Error"]
+    else if (TempData["Success"] is string successMsg)
+    {
+        toast = new ToastMessage { Status = ResultStatus.Success, Message = successMsg, Title = "Success" };
+    }
+    else if (TempData["Error"] is string errorMsg)
+    {
+        toast = new ToastMessage { Status = ResultStatus.Error, Message = errorMsg, Title = "Error" };
+    }
+    else if (TempData["Warning"] is string warningMsg)
+    {
+        toast = new ToastMessage { Status = ResultStatus.Warning, Message = warningMsg, Title = "Warning" };
+    }
+    else if (TempData["Info"] is string infoMsg)
+    {
+        toast = new ToastMessage { Status = ResultStatus.Info, Message = infoMsg, Title = "Info" };
+    }
+}
+
+@if (toast != null)
+{
+    string bgColor = toast.Status switch {
+        ResultStatus.Success => "bg-green-50 text-green-800 ring-green-200",
+        ResultStatus.Error => "bg-red-50 text-red-800 ring-red-200",
+        ResultStatus.Warning => "bg-amber-50 text-amber-800 ring-amber-200",
+        _ => "bg-blue-50 text-blue-800 ring-blue-200"
+    };
+
+    string iconColor = toast.Status switch {
+        ResultStatus.Success => "text-green-500",
+        ResultStatus.Error => "text-red-500",
+        ResultStatus.Warning => "text-amber-500",
+        _ => "text-blue-500"
+    };
+    
+    string iconSvg = toast.Status switch {
+        ResultStatus.Success => "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z\" />",
+        ResultStatus.Error => "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z\" />",
+        ResultStatus.Warning => "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z\" />",
+        _ => "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z\" />"
+    };
+
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 transition-all duration-300 transform translate-y-0 opacity-100">
+        <div class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg shadow-lg ring-1 @bgColor">
+            <div class="p-4">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="h-6 w-6 @iconColor" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            @Html.Raw(iconSvg)
+                        </svg>
+                    </div>
+                    <div class="ml-3 w-0 flex-1 pt-0.5">
+                        @if (!string.IsNullOrEmpty(toast.Title))
+                        {
+                            <p class="text-sm font-semibold mb-1">@toast.Title</p>
+                        }
+                        <p class="text-sm">@toast.Message</p>
+                    </div>
+                    <div class="ml-4 flex flex-shrink-0">
+                        <button type="button" onclick="document.getElementById('toast-container').remove()" class="inline-flex rounded-md hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-black/10">
+                            <span class="sr-only">Close</span>
+                            <svg class="h-5 w-5 opacity-70" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            const el = document.getElementById('toast-container');
+            if (el) {
+                el.classList.replace('translate-y-0', 'translate-y-8');
+                el.classList.replace('opacity-100', 'opacity-0');
+                setTimeout(() => el.remove(), 300);
+            }
+        }, 5000);
+    </script>
+}

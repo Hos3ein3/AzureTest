@@ -172,6 +172,7 @@ namespace AzureTest.MVC.Controllers;
         _cache.Remove("ResumeLocations"); // Invalidate cache so new locations appear
 
         TempData["Success"] = "Resume created successfully.";
+        TempData.SetToast(id);
         return RedirectToAction(nameof(Details), new { id.Value });
     }
 
@@ -251,6 +252,7 @@ namespace AzureTest.MVC.Controllers;
         _cache.Remove("ResumeLocations"); // Invalidate cache so new locations appear
 
         TempData["Success"] = "Resume updated successfully.";
+       
         return RedirectToAction(nameof(Details), new { id });
     }
 

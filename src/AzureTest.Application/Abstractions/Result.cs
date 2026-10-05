@@ -4,6 +4,14 @@ using AzureTest.Application.Abstractions;
 
 namespace AzureTest.Application.Abstractions;
 
+public enum ResultStatus
+{
+    Success,
+    Info,
+    Warning,
+    Error
+}
+
 /// <summary>
 /// Represents either a successful outcome or a failure with an error message.
 /// </summary>
@@ -14,6 +22,7 @@ public class Result
         IsSuccess = isSuccess;
         Error = error;
         Message = error;
+        Status = isSuccess ? ResultStatus.Success : ResultStatus.Error;
     }
 
     protected Result(bool isSuccess, string? title, string? message, IDictionary<string, string[]>? validationErrors)
@@ -23,11 +32,13 @@ public class Result
         Message = message;
         Error = message; // map for backwards compatibility
         ValidationErrors = validationErrors ?? new Dictionary<string, string[]>();
+        Status = isSuccess ? ResultStatus.Success : ResultStatus.Error;
     }
 
     public bool IsSuccess { get; }
     public bool IsFailure => !IsSuccess;
     public string? Error { get; }
+    public ResultStatus Status { get; protected set; }
     public string? Title { get; }
     public string? Message { get; }
     public IDictionary<string, string[]> ValidationErrors { get; } = new Dictionary<string, string[]>();

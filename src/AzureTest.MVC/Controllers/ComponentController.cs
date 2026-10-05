@@ -26,7 +26,7 @@ namespace AzureTest.MVC.Controllers;
 {
     private readonly IQueryHandler<GetAllComponentsQuery, AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.Dashboards.UnifiedComponentDto>> _getAllComponentsQuery;
     private readonly IQueryHandler<GetComponentByIdQuery, DashboardComponent?> _getComponentByIdQuery;
-    private readonly ICommandHandler<CreateDashboardComponentCommand> _createCommand;
+    private readonly ICommandHandler<CreateDashboardComponentCommand, Result<Guid>> _createCommand;
     private readonly ICommandHandler<UpdateDashboardComponentCommand> _updateCommand;
     private readonly ICommandHandler<DeleteDashboardComponentCommand> _deleteCommand;
     private readonly IWebHostEnvironment _webHostEnvironment;
@@ -34,7 +34,7 @@ namespace AzureTest.MVC.Controllers;
     public ComponentController(
         IQueryHandler<GetAllComponentsQuery, AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.Dashboards.UnifiedComponentDto>> getAllComponentsQuery,
         IQueryHandler<GetComponentByIdQuery, DashboardComponent?> getComponentByIdQuery,
-        ICommandHandler<CreateDashboardComponentCommand> createCommand,
+        ICommandHandler<CreateDashboardComponentCommand, Result<Guid>> createCommand,
         ICommandHandler<UpdateDashboardComponentCommand> updateCommand,
         ICommandHandler<DeleteDashboardComponentCommand> deleteCommand,
         IWebHostEnvironment webHostEnvironment)
@@ -193,5 +193,39 @@ namespace AzureTest.MVC.Controllers;
         await _deleteCommand.HandleAsync(new DeleteDashboardComponentCommand(id), cancellationToken);
         TempData["Success"] = "Component deleted successfully.";
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Duplicate(Guid id, CancellationToken cancellationToken)
+    {
+        var component = await _getComponentByIdQuery.HandleAsync(new GetComponentByIdQuery(id), cancellationToken);
+        if (component == null) return NotFound();
+
+        var createCmd = new CreateDashboardComponentCommand(
+            component.Name + " - Copy",
+            component.Description,
+            component.ImagePath,
+            component.Category,
+            component.RequiredRole,
+            component.PartialViewName,
+            component.DefaultWidth,
+            component.DefaultHeight,
+            component.MinWidth,
+            component.MaxWidth,
+            component.MinHeight,
+            component.MaxHeight,
+            component.IsResizable
+        );
+        
+        var result = await _createCommand.HandleAsync(createCmd, cancellationToken);
+        if (result.IsFailure)
+        {
+            TempData["Error"] = "Failed to duplicate component: " + (result.Message ?? result.Error);
+            return RedirectToAction(nameof(Index));
+        }
+
+        TempData["Success"] = "Component duplicated successfully. You are now editing the copy.";
+        return RedirectToAction(nameof(Edit), new { id = result.Value });
     }
 }

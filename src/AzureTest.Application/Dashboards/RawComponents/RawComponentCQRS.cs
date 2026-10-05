@@ -69,7 +69,7 @@ public record CreateRawComponentCommand(
     int MinHeight,
     int MaxHeight,
     bool IsResizable
-) : ICommand;
+) : ICommand<Result<Guid>>;
 
 public class CreateRawComponentCommandValidator : AbstractValidator<CreateRawComponentCommand>
 {
@@ -95,7 +95,7 @@ public class CreateRawComponentCommandValidator : AbstractValidator<CreateRawCom
     }
 }
 
-public class CreateRawComponentCommandHandler : ICommandHandler<CreateRawComponentCommand>
+public class CreateRawComponentCommandHandler : ICommandHandler<CreateRawComponentCommand, Result<Guid>>
 {
     private readonly INoSqlUnitOfWork _unitOfWork;
 
@@ -104,7 +104,7 @@ public class CreateRawComponentCommandHandler : ICommandHandler<CreateRawCompone
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result> HandleAsync(CreateRawComponentCommand command, CancellationToken cancellationToken = default)
+    public async Task<Result<Guid>> HandleAsync(CreateRawComponentCommand command, CancellationToken cancellationToken = default)
     {
         var component = new DashboardRawComponent
         {
@@ -123,11 +123,11 @@ public class CreateRawComponentCommandHandler : ICommandHandler<CreateRawCompone
         };
 
         await _unitOfWork.DashboardRawComponents.AddAsync(component, cancellationToken);
-        return Result.Success();
+        return Result<Guid>.Success(component.Id);
     }
 }
 
-public record DeleteRawComponentCommand(Guid Id) : ICommand;
+public record DeleteRawComponentCommand(Guid Id)  : ICommand;
 
 public class DeleteRawComponentCommandHandler : ICommandHandler<DeleteRawComponentCommand>
 {
@@ -159,7 +159,7 @@ public record UpdateRawComponentCommand(
     int MinHeight,
     int MaxHeight,
     bool IsResizable
-) : ICommand;
+)  : ICommand;
 
 public class UpdateRawComponentCommandValidator : AbstractValidator<UpdateRawComponentCommand>
 {

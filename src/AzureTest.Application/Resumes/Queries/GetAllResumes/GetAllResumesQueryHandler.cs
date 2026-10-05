@@ -1,5 +1,6 @@
 using AzureTest.Application.Abstractions;
 using AzureTest.Application.Interfaces.Data;
+using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.Resumes;
 using AzureTest.Contracts.DTOs.Common;
@@ -22,15 +23,18 @@ public sealed record GetAllResumesQuery(GetAllResumesFilters Filters) : IQuery<P
 public sealed class GetAllResumesQueryHandler : BaseQueryHandler<GetAllResumesQuery, PagedResult<ResumeDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INoSqlUnitOfWork _noSqlUnitOfWork;
     private readonly ICurrentUser _currentUser;
 
     public GetAllResumesQueryHandler(
         IUnitOfWork unitOfWork,
         ICurrentUser currentUser,
+        INoSqlUnitOfWork noSqlUnitOfWork,
         ILogger<GetAllResumesQueryHandler> logger)
         : base(logger)
     {
         _unitOfWork = unitOfWork;
+        _noSqlUnitOfWork = noSqlUnitOfWork;
         _currentUser = currentUser;
     }
 
@@ -111,5 +115,6 @@ public sealed class GetAllResumesQueryHandler : BaseQueryHandler<GetAllResumesQu
         resume.CreatedOn,
         resume.ModifiedOn,
         resume.CompanyId,
+        null,
         resume.AtsScore);
 }

@@ -18,4 +18,5 @@ public sealed record ResumeDto(
     DateTime CreatedOn,
     DateTime? ModifiedOn,
     Guid? CompanyId = null,
+    string? CompanyName = null,
     int? AtsScore = null);

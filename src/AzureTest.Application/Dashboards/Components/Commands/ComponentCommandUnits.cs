@@ -24,7 +24,7 @@ public record CreateDashboardComponentCommand(
     int MinHeight,
     int MaxHeight,
     bool IsResizable
-) : ICommand;
+) : ICommand<Result<Guid>>;
 
 public class CreateDashboardComponentCommandValidator : AbstractValidator<CreateDashboardComponentCommand>
 {
@@ -43,7 +43,7 @@ public class CreateDashboardComponentCommandValidator : AbstractValidator<Create
     }
 }
 
-public class CreateDashboardComponentCommandHandler : ICommandHandler<CreateDashboardComponentCommand>
+public class CreateDashboardComponentCommandHandler : ICommandHandler<CreateDashboardComponentCommand, Result<Guid>>
 {
     private readonly INoSqlUnitOfWork _unitOfWork;
 
@@ -52,7 +52,7 @@ public class CreateDashboardComponentCommandHandler : ICommandHandler<CreateDash
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result> HandleAsync(CreateDashboardComponentCommand command, CancellationToken cancellationToken = default)
+    public async Task<Result<Guid>> HandleAsync(CreateDashboardComponentCommand command, CancellationToken cancellationToken = default)
     {
         var component = new DashboardComponent
         {
@@ -72,7 +72,7 @@ public class CreateDashboardComponentCommandHandler : ICommandHandler<CreateDash
         };
 
         await _unitOfWork.DashboardComponents.AddAsync(component, cancellationToken);
-        return Result.Success();
+        return Result<Guid>.Success(component.Id);
     }
 }
 
@@ -92,7 +92,7 @@ public record UpdateDashboardComponentCommand(
     int MinHeight,
     int MaxHeight,
     bool IsResizable
-) : ICommand;
+)  : ICommand;
 
 public class UpdateDashboardComponentCommandValidator : AbstractValidator<UpdateDashboardComponentCommand>
 {
@@ -145,7 +145,7 @@ public class UpdateDashboardComponentCommandHandler : ICommandHandler<UpdateDash
 }
 
 // DELETE
-public record DeleteDashboardComponentCommand(Guid Id) : ICommand;
+public record DeleteDashboardComponentCommand(Guid Id)  : ICommand;
 
 public class DeleteDashboardComponentCommandValidator : AbstractValidator<DeleteDashboardComponentCommand>
 {

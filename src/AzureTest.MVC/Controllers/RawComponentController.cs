@@ -25,7 +25,7 @@ namespace AzureTest.MVC.Controllers;
 {
     private readonly IQueryHandler<GetUserDashboardsQuery, IEnumerable<UserDashboard>> _getDashboardsQuery;
     private readonly IQueryHandler<GetRawComponentByIdQuery, DashboardRawComponent?> _getByIdQuery;
-    private readonly ICommandHandler<CreateRawComponentCommand> _createCommand;
+    private readonly ICommandHandler<CreateRawComponentCommand, Result<Guid>> _createCommand;
     private readonly ICommandHandler<UpdateRawComponentCommand> _updateCommand;
     private readonly ICommandHandler<DeleteRawComponentCommand> _deleteCommand;
     private readonly ICurrentUser _currentUser;
@@ -33,7 +33,7 @@ namespace AzureTest.MVC.Controllers;
     public RawComponentController(
         IQueryHandler<GetUserDashboardsQuery, IEnumerable<UserDashboard>> getDashboardsQuery,
         IQueryHandler<GetRawComponentByIdQuery, DashboardRawComponent?> getByIdQuery,
-        ICommandHandler<CreateRawComponentCommand> createCommand,
+        ICommandHandler<CreateRawComponentCommand, Result<Guid>> createCommand,
         ICommandHandler<UpdateRawComponentCommand> updateCommand,
         ICommandHandler<DeleteRawComponentCommand> deleteCommand,
         ICurrentUser currentUser)
@@ -184,5 +184,38 @@ namespace AzureTest.MVC.Controllers;
         await _deleteCommand.HandleAsync(new DeleteRawComponentCommand(id), cancellationToken);
         TempData["Success"] = "Dynamic component removed.";
         return RedirectToAction("Index", "Component");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Duplicate(Guid id, CancellationToken cancellationToken)
+    {
+        var component = await _getByIdQuery.HandleAsync(new GetRawComponentByIdQuery(id), cancellationToken);
+        if (component == null) return NotFound();
+
+        var createCmd = new CreateRawComponentCommand(
+            component.Name + " - Copy",
+            component.Type,
+            component.HtmlContent,
+            component.JsonConfiguration,
+            component.ViewName,
+            component.Category,
+            component.RequiredRole,
+            component.MinWidth,
+            component.MaxWidth,
+            component.MinHeight,
+            component.MaxHeight,
+            component.IsResizable
+        );
+        
+        var result = await _createCommand.HandleAsync(createCmd, cancellationToken);
+        if (result.IsFailure)
+        {
+            TempData["Error"] = "Failed to duplicate component: " + (result.Message ?? result.Error);
+            return RedirectToAction(nameof(Index), "Component");
+        }
+
+        TempData["Success"] = "Component duplicated successfully. You are now editing the copy.";
+        return RedirectToAction(nameof(Edit), new { id = result.Value });
     }
 }

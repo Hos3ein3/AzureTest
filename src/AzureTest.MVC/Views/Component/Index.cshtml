@@ -150,11 +150,18 @@
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 @if(item.IsRaw)
                                 {
-                                    <a asp-controller="RawComponent" asp-action="Edit" asp-route-id="@item.Id" class="text-amber-600 hover:text-amber-900 mx-1"><i class="fa-regular fa-pen-to-square"></i></a>
+                                                                        <a asp-controller="RawComponent" asp-action="Edit" asp-route-id="@item.Id" class="text-amber-600 hover:text-amber-900 mx-1"><i class="fa-regular fa-pen-to-square"></i></a>
+                                    <form asp-controller="RawComponent" asp-action="Duplicate" asp-route-id="@item.Id" method="post" class="inline"><button type="submit" class="text-blue-600 hover:text-blue-900 mx-1 bg-transparent border-0 cursor-pointer p-0" title="Duplicate"><i class="fa-regular fa-copy"></i></button></form>
                                 }
                                 else
                                 {
                                     <a asp-controller="Component" asp-action="Edit" asp-route-id="@item.Id" class="text-amber-600 hover:text-amber-900 mx-1"><i class="fa-regular fa-pen-to-square"></i></a>
+                                    @if (item.Type != "Standard")
+                                    {
+                                        <form asp-controller="Component" asp-action="Duplicate" asp-route-id="@item.Id" method="post" class="inline"><button type="submit" class="text-blue-600 hover:text-blue-900 mx-1 bg-transparent border-0 cursor-pointer p-0" title="Duplicate"><i class="fa-regular fa-copy"></i></button></form>
+                                    }
+                                    
+                                   
                                 }
                                 <button type="button" onclick="openDeleteModal('@item.Id', @item.IsRaw.ToString().ToLower())" class="text-red-600 hover:text-red-900 mx-1 bg-transparent border-0 cursor-pointer p-0"><i class="fa-regular fa-trash-can"></i></button>
                             </td>

@@ -1,0 +1,23 @@
+@model AzureTest.Contracts.DTOs.Resumes.ResumeDto
+<div class="h-full w-full bg-white rounded-xl shadow-sm ring-1 ring-slate-200 p-4">
+    <h3 class="text-sm font-semibold text-slate-800 mb-3">Important Links</h3>
+    <div class="space-y-3">
+        @if (!string.IsNullOrEmpty(Model.JobLink))
+        {
+            <a href="@Model.JobLink" target="_blank" class="block px-4 py-2 border border-slate-200 rounded-lg text-sm text-brand-600 hover:bg-slate-50 transition-colors">
+                View Job Posting &rarr;
+            </a>
+        }
+        else
+        {
+            <p class="text-sm text-slate-500 italic">No job link provided.</p>
+        }
+        
+        @if (!string.IsNullOrEmpty(Model.ChatUrl))
+        {
+            <a href="@Model.ChatUrl" target="_blank" class="block px-4 py-2 border border-slate-200 rounded-lg text-sm text-indigo-600 hover:bg-slate-50 transition-colors">
+                Open AI Chat Context &rarr;
+            </a>
+        }
+    </div>
+</div>
