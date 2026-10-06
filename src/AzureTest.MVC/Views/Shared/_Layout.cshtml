@@ -2,8 +2,19 @@
 @using AzureTest.Infrastructure.Services
 @inject  ICurrentUser _CurrentUser
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment _HostEnv
+@inject AzureTest.Application.Messaging.IQueryHandler<AzureTest.Application.UserPreferences.Queries.GetUserPreferenceQuery, AzureTest.Domain.Documents.UserPreference> _PrefQuery
+@{
+    bool isDarkMode = false;
+    if (_CurrentUser != null && _CurrentUser.Id != Guid.Empty)
+    {
+        try {
+            var pref = _PrefQuery.HandleAsync(new AzureTest.Application.UserPreferences.Queries.GetUserPreferenceQuery(_CurrentUser.Id), default).GetAwaiter().GetResult();
+            isDarkMode = pref?.IsDarkMode ?? false;
+        } catch {}
+    }
+}
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-gray-50">
+<html lang="en" class="h-full bg-gray-50 @(isDarkMode ? "dark" : "")">
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -27,6 +38,7 @@
     <!-- Tailwind Config -->
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             colors: {
@@ -394,17 +406,47 @@
             </div>
             
             <div class="flex items-center space-x-6">
-                <div class="text-sm font-medium text-slate-500">
+                <button onclick="toggleOmnibar()" class="hidden md:flex items-center space-x-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg text-sm text-slate-400 hover:text-slate-500 hover:border-slate-300 transition-colors shadow-sm w-48 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span class="flex-1 text-left">Search...</span>
+                    <span class="text-xs border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 bg-slate-50 dark:bg-slate-900 font-sans tracking-widest">⌘K</span>
+                </button>
+                
+                <div class="hidden sm:block text-sm font-medium text-slate-500">
                     <i class="fa-regular fa-calendar mr-1.5"></i>
                     @DateTime.Now.ToString("dd MMM yyyy")
                 </div>
-                <button class="text-slate-400 hover:text-brand-500 transition-colors">
-                    <i class="fa-regular fa-bell text-lg"></i>
+                <!-- Notification Bell -->
+                <div class="relative" id="notificationDropdownContainer">
+                    <button id="notificationBtn" onclick="document.getElementById('notificationDropdown').classList.toggle('hidden')" class="text-slate-400 hover:text-brand-500 transition-colors relative">
+                        <i class="fa-regular fa-bell text-lg"></i>
+                        <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center hidden">0</span>
+                    </button>
+                    <!-- Dropdown -->
+                    <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-50 flex flex-col">
+                        <div class="p-3 border-b border-slate-100 dark:border-slate-700 font-semibold text-slate-700 dark:text-slate-200">Notifications</div>
+                        <div id="notificationList" class="max-h-64 overflow-y-auto p-2 space-y-1">
+                            <div class="text-sm text-slate-500 dark:text-slate-400 text-center py-4" id="noNotifications">No new notifications</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="toggleGlobalDarkMode()" class="text-slate-400 hover:text-brand-500 transition-colors" title="Toggle Dark Mode">
+                    <i class="fa-solid @(isDarkMode ? "fa-sun" : "fa-moon") text-lg" id="darkModeIcon"></i>
                 </button>
-                <a asp-action="Manage" asp-controller="Dashboard" class="text-slate-400 hover:text-brand-500 transition-colors">
-                    
-                    <i class="fab fa-windows"></i>
+
+                <a asp-action="Manage" asp-controller="Dashboard" class="text-slate-400 hover:text-brand-500 transition-colors" title="Dashboards">
+                    <i class="fab fa-windows text-lg"></i>
                 </a>
+                
+                <a asp-action="Index" asp-controller="Profile" class="text-slate-400 hover:text-brand-500 transition-colors flex items-center" title="My Profile">
+                    @if(!string.IsNullOrEmpty(_CurrentUser.ProfileImage)){
+                        <img src="@_CurrentUser.ProfileImage" class="w-7 h-7 rounded-full object-cover border border-slate-200" />
+                    } else {
+                        <i class="fa-solid fa-circle-user text-xl"></i>
+                    }
+                </a>
+
                 <form asp-controller="Auth" asp-action="Logout" method="post" class="inline">
                     <button type="submit" class="text-slate-400 hover:text-brand-500 transition-colors" title="Logout">
                         <i class="fa-solid fa-arrow-right-from-bracket text-lg"></i>
@@ -763,5 +805,173 @@
             });
         }
     </script>
+
+    
+    <!-- Omnibar Modal -->
+    <div id="omnibarModal" class="fixed inset-0 z-[100] hidden">
+        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="toggleOmnibar()"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto p-4 sm:p-6 md:p-20">
+            <div class="mx-auto max-w-2xl transform divide-y divide-slate-100 dark:divide-slate-700 overflow-hidden rounded-xl bg-white dark:bg-slate-800 shadow-2xl ring-1 ring-black ring-opacity-5 transition-all">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass pointer-events-none absolute top-4 left-4 h-5 w-5 text-slate-400"></i>
+                    <input type="text" id="omnibarInput" class="h-14 w-full border-0 bg-transparent pl-12 pr-4 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-0 sm:text-lg focus:outline-none" placeholder="Search tasks, ideas, events, and features..." autocomplete="off">
+                </div>
+                <ul id="omnibarResults" class="max-h-96 scroll-py-2 overflow-y-auto py-2 text-sm text-slate-800 dark:text-slate-200 hidden" role="listbox">
+                </ul>
+                <div id="omnibarEmpty" class="py-14 px-6 text-center text-sm sm:px-14 hidden">
+                    <i class="fa-regular fa-face-frown text-4xl text-slate-300 dark:text-slate-600 mb-4"></i>
+                    <p class="text-slate-900 dark:text-slate-100 font-semibold text-lg">No results found</p>
+                    <p class="text-slate-500 dark:text-slate-400 mt-1">We couldn't find anything matching that search term.</p>
+                </div>
+                <div class="flex flex-wrap items-center bg-slate-50 dark:bg-slate-900/50 py-3 px-4 text-xs text-slate-500 dark:text-slate-400">
+                    <span class="flex items-center mr-4"><kbd class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 font-sans font-medium mr-1.5 shadow-sm text-slate-400">esc</kbd> to close</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SignalR & Notifications -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.12/signalr.min.js"></script>
+    <script>
+        let unreadCount = 0;
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/notificationHub")
+            .build();
+
+        connection.on("ReceiveTicketNotification", (title, message) => {
+            // Play sound
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.play().catch(e => console.log("Audio play blocked by browser", e));
+
+            // Update UI
+            document.getElementById('noNotifications')?.remove();
+            unreadCount++;
+            const badge = document.getElementById('notificationBadge');
+            badge.innerText = unreadCount;
+            badge.classList.remove('hidden');
+
+            const list = document.getElementById('notificationList');
+            const item = document.createElement('div');
+            item.className = "p-2 rounded bg-blue-50 dark:bg-blue-900/30 text-sm border-l-4 border-blue-500 mb-1 cursor-pointer";
+            item.innerHTML = `<p class="font-semibold text-blue-700 dark:text-blue-300">${title}</p><p class="text-slate-600 dark:text-slate-400 text-xs">${message}</p>`;
+            item.onclick = () => { window.location.href = '/Ticket'; };
+            list.prepend(item);
+        });
+
+        connection.start().catch(err => console.error(err.toString()));
+
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const container = document.getElementById('notificationDropdownContainer');
+            if (container && !container.contains(e.target)) {
+                document.getElementById('notificationDropdown').classList.add('hidden');
+            }
+        });
+
+        // Dark Mode Toggle
+        function toggleGlobalDarkMode() {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            const icon = document.getElementById('darkModeIcon');
+            if (isDark) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+
+            // Save to UserPreferences
+            fetch('/UserPreference/Update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ IsDarkMode: isDark })
+            });
+        }
+    </script>
+
+
+<script>
+    // Omnibar Logic
+    const omnibarModal = document.getElementById('omnibarModal');
+    const omnibarInput = document.getElementById('omnibarInput');
+    const omnibarResults = document.getElementById('omnibarResults');
+    const omnibarEmpty = document.getElementById('omnibarEmpty');
+    let searchTimeout = null;
+
+    function toggleOmnibar() {
+        if (!omnibarModal) return;
+        if (omnibarModal.classList.contains('hidden')) {
+            omnibarModal.classList.remove('hidden');
+            setTimeout(() => omnibarInput.focus(), 50);
+        } else {
+            omnibarModal.classList.add('hidden');
+            omnibarInput.value = '';
+            omnibarResults.innerHTML = '';
+            omnibarResults.classList.add('hidden');
+            omnibarEmpty.classList.add('hidden');
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            toggleOmnibar();
+        }
+        if (e.key === 'Escape' && omnibarModal && !omnibarModal.classList.contains('hidden')) {
+            toggleOmnibar();
+        }
+    });
+
+    if(omnibarInput) {
+        omnibarInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const q = e.target.value.trim();
+            if (!q) {
+                omnibarResults.innerHTML = '';
+                omnibarResults.classList.add('hidden');
+                omnibarEmpty.classList.add('hidden');
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                fetch('/Search/Omnibar?q=' + encodeURIComponent(q))
+                    .then(res => res.json())
+                    .then(data => {
+                        omnibarResults.innerHTML = '';
+                        if (data.length === 0) {
+                            omnibarResults.classList.add('hidden');
+                            omnibarEmpty.classList.remove('hidden');
+                        } else {
+                            omnibarEmpty.classList.add('hidden');
+                            omnibarResults.classList.remove('hidden');
+                            
+                            data.forEach(item => {
+                                const li = document.createElement('li');
+                                li.className = "cursor-pointer select-none hover:bg-slate-100 dark:hover:bg-slate-700/50 transition border-b border-slate-50 dark:border-slate-800/50 last:border-0";
+                                li.innerHTML = `
+                                    <a href="${item.url}" class="flex items-center px-4 py-3 block w-full h-full">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 ${item.color}">
+                                            <i class="${item.icon} text-lg"></i>
+                                        </div>
+                                        <div class="ml-4 flex-auto">
+                                            <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">${item.title}</p>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${item.type} &middot; ${item.subtitle}</p>
+                                        </div>
+                                        <i class="fa-solid fa-chevron-right text-slate-300 dark:text-slate-600 text-xs"></i>
+                                    </a>
+                                `;
+                                omnibarResults.appendChild(li);
+                            });
+                        }
+                    });
+            }, 250);
+        });
+    }
+</script>
+
 </body>
 </html>

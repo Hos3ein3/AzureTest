@@ -12,4 +12,5 @@ public class UserPreference
     public string ThemeColor { get; set; } = string.Empty;
     public string Currency { get; set; } = "USD";
     public string PreferredDashboard { get; set; } = string.Empty;
+    public bool IsDarkMode { get; set; } = false;
 }

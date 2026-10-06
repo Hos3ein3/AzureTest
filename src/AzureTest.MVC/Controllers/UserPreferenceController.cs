@@ -53,6 +53,7 @@ namespace AzureTest.MVC.Controllers;
             themeColor = string.IsNullOrWhiteSpace(pref.ThemeColor) ? "slate" : pref.ThemeColor,
             currency = string.IsNullOrWhiteSpace(pref.Currency) ? "USD" : pref.Currency,
             preferredDashboard = pref.PreferredDashboard ?? string.Empty,
+            isDarkMode = pref.IsDarkMode,
             dashboards = dashboards.Select(d => new { slug = d.Slug, name = d.Name })
         });
     }
@@ -68,6 +69,7 @@ namespace AzureTest.MVC.Controllers;
 
         string? currency = jsonRequest?.Currency;
         string? preferredDashboard = jsonRequest?.PreferredDashboard;
+        bool? isDarkMode = jsonRequest?.IsDarkMode;
 
         if (string.IsNullOrWhiteSpace(lang) && Request.HasFormContentType && Request.Form.ContainsKey("language"))
         {
@@ -90,12 +92,15 @@ namespace AzureTest.MVC.Controllers;
         var themeColor = string.IsNullOrWhiteSpace(theme) ? "slate" : theme;
         var finalCurrency = string.IsNullOrWhiteSpace(currency) ? "USD" : currency;
         var finalPreferredDashboard = preferredDashboard ?? string.Empty;
+        
+        var pref = await _getUserPreferenceQuery.HandleAsync(new GetUserPreferenceQuery(_currentUser.Id), cancellationToken);
+        var finalIsDarkMode = isDarkMode ?? pref.IsDarkMode;
 
         await _updateUserPreferenceCommand.HandleAsync(
-            new UpdateUserPreferenceCommand(_currentUser.Id, language, themeColor, finalCurrency, finalPreferredDashboard),
+            new UpdateUserPreferenceCommand(_currentUser.Id, language, themeColor, finalCurrency, finalPreferredDashboard, finalIsDarkMode),
             cancellationToken);
 
-        return Json(new { success = true, language, themeColor, currency = finalCurrency, preferredDashboard = finalPreferredDashboard });
+        return Json(new { success = true, language, themeColor, currency = finalCurrency, preferredDashboard = finalPreferredDashboard, isDarkMode = finalIsDarkMode });
     }
 
     public class UpdatePreferenceRequest
@@ -104,5 +109,6 @@ namespace AzureTest.MVC.Controllers;
         public string? ThemeColor { get; set; }
         public string? Currency { get; set; }
         public string? PreferredDashboard { get; set; }
+        public bool? IsDarkMode { get; set; }
     }
 }

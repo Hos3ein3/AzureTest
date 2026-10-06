@@ -153,6 +153,7 @@ builder.Services.AddHybridCache();
 
 builder.Services.AddExceptionHandler<AzureTest.MVC.Infrastructure.GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+builder.Services.AddSignalR();
 
 // --- HTML, CSS, JS Minification (Only enabled in Production) ---
 if (builder.Environment.IsProduction())
@@ -336,12 +337,15 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 
+app.MapHub<AzureTest.MVC.Hubs.NotificationHub>("/notificationHub");
+
 app.MapControllerRoute(
         name: "dashboard_dynamic",
         pattern: "{slug}",
         defaults: new { controller = "Dashboard", action = "ViewDashboard" },
         constraints: new { slug = new AzureTest.MVC.Infrastructure.DashboardRouteConstraint() }
     ).WithStaticAssets();
+
 
 app.MapControllerRoute(
         name: "default",

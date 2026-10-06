@@ -12,7 +12,7 @@ using FluentValidation;
 
 namespace AzureTest.Application.UserPreferences.Commands;
 
-public sealed record UpdateUserPreferenceCommand(Guid UserId, string Language, string ThemeColor, string Currency, string PreferredDashboard) : ICommand;
+public sealed record UpdateUserPreferenceCommand(Guid UserId, string Language, string ThemeColor, string Currency, string PreferredDashboard, bool IsDarkMode) : ICommand;
 
 public sealed class UpdateUserPreferenceCommandHandler : ICommandHandler<UpdateUserPreferenceCommand>
 {
@@ -39,6 +39,7 @@ public sealed class UpdateUserPreferenceCommandHandler : ICommandHandler<UpdateU
         pref.ThemeColor = request.ThemeColor;
         pref.Currency = request.Currency;
         pref.PreferredDashboard = request.PreferredDashboard;
+        pref.IsDarkMode = request.IsDarkMode;
 
         if (isNew)
         {

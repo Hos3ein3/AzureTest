@@ -16,6 +16,8 @@ using AzureTest.Contracts.DTOs.Tickets;
 using AzureTest.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using AzureTest.MVC.Hubs;
 using System.ComponentModel;
 
 namespace AzureTest.MVC.Controllers;
@@ -29,15 +31,17 @@ namespace AzureTest.MVC.Controllers;
     private readonly ITicketCommandUnit _ticketCommand;
     private readonly IUserQueryUnit _userQuery;
     private readonly ICurrentUser _currentUser;
+    private readonly IHubContext<NotificationHub> _hubContext;
 
     public TicketController(
         ITicketQueryUnit ticketQuery,
         ITicketCommandUnit ticketCommand,
         IUserQueryUnit userQuery,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser, IHubContext<NotificationHub> hubContext)
     {
         _ticketQuery = ticketQuery;
         _ticketCommand = ticketCommand;
+        _hubContext = hubContext;
         _userQuery = userQuery;
         _currentUser = currentUser;
     }
@@ -115,6 +119,7 @@ namespace AzureTest.MVC.Controllers;
         if (ModelState.IsValid)
         {
             var ticketId = await _ticketCommand.CreateTicket.HandleAsync(new CreateTicketCommand(subject, content, priority), default);
+            await _hubContext.Clients.All.SendAsync("ReceiveTicketNotification", "New Ticket", subject);
             return RedirectToAction(nameof(Details), new { id = ticketId.Value });
         }
         return View();
@@ -188,6 +193,7 @@ Inner Exception:
         if (ticketId.IsSuccess)
         {
             TempData["SuccessMessage"] = "Bug report submitted successfully! Thank you.";
+            await _hubContext.Clients.All.SendAsync("ReceiveTicketNotification", "New Ticket", subject);
             return RedirectToAction(nameof(Details), new { id = ticketId.Value });
         }
         

@@ -193,7 +193,7 @@ namespace AzureTest.MVC.Controllers;
             var pref = await _getPreferenceHandler.HandleAsync(new GetUserPreferenceQuery(userId), cancellationToken);
             if (pref.PreferredDashboard == dashboard.Slug)
             {
-                var cmd = new UpdateUserPreferenceCommand(userId, pref.Language, pref.ThemeColor, pref.Currency, string.Empty);
+                var cmd = new UpdateUserPreferenceCommand(userId, pref.Language, pref.ThemeColor, pref.Currency, string.Empty, pref.IsDarkMode);
                 await _updatePreferenceHandler.HandleAsync(cmd, cancellationToken);
             }
         }
@@ -212,7 +212,7 @@ namespace AzureTest.MVC.Controllers;
         var userId = Guid.Parse(userIdStr);
         
         var pref = await _getPreferenceHandler.HandleAsync(new GetUserPreferenceQuery(userId), cancellationToken);
-        var cmd = new UpdateUserPreferenceCommand(userId, pref?.Language ?? "", pref?.ThemeColor ?? "", pref?.Currency ?? "USD", slug ?? "");
+        var cmd = new UpdateUserPreferenceCommand(userId, pref?.Language ?? "", pref?.ThemeColor ?? "", pref?.Currency ?? "USD", slug ?? "", pref?.IsDarkMode ?? false);
         await _updatePreferenceHandler.HandleAsync(cmd, cancellationToken);
         
         return RedirectToAction("Manage");

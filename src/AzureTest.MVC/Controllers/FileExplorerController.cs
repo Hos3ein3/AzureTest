@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -31,6 +32,7 @@ public class FileExplorerController : Controller
         {
             throw new UnauthorizedAccessException("Invalid path.");
         }
+
         return fullPath;
     }
 
@@ -53,24 +55,23 @@ public class FileExplorerController : Controller
             }
 
             var dirInfo = new DirectoryInfo(fullPath);
-            var folders = dirInfo.GetDirectories().Select(d => new FileSystemItem
-            {
-                Name = d.Name,
-                IsDirectory = true,
-                Path = GetRelativePath(d.FullName),
-                Size = GetDirectorySize(d),
-                Modified = d.LastWriteTime
-            }).OrderBy(f => f.Name).ToList();
+            var folders = dirInfo.GetDirectories().Select(d => new FileSystemItem(
+                d.Name,
+                GetRelativePath(d.FullName),
+                true,
+                GetDirectorySize(d),
+                d.LastWriteTime,
+                d.Extension
+            )).OrderBy(f => f.Name).ToList();
 
-            var files = dirInfo.GetFiles().Select(f => new FileSystemItem
-            {
-                Name = f.Name,
-                IsDirectory = false,
-                Path = GetRelativePath(f.FullName),
-                Size = f.Length,
-                Modified = f.LastWriteTime,
-                Extension = f.Extension
-            }).OrderBy(f => f.Name).ToList();
+            var files = dirInfo.GetFiles().Select(f => new FileSystemItem(
+                f.Name,
+                GetRelativePath(f.FullName),
+                false,
+                f.Length,
+                f.LastWriteTime,
+                f.Extension
+            )).OrderBy(f => f.Name).ToList();
 
             folders.AddRange(files);
 
@@ -101,6 +102,7 @@ public class FileExplorerController : Controller
             {
                 Directory.CreateDirectory(newPath);
             }
+
             return Ok();
         }
         catch (Exception ex)
@@ -130,6 +132,7 @@ public class FileExplorerController : Controller
             {
                 return NotFound();
             }
+
             return Ok();
         }
         catch (Exception ex)
@@ -152,6 +155,7 @@ public class FileExplorerController : Controller
             {
                 Directory.Delete(fullPath, true);
             }
+
             return Ok();
         }
         catch (Exception ex)
@@ -180,6 +184,7 @@ public class FileExplorerController : Controller
                 if (action == "cut") Directory.Move(source, dest);
                 else CopyDirectory(source, dest);
             }
+
             return Ok();
         }
         catch (Exception ex)
@@ -205,6 +210,7 @@ public class FileExplorerController : Controller
                     }
                 }
             }
+
             return Ok();
         }
         catch (Exception ex)
@@ -235,23 +241,15 @@ public class FileExplorerController : Controller
 
     private long GetDirectorySize(DirectoryInfo d)
     {
-        try 
+        try
         {
             long size = 0;
             foreach (var fi in d.GetFiles()) size += fi.Length;
             foreach (var di in d.GetDirectories()) size += GetDirectorySize(di);
             return size;
-        } 
+        }
         catch { return 0; }
     }
 }
 
-public class FileSystemItem
-{
-    public string Name { get; set; } = string.Empty;
-    public string Path { get; set; } = string.Empty;
-    public bool IsDirectory { get; set; }
-    public long Size { get; set; }
-    public DateTime Modified { get; set; }
-    public string Extension { get; set; } = string.Empty;
-}
+record FileSystemItem(string Name, string Path, bool IsDirectory, long Size, DateTime Modified, string Extension);
