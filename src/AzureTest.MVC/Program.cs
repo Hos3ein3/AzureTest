@@ -330,6 +330,7 @@ if (app.Environment.IsProduction())
     app.UseWebMarkupMin();
 }
 
+app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthentication();
