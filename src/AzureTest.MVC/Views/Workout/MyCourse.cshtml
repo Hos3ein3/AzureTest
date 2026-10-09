@@ -3,44 +3,58 @@
     ViewData["Title"] = Model.Name;
 }
 
-<div class="p-6 max-w-5xl mx-auto">
-    <div class="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
-        <h2 class="text-3xl font-bold text-white">@Model.Name</h2>
-        <a href="@Url.Action("Index")" class="text-slate-400 hover:text-white transition-colors flex items-center gap-2">
-            <i class="fa-solid fa-arrow-left"></i> Back
-        </a>
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-slate-200 pb-5">
+        <div>
+            <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-1">@Model.Name</h2>
+            <p class="text-slate-500 font-medium">Manage your progress and complete your daily workouts.</p>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <a href="@Url.Action("Index")" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Back to Dashboard
+            </a>
+        </div>
     </div>
 
     @if (!Model.Weeks.Any()) {
-        <p class="text-slate-400 italic">No weeks defined for this course.</p>
+        <div class="text-center py-12 bg-white rounded-xl border border-slate-200 border-dashed">
+            <p class="text-slate-500 italic">No weeks defined for this course.</p>
+        </div>
     }
 
-    <div class="space-y-8">
+    <div class="space-y-6">
         @foreach (var week in Model.Weeks.OrderBy(w => w.WeekNumber)) {
-            <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg">
-                <div class="bg-slate-900/80 px-6 py-4 border-b border-slate-700">
-                    <h4 class="text-xl font-bold text-white m-0">Week @week.WeekNumber</h4>
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+                <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                    <h4 class="text-xl font-bold text-slate-800 m-0">Week @week.WeekNumber</h4>
+                    <span class="text-sm font-medium text-slate-500 bg-white border border-slate-200 px-3 py-1 rounded-full shadow-sm">
+                        @week.Days.Count(d => Model.CompletedDayIds.Contains(d.Id)) / @week.Days.Count Completed
+                    </span>
                 </div>
-                <div class="divide-y divide-slate-700/50">
+                <div class="divide-y divide-slate-100">
                     @if (!week.Days.Any()) {
-                        <div class="px-6 py-4 text-slate-500 italic">No days in this week.</div>
+                        <div class="px-6 py-4 text-slate-500 italic text-center">No days in this week.</div>
                     }
                     @foreach (var day in week.Days) {
                         var isCompleted = Model.CompletedDayIds.Contains(day.Id);
                         <a href="@Url.Action("Day", new { userGymCourseId = Model.Id, week = week.WeekNumber, dayId = day.Id })" 
-                           class="block px-6 py-5 hover:bg-slate-700/50 transition-colors group">
+                           class="block px-6 py-5 hover:bg-slate-50 transition-colors group">
                             <div class="flex justify-between items-center">
                                 <div>
-                                    <h5 class="text-lg font-semibold text-brand-400 group-hover:text-brand-300 transition-colors mb-1">@day.Name</h5>
+                                    <h5 class="text-lg font-bold text-brand-600 group-hover:text-brand-700 transition-colors mb-1">@day.Name</h5>
                                     @if(!string.IsNullOrWhiteSpace(day.Description)) {
-                                        <p class="text-sm text-slate-400">@day.Description</p>
+                                        <p class="text-sm text-slate-500 font-medium">@day.Description</p>
                                     }
                                 </div>
                                 <div>
                                     @if (isCompleted) {
-                                        <span class="bg-green-500/20 text-green-400 border border-green-500/30 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">Completed</span>
+                                        <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide shadow-sm">
+                                            <i class="fa-solid fa-check"></i> Completed
+                                        </span>
                                     } else {
-                                        <span class="bg-brand-500/20 text-brand-400 border border-brand-500/30 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider group-hover:bg-brand-500 group-hover:text-white transition-all"><i class="fa-solid fa-play mr-1"></i> Start</span>
+                                        <span class="inline-flex items-center gap-1.5 bg-brand-50 text-brand-600 border border-brand-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide group-hover:bg-brand-600 group-hover:text-white transition-all shadow-sm">
+                                            <i class="fa-solid fa-play"></i> Start
+                                        </span>
                                     }
                                 </div>
                             </div>

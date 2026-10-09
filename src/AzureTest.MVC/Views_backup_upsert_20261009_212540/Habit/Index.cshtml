@@ -1,0 +1,126 @@
+@model IEnumerable<AzureTest.Contracts.DTOs.Habits.HabitTrackerDto>
+@{
+    ViewData["Title"] = "Habit Tracker";
+}
+
+<nav aria-label="breadcrumb" class="mb-6">
+    <ol class="flex items-center space-x-2 text-sm text-slate-500">
+        <li class="font-medium text-slate-800" aria-current="page">Habits</li>
+    </ol>
+</nav>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Habits List -->
+    <div class="lg:col-span-2 space-y-6">
+        @if (!Model.Any())
+        {
+            <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-8 text-center text-slate-500">
+                <i class="fa-solid fa-seedling text-4xl mb-3 text-brand-300 block"></i>
+                <p>No habits tracked yet. Start building good habits today!</p>
+            </div>
+        }
+        
+        @foreach(var h in Model)
+        {
+            var todayLog = h.Logs.FirstOrDefault(l => l.LogDate.Date == DateTime.UtcNow.Date);
+            var isBooleanDone = h.Type == AzureTest.Domain.Enums.HabitType.Boolean && todayLog?.BooleanValue == true;
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row gap-6 relative">
+                
+                <div class="flex-1">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="text-lg font-semibold text-slate-800">
+                                @h.Name 
+                                <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">@h.Frequency</span>
+                            </h4>
+                            @if (!string.IsNullOrEmpty(h.Description))
+                            {
+                                <p class="text-sm text-slate-500 mt-1">@h.Description</p>
+                            }
+                        </div>
+                        <form asp-action="Delete" method="post" onsubmit="return confirm('Delete this habit?');">
+                            <input type="hidden" name="id" value="@h.Id" />
+                            <button type="submit" class="text-slate-400 hover:text-red-500 transition-colors">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-slate-100">
+                        <p class="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wider">Log Today</p>
+                        
+                        <form asp-action="Log" method="post" class="flex items-center gap-4">
+                            <input type="hidden" name="id" value="@h.Id" />
+                            
+                            @if (h.Type == AzureTest.Domain.Enums.HabitType.Boolean)
+                            {
+                                <input type="hidden" name="booleanValue" value="true" />
+                                <button type="submit" class="flex items-center justify-center w-10 h-10 rounded-full @(isBooleanDone ? "bg-brand-500 text-white" : "bg-slate-100 text-slate-400 hover:bg-brand-100 hover:text-brand-600") transition-colors">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>
+                                <span class="text-sm font-medium @(isBooleanDone ? "text-brand-600" : "text-slate-500")">
+                                    @(isBooleanDone ? "Completed Today!" : "Mark as done")
+                                </span>
+                            }
+                            else
+                            {
+                                <div class="flex items-center gap-2">
+                                    <input type="number" step="0.1" name="numericValue" value="@(todayLog?.NumericValue ?? 0)" class="w-24 rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-2 border" />
+                                    <span class="text-sm text-slate-500">/ @h.Goal</span>
+                                </div>
+                                <input type="text" name="notes" value="@todayLog?.Notes" placeholder="Notes (optional)" class="flex-1 rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-3 py-2 border" />
+                                <button type="submit" class="px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-lg hover:bg-slate-700 transition-colors">Save</button>
+                            }
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Create Habit Form -->
+    <div class="lg:col-span-1">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden sticky top-6">
+            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h5 class="text-sm font-semibold text-slate-800 m-0"><i class="fa-solid fa-plus mr-2 text-brand-500"></i> New Habit</h5>
+            </div>
+            <div class="p-6">
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Habit Name <span class="text-red-500">*</span></label>
+                        <input type="text" name="name" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="e.g. Read 10 pages" />
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                        <textarea name="description" rows="2" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Tracking Type</label>
+                        <select name="type" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border">
+                            <option value="Boolean">Checkmark (Yes/No)</option>
+                            <option value="Numeric">Numeric (e.g. Minutes, Glasses)</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Frequency</label>
+                        <select name="frequency" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border">
+                            <option value="Daily">Daily</option>
+                            <option value="Weekly">Weekly</option>
+                            <option value="Monthly">Monthly</option>
+                        </select>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Daily Goal (if numeric)</label>
+                        <input type="number" step="0.1" name="goal" value="0" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" />
+                    </div>
+                    
+                    <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent bg-brand-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
+                        Add Habit
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,123 @@
+
+@{
+    ViewData["Title"] = "Workout Dashboard";
+    var availableCourses = ViewBag.AvailableCourses as List<AzureTest.Domain.Documents.Gym.TrainingCourse> ?? new();
+    var userGymCourses = ViewBag.UserGymCourses as List<AzureTest.Domain.Documents.Gym.UserGymCourse> ?? new();
+}
+
+<div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Workout Dashboard</h1>
+        <p class="text-gray-600 dark:text-gray-400">Track your progress and discover new training courses.</p>
+    </div>
+    <div class="mt-4 md:mt-0">
+        <a href="@Url.Action("History")" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+            <i class="fa-solid fa-clock-rotate-left mr-2"></i> View Exercise History
+        </a>
+    </div>
+</div>
+
+<div class="mb-10">
+    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-2">
+        <i class="fa-solid fa-fire text-orange-500"></i> My Active Courses
+    </h2>
+    
+    @if (userGymCourses.Any()) {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach (var uc in userGymCourses) {
+                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col h-full">
+                    <div class="flex-grow">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">@uc.Name</h3>
+                        <p class="text-sm text-gray-500 mb-4">
+                            <i class="fa-regular fa-calendar-check mr-1"></i> Started on @uc.RegisteredAt.ToString("MMM dd, yyyy")
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                        <a href="@Url.Action("MyCourse", new { id = uc.Id })" class="w-full block text-center btn-primary">
+                            Continue Training
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    } else {
+        <div class="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-8 text-center border border-dashed border-gray-300 dark:border-gray-600">
+            <div class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-dumbbell text-2xl text-gray-400"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-1">No Active Courses</h3>
+            <p class="text-gray-500 max-w-md mx-auto">You haven't registered for any training courses yet. Browse the available courses below to get started!</p>
+        </div>
+    }
+</div>
+
+<div>
+    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-2">
+        <i class="fa-solid fa-compass text-blue-500"></i> Discover Courses
+    </h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @foreach (var c in availableCourses) {
+            bool isRegistered = userGymCourses.Any(uc => uc.OriginalCourseId == c.Id);
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col h-full relative overflow-hidden">
+                @if (isRegistered) {
+                    <div class="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
+                        Enrolled
+                    </div>
+                }
+                
+                <div class="flex-grow">
+                    
+                @if (!string.IsNullOrEmpty(c.ImagePath) || !string.IsNullOrEmpty(c.VideoPath))
+                {
+                    <div class="w-full h-48 mb-4 relative overflow-hidden rounded-xl bg-gray-100 group">
+                        @if (!string.IsNullOrEmpty(c.VideoPath))
+                        {
+                            <video src="@c.VideoPath" class="absolute inset-0 w-full h-full object-cover hidden group-hover:block" loop muted playsinline onmouseover="this.play()" onmouseout="this.pause(); this.currentTime = 0;"></video>
+                        }
+                        @if (!string.IsNullOrEmpty(c.ImagePath))
+                        {
+                            <img src="@c.ImagePath" class="absolute inset-0 w-full h-full object-cover group-hover:hidden" />
+                        }
+                    </div>
+                }
+
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 pr-8">@c.Name</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">@Html.Raw(c.Description)</p>
+                    
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        @foreach(var tag in c.Tags ?? new List<string>()) {
+                            <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs rounded-md font-medium">@tag</span>
+                        }
+                    </div>
+                </div>
+                
+                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                    <div class="text-sm font-medium text-gray-500">
+                        <i class="fa-solid fa-layer-group mr-1"></i> @(c.Weeks?.Count ?? 0) Weeks
+                    </div>
+                    
+                    
+                    <div class="flex gap-2">
+                        <a href="@Url.Action("Details", new { id = c.Id })" class="btn-secondary text-sm px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            Details
+                        </a>
+                    @if (!isRegistered) {
+                        <form method="post" action="@Url.Action("Register", new { courseId = c.Id })">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn-primary text-sm px-4 py-2 hover:bg-brand-600">
+                                Enroll Now
+                            </button>
+                        </form>
+                    } else {
+                        <button disabled class="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-400 text-sm font-medium cursor-not-allowed">
+                            Enrolled
+                        </button>
+                    }
+                    </div>
+
+                </div>
+            </div>
+        }
+    </div>
+</div>

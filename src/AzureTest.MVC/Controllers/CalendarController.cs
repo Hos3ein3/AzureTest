@@ -1,3 +1,5 @@
+using AzureTest.Contracts.DTOs.Events;
+using AzureTest.Contracts.DTOs.Debts;
 using AzureTest.Application.Abstractions;
 
 
@@ -63,7 +65,8 @@ namespace AzureTest.MVC.Controllers;
         var userId = _currentUser.Id;
 
         // 1. Get standard events
-        var events = await _eventQuery.GetAllEvents.HandleAsync(new GetAllEventsQuery(userId), default);
+        var eventsResult = await _eventQuery.GetAllEvents.HandleAsync(new GetAllEventsQuery(new GetAllEventsFilters { PageSize = -1 }, userId), default);
+        var events = eventsResult.Items;
         var calendarEvents = events
             .Where(e => e.StartDate >= start && e.EndDate <= end)
             .Select(e => new
@@ -95,7 +98,8 @@ namespace AzureTest.MVC.Controllers;
             });
 
         // 3. Get Debts
-        var debts = await _debtQuery.GetAll.HandleAsync(new GetAllDebtsQuery(userId), default);
+        var debtsResult = await _debtQuery.GetAll.HandleAsync(new GetAllDebtsQuery(new GetAllDebtsFilters { PageSize = -1 }, userId), default);
+        var debts = debtsResult.Items;
         var debtEvents = debts
             .Select(d => new
             {

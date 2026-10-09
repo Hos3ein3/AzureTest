@@ -1,3 +1,5 @@
+using AzureTest.Contracts.DTOs.Common;
+using AzureTest.Contracts.DTOs.Debts;
 using AzureTest.Application.Abstractions;
 
 
@@ -62,55 +64,18 @@ namespace AzureTest.MVC.Controllers;
     [HttpGet]
     [DisplayName("Index")]
     [Description("View a list of Debt.")]
-    public async Task<IActionResult> Index(int page = 1, string sort = "DateOfBorrow", string dir = "desc", string search = "", CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Index([FromQuery] GetAllDebtsFilters filters, [FromQuery] int? page, [FromQuery] string? search, [FromQuery] string? sort, [FromQuery] string? dir, CancellationToken cancellationToken = default)
     {
-        var debts = await _queries.GetAll.HandleAsync(new GetAllDebtsQuery(), cancellationToken);
-        
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            debts = debts.Where(d => (d.Description != null && d.Description.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                                     (d.DebtPersonName != null && d.DebtPersonName.Contains(search, StringComparison.OrdinalIgnoreCase)))
-                         .ToList();
-        }
+        filters ??= new GetAllDebtsFilters();
+        if (page.HasValue && page.Value > 0) filters.PageNumber = page.Value;
+        if (!string.IsNullOrWhiteSpace(search) && string.IsNullOrWhiteSpace(filters.SearchTerm)) filters.SearchTerm = search;
+        if (!string.IsNullOrWhiteSpace(sort)) filters.SortBy = sort;
+        if (!string.IsNullOrWhiteSpace(dir)) filters.SortDescending = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase);
 
-        debts = sort switch
-        {
-            "DebtPersonName" => dir == "asc" ? debts.OrderBy(d => d.DebtPersonName).ToList() : debts.OrderByDescending(d => d.DebtPersonName).ToList(),
-            "Amount" => dir == "asc" ? debts.OrderBy(d => d.Amount).ToList() : debts.OrderByDescending(d => d.Amount).ToList(),
-            "DateOfReturn" => dir == "asc" ? debts.OrderBy(d => d.DateOfReturn).ToList() : debts.OrderByDescending(d => d.DateOfReturn).ToList(),
-            "Description" => dir == "asc" ? debts.OrderBy(d => d.Description).ToList() : debts.OrderByDescending(d => d.Description).ToList(),
-            _ => dir == "asc" ? debts.OrderBy(d => d.DateOfBorrow).ToList() : debts.OrderByDescending(d => d.DateOfBorrow).ToList()
-        };
+        var pagedResult = await _queries.GetAll.HandleAsync(new GetAllDebtsQuery(filters), cancellationToken);
 
-        int pageSize = 10;
-        var totalPages = (int)Math.Ceiling(debts.Count / (double)pageSize);
-        var pagedDebts = debts.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-        ViewBag.CurrentPage = page;
-        ViewBag.TotalPages = totalPages;
-        ViewBag.CurrentSort = sort;
-        ViewBag.CurrentDir = dir;
-        ViewBag.CurrentSearch = search;
-
-        return View(pagedDebts);
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    [DisplayName("Delete")]
-    [Description("Delete a Debt.")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
-    {
-        var cmd = new DeleteDebtCommand(id);
-        var validation = await _deleteValidator.ValidateAsync(cmd, cancellationToken);
-        if (!validation.IsValid)
-        {
-            return BadRequest();
-        }
-
-        await _commands.Delete.HandleAsync(cmd, cancellationToken);
-        TempData["Success"] = "Debt deleted successfully.";
-        return RedirectToAction(nameof(Index));
+        ViewBag.Filters = filters;
+        return View(pagedResult);
     }
 
     [HttpGet]

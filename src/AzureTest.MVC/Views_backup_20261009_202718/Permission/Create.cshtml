@@ -1,0 +1,57 @@
+@{
+    ViewData["Title"] = "Create Permission";
+}
+
+<div class="flex items-center mb-6">
+    <a asp-action="Index" class="text-slate-400 hover:text-brand-600 mr-4 transition-colors">
+        <i class="fa-solid fa-arrow-left text-xl"></i>
+    </a>
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">Create Permission</h1>
+        <p class="text-sm text-slate-500 mt-1">Manually register a new endpoint restriction.</p>
+    </div>
+</div>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start" role="alert">
+        <i class="fa-solid fa-triangle-exclamation text-red-500 mt-0.5 mr-3"></i>
+        <div class="flex-1">
+            <p class="text-sm text-red-800 font-medium">@TempData["ErrorMessage"]</p>
+        </div>
+    </div>
+}
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden max-w-2xl">
+    <form asp-action="Create" method="post" class="p-6 md:p-8">
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <label for="controllerName" class="block text-sm font-medium text-slate-700 mb-2">Controller Name <span class="text-red-500">*</span></label>
+                <input type="text" id="controllerName" name="controllerName" required class="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500" placeholder="e.g. Dashboard" />
+            </div>
+            <div>
+                <label for="actionName" class="block text-sm font-medium text-slate-700 mb-2">Action Name <span class="text-red-500">*</span></label>
+                <input type="text" id="actionName" name="actionName" required class="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500" placeholder="e.g. Index" />
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <label for="displayName" class="block text-sm font-medium text-slate-700 mb-2">Display Name <span class="text-red-500">*</span></label>
+            <input type="text" id="displayName" name="displayName" required class="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500" placeholder="e.g. View Dashboard" />
+        </div>
+
+        <div class="mb-8">
+            <label for="description" class="block text-sm font-medium text-slate-700 mb-2">Description</label>
+            <textarea id="description" name="description" rows="3" class="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500" placeholder="Brief description of what this permission allows..."></textarea>
+            <p class="text-xs text-slate-500 mt-2">Manually created permissions are automatically restricted by default.</p>
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 pt-6 border-t border-slate-100">
+            <a asp-action="Index" class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">Cancel</a>
+            <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-brand-600 border border-transparent rounded-lg hover:bg-brand-700 transition-colors shadow-sm flex items-center">
+                <i class="fa-solid fa-check mr-2"></i> Create Permission
+            </button>
+        </div>
+    </form>
+</div>

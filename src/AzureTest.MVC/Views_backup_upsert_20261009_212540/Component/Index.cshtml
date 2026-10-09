@@ -1,0 +1,349 @@
+@model AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.Dashboards.UnifiedComponentDto>
+@{
+    ViewData["Title"] = "Dashboard Components";
+    var categories = ViewBag.AllCategories as List<string> ?? new List<string>();
+}
+
+<div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">Dashboard Components</h1>
+        <p class="text-sm text-slate-500 mt-1">Manage standard and raw components available to users.</p>
+    </div>
+    <div class="flex items-center gap-4">
+        <button type="button" onclick="openAddModal()" class="inline-flex items-center justify-center rounded-lg border border-transparent bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
+            <i class="fa-solid fa-plus mr-2"></i> Add Component
+        </button>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="mb-4 bg-green-50 p-4 rounded-lg border border-green-200 text-green-700 flex items-center shadow-sm">
+        <i class="fa-solid fa-circle-check mr-2 text-lg"></i> 
+        <span class="font-medium">@TempData["Success"]</span>
+    </div>
+}
+
+<!-- Search/Filter Bar -->
+<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-slate-800">Filter Components</h3>
+    </div>
+    <form asp-action="Index" method="get">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="col-span-1">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Search</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                    </div>
+                    <input name="search" type="text" value="@ViewBag.CurrentSearch" class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="Search by name..." />
+                </div>
+            </div>
+            
+            <div class="col-span-1">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                <select name="category" class="block w-full pl-3 pr-10 py-2 border border-slate-300 rounded-lg leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                    <option value="">All Categories</option>
+                    @foreach (var cat in categories)
+                    {
+                        if(ViewBag.Category == cat) {
+                            <option value="@cat" selected="selected">@cat</option>
+                        } else {
+                            <option value="@cat">@cat</option>
+                        }
+                    }
+                </select>
+            </div>
+            
+            <div class="col-span-1">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Type</label>
+                <select name="type" class="block w-full pl-3 pr-10 py-2 border border-slate-300 rounded-lg leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 sm:text-sm">
+                    <option value="">All Types</option>
+                    <option value="Standard" selected="@(ViewBag.CurrentType == "Standard" ? "selected" : null)">Standard View</option>
+                    <option value="RawHtml" selected="@(ViewBag.CurrentType == "RawHtml" ? "selected" : null)">Raw HTML</option>
+                    <option value="JsonConfig" selected="@(ViewBag.CurrentType == "JsonConfig" ? "selected" : null)">JSON Config</option>
+                </select>
+            </div>
+            
+            <div class="col-span-1 flex items-end justify-start gap-2">
+                <button type="submit" class="inline-flex justify-center items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-brand-600 hover:bg-brand-700 focus:outline-none transition-colors">
+                    Filter
+                </button>
+                <a asp-action="Index" class="inline-flex justify-center items-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none transition-colors" title="Clear Filters">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        <a asp-action="Index" asp-route-sort="Name" asp-route-dir="@(ViewBag.CurrentSort == "Name" && ViewBag.CurrentDir == "asc" ? "desc" : "asc")" asp-route-search="@ViewBag.CurrentSearch" asp-route-category="@ViewBag.Category" asp-route-type="@ViewBag.CurrentType" class="group flex items-center">
+                            Component
+                            <span class="ml-2 flex-none rounded bg-slate-200 text-slate-900 group-hover:bg-slate-300">
+                                @if(ViewBag.CurrentSort == "Name") {
+                                    <i class="fa-solid fa-chevron-@(ViewBag.CurrentDir == "asc" ? "up" : "down") px-1 text-[10px]"></i>
+                                }
+                            </span>
+                        </a>
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        <a asp-action="Index" asp-route-sort="Type" asp-route-dir="@(ViewBag.CurrentSort == "Type" && ViewBag.CurrentDir == "asc" ? "desc" : "asc")" asp-route-search="@ViewBag.CurrentSearch" asp-route-category="@ViewBag.Category" asp-route-type="@ViewBag.CurrentType" class="group flex items-center">
+                            Type
+                            <span class="ml-2 flex-none rounded bg-slate-200 text-slate-900 group-hover:bg-slate-300">
+                                @if(ViewBag.CurrentSort == "Type") {
+                                    <i class="fa-solid fa-chevron-@(ViewBag.CurrentDir == "asc" ? "up" : "down") px-1 text-[10px]"></i>
+                                }
+                            </span>
+                        </a>
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        <a asp-action="Index" asp-route-sort="Category" asp-route-dir="@(ViewBag.CurrentSort == "Category" && ViewBag.CurrentDir == "asc" ? "desc" : "asc")" asp-route-search="@ViewBag.CurrentSearch" asp-route-category="@ViewBag.Category" asp-route-type="@ViewBag.CurrentType" class="group flex items-center">
+                            Category
+                            <span class="ml-2 flex-none rounded bg-slate-200 text-slate-900 group-hover:bg-slate-300">
+                                @if(ViewBag.CurrentSort == "Category") {
+                                    <i class="fa-solid fa-chevron-@(ViewBag.CurrentDir == "asc" ? "up" : "down") px-1 text-[10px]"></i>
+                                }
+                            </span>
+                        </a>
+                    </th>
+                    <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200">
+                @if (Model.Items != null && Model.Items.Any())
+                {
+                    foreach (var item in Model.Items)
+                    {
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="font-medium text-slate-900">@item.Name</div>
+                                <div class="text-slate-500 text-xs">@item.Description</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                @if (item.Type == "Standard")
+                                {
+                                    <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Standard view</span>
+                                }
+                                else if (item.Type == "RawHtml")
+                                {
+                                    <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">Raw HTML</span>
+                                }
+                                else if (item.Type == "JsonConfig")
+                                {
+                                    <span class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">JSON Config</span>
+                                }
+                                else 
+                                {
+                                    <span class="inline-flex items-center rounded-md bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-700/10">@item.Type</span>
+                                }
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                @item.Category
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                @if(item.IsRaw)
+                                {
+                                                                        <a asp-controller="RawComponent" asp-action="Edit" asp-route-id="@item.Id" class="text-amber-600 hover:text-amber-900 mx-1"><i class="fa-regular fa-pen-to-square"></i></a>
+                                    <form asp-controller="RawComponent" asp-action="Duplicate" asp-route-id="@item.Id" method="post" class="inline"><button type="submit" class="text-blue-600 hover:text-blue-900 mx-1 bg-transparent border-0 cursor-pointer p-0" title="Duplicate"><i class="fa-regular fa-copy"></i></button></form>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Component" asp-action="Edit" asp-route-id="@item.Id" class="text-amber-600 hover:text-amber-900 mx-1"><i class="fa-regular fa-pen-to-square"></i></a>
+                                    @if (item.Type != "Standard")
+                                    {
+                                        <form asp-controller="Component" asp-action="Duplicate" asp-route-id="@item.Id" method="post" class="inline"><button type="submit" class="text-blue-600 hover:text-blue-900 mx-1 bg-transparent border-0 cursor-pointer p-0" title="Duplicate"><i class="fa-regular fa-copy"></i></button></form>
+                                    }
+                                    
+                                   
+                                }
+                                <button type="button" onclick="openDeleteModal('@item.Id', @item.IsRaw.ToString().ToLower())" class="text-red-600 hover:text-red-900 mx-1 bg-transparent border-0 cursor-pointer p-0"><i class="fa-regular fa-trash-can"></i></button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-slate-500 text-sm">
+                            <i class="fa-solid fa-shapes text-4xl text-slate-300 mb-3 block"></i>
+                            <p>No components found matching your criteria.</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    @if(Model.TotalPages > 0)
+    {
+        <div class="bg-white px-4 py-3 border-t border-slate-200 sm:px-6 flex items-center justify-between">
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-slate-700">
+                        Showing Page <span class="font-medium">@ViewBag.CurrentPage</span>
+                        of <span class="font-medium">@ViewBag.TotalPages</span>
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        @{
+                            var prevDisabled = ViewBag.CurrentPage <= 1 ? "pointer-events-none text-slate-300" : "text-slate-500 hover:bg-slate-50";
+                            var nextDisabled = ViewBag.CurrentPage >= ViewBag.TotalPages ? "pointer-events-none text-slate-300" : "text-slate-500 hover:bg-slate-50";
+                        }
+                        <a asp-action="Index" asp-route-page="@(ViewBag.CurrentPage - 1)" asp-route-sort="@ViewBag.CurrentSort" asp-route-dir="@ViewBag.CurrentDir" asp-route-search="@ViewBag.CurrentSearch" asp-route-category="@ViewBag.Category" asp-route-type="@ViewBag.CurrentType" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium @prevDisabled">
+                            <span class="sr-only">Previous</span>
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </a>
+                        
+                        @{
+                            int window = 2;
+                            int startPage = Math.Max(1, (int)ViewBag.CurrentPage - window);
+                            int endPage = Math.Min((int)ViewBag.TotalPages, (int)ViewBag.CurrentPage + window);
+                            
+                            if (startPage > 1)
+                            {
+                                <a asp-action="Index" asp-route-page="1" asp-route-sort="@ViewBag.CurrentSort" asp-route-dir="@ViewBag.CurrentDir" asp-route-search="@ViewBag.CurrentSearch" asp-route-category="@ViewBag.Category" asp-route-type="@ViewBag.CurrentType" class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">1</a>
+                                if (startPage > 2)
+                                {
+                                    <span class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700">...</span>
+                                }
+                            }
+                            
+                            for (int i = startPage; i <= endPage; i++)
+                            {
+                                if (i == ViewBag.CurrentPage)
+                                {
+                                    <span class="relative inline-flex items-center px-4 py-2 border border-brand-500 bg-brand-50 text-sm font-medium text-brand-600 z-10">@i</span>
+                                }
+                                else
+                                {
+                                    <a asp-action="Index" asp-route-page="@i" asp-route-sort="@ViewBag.CurrentSort" asp-route-dir="@ViewBag.CurrentDir" asp-route-search="@ViewBag.CurrentSearch" asp-route-category="@ViewBag.Category" asp-route-type="@ViewBag.CurrentType" class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">@i</a>
+                                }
+                            }
+                            
+                            if (endPage < ViewBag.TotalPages)
+                            {
+                                if (endPage < ViewBag.TotalPages - 1)
+                                {
+                                    <span class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700">...</span>
+                                }
+                                <a asp-action="Index" asp-route-page="@ViewBag.TotalPages" asp-route-sort="@ViewBag.CurrentSort" asp-route-dir="@ViewBag.CurrentDir" asp-route-search="@ViewBag.CurrentSearch" asp-route-category="@ViewBag.Category" asp-route-type="@ViewBag.CurrentType" class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">@ViewBag.TotalPages</a>
+                            }
+                        }
+                        
+                        <a asp-action="Index" asp-route-page="@(ViewBag.CurrentPage + 1)" asp-route-sort="@ViewBag.CurrentSort" asp-route-dir="@ViewBag.CurrentDir" asp-route-search="@ViewBag.CurrentSearch" asp-route-category="@ViewBag.Category" asp-route-type="@ViewBag.CurrentType" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium @nextDisabled">
+                            <span class="sr-only">Next</span>
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Delete Modal -->
+<div id="deleteModal" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-500 bg-opacity-75 transition-opacity"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <i class="fa-solid fa-triangle-exclamation text-red-600"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                            <h3 class="text-base font-semibold leading-6 text-slate-900" id="modal-title">Delete Component</h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-slate-500">Are you sure you want to permanently delete this component? It will be removed from all users' dashboards.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button type="button" id="confirmDeleteBtn" class="inline-flex w-full justify-center rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto">Delete</button>
+                    <button type="button" onclick="closeDeleteModal()" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="delete-modal-form" method="post">
+    @Html.AntiForgeryToken()
+</form>
+
+<div id="addModal" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-500 bg-opacity-75 transition-opacity"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <i class="fa-solid fa-plus text-brand-600"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                            <h3 class="text-base font-semibold leading-6 text-slate-900" id="modal-title">What type of component do you want to create?</h3>
+                            <div class="mt-4 space-y-3">
+                                <a href="/Component/Create" class="block w-full text-left px-4 py-3 border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-brand-300 transition-colors">
+                                    <p class="font-medium text-slate-900">Standard View Component</p>
+                                    <p class="text-xs text-slate-500 mt-1">Requires a developer to create a CHTML Partial View in the codebase.</p>
+                                </a>
+                                <a href="/RawComponent/Create?type=RawHtml" class="block w-full text-left px-4 py-3 border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-brand-300 transition-colors">
+                                    <p class="font-medium text-slate-900">Raw HTML/JS Widget</p>
+                                    <p class="text-xs text-slate-500 mt-1">Inject custom HTML and JavaScript securely.</p>
+                                </a>
+                                <a href="/RawComponent/Create?type=JsonConfig" class="block w-full text-left px-4 py-3 border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-brand-300 transition-colors">
+                                    <p class="font-medium text-slate-900">JSON Config Widget</p>
+                                    <p class="text-xs text-slate-500 mt-1">Provide a JSON configuration to render dynamic charts via API.</p>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button type="button" onclick="closeAddModal()" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openAddModal() {
+            document.getElementById('addModal').classList.remove('hidden');
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.add('hidden');
+        }
+
+        function openDeleteModal(id, isRaw = false) {
+            if (isRaw) {
+                document.getElementById('delete-modal-form').action = '/RawComponent/Delete/' + id;
+            } else {
+                document.getElementById('delete-modal-form').action = '/Component/Delete/' + id;
+            }
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            document.getElementById('delete-modal-form').submit();
+        });
+    </script>
+}

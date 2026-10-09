@@ -1,3 +1,6 @@
+using AzureTest.Contracts.DTOs.Events;
+using AzureTest.Contracts.DTOs.Tickets;
+using AzureTest.Contracts.DTOs.Debts;
 
 
 using AzureTest.Application.Resumes;
@@ -82,7 +85,8 @@ public class DashboardDataLoader : IDashboardDataLoader
         {
             var now = DateTime.UtcNow;
             
-            var allEvents = await _eventQuery.GetAllEvents.HandleAsync(new AzureTest.Application.Events.Queries.GetAllEventsQuery(parsedUserId), cancellationToken);
+            var allEventsResult = await _eventQuery.GetAllEvents.HandleAsync(new AzureTest.Application.Events.Queries.GetAllEventsQuery(new GetAllEventsFilters { PageSize = -1 }, parsedUserId), cancellationToken);
+            var allEvents = allEventsResult.Items;
             model.RecentEvents = allEvents.Where(e => e.StartDate >= now.AddDays(-1) && e.StartDate <= now.AddDays(7)).Take(5).ToList();
 
             var allTasks = await _taskQuery.GetAllTasks.HandleAsync(new AzureTest.Application.Tasks.Queries.GetAllTasksQuery(parsedUserId), cancellationToken);
@@ -100,7 +104,8 @@ public class DashboardDataLoader : IDashboardDataLoader
                 model.Tickets = await _ticketQuery.GetUnreadTickets.HandleAsync(new AzureTest.Application.Tickets.Queries.GetUnreadTicketsQuery(parsedUserId ?? Guid.Empty), cancellationToken);
             }
             
-            var allUserTickets = await _ticketQuery.GetAllTickets.HandleAsync(new AzureTest.Application.Tickets.Queries.GetAllTicketsQuery(parsedUserId), cancellationToken);
+            var allUserTicketsResult = await _ticketQuery.GetAllTickets.HandleAsync(new AzureTest.Application.Tickets.Queries.GetAllTicketsQuery(new GetAllTicketsFilters { PageSize = -1 }, parsedUserId), cancellationToken);
+            var allUserTickets = allUserTicketsResult.Items;
             model.TicketStatusCounts = allUserTickets.GroupBy(t => t.Status.ToString()).ToDictionary(g => g.Key, g => g.Count());
             
             int doneHabits = 0;
@@ -119,7 +124,8 @@ public class DashboardDataLoader : IDashboardDataLoader
             model.HabitAdherence["Done"] = doneHabits;
             model.HabitAdherence["Pending/Failed"] = pendingHabits;
 
-            var allDebts = await _debtQuery.GetAll.HandleAsync(new AzureTest.Application.Debts.Queries.GetAllDebtsQuery(parsedUserId), cancellationToken);
+            var allDebtsResult = await _debtQuery.GetAll.HandleAsync(new AzureTest.Application.Debts.Queries.GetAllDebtsQuery(new GetAllDebtsFilters { PageSize = -1 }, parsedUserId), cancellationToken);
+            var allDebts = allDebtsResult.Items;
             model.RecentDebts = allDebts.Take(5).ToList();
             
             model.PromissedDebts = allDebts

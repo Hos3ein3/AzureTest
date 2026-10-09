@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50 dark:bg-slate-900">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>@ViewData["Title"] - TrackerPro</title>
+    
+    <!-- Favicon and PWA -->
+    <link rel="icon" type="image/png" href="~/favicon.png">
+    <link rel="manifest" href="~/manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <link rel="apple-touch-icon" href="~/icon-192.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="~/css/style.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#f0fdfa',
+                100: '#ccfbf1',
+                500: '#14b8a6',
+                600: '#0d9488',
+                900: '#134e4a',
+              }
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+<div class="max-w-md w-full space-y-8 bg-white dark:bg-slate-800 p-10 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 relative">
+    <div class="absolute top-4 right-4">
+        <button onclick="toggleAuthDarkMode()" class="text-slate-400 hover:text-brand-500 transition-colors p-2" title="Toggle Dark Mode">
+            <i class="fa-solid fa-moon text-lg" id="authDarkIcon"></i>
+        </button>
+    </div>
+    @RenderBody()    
+</div>
+
+@await RenderSectionAsync("Scripts", required: false)
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    console.log('ServiceWorker registration successful with scope: ', reg.scope);
+                }).catch(err => {
+                    console.error('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+    <!-- Dark mode handling for Auth -->
+    <script>
+        (function() {
+            const isDark = localStorage.getItem('tracker_dark_mode') === 'dark' || 
+                (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                const icon = document.getElementById('authDarkIcon');
+                if (icon) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                }
+            }
+        })();
+
+        function toggleAuthDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('tracker_dark_mode', isDark ? 'dark' : 'light');
+            const icon = document.getElementById('authDarkIcon');
+            if (icon) {
+                if (isDark) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

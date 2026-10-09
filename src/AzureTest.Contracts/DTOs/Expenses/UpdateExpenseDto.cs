@@ -4,7 +4,7 @@ using System;
 
 namespace AzureTest.Contracts.DTOs.Expenses;
 
-public class UpdateExpenseDto
+public class UpdateExpenseDto : IExpenseFormDto
 {
     public Guid Id { get; set; }
     public decimal Amount { get; set; }

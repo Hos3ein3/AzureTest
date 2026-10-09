@@ -3,22 +3,21 @@
     ViewData["Title"] = "Debts";
 }
 
-<div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex justify-between items-center mb-6">
     <div>
         <h1 class="text-2xl font-bold text-slate-800">Debts</h1>
         <p class="text-sm text-slate-500 mt-1">Manage your debts and track who owes you or whom you owe.</p>
     </div>
-    <div class="flex items-center gap-4">
-        
-        <a asp-action="Create" class="inline-flex items-center justify-center rounded-lg border border-transparent bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
-            <i class="fa-solid fa-plus mr-2"></i> Add Debt
+    <div class="flex items-center space-x-4">
+        <a asp-action="Create" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors">
+            <i class="fa-solid fa-plus mr-2"></i> Add New
         </a>
     </div>
 </div>
 
 
 <!-- Search/Filter Bar -->
-<div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6">
+<div class="mb-6 bg-white p-5 rounded-xl shadow-sm border border-slate-100">
     <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold text-slate-800">Filter Debts</h3>
     </div>

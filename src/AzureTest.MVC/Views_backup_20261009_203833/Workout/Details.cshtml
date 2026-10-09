@@ -1,0 +1,217 @@
+@model AzureTest.Domain.Documents.Gym.TrainingCourse
+@{
+    ViewData["Title"] = "Course Details - " + Model.Name;
+    var allTrainings = ViewBag.Trainings as Dictionary<Guid, AzureTest.Domain.Documents.Gym.Training> ?? new();
+    
+    // Calculate distinct equipments needed
+    var allEquipments = new HashSet<string>();
+    int totalWorkouts = 0;
+    foreach(var week in Model.Weeks) {
+        totalWorkouts += week.Days.Count;
+        foreach(var day in week.Days) {
+            foreach(var sec in day.Sections) {
+                foreach(var tr in sec.Trainings) {
+                    if (allTrainings.TryGetValue(tr.TrainingId, out var trainingDef) && trainingDef.Equipments != null) {
+                        foreach(var eq in trainingDef.Equipments) {
+                            allEquipments.Add(eq);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Back Navigation -->
+    <div class="mb-6">
+        <a href="@Url.Action("Index")" class="text-gray-500 hover:text-brand-600 transition-colors flex items-center gap-2 inline-flex font-medium">
+            <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Main Course Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-xl border border-gray-100 dark:border-gray-700 mb-8">
+        
+        <!-- Media Banner -->
+        @if (!string.IsNullOrEmpty(Model.ImagePath) || !string.IsNullOrEmpty(Model.VideoPath))
+        {
+            <div class="w-full h-64 md:h-96 relative group overflow-hidden bg-gray-900">
+                @if (!string.IsNullOrEmpty(Model.VideoPath))
+                {
+                    <video src="@Model.VideoPath" class="absolute inset-0 w-full h-full object-cover hidden group-hover:block transition-all duration-300" loop muted playsinline onmouseover="this.play()" onmouseout="this.pause(); this.currentTime = 0;"></video>
+                }
+                @if (!string.IsNullOrEmpty(Model.ImagePath))
+                {
+                    <img src="@Model.ImagePath" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-0" alt="@Model.Name banner" />
+                }
+                <!-- Gradient Overlay -->
+                <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent"></div>
+                
+                <!-- Floating Badges on Banner -->
+                <div class="absolute bottom-6 left-6 right-6 flex justify-between items-end">
+                    <div>
+                        <div class="flex gap-2 mb-3">
+                            <span class="bg-brand-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase shadow-lg">@Model.Weeks.Count Weeks</span>
+                            <span class="bg-white/20 backdrop-blur-md text-white border border-white/30 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-lg">@totalWorkouts Workouts</span>
+                        </div>
+                        <h1 class="text-4xl md:text-5xl font-extrabold text-white drop-shadow-md">@Model.Name</h1>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="p-8 md:p-10">
+            <!-- Header for No Media -->
+            @if (string.IsNullOrEmpty(Model.ImagePath) && string.IsNullOrEmpty(Model.VideoPath))
+            {
+                <div class="mb-8 border-b border-gray-100 dark:border-gray-700 pb-8">
+                    <div class="flex gap-2 mb-4">
+                        <span class="bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400 px-3 py-1 rounded-full text-xs font-bold uppercase">@Model.Weeks.Count Weeks</span>
+                        <span class="bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 px-3 py-1 rounded-full text-xs font-bold uppercase">@totalWorkouts Workouts</span>
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white">@Model.Name</h1>
+                </div>
+            }
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                
+                <!-- Left Column: Details -->
+                <div class="lg:col-span-2 space-y-10">
+                    
+                    <!-- Description -->
+                    <section>
+                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">About this Course</h3>
+                        <div class="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
+                            @Html.Raw(Model.Description)
+                        </div>
+                        @if(Model.Tags != null && Model.Tags.Any()) {
+                            <div class="mt-6 flex flex-wrap gap-2">
+                                @foreach(var t in Model.Tags) {
+                                    <span class="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-3 py-1 rounded-md text-sm font-medium">#@t</span>
+                                }
+                            </div>
+                        }
+                    </section>
+                    
+                    <!-- Required Equipment -->
+                    <section class="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-dumbbell text-brand-500"></i> Required Equipment
+                        </h3>
+                        @if(allEquipments.Any()) {
+                            <div class="flex flex-wrap gap-2">
+                                @foreach(var eq in allEquipments.OrderBy(e => e)) {
+                                    <span class="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-600 font-medium shadow-sm">@eq</span>
+                                }
+                            </div>
+                        } else {
+                            <div class="flex items-center gap-3 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl">
+                                <i class="fa-solid fa-check-circle text-xl"></i>
+                                <span class="font-medium">No specific equipment required. Bodyweight only!</span>
+                            </div>
+                        }
+                    </section>
+                </div>
+                
+                <!-- Right Column: Actions & Quick Stats -->
+                <div>
+                    <div class="sticky top-8 bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-6 border border-gray-100 dark:border-gray-700">
+                        <form method="post" action="@Url.Action("Register", new { courseId = Model.Id })" class="mb-6">
+                            <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-brand-500/20 transition-all hover:scale-[1.02] active:scale-95 flex justify-center items-center gap-2">
+                                <i class="fa-solid fa-rocket"></i> Enroll Now
+                            </button>
+                        </form>
+                        
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
+                                <span class="text-gray-500 dark:text-gray-400"><i class="fa-regular fa-calendar mr-2"></i> Duration</span>
+                                <span class="font-bold text-gray-900 dark:text-white">@Model.Weeks.Count Weeks</span>
+                            </div>
+                            <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
+                                <span class="text-gray-500 dark:text-gray-400"><i class="fa-solid fa-bolt mr-2"></i> Workouts</span>
+                                <span class="font-bold text-gray-900 dark:text-white">@totalWorkouts Sessions</span>
+                            </div>
+                            <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
+                                <span class="text-gray-500 dark:text-gray-400"><i class="fa-solid fa-tag mr-2"></i> Category</span>
+                                <span class="font-bold text-gray-900 dark:text-white">@(Model.Tags?.FirstOrDefault() ?? "General")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Schedule breakdown -->
+    <div>
+        <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-8">Training Schedule</h2>
+        
+        <div class="space-y-6">
+            @foreach(var week in Model.Weeks.OrderBy(w => w.WeekNumber)) {
+                <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm" x-data="{ expanded: @(week.WeekNumber == 1 ? "true" : "false") }">
+                    <button @@click="expanded = !expanded" class="w-full flex justify-between items-center bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-700 px-8 py-5 transition-colors text-left border-b border-transparent dark:border-transparent" :class="expanded ? 'border-gray-200 dark:border-gray-700' : ''">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-brand-100 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl">
+                                @week.WeekNumber
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white m-0">Week @week.WeekNumber</h3>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-800 px-3 py-1 rounded-full">@week.Days.Count Workouts</span>
+                            <i class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-300 text-xl" :class="expanded ? 'rotate-180' : ''"></i>
+                        </div>
+                    </button>
+                    
+                    <div x-show="expanded" x-collapse>
+                        <div class="p-8">
+                            @if(!week.Days.Any()) {
+                                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                                    <i class="fa-regular fa-calendar-xmark text-4xl mb-3 block"></i>
+                                    <p>Rest week. No workouts scheduled.</p>
+                                </div>
+                            } else {
+                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    @foreach(var day in week.Days) {
+                                        <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700 p-6 flex flex-col h-full hover:border-brand-500 transition-colors">
+                                            <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">@day.Name</h4>
+                                            @if(!string.IsNullOrWhiteSpace(day.Description)) {
+                                                <p class="text-gray-500 dark:text-gray-400 text-sm mb-4 line-clamp-2">@day.Description</p>
+                                            }
+                                            
+                                            <div class="mt-auto space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                                @foreach(var sec in day.Sections) {
+                                                    <div>
+                                                        <h5 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">@sec.Name</h5>
+                                                        <ul class="space-y-2">
+                                                            @foreach(var tr in sec.Trainings) {
+                                                                if(allTrainings.TryGetValue(tr.TrainingId, out var tDef)) {
+                                                                    <li class="flex justify-between items-center text-sm">
+                                                                        <span class="text-gray-700 dark:text-gray-300 font-medium truncate pr-2" title="@tDef.Name">@tDef.Name</span>
+                                                                        <span class="text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-800 px-2 py-0.5 rounded text-xs whitespace-nowrap flex-shrink-0">
+                                                                            @if (tr.Sets > 0 && tr.Reps > 0) {
+                                                                                @($"{tr.Sets} × {tr.Reps}")
+                                                                            } else if (tr.DurationSeconds > 0) {
+                                                                                @($"{tr.DurationSeconds}s")
+                                                                            } else {
+                                                                                @("1 set")
+                                                                            }
+                                                                        </span>
+                                                                    </li>
+                                                                }
+                                                            }
+                                                        </ul>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

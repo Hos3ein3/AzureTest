@@ -1,0 +1,99 @@
+@model AzureTest.MVC.Models.HomeDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard Overview";
+}
+
+<div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+    <div>
+        <h1 class="text-3xl font-bold text-slate-800">Dashboard Overview</h1>
+        <p class="text-slate-500 mt-1">Here is the latest snapshot of your job tracking operations.</p>
+        @if (Model.IsAdmin && !string.IsNullOrWhiteSpace(Model.CurrentUserName))
+        {
+            <p class="text-sm font-medium text-brand-600 mt-2">
+                <i class="fa-solid fa-eye mr-1"></i> Viewing: @Model.CurrentUserName
+            </p>
+        }
+    </div>
+    
+    <div class="flex gap-3 items-center">
+        @if (Model.IsAdmin)
+        {
+            <form method="get" class="flex items-center gap-2 mr-4">
+                <select name="userId" class="block w-64 rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
+                    <option value="">-- All Users (Aggregate) --</option>
+                    @foreach (var user in Model.AvailableUsers)
+                    {
+                        if (user.Key == Model.CurrentUserId)
+                        {
+                            <option value="@user.Key" selected>@user.Value</option>
+                        }
+                        else
+                        {
+                            <option value="@user.Key">@user.Value</option>
+                        }
+                    }
+                </select>
+                <button type="submit" class="bg-slate-800 text-white px-3 py-2 rounded-md hover:bg-slate-700 text-sm font-medium transition-colors shadow-sm">
+                    Switch
+                </button>
+            </form>
+        }
+        <a asp-controller="Dashboard" asp-action="Manage" class="inline-flex items-center justify-center px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors shadow-sm text-sm">
+            <i class="fa-solid fa-layer-group mr-2"></i> Custom Dashboards
+        </a>
+        <a asp-controller="Resume" asp-action="Create" class="inline-flex items-center justify-center px-4 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700 transition-colors shadow-sm text-sm">
+            <i class="fa-solid fa-plus mr-2"></i> Add Resume
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    @await Html.PartialAsync("Widgets/_WidgetTotalApplications", Model)
+    @await Html.PartialAsync("Widgets/_WidgetActiveProcessing", Model)
+    @await Html.PartialAsync("Widgets/_WidgetInterviewRate", Model)
+    @await Html.PartialAsync("Widgets/_WidgetTotalCompanies", Model)
+    @await Html.PartialAsync("Widgets/_WidgetRegisteredUsers", Model)
+    @await Html.PartialAsync("Widgets/_WidgetOccupiedStorage", Model)
+    @await Html.PartialAsync("Widgets/_WidgetOutstandingDebt", Model)
+    @await Html.PartialAsync("Widgets/_WidgetMonthlyExpenses", Model)
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+    @await Html.PartialAsync("Widgets/_WidgetUnansweredTickets", Model)
+    @await Html.PartialAsync("Widgets/_WidgetPendingTasks", Model)
+    @await Html.PartialAsync("Widgets/_WidgetUpcomingEvents", Model)
+    @await Html.PartialAsync("Widgets/_WidgetDailyHabits", Model)
+    @await Html.PartialAsync("Widgets/_WidgetRecentDebts", Model)
+    @await Html.PartialAsync("Widgets/_WidgetRecentExpenses", Model)
+    @await Html.PartialAsync("Widgets/_WidgetDebtsDueSoon", Model)
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    @await Html.PartialAsync("Widgets/_WidgetApplicationOverTime", Model)
+    @await Html.PartialAsync("Widgets/_WidgetRecentActivity", Model)
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+    @await Html.PartialAsync("Widgets/_WidgetApplicationByStatus", Model)
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+    @await Html.PartialAsync("Widgets/_WidgetTopPositions", Model)
+    @await Html.PartialAsync("Widgets/_WidgetTopLocations", Model)
+    @await Html.PartialAsync("Widgets/_WidgetApplicationSources", Model)
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+    @await Html.PartialAsync("Widgets/_WidgetExpensesByCategory", Model)
+    @await Html.PartialAsync("Widgets/_WidgetDebtsByPerson", Model)
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+    @await Html.PartialAsync("Widgets/_WidgetSupportTickets", Model)
+    @await Html.PartialAsync("Widgets/_WidgetHabitAdherence", Model)
+    @await Html.PartialAsync("Widgets/_WidgetMonthlyCashFlow", Model)
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("Widgets/_DashboardScripts", Model)
+}

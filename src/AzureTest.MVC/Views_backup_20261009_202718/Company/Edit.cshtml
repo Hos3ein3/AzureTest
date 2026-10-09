@@ -1,0 +1,48 @@
+@model AzureTest.Contracts.DTOs.Companies.UpdateCompanyDto
+@{
+    ViewData["Title"] = "Edit Company";
+}
+
+<nav aria-label="breadcrumb" class="mb-6">
+    <ol class="flex items-center space-x-2 text-sm text-slate-500">
+        <li>
+            <a asp-action="Index" class="hover:text-brand-600 transition-colors">Companies</a>
+        </li>
+        <li>
+            <i class="fa-solid fa-chevron-right text-xs mx-1"></i>
+        </li>
+        <li>
+            <a asp-action="Details" asp-route-id="@Model.Id" class="hover:text-brand-600 transition-colors">@Model.CompanyName</a>
+        </li>
+        <li>
+            <i class="fa-solid fa-chevron-right text-xs mx-1"></i>
+        </li>
+        <li class="font-medium text-slate-800" aria-current="page">Edit</li>
+    </ol>
+</nav>
+
+<div class="max-w-xl">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+            <h5 class="text-lg font-semibold text-slate-800 m-0">Edit Company</h5>
+        </div>
+        <div class="p-6 md:p-8">
+            <form asp-action="Edit">
+                <div asp-validation-summary="ModelOnly" class="text-red-500 text-sm mb-4"></div>
+                <input type="hidden" asp-for="Id" />
+                @Html.AntiForgeryToken()
+                
+                <partial name="_UpsertPartial" />
+                
+                <div class="flex items-center space-x-4 pt-8 mt-6 border-t border-slate-100">
+                    <button type="submit" class="inline-flex justify-center rounded-lg border border-transparent bg-brand-600 py-2 px-6 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
+                        Save Changes
+                    </button>
+                    <a asp-action="Index" class="inline-flex justify-center rounded-lg border border-slate-300 bg-white py-2 px-6 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

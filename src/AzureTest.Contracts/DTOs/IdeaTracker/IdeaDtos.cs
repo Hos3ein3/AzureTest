@@ -22,7 +22,7 @@ public record IdeaDto(
     DateTime? UpdatedAt
 );
 
-public class CreateIdeaDto
+public class CreateIdeaDto : IIdeaFormDto
 {
     public Guid? ParentId { get; set; }
     public string Title { get; set; } = string.Empty;
@@ -35,7 +35,7 @@ public class CreateIdeaDto
     public List<string> Tags { get; set; } = new();
 }
 
-public class UpdateIdeaDto
+public class UpdateIdeaDto : IIdeaFormDto
 {
     public Guid Id { get; set; }
     public Guid? ParentId { get; set; }
@@ -47,4 +47,17 @@ public class UpdateIdeaDto
     public int Status { get; set; }
     public int Priority { get; set; }
     public List<string> Tags { get; set; } = new();
+}
+
+public interface IIdeaFormDto
+{
+    Guid? ParentId { get; set; }
+    string Title { get; set; }
+    string Content { get; set; }
+    string Icon { get; set; }
+    string CoverImage { get; set; }
+    string ThemeColor { get; set; }
+    int Status { get; set; }
+    int Priority { get; set; }
+    List<string> Tags { get; set; }
 }

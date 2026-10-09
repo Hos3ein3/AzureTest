@@ -1,0 +1,17 @@
+@model AzureTest.Contracts.DTOs.Resumes.ResumeDto
+<div class="h-full w-full bg-yellow-50 rounded-xl shadow-sm ring-1 ring-yellow-200 p-5 relative overflow-hidden">
+    <div class="absolute top-0 right-0 p-3 opacity-20">
+        <svg class="h-12 w-12 text-yellow-600" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"></path></svg>
+    </div>
+    <h3 class="text-sm font-bold text-yellow-800 uppercase tracking-widest mb-3 border-b border-yellow-200 pb-2">My Notes</h3>
+    <div class="text-slate-700 text-sm leading-relaxed overflow-y-auto max-h-[calc(100%-3rem)]">
+        @if (!string.IsNullOrWhiteSpace(Model.Note))
+        {
+            <p>@Model.Note</p>
+        }
+        else
+        {
+            <p class="italic text-yellow-600/70">No notes have been added for this application yet.</p>
+        }
+    </div>
+</div>

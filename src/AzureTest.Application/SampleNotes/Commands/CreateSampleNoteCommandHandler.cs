@@ -1,3 +1,4 @@
+using AzureTest.Application.Abstractions;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.SampleNotes;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace AzureTest.Application.SampleNotes.Commands;
 
 // ── Command ───────────────────────────────────────────────────────────────────
-public sealed record CreateSampleNoteCommand(CreateSampleNoteDto Dto) : ICommand<Guid>;
+public sealed record CreateSampleNoteCommand(CreateSampleNoteDto Dto) : ICommand<Result<SampleNote>>;
 
 // ── Validator ─────────────────────────────────────────────────────────────────
 public sealed class CreateSampleNoteCommandValidator : AbstractValidator<CreateSampleNoteCommand>
@@ -22,7 +23,7 @@ public sealed class CreateSampleNoteCommandValidator : AbstractValidator<CreateS
 }
 
 // ── Handler + Mapper ──────────────────────────────────────────────────────────
-public sealed class CreateSampleNoteCommandHandler : ICommandHandler<CreateSampleNoteCommand, Guid>
+public sealed class CreateSampleNoteCommandHandler : ICommandHandler<CreateSampleNoteCommand, Result<SampleNote>>
 {
     private readonly ISampleNoteStore _store;
     private readonly ILogger<CreateSampleNoteCommandHandler> _logger;
@@ -33,12 +34,12 @@ public sealed class CreateSampleNoteCommandHandler : ICommandHandler<CreateSampl
         _logger = logger;
     }
 
-    public Task<Guid> HandleAsync(CreateSampleNoteCommand command, CancellationToken cancellationToken = default)
+    public Task<Result<SampleNote>> HandleAsync(CreateSampleNoteCommand command, CancellationToken cancellationToken = default)
     {
         var note = MapToEntity(command.Dto);
         _store.Add(note);
         _logger.LogInformation("SampleNote {NoteId} '{Title}' created", note.Id, note.Title);
-        return Task.FromResult(note.Id);
+        return Task.FromResult(Result.Success(note));
     }
 
     // ── Mapper ────────────────────────────────────────────────────────────────

@@ -1,0 +1,566 @@
+/* ==========================================================================
+   STYLE.CSS - TrackerPro Central Application Stylesheet
+   Theme Palettes (Light & Dark), Components, Layouts, Extracted Views CSS
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Theme System (4 Palettes x Light & Dark Modes)
+   Palettes: slate (Default), ocean (Blue), emerald (Green), violet (Purple)
+   -------------------------------------------------------------------------- */
+
+:root,
+html[data-theme="slate"],
+html[data-theme=""] {
+    --brand-50: #f8fafc;
+    --brand-100: #f1f5f9;
+    --brand-200: #e2e8f0;
+    --brand-300: #cbd5e1;
+    --brand-400: #94a3b8;
+    --brand-500: #64748b;
+    --brand-600: #475569;
+    --brand-700: #334155;
+    --brand-800: #1e293b;
+    --brand-900: #0f172a;
+    --brand-ring: rgba(71, 85, 105, 0.4);
+
+    --bg-page: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-surface-hover: #f1f5f9;
+    --bg-card: #ffffff;
+    --border-subtle: #e2e8f0;
+    --border-card: #e2e8f0;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+}
+
+html[data-theme="slate"].dark,
+html.dark:not([data-theme]),
+html.dark[data-theme="slate"] {
+    --brand-50: #0f172a;
+    --brand-100: #1e293b;
+    --brand-200: #334155;
+    --brand-300: #475569;
+    --brand-400: #64748b;
+    --brand-500: #94a3b8;
+    --brand-600: #cbd5e1;
+    --brand-700: #e2e8f0;
+    --brand-800: #f1f5f9;
+    --brand-900: #f8fafc;
+    --brand-ring: rgba(203, 213, 225, 0.4);
+
+    --bg-page: #0b1120;
+    --bg-surface: #1e293b;
+    --bg-surface-hover: #334155;
+    --bg-card: #1e293b;
+    --border-subtle: #334155;
+    --border-card: #334155;
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+}
+
+/* Ocean Palette (Blue) */
+html[data-theme="ocean"],
+html[data-theme="blue"] {
+    --brand-50: #eff6ff;
+    --brand-100: #dbeafe;
+    --brand-200: #bfdbfe;
+    --brand-300: #93c5fd;
+    --brand-400: #60a5fa;
+    --brand-500: #3b82f6;
+    --brand-600: #2563eb;
+    --brand-700: #1d4ed8;
+    --brand-800: #1e40af;
+    --brand-900: #1e3a8a;
+    --brand-ring: rgba(37, 99, 235, 0.4);
+
+    --bg-page: #f0f4f8;
+    --bg-surface: #ffffff;
+    --bg-surface-hover: #e0e7ff;
+    --bg-card: #ffffff;
+    --border-subtle: #e2e8f0;
+    --border-card: #e2e8f0;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+}
+
+html[data-theme="ocean"].dark,
+html[data-theme="blue"].dark {
+    --brand-50: #172554;
+    --brand-100: #1e3a8a;
+    --brand-200: #1e40af;
+    --brand-300: #1d4ed8;
+    --brand-400: #2563eb;
+    --brand-500: #3b82f6;
+    --brand-600: #60a5fa;
+    --brand-700: #93c5fd;
+    --brand-800: #bfdbfe;
+    --brand-900: #eff6ff;
+    --brand-ring: rgba(96, 165, 250, 0.4);
+
+    --bg-page: #0a1128;
+    --bg-surface: #111d3d;
+    --bg-surface-hover: #1e2c56;
+    --bg-card: #111d3d;
+    --border-subtle: #1e3a8a;
+    --border-card: #1e3a8a;
+    --text-primary: #f0fdf4;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+}
+
+/* Emerald Palette (Green) */
+html[data-theme="emerald"] {
+    --brand-50: #ecfdf5;
+    --brand-100: #d1fae5;
+    --brand-200: #a7f3d0;
+    --brand-300: #6ee7b7;
+    --brand-400: #34d399;
+    --brand-500: #10b981;
+    --brand-600: #059669;
+    --brand-700: #047857;
+    --brand-800: #065f46;
+    --brand-900: #064e3b;
+    --brand-ring: rgba(5, 150, 105, 0.4);
+
+    --bg-page: #f0fdf4;
+    --bg-surface: #ffffff;
+    --bg-surface-hover: #dcfce7;
+    --bg-card: #ffffff;
+    --border-subtle: #d1fae5;
+    --border-card: #e2e8f0;
+    --text-primary: #064e3b;
+    --text-secondary: #065f46;
+    --text-muted: #047857;
+}
+
+html[data-theme="emerald"].dark {
+    --brand-50: #022c22;
+    --brand-100: #064e3b;
+    --brand-200: #065f46;
+    --brand-300: #047857;
+    --brand-400: #059669;
+    --brand-500: #10b981;
+    --brand-600: #34d399;
+    --brand-700: #6ee7b7;
+    --brand-800: #a7f3d0;
+    --brand-900: #ecfdf5;
+    --brand-ring: rgba(52, 211, 153, 0.4);
+
+    --bg-page: #031c16;
+    --bg-surface: #0a2d24;
+    --bg-surface-hover: #133f33;
+    --bg-card: #0a2d24;
+    --border-subtle: #064e3b;
+    --border-card: #064e3b;
+    --text-primary: #ecfdf5;
+    --text-secondary: #a7f3d0;
+    --text-muted: #6ee7b7;
+}
+
+/* Violet Palette (Purple / Modern) */
+html[data-theme="violet"],
+html[data-theme="indigo"] {
+    --brand-50: #f5f3ff;
+    --brand-100: #ede9fe;
+    --brand-200: #ddd6fe;
+    --brand-300: #c4b5fd;
+    --brand-400: #a78bfa;
+    --brand-500: #8b5cf6;
+    --brand-600: #7c3aed;
+    --brand-700: #6d28d9;
+    --brand-800: #5b21b6;
+    --brand-900: #4c1d95;
+    --brand-ring: rgba(124, 58, 237, 0.4);
+
+    --bg-page: #faf5ff;
+    --bg-surface: #ffffff;
+    --bg-surface-hover: #f3e8ff;
+    --bg-card: #ffffff;
+    --border-subtle: #ede9fe;
+    --border-card: #e2e8f0;
+    --text-primary: #3b0764;
+    --text-secondary: #581c87;
+    --text-muted: #6b21a8;
+}
+
+html[data-theme="violet"].dark,
+html[data-theme="indigo"].dark {
+    --brand-50: #2e1065;
+    --brand-100: #3b0764;
+    --brand-200: #4c1d95;
+    --brand-300: #5b21b6;
+    --brand-400: #6d28d9;
+    --brand-500: #7c3aed;
+    --brand-600: #8b5cf6;
+    --brand-700: #a78bfa;
+    --brand-800: #c4b5fd;
+    --brand-900: #f5f3ff;
+    --brand-ring: rgba(167, 139, 250, 0.4);
+
+    --bg-page: #150928;
+    --bg-surface: #22123d;
+    --bg-surface-hover: #311b54;
+    --bg-card: #22123d;
+    --border-subtle: #3b0764;
+    --border-card: #3b0764;
+    --text-primary: #faf5ff;
+    --text-secondary: #ddd6fe;
+    --text-muted: #c4b5fd;
+}
+
+/* Amber / Rose Palette */
+html[data-theme="rose"] {
+    --brand-50: #fff1f2;
+    --brand-100: #ffe4e6;
+    --brand-200: #fecdd3;
+    --brand-300: #fda4af;
+    --brand-400: #fb7185;
+    --brand-500: #f43f5e;
+    --brand-600: #e11d48;
+    --brand-700: #be123c;
+    --brand-800: #9f1239;
+    --brand-900: #881337;
+    --brand-ring: rgba(225, 29, 72, 0.4);
+
+    --bg-page: #fff1f2;
+    --bg-surface: #ffffff;
+    --bg-surface-hover: #ffe4e6;
+    --bg-card: #ffffff;
+    --border-subtle: #fecdd3;
+    --border-card: #e2e8f0;
+    --text-primary: #881337;
+    --text-secondary: #9f1239;
+    --text-muted: #be123c;
+}
+
+html[data-theme="rose"].dark {
+    --brand-50: #4c0519;
+    --brand-100: #881337;
+    --brand-200: #9f1239;
+    --brand-300: #be123c;
+    --brand-400: #e11d48;
+    --brand-500: #f43f5e;
+    --brand-600: #fb7185;
+    --brand-700: #fda4af;
+    --brand-800: #fecdd3;
+    --brand-900: #fff1f2;
+    --brand-ring: rgba(251, 113, 133, 0.4);
+
+    --bg-page: #23040d;
+    --bg-surface: #380816;
+    --bg-surface-hover: #4e0e22;
+    --bg-card: #380816;
+    --border-subtle: #881337;
+    --border-card: #881337;
+    --text-primary: #fff1f2;
+    --text-secondary: #fecdd3;
+    --text-muted: #fda4af;
+}
+
+/* --------------------------------------------------------------------------
+   2. Dark Mode Overrides for Core UI Elements
+   -------------------------------------------------------------------------- */
+
+html.dark body {
+    background-color: var(--bg-page) !important;
+    color: var(--text-primary) !important;
+}
+
+html.dark header {
+    background-color: var(--bg-surface) !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+html.dark aside#sidebar {
+    background-color: var(--bg-surface) !important;
+    border-right: 1px solid var(--border-subtle) !important;
+    color: var(--text-primary) !important;
+}
+
+html.dark aside#sidebar .border-b {
+    border-color: var(--border-subtle) !important;
+}
+
+html.dark aside#sidebar .logo-brand {
+    color: var(--text-primary) !important;
+}
+
+html.dark aside#sidebar .nav-item-link.text-slate-600,
+html.dark aside#sidebar .nav-item-link.text-slate-700 {
+    color: var(--text-secondary) !important;
+}
+
+html.dark aside#sidebar .nav-item-link:hover {
+    background-color: var(--bg-surface-hover) !important;
+    color: var(--text-primary) !important;
+}
+
+html.dark aside#sidebar .nav-item-link.bg-brand-50 {
+    background-color: var(--brand-100) !important;
+    color: var(--brand-700) !important;
+}
+
+html.dark main {
+    background-color: var(--bg-page) !important;
+}
+
+html.dark .card,
+html.dark .bg-white {
+    background-color: var(--bg-card) !important;
+    border-color: var(--border-subtle) !important;
+    color: var(--text-primary) !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-gray-50 {
+    background-color: var(--bg-page) !important;
+}
+
+html.dark .bg-slate-100 {
+    background-color: var(--bg-surface-hover) !important;
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-gray-900,
+html.dark .text-gray-800 {
+    color: var(--text-primary) !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600,
+html.dark .text-gray-700,
+html.dark .text-gray-600 {
+    color: var(--text-secondary) !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-400,
+html.dark .text-gray-500,
+html.dark .text-gray-400 {
+    color: var(--text-muted) !important;
+}
+
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-gray-100,
+html.dark .border-gray-200 {
+    border-color: var(--border-subtle) !important;
+}
+
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark select,
+html.dark textarea {
+    background-color: var(--bg-surface) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-subtle) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: var(--text-muted) !important;
+}
+
+/* Modals & Dialogs in dark mode */
+html.dark #prefModalDialog,
+html.dark .modal-content {
+    background-color: var(--bg-surface) !important;
+    border-color: var(--border-subtle) !important;
+    color: var(--text-primary) !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. Sidebar Extracted Styles
+   -------------------------------------------------------------------------- */
+
+/* Mobile Overlay */
+#mobileSidebarOverlay {
+    display: none;
+}
+#mobileSidebarOverlay.active {
+    display: block;
+}
+
+/* Desktop Sidebar Animations & States */
+#sidebar {
+    transition: width 0.3s ease;
+}
+#sidebar.collapsed {
+    width: 4.5rem !important;
+}
+#sidebar.collapsed .sidebar-text {
+    opacity: 0;
+    width: 0;
+    display: none !important;
+}
+#sidebar.collapsed .logo-brand {
+    display: none !important;
+}
+#sidebar.collapsed .logo-container {
+    justify-content: center !important;
+    padding: 0 !important;
+}
+#sidebar.collapsed .logo-icon {
+    margin-right: 0 !important;
+    font-size: 1.75rem !important;
+    display: block;
+}
+#sidebar.collapsed #sidebarToggle {
+    margin-left: 0 !important;
+    margin: 0 auto;
+}
+#sidebar.collapsed summary i.fa-chevron-down {
+    display: none !important;
+}
+#sidebar.collapsed .nav-item-link {
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    position: relative;
+}
+#sidebar.collapsed .nav-item-link i {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* Desktop Tooltip for Collapsed State */
+#sidebar.collapsed .nav-item-link:hover::after {
+    content: attr(data-title);
+    position: absolute;
+    left: calc(100% + 8px);
+    background-color: #1e293b;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    z-index: 50;
+    pointer-events: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   4. Dashboard & Builder Extracted Styles
+   -------------------------------------------------------------------------- */
+
+.grid-stack-item-content {
+    background-color: transparent !important;
+    border: none !important;
+    overflow: visible !important;
+}
+
+/* Ensure partials stretch to fill the grid item */
+.grid-stack-item-content > div {
+    height: 100% !important;
+    margin: 0 !important;
+}
+
+.ts-dropdown {
+    z-index: 9999 !important;
+}
+
+.grid-stack {
+    min-height: 200px;
+    background-color: #f8fafc;
+    border-radius: 0.75rem;
+    border: 2px dashed #e2e8f0;
+}
+
+html.dark .grid-stack {
+    background-color: var(--bg-surface);
+    border-color: var(--border-subtle);
+}
+
+.builder-item-content {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    border: 1px solid #f1f5f9;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    cursor: move;
+}
+
+html.dark .builder-item-content {
+    background-color: var(--bg-card);
+    border-color: var(--border-subtle);
+}
+
+.component-card {
+    cursor: grab;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.component-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.remove-widget-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ef4444;
+    cursor: pointer;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.grid-stack-item:hover .remove-widget-btn {
+    opacity: 1;
+}
+.widget-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 1rem;
+}
+
+/* --------------------------------------------------------------------------
+   5. File Explorer Extracted Styles
+   -------------------------------------------------------------------------- */
+
+.file-item:focus,
+.file-item.selected {
+    background-color: #cce8ff !important;
+    border-color: #99d1ff !important;
+    outline: none;
+}
+
+html.dark .file-item:focus,
+html.dark .file-item.selected {
+    background-color: rgba(59, 130, 246, 0.25) !important;
+    border-color: #3b82f6 !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. Idea Tracker Extracted Styles
+   -------------------------------------------------------------------------- */
+
+.editor-readonly-mode .codex-editor__redactor {
+    padding-bottom: 0 !important;
+}
+.editor-readonly-mode .ce-block__content {
+    max-width: 100%;
+}
+/* TOC active styling */
+.toc-item.active {
+    color: var(--brand-600, #0284c7);
+    font-weight: 600;
+    border-left: 2px solid var(--brand-600, #0284c7);
+    margin-left: -14px;
+    padding-left: 12px;
+}

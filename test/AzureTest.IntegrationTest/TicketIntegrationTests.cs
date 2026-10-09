@@ -71,8 +71,8 @@ public class TicketIntegrationTests : IClassFixture<IntegrationTestWebAppFactory
         
         var id = (await commandUnit.CreateTicket.HandleAsync(new CreateTicketCommand("Subj", "Cont", (AzureTest.Domain.Enums.TicketPriority)1), default)).Value;
         
-        var tickets = await queryUnit.GetAllTickets.HandleAsync(new GetAllTicketsQuery(TestUserId), default);
-        tickets.ShouldNotBeNull();
-        tickets.ShouldContain(t => t.Id == id);
+        var ticketsResult = await queryUnit.GetAllTickets.HandleAsync(new GetAllTicketsQuery(TestUserId), default);
+        ticketsResult.ShouldNotBeNull();
+        ticketsResult.Items.ShouldContain(t => t.Id == id);
     }
 }

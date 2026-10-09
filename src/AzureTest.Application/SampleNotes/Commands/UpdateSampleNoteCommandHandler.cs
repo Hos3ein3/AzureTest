@@ -1,3 +1,4 @@
+using AzureTest.Application.Abstractions;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.SampleNotes;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace AzureTest.Application.SampleNotes.Commands;
 
 // ── Command ───────────────────────────────────────────────────────────────────
-public sealed record UpdateSampleNoteCommand(UpdateSampleNoteDto Dto) : ICommand<bool>;
+public sealed record UpdateSampleNoteCommand(UpdateSampleNoteDto Dto) : ICommand<Result>;
 
 // ── Validator ─────────────────────────────────────────────────────────────────
 public sealed class UpdateSampleNoteCommandValidator : AbstractValidator<UpdateSampleNoteCommand>
@@ -23,7 +24,7 @@ public sealed class UpdateSampleNoteCommandValidator : AbstractValidator<UpdateS
 }
 
 // ── Handler + Mapper ──────────────────────────────────────────────────────────
-public sealed class UpdateSampleNoteCommandHandler : ICommandHandler<UpdateSampleNoteCommand, bool>
+public sealed class UpdateSampleNoteCommandHandler : ICommandHandler<UpdateSampleNoteCommand, Result>
 {
     private readonly ISampleNoteStore _store;
     private readonly ILogger<UpdateSampleNoteCommandHandler> _logger;
@@ -34,13 +35,13 @@ public sealed class UpdateSampleNoteCommandHandler : ICommandHandler<UpdateSampl
         _logger = logger;
     }
 
-    public Task<bool> HandleAsync(UpdateSampleNoteCommand command, CancellationToken cancellationToken = default)
+    public Task<Result> HandleAsync(UpdateSampleNoteCommand command, CancellationToken cancellationToken = default)
     {
         var existing = _store.GetById(command.Dto.Id);
         if (existing is null)
         {
             _logger.LogWarning("SampleNote {NoteId} not found for update", command.Dto.Id);
-            return Task.FromResult(false);
+            return Task.FromResult(Result.Failure(string.Format("SampleNote {NoteId} not found for update", command.Dto.Id)));
         }
 
         ApplyUpdate(existing, command.Dto);
@@ -48,7 +49,7 @@ public sealed class UpdateSampleNoteCommandHandler : ICommandHandler<UpdateSampl
 
         var updated = _store.Update(existing);
         _logger.LogInformation("SampleNote {NoteId} updated", command.Dto.Id);
-        return Task.FromResult(updated);
+        return Task.FromResult(Result.Success());
     }
 
     // ── Mapper ────────────────────────────────────────────────────────────────

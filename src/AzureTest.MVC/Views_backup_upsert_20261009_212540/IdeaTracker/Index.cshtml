@@ -1,0 +1,128 @@
+@using AzureTest.Contracts.DTOs.IdeaTracker
+@using AzureTest.Domain.Documents
+@using AzureTest.Domain.Enums
+@model List<IdeaDto>
+@{
+    ViewData["Title"] = "Idea Tracker";
+}
+
+<div class="px-6 py-8 mx-auto max-w-7xl">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-3">
+                <i class="fa-solid fa-brain text-brand-600"></i> Idea Workspace
+            </h1>
+            <p class="text-slate-500 mt-1">Capture, organize, and track your brilliant ideas.</p>
+        </div>
+        <a asp-action="Create" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white transition-colors border border-transparent rounded-lg shadow-sm bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500">
+            <i class="mr-2 fa-solid fa-plus"></i> New Idea
+        </a>
+    </div>
+
+    
+    <!-- Search/Filter Bar -->
+    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-slate-800">Filter Ideas</h3>
+        </div>
+        <form method="get">
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Search</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                        </div>
+                        <input name="search" type="text" value="@ViewBag.Search" class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="Title, content..." />
+                    </div>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                    <select name="status" onchange="this.form.submit()" class="block w-full pl-3 pr-10 py-2 text-base border border-slate-300 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm rounded-lg">
+                        <option value="">All Statuses</option>
+                        @foreach (var s in Enum.GetValues<IdeaStatus>())
+                        {
+                            var selected = ViewBag.Status != null && (int)ViewBag.Status == (int)s ? "selected" : "";
+                            <option value="@((int)s)" selected="@selected">@s</option>
+                        }
+                    </select>
+                </div>
+                
+                <div class="md:col-span-2 flex items-end justify-start gap-2">
+                    <button type="submit" class="inline-flex justify-center items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-brand-600 hover:bg-brand-700 focus:outline-none transition-colors">
+                        Filter
+                    </button>
+                    <a asp-action="Index" class="inline-flex justify-center items-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none transition-colors" title="Clear Filters">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Notion-Style Grid -->
+    @if (!Model.Any())
+    {
+        <div class="flex flex-col items-center justify-center py-20 text-center bg-white border border-dashed rounded-xl border-slate-300">
+            <div class="w-16 h-16 mb-4 text-brand-100 bg-brand-50 rounded-full flex items-center justify-center text-3xl">
+                <i class="fa-regular fa-lightbulb text-brand-500"></i>
+            </div>
+            <h3 class="mb-1 text-lg font-medium text-slate-900">No Ideas Found</h3>
+            <p class="text-sm text-slate-500 mb-4">You haven't captured any ideas matching this filter.</p>
+            <a asp-action="Create" class="text-brand-600 font-medium hover:underline">Capture your first idea &rarr;</a>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach (var idea in Model)
+            {
+                <a asp-action="Details" asp-route-id="@idea.Id" class="group flex flex-col bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                    <!-- Cover Image -->
+                    <div class="h-32 w-full bg-slate-100 relative @(string.IsNullOrEmpty(idea.CoverImage) ? $"bg-gradient-to-r from-{idea.ThemeColor}-400 to-{idea.ThemeColor}-600" : "")">
+                        @if (!string.IsNullOrEmpty(idea.CoverImage))
+                        {
+                            <img src="@idea.CoverImage" alt="Cover" class="w-full h-full object-cover" />
+                        }
+                        
+                        <!-- Floating Icon -->
+                        <div class="absolute -bottom-6 left-4 w-12 h-12 bg-white rounded-lg shadow border border-slate-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                            <i class="@idea.Icon text-slate-700"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div class="p-5 pt-8 flex-1 flex flex-col">
+                        <h3 class="text-lg font-bold text-slate-900 group-hover:text-brand-600 transition-colors">@idea.Title</h3>
+                        
+                        <div class="mt-3 flex gap-2 flex-wrap mb-4">
+                            @{
+                                var statusColor = ((IdeaStatus)idea.Status) switch {
+                                    IdeaStatus.Inbox => "slate",
+                                    IdeaStatus.Refinement => "amber",
+                                    IdeaStatus.InProgress => "blue",
+                                    IdeaStatus.Completed => "emerald",
+                                    IdeaStatus.Archived => "rose",
+                                    _ => "slate"
+                                };
+                            }
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-@statusColor-100 text-@statusColor-800">
+                                @(((IdeaStatus)idea.Status).ToString())
+                            </span>
+                            @foreach(var tag in idea.Tags.Take(3))
+                            {
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600">@tag</span>
+                            }
+                        </div>
+                        
+                        <div class="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                            <span>@idea.CreatedAt.ToString("MMM dd, yyyy")</span>
+                            <span class="font-medium text-slate-400 group-hover:text-brand-500 transition-colors">Open <i class="fa-solid fa-arrow-right ml-1"></i></span>
+                        </div>
+                    </div>
+                </a>
+            }
+        </div>
+    }
+</div>

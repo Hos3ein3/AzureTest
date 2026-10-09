@@ -1,0 +1,82 @@
+@{
+    Layout = "_Layout.Auth";
+}
+<div>
+    <div class="flex justify-center items-center">
+        <i class="fa-solid fa-briefcase text-brand-500 text-3xl mr-3"></i>
+        <span class="text-3xl font-bold tracking-wider text-slate-900">Tracker<span
+                class="text-brand-500">Pro</span></span>
+    </div>
+    <h2 class="mt-6 text-center text-2xl font-extrabold text-slate-900">
+        Sign in to your account
+    </h2>
+    <p class="mt-2 text-center text-sm text-slate-600">
+        Or
+        <a asp-action="Register" class="font-medium text-brand-600 hover:text-brand-500 transition-colors">
+            create a new account
+        </a>
+    </p>
+</div>
+
+<div class="mt-8 space-y-6">
+    <button type="button"
+            class="w-full flex justify-center items-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors">
+        <i class="fa-brands fa-google text-red-500 text-lg mr-2"></i>
+        Sign in with Google
+    </button>
+
+    <div class="relative">
+        <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-slate-300"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white text-slate-500">
+                        Or continue with
+                    </span>
+        </div>
+    </div>
+
+    <form class="space-y-6" asp-action="Login" method="POST">
+        <div asp-validation-summary="All" class="text-red-500 text-sm list-disc pl-5"></div>
+        <div class="space-y-4">
+            <div>
+                <label for="email" class="sr-only">Email address</label>
+                <input id="email" name="email" type="email" autocomplete="email" required
+                       class="appearance-none rounded-lg relative block w-full px-3 py-2 border border-slate-300 placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-brand-500 focus:border-brand-500 focus:z-10 sm:text-sm"
+                       placeholder="Email address">
+            </div>
+            <div>
+                <label for="password" class="sr-only">Password</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required
+                       class="appearance-none rounded-lg relative block w-full px-3 py-2 border border-slate-300 placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-brand-500 focus:border-brand-500 focus:z-10 sm:text-sm"
+                       placeholder="Password">
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <input id="remember-me" name="remember-me" type="checkbox"
+                       class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-slate-300 rounded">
+                <label for="remember-me" class="ml-2 block text-sm text-slate-900">
+                    Remember me
+                </label>
+            </div>
+
+            <div class="text-sm">
+                <a href="#" class="font-medium text-brand-600 hover:text-brand-500">
+                    Forgot your password?
+                </a>
+            </div>
+        </div>
+
+        <div>
+            <button type="submit"
+                    class="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors shadow-sm">
+                        <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                            <i class="fa-solid fa-lock text-brand-500 group-hover:text-brand-400"></i>
+                        </span>
+                Sign in
+            </button>
+        </div>
+    </form>
+</div>

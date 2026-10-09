@@ -17,7 +17,7 @@ public record IdeaSectionDto(
     DateTime? UpdatedAt
 );
 
-public class CreateIdeaSectionDto
+public class CreateIdeaSectionDto : IIdeaSectionFormDto
 {
     public Guid IdeaPageId { get; set; }
     public string Title { get; set; } = string.Empty;
@@ -25,11 +25,19 @@ public class CreateIdeaSectionDto
     public int OrderIndex { get; set; }
 }
 
-public class UpdateIdeaSectionDto
+public class UpdateIdeaSectionDto : IIdeaSectionFormDto
 {
     public Guid Id { get; set; }
     public Guid IdeaPageId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public int OrderIndex { get; set; }
+}
+
+public interface IIdeaSectionFormDto
+{
+    Guid IdeaPageId { get; set; }
+    string Title { get; set; }
+    string Content { get; set; }
+    int OrderIndex { get; set; }
 }

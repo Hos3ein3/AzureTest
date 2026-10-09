@@ -16,17 +16,24 @@ public record IdeaPageDto(
     DateTime? UpdatedAt
 );
 
-public class CreateIdeaPageDto
+public class CreateIdeaPageDto : IIdeaPageFormDto
 {
     public Guid IdeaId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
 }
 
-public class UpdateIdeaPageDto
+public class UpdateIdeaPageDto : IIdeaPageFormDto
 {
     public Guid Id { get; set; }
     public Guid IdeaId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
+}
+
+public interface IIdeaPageFormDto
+{
+    Guid IdeaId { get; set; }
+    string Title { get; set; }
+    string Content { get; set; }
 }

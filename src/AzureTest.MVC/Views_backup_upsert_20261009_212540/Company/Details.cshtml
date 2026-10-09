@@ -1,0 +1,71 @@
+@model AzureTest.Contracts.DTOs.Companies.CompanyDto
+@{
+    ViewData["Title"] = "Company Details";
+}
+
+<nav aria-label="breadcrumb" class="mb-6">
+    <ol class="flex items-center space-x-2 text-sm text-slate-500">
+        <li>
+            <a asp-action="Index" class="hover:text-brand-600 transition-colors">Companies</a>
+        </li>
+        <li>
+            <i class="fa-solid fa-chevron-right text-xs mx-1"></i>
+        </li>
+        <li class="font-medium text-slate-800" aria-current="page">@Model.CompanyName</li>
+    </ol>
+</nav>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-8 max-w-3xl">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+        <h5 class="text-lg font-semibold text-slate-800 m-0">@Model.CompanyName</h5>
+        <div class="flex space-x-2">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="inline-flex items-center px-3 py-1.5 border border-brand-200 text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg text-sm font-medium transition-colors">
+                <i class="fa-solid fa-pen-to-square mr-1.5"></i> Edit
+            </a>
+            <a asp-action="Delete" asp-route-id="@Model.Id" class="inline-flex items-center px-3 py-1.5 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors">
+                <i class="fa-solid fa-trash mr-1.5"></i> Delete
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6">
+            <div class="sm:col-span-2">
+                <dt class="text-sm font-medium text-slate-500">Company Name</dt>
+                <dd class="mt-1 text-sm font-semibold text-slate-900">@Model.CompanyName</dd>
+            </div>
+
+            <div class="sm:col-span-1">
+                <dt class="text-sm font-medium text-slate-500">Location</dt>
+                <dd class="mt-1 text-sm text-slate-900">@(string.IsNullOrWhiteSpace(Model.Location) ? "—" : Model.Location)</dd>
+            </div>
+
+            <div class="sm:col-span-1">
+                <dt class="text-sm font-medium text-slate-500">KVK Number</dt>
+                <dd class="mt-1 text-sm text-slate-900">@(string.IsNullOrWhiteSpace(Model.KvkNumber) ? "—" : Model.KvkNumber)</dd>
+            </div>
+
+            <div class="sm:col-span-1">
+                <dt class="text-sm font-medium text-slate-500">IND Member</dt>
+                <dd class="mt-1">
+                    @if (Model.IsINDMember)
+                    {
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                            <i class="fa-solid fa-check mr-1.5"></i> Yes
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                            No
+                        </span>
+                    }
+                </dd>
+            </div>
+            
+            @* <div class="sm:col-span-1"> *@
+            @*     <dt class="text-sm font-medium text-slate-500">Added On</dt> *@
+            @*     <dd class="mt-1 text-sm text-slate-900">@Model.CreatedOn.ToString("MMMM d, yyyy")</dd> *@
+            @* </div> *@
+        </dl>
+    </div>
+</div>

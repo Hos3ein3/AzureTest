@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AzureTest.Application.Gym;
 
-public record CreateTrainingCourseCommand(string Name, string Description, List<string> Tags, List<CourseWeek> Weeks) : ICommand<Result<Guid>>;
+public record CreateTrainingCourseCommand(string Name, string Description, List<string> Tags, List<CourseWeek> Weeks, string? ImagePath = null, string? VideoPath = null) : ICommand<Result<Guid>>;
 public class CreateTrainingCourseCommandValidator : AbstractValidator<CreateTrainingCourseCommand> {
     public CreateTrainingCourseCommandValidator() {
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
@@ -21,13 +21,13 @@ public class CreateTrainingCourseCommandHandler : ICommandHandler<CreateTraining
     private readonly INoSqlUnitOfWork _uow;
     public CreateTrainingCourseCommandHandler(INoSqlUnitOfWork uow) { _uow = uow; }
     public async Task<Result<Guid>> HandleAsync(CreateTrainingCourseCommand request, CancellationToken ct = default) {
-        var course = new TrainingCourse { Name = request.Name, Description = request.Description, Tags = request.Tags ?? new(), Weeks = request.Weeks ?? new() };
+        var course = new TrainingCourse { Name = request.Name, Description = request.Description, Tags = request.Tags ?? new(), Weeks = request.Weeks, ImagePath = request.ImagePath, VideoPath = request.VideoPath };
         await _uow.TrainingCourses.AddAsync(course);
         return Result.Success(course.Id);
     }
 }
 
-public record UpdateTrainingCourseCommand(Guid Id, string Name, string Description, List<string> Tags, List<CourseWeek> Weeks) : ICommand<Result>;
+public record UpdateTrainingCourseCommand(Guid Id, string Name, string Description, List<string> Tags, List<CourseWeek> Weeks, string? ImagePath = null, string? VideoPath = null) : ICommand<Result>;
 public class UpdateTrainingCourseCommandValidator : AbstractValidator<UpdateTrainingCourseCommand> {
     public UpdateTrainingCourseCommandValidator() {
         RuleFor(x => x.Id).NotEmpty();
@@ -44,6 +44,8 @@ public class UpdateTrainingCourseCommandHandler : ICommandHandler<UpdateTraining
         course.Description = request.Description;
         course.Tags = request.Tags ?? new();
         course.Weeks = request.Weeks ?? new();
+        course.ImagePath = request.ImagePath;
+        course.VideoPath = request.VideoPath;
         await _uow.TrainingCourses.UpdateAsync(request.Id, course);
         return Result.Success();
     }

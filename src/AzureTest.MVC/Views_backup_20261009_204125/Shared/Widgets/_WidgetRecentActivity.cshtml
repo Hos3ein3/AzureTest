@@ -1,0 +1,53 @@
+@model AzureTest.MVC.Models.HomeDashboardViewModel
+
+<!-- Recent Activity -->
+<div class="col-span-1 bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col">
+    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center justify-between">
+        Recent Activity
+        <i class="fa-solid fa-clock-rotate-left text-slate-400 font-normal"></i>
+    </h2>
+    <div class="space-y-5 flex-1 overflow-y-auto custom-scrollbar p-6">
+        @if (!Model.Analytics.RecentActivities.Any())
+        {
+            <div class="text-center text-slate-400 mt-10">
+                <p>No recent activity.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var act in Model.Analytics.RecentActivities)
+            {
+                <div class="flex">
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="h-8 w-8 rounded-full bg-brand-50 flex items-center justify-center border border-brand-100">
+                            @if (act.Status == "Applied" || act.Status == "WantToApply")
+                            {
+                                <i class="fa-solid fa-paper-plane text-brand-500 text-xs"></i>
+                            }
+                            else if (act.Status == "Interview" || act.Status == "PhoneScreen")
+                            {
+                                <i class="fa-solid fa-comments text-amber-500 text-xs"></i>
+                            }
+                            else if (act.Status == "Offer" || act.Status == "OfferAccepted" || act.Status == "OfferExtended")
+                            {
+                                <i class="fa-solid fa-trophy text-emerald-500 text-xs"></i>
+                            }
+                            else
+                            {
+                                <i class="fa-solid fa-bell text-slate-500 text-xs"></i>
+                            }
+                        </div>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <p class="text-sm font-medium text-slate-800">@act.PositionTitle</p>
+                        <p class="text-sm text-slate-500">@act.CompanyName &bull; <span class="text-brand-600 font-medium">@act.Status</span></p>
+                        <p class="text-xs text-slate-400 mt-1">@act.Date.ToLocalTime().ToString("MMM dd, yyyy")</p>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+    <div class="mt-4 pt-4 border-t border-slate-100">
+        <a asp-controller="Resume" asp-action="Index" class="text-sm font-medium text-brand-600 hover:text-brand-500">View all applications &rarr;</a>
+    </div>
+</div>

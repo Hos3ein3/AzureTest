@@ -1,0 +1,50 @@
+@{
+    ViewData["Title"] = "Calendar";
+}
+
+<nav aria-label="breadcrumb" class="mb-6">
+    <ol class="flex items-center space-x-2 text-sm text-slate-500">
+        <li class="font-medium text-slate-800" aria-current="page">Calendar</li>
+    </ol>
+</nav>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-8">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+        <h5 class="text-lg font-semibold text-slate-800 m-0">Schedule</h5>
+    </div>
+    <div class="p-6">
+        <div id="calendar" style="min-height: 700px;"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- FullCalendar JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                themeSystem: 'standard',
+                events: '/Calendar/GetEvents', // Fetches standard events and tasks
+                eventContent: function(arg) {
+                    // Custom rendering based on event type
+                    var type = arg.event.extendedProps.type;
+                    if (type === 'task') {
+                        return { html: '<div class="px-1 py-0.5 text-xs font-semibold rounded"><i class="fa-solid fa-check-square mr-1"></i>' + arg.event.title + '</div>' };
+                    } else if (type === 'debt') {
+                        return { html: '<div class="px-1 py-0.5 text-xs font-semibold rounded text-white" style="background-color: ' + arg.event.backgroundColor + '"><i class="fa-solid fa-money-bill-wave mr-1"></i>' + arg.event.title + '</div>' };
+                    } else {
+                        return { html: '<div class="px-1 py-0.5 text-xs font-semibold rounded text-white" style="background-color: ' + arg.event.backgroundColor + '"><i class="fa-regular fa-calendar-check mr-1"></i>' + arg.event.title + '</div>' };
+                    }
+                }
+            });
+            calendar.render();
+        });
+    </script>
+}

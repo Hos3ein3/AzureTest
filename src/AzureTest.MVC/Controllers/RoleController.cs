@@ -47,7 +47,8 @@ namespace AzureTest.MVC.Controllers;
     [Description("Create a new Role.")]
         public async Task<IActionResult> Create()
     {
-        var allPermissions = await _permQueryUnit.GetPermissions.HandleAsync(new GetPermissionsQuery());
+        var allPermissionsResult = await _permQueryUnit.GetPermissions.HandleAsync(new GetPermissionsQuery(new AzureTest.Application.Permissions.PermissionFilter { PageSize = -1 }));
+        var allPermissions = allPermissionsResult.Items;
         var model = new RoleCreateViewModel
         {
             AvailablePermissions = allPermissions.OrderBy(p => p.ControllerName).ThenBy(p => p.ActionName).ToList()
@@ -64,7 +65,8 @@ namespace AzureTest.MVC.Controllers;
     {
         if (!ModelState.IsValid) 
         {
-            var allPermissions = await _permQueryUnit.GetPermissions.HandleAsync(new GetPermissionsQuery());
+            var allPermissionsResult = await _permQueryUnit.GetPermissions.HandleAsync(new GetPermissionsQuery(new AzureTest.Application.Permissions.PermissionFilter { PageSize = -1 }));
+        var allPermissions = allPermissionsResult.Items;
             model.AvailablePermissions = allPermissions.OrderBy(p => p.ControllerName).ThenBy(p => p.ActionName).ToList();
             return View(model);
         }
@@ -92,7 +94,8 @@ namespace AzureTest.MVC.Controllers;
             ModelState.AddModelError(string.Empty, error);
         }
 
-        var permsFallback = await _permQueryUnit.GetPermissions.HandleAsync(new GetPermissionsQuery());
+        var permsFallbackResult = await _permQueryUnit.GetPermissions.HandleAsync(new GetPermissionsQuery(new AzureTest.Application.Permissions.PermissionFilter { PageSize = -1 }));
+        var permsFallback = permsFallbackResult.Items;
         model.AvailablePermissions = permsFallback.OrderBy(p => p.ControllerName).ThenBy(p => p.ActionName).ToList();
         return View(model);
     }

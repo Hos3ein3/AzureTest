@@ -57,8 +57,9 @@ namespace AzureTest.MVC.Controllers;
             return validation.ToFormResult(this, dto, nameof(Index));
 
         // Step 2: Map to command and execute
-        await _commands.Create.HandleAsync(new CreateSampleNoteCommand(dto), ct);
+        var res=await _commands.Create.HandleAsync(new CreateSampleNoteCommand(dto), ct);
         TempData["Success"] = "Note created successfully!";
+        TempData.SetToast(validation);
         return RedirectToAction(nameof(Index));
     }
 
@@ -96,14 +97,16 @@ namespace AzureTest.MVC.Controllers;
 
         // Step 2: Execute update command
         var updated = await _commands.Update.HandleAsync(new UpdateSampleNoteCommand(dto), ct);
-        if (!updated)
+        if (updated.IsFailure)
         {
             ModelState.AddModelError(string.Empty, "Note not found or could not be updated.");
-            return View(dto);
+            return updated.ToFormResult(this, dto, nameof(Index));
+            
+            
         }
 
         TempData["Success"] = "Note updated successfully!";
-        return RedirectToAction(nameof(Index));
+        return updated.ToFormResult(this, dto, nameof(Index));
     }
 
     // POST /SampleNote/Delete/{id}

@@ -1,0 +1,32 @@
+@model List<AzureTest.Contracts.DTOs.Pages.PageDto>
+
+<div x-data="{ expanded: false }">
+    <button @@click="expanded = !expanded" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-slate-400 hover:text-white hover:bg-brand-500/10 group">
+        <div class="flex items-center">
+            <i class="fa-solid fa-file-lines w-6 text-center text-slate-500 group-hover:text-brand-400 transition-colors"></i>
+            <span class="ml-2 font-medium">Pages</span>
+        </div>
+        <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200" :class="{'rotate-180': expanded}"></i>
+    </button>
+    <div x-show="expanded" x-collapse>
+        <ul class="mt-1 space-y-1 pl-9 pr-3">
+            @if(Model.Any())
+            {
+                foreach(var pageItem in Model)
+                {
+                    <li>
+                        <a href="@Url.Action("Read", "Pages", new { slug = pageItem.Slug })" class="block px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-brand-500/10 transition-colors">
+                            @pageItem.Title
+                        </a>
+                    </li>
+                }
+            }
+            else
+            {
+                <li>
+                    <span class="block px-3 py-2 text-sm text-slate-500 italic">No published pages</span>
+                </li>
+            }
+        </ul>
+    </div>
+</div>

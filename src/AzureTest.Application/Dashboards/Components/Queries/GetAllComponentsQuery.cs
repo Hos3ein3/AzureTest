@@ -10,7 +10,13 @@ using AzureTest.Contracts.DTOs.Dashboards;
 
 namespace AzureTest.Application.Dashboards.Components.Queries;
 
-public record GetAllComponentsQuery(string? Search = null, string? Category = null, string? Type = null, string? Sort = null, string? Dir = null, int Page = 1, int PageSize = 10) : IQuery<PagedResult<UnifiedComponentDto>>;
+public record GetAllComponentsQuery(string? Search = null, string? Category = null, string? Type = null, string? Sort = null, string? Dir = null, int Page = 1, int PageSize = 10, AzureTest.Contracts.DTOs.Dashboards.GetAllComponentsFilters? Filters = null) : IQuery<PagedResult<UnifiedComponentDto>>
+{
+    public GetAllComponentsQuery(AzureTest.Contracts.DTOs.Dashboards.GetAllComponentsFilters filters)
+        : this(filters.SearchTerm, filters.Category, filters.Type, filters.SortBy, filters.SortDescending ? "desc" : "asc", filters.PageNumber, filters.PageSize, filters)
+    {
+    }
+}
 
 public class GetAllComponentsQueryHandler : IQueryHandler<GetAllComponentsQuery, PagedResult<UnifiedComponentDto>>
 {

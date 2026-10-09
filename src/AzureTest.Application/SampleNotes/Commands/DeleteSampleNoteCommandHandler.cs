@@ -1,3 +1,4 @@
+using AzureTest.Application.Abstractions;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
 using Microsoft.Extensions.Logging;
@@ -5,10 +6,10 @@ using Microsoft.Extensions.Logging;
 namespace AzureTest.Application.SampleNotes.Commands;
 
 // ── Command ───────────────────────────────────────────────────────────────────
-public sealed record DeleteSampleNoteCommand(Guid Id) : ICommand<bool>;
+public sealed record DeleteSampleNoteCommand(Guid Id) : ICommand<Result>;
 
 // ── Handler ───────────────────────────────────────────────────────────────────
-public sealed class DeleteSampleNoteCommandHandler : ICommandHandler<DeleteSampleNoteCommand, bool>
+public sealed class DeleteSampleNoteCommandHandler : ICommandHandler<DeleteSampleNoteCommand, Result>
 {
     private readonly ISampleNoteStore _store;
     private readonly ILogger<DeleteSampleNoteCommandHandler> _logger;
@@ -19,14 +20,16 @@ public sealed class DeleteSampleNoteCommandHandler : ICommandHandler<DeleteSampl
         _logger = logger;
     }
 
-    public Task<bool> HandleAsync(DeleteSampleNoteCommand command, CancellationToken cancellationToken = default)
+    public Task<Result> HandleAsync(DeleteSampleNoteCommand command, CancellationToken cancellationToken = default)
     {
         var deleted = _store.Delete(command.Id);
         if (deleted)
+        {
             _logger.LogInformation("SampleNote {NoteId} deleted", command.Id);
-        else
+            return Task.FromResult(Result.Success());
+        }
+        
             _logger.LogWarning("SampleNote {NoteId} not found for deletion", command.Id);
-
-        return Task.FromResult(deleted);
+            return Task.FromResult(Result.Failure());
     }
 }

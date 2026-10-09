@@ -1,0 +1,100 @@
+@model AzureTest.Domain.Entities.Identity.ApplicationUser
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<div class="max-w-3xl mx-auto py-8">
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-6">
+            <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Profile Settings</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage your personal information and profile picture.</p>
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="m-6 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg text-emerald-700 dark:text-emerald-400 text-sm flex items-center">
+                <i class="fa-solid fa-check-circle mr-2"></i> @TempData["SuccessMessage"]
+            </div>
+        }
+
+        <form asp-action="Update" method="post" enctype="multipart/form-data" class="p-6 space-y-6">
+            
+            <!-- Avatar Section -->
+            <div class="flex items-center space-x-6">
+                <div class="shrink-0 relative group">
+                    @if (!string.IsNullOrEmpty(Model.ProfileImage))
+                    {
+                        <img src="@Model.ProfileImage" alt="Profile" class="h-24 w-24 object-cover rounded-full border-4 border-slate-100 dark:border-slate-700 shadow-sm" id="avatarPreview" />
+                    }
+                    else
+                    {
+                        <div class="h-24 w-24 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center border-4 border-slate-50 dark:border-slate-800 shadow-sm text-slate-400" id="avatarPreviewBox">
+                            <i class="fa-solid fa-user text-3xl"></i>
+                        </div>
+                        <img src="" class="h-24 w-24 object-cover rounded-full border-4 border-slate-100 dark:border-slate-700 shadow-sm hidden" id="avatarPreview" />
+                    }
+                    
+                    <label for="profileImage" class="absolute inset-0 flex items-center justify-center bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition cursor-pointer">
+                        <i class="fa-solid fa-camera"></i>
+                    </label>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200">Profile Picture</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">JPG, GIF or PNG. Max size of 5MB.</p>
+                    <label for="profileImage" class="px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-sm text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition cursor-pointer inline-block">
+                        Choose Image
+                    </label>
+                    <input type="file" id="profileImage" name="profileImage" accept="image/*" class="hidden" onchange="previewImage(this)" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- First Name -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">First Name</label>
+                    <input type="text" name="firstName" value="@Model.FirstName" class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-brand-500 focus:border-brand-500 transition" required />
+                </div>
+                <!-- Last Name -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Last Name</label>
+                    <input type="text" name="lastName" value="@Model.LastName" class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-brand-500 focus:border-brand-500 transition" required />
+                </div>
+                <!-- Email (Readonly) -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
+                    <input type="email" value="@Model.Email" class="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg cursor-not-allowed" disabled />
+                    <p class="text-xs text-slate-400 mt-1">Email cannot be changed.</p>
+                </div>
+                <!-- Phone -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Phone Number</label>
+                    <input type="tel" name="phoneNumber" value="@Model.PhoneNumber" class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-brand-500 focus:border-brand-500 transition" />
+                </div>
+            </div>
+
+            <div class="pt-4 flex justify-end">
+                <button type="submit" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg shadow transition flex items-center">
+                    <i class="fa-solid fa-save mr-2"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById('avatarPreview');
+                    const box = document.getElementById('avatarPreviewBox');
+                    img.src = e.target.result;
+                    img.classList.remove('hidden');
+                    if (box) box.classList.add('hidden');
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+}

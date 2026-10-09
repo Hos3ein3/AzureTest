@@ -1,0 +1,17 @@
+@model AzureTest.Contracts.DTOs.Resumes.ResumeDto
+<div class="h-full w-full bg-white rounded-xl shadow-sm ring-1 ring-slate-200 p-4 flex flex-col justify-center">
+    <div class="grid grid-cols-3 divide-x divide-slate-100 text-center">
+        <div class="px-2">
+            <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Company</p>
+            <p class="text-sm font-semibold text-slate-800 truncate" title="@(Model.CompanyName ?? "N/A")">@(Model.CompanyName ?? "N/A")</p>
+        </div>
+        <div class="px-2">
+            <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Status</p>
+            <p class="text-sm font-semibold text-brand-600 truncate">@Model.Status.ToString()</p>
+        </div>
+        <div class="px-2">
+            <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Applied</p>
+            <p class="text-sm font-semibold text-slate-800">@Model.CreatedOn.ToString("MM/dd")</p>
+        </div>
+    </div>
+</div>

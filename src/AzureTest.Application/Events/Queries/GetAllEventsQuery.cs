@@ -5,4 +5,9 @@ using AzureTest.Contracts.DTOs.Events;
 
 namespace AzureTest.Application.Events.Queries;
 
-public record GetAllEventsQuery(Guid? UserId) : IQuery<IReadOnlyList<EventDto>>;
+using AzureTest.Contracts.DTOs.Common;
+
+public record GetAllEventsQuery(GetAllEventsFilters? Filters = null, Guid? UserId = null) : IQuery<PagedResult<EventDto, GetAllEventsFilters>>
+{
+    public GetAllEventsQuery(Guid? userId) : this(null, userId) {}
+}

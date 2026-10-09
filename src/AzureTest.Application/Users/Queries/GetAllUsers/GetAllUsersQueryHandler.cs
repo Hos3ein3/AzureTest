@@ -19,8 +19,15 @@ public sealed record GetAllUsersQuery(
     string? SortBy = null,
     bool SortDescending = false,
     int PageNumber = 1,
-    int PageSize = 10
-) : IQuery<PagedResult<UserListDto>>;
+    int PageSize = 10,
+    AzureTest.Contracts.DTOs.Users.GetAllUsersFilters? Filters = null
+) : IQuery<PagedResult<UserListDto>>
+{
+    public GetAllUsersQuery(AzureTest.Contracts.DTOs.Users.GetAllUsersFilters filters)
+        : this(filters.SearchTerm, filters.Role, filters.SortBy, filters.SortDescending, filters.PageNumber, filters.PageSize, filters)
+    {
+    }
+}
 
 internal sealed class GetAllUsersQueryHandler : BaseQueryHandler<GetAllUsersQuery, PagedResult<UserListDto>>
 {

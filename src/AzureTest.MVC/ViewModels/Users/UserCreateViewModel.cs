@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace AzureTest.MVC.ViewModels.Users;
 
-public class UserCreateViewModel
+public class UserCreateViewModel : IUserFormViewModel
 {
     [Required]
     [EmailAddress]
@@ -34,4 +34,10 @@ public class UserCreateViewModel
     public string[] SelectedRoles { get; set; } = System.Array.Empty<string>();
 
     public List<SelectListItem> AvailableRoles { get; set; } = new();
+}
+
+public interface IUserFormViewModel
+{
+    string FirstName { get; set; }
+    string LastName { get; set; }
 }

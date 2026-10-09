@@ -19,7 +19,7 @@ public class PageDto
     public DateTime? UpdatedAt { get; set; }
 }
 
-public class CreatePageDto
+public class CreatePageDto : IPageFormDto
 {
     public string Title { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
@@ -27,7 +27,7 @@ public class CreatePageDto
     public string? ImagePath { get; set; }
 }
 
-public class UpdatePageDto
+public class UpdatePageDto : IPageFormDto
 {
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
@@ -46,4 +46,12 @@ public class PageCommentDto
     public DateTime CreatedAt { get; set; }
     public string? AdminReply { get; set; }
     public DateTime? AdminReplyAt { get; set; }
+}
+
+public interface IPageFormDto
+{
+    string Title { get; set; }
+    string Slug { get; set; }
+    string Content { get; set; }
+    string? ImagePath { get; set; }
 }

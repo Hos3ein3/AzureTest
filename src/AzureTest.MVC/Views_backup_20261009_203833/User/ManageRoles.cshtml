@@ -1,0 +1,52 @@
+@model AzureTest.MVC.ViewModels.Users.UserRolesViewModel
+@{
+    ViewData["Title"] = "Manage User Roles";
+}
+
+<div class="flex items-center mb-6">
+    <a asp-action="Index" class="text-slate-400 hover:text-brand-600 mr-4 transition-colors">
+        <i class="fa-solid fa-arrow-left text-xl"></i>
+    </a>
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">Manage Roles</h1>
+        <p class="text-sm text-slate-500 mt-1">For <span class="font-medium text-slate-700">@Model.FullName</span> (@Model.Email)</p>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden max-w-2xl">
+    <form asp-action="ManageRoles" method="post" class="p-6 md:p-8">
+        <input type="hidden" asp-for="UserId" />
+        <input type="hidden" asp-for="FullName" />
+        <input type="hidden" asp-for="Email" />
+        <div asp-validation-summary="ModelOnly" class="text-red-500 text-sm mb-6 bg-red-50 p-4 rounded-lg"></div>
+
+        <div class="mb-8">
+            <h3 class="text-base font-semibold text-slate-800 mb-4">Assigned Roles</h3>
+            <p class="text-sm text-slate-500 mb-4">Select the permissions this user should have in the system.</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                @foreach (var role in Model.AvailableRoles)
+                {
+                    <label class="flex items-center p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors @(Model.SelectedRoles.Contains(role.Value) ? "bg-brand-50 border-brand-200" : "")">
+                        <input type="checkbox" name="SelectedRoles" value="@role.Value" checked="@(Model.SelectedRoles.Contains(role.Value))" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded">
+                        <div class="ml-3">
+                            <span class="block text-sm font-medium @(Model.SelectedRoles.Contains(role.Value) ? "text-brand-900" : "text-slate-700")">@role.Text</span>
+                        </div>
+                    </label>
+                }
+
+                @if (!Model.AvailableRoles.Any())
+                {
+                    <p class="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg col-span-2">No roles available in the system. <a asp-controller="Role" asp-action="Create" class="font-bold hover:underline">Create a role</a> first.</p>
+                }
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 pt-6 border-t border-slate-100">
+            <a asp-action="Index" class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">Cancel</a>
+            <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-brand-600 border border-transparent rounded-lg hover:bg-brand-700 transition-colors shadow-sm flex items-center">
+                <i class="fa-solid fa-floppy-disk mr-2"></i> Save Roles
+            </button>
+        </div>
+    </form>
+</div>

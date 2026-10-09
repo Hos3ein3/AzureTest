@@ -1,0 +1,85 @@
+@model AzureTest.MVC.Models.HomeDashboardViewModel
+
+<!-- Habits Widget -->
+<div class="col-span-1 bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+        <h5 class="text-lg font-semibold text-slate-800 m-0">Daily Habits</h5>
+        <a asp-controller="Habit" asp-action="Index" class="text-xs text-brand-600 hover:text-brand-500 font-medium">Track &rarr;</a>
+    </div>
+    <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
+        @if (!Model.RecentHabits.Any())
+        {
+            <div class="text-center text-slate-400 mt-6">
+                <i class="fa-solid fa-seedling text-3xl mb-2 block"></i>
+                <p class="text-sm">No active habits.</p>
+            </div>
+        }
+        else
+        {
+            <div class="space-y-4">
+                @foreach (var h in Model.RecentHabits)
+                {
+                    var todayLog = h.Logs.FirstOrDefault(l => l.LogDate.Date == DateTime.UtcNow.Date);
+                    bool isDone = false;
+                    double progress = 0;
+                    if (todayLog != null)
+                    {
+                        isDone = h.Type == AzureTest.Domain.Enums.HabitType.Boolean ? todayLog.BooleanValue : todayLog.NumericValue >= h.Goal;
+                        progress = h.Type == AzureTest.Domain.Enums.HabitType.Numeric && h.Goal > 0 ? Math.Min(100, (todayLog.NumericValue / h.Goal) * 100) : 0;
+                    }
+
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1 truncate">
+                            <p class="text-sm font-medium text-slate-700 truncate">@h.Name</p>
+                            @if (h.Type == AzureTest.Domain.Enums.HabitType.Numeric)
+                            {
+                                <p class="text-xs text-slate-500">Goal: @h.Goal | Current: @(todayLog?.NumericValue ?? 0)</p>
+                                <div class="w-full bg-slate-100 rounded-full h-1.5 mt-1.5 overflow-hidden">
+                                    <div class="bg-brand-500 h-1.5 rounded-full" style="width: @progress%"></div>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-xs text-slate-500">@(isDone ? "Done for today!" : "Pending")</p>
+                            }
+                        </div>
+                        
+                        @if (!Model.IsViewingOtherUser)
+                        {
+                            @if (h.Type == AzureTest.Domain.Enums.HabitType.Boolean)
+                            {
+                                <form asp-controller="Habit" asp-action="Log" method="post">
+                                    <input type="hidden" name="HabitId" value="@h.Id" />
+                                    <input type="hidden" name="LogDate" value="@DateTime.UtcNow.ToString("yyyy-MM-dd")" />
+                                    <input type="hidden" name="BooleanValue" value="true" />
+                                    <input type="hidden" name="NumericValue" value="0" />
+                                    <button type="submit" class="w-8 h-8 rounded-full flex items-center justify-center @(isDone ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400 hover:bg-brand-50 hover:text-brand-600") transition-colors focus:outline-none">
+                                        <i class="fa-solid fa-check"></i>
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form asp-controller="Habit" asp-action="Log" method="post" class="flex items-center">
+                                    <input type="hidden" name="HabitId" value="@h.Id" />
+                                    <input type="hidden" name="LogDate" value="@DateTime.UtcNow.ToString("yyyy-MM-dd")" />
+                                    <input type="hidden" name="BooleanValue" value="false" />
+                                    <input type="hidden" name="NumericValue" value="@((todayLog?.NumericValue ?? 0) + 1)" />
+                                    <button type="submit" class="w-8 h-8 rounded-full flex items-center justify-center bg-brand-50 text-brand-600 hover:bg-brand-100 transition-colors focus:outline-none" title="+1">
+                                        <i class="fa-solid fa-plus text-xs"></i>
+                                    </button>
+                                </form>
+                            }
+                        }
+                        else if (isDone)
+                        {
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center bg-emerald-100 text-emerald-600">
+                                <i class="fa-solid fa-check"></i>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

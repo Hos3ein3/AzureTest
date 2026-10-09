@@ -5,9 +5,16 @@
     var userGymCourses = ViewBag.UserGymCourses as List<AzureTest.Domain.Documents.Gym.UserGymCourse> ?? new();
 }
 
-<div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Workout Dashboard</h1>
-    <p class="text-gray-600 dark:text-gray-400">Track your progress and discover new training courses.</p>
+<div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Workout Dashboard</h1>
+        <p class="text-gray-600 dark:text-gray-400">Track your progress and discover new training courses.</p>
+    </div>
+    <div class="mt-4 md:mt-0">
+        <a href="@Url.Action("History")" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+            <i class="fa-solid fa-clock-rotate-left mr-2"></i> View Exercise History
+        </a>
+    </div>
 </div>
 
 <div class="mb-10">
@@ -60,6 +67,21 @@
                 }
                 
                 <div class="flex-grow">
+                    
+                @if (!string.IsNullOrEmpty(c.ImagePath) || !string.IsNullOrEmpty(c.VideoPath))
+                {
+                    <div class="w-full h-48 mb-4 relative overflow-hidden rounded-xl bg-gray-100 group">
+                        @if (!string.IsNullOrEmpty(c.VideoPath))
+                        {
+                            <video src="@c.VideoPath" class="absolute inset-0 w-full h-full object-cover hidden group-hover:block" loop muted playsinline onmouseover="this.play()" onmouseout="this.pause(); this.currentTime = 0;"></video>
+                        }
+                        @if (!string.IsNullOrEmpty(c.ImagePath))
+                        {
+                            <img src="@c.ImagePath" class="absolute inset-0 w-full h-full object-cover group-hover:hidden" />
+                        }
+                    </div>
+                }
+
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 pr-8">@c.Name</h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3">@Html.Raw(c.Description)</p>
                     
@@ -75,11 +97,15 @@
                         <i class="fa-solid fa-layer-group mr-1"></i> @(c.Weeks?.Count ?? 0) Weeks
                     </div>
                     
+                    
+                    <div class="flex gap-2">
+                        <a href="@Url.Action("Details", new { id = c.Id })" class="btn-secondary text-sm px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            Details
+                        </a>
                     @if (!isRegistered) {
-                        <form method="post" action="@Url.Action("Register")">
+                        <form method="post" action="@Url.Action("Register", new { courseId = c.Id })">
                             @Html.AntiForgeryToken()
-                            <input type="hidden" name="courseId" value="@c.Id" />
-                            <button type="submit" class="btn-secondary text-sm px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <button type="submit" class="btn-primary text-sm px-4 py-2 hover:bg-brand-600">
                                 Enroll Now
                             </button>
                         </form>
@@ -88,6 +114,8 @@
                             Enrolled
                         </button>
                     }
+                    </div>
+
                 </div>
             </div>
         }

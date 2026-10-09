@@ -38,46 +38,27 @@ public class GymAdminController : Controller
     [DisplayName("Trainings Index")]
     [Description("List all base trainings.")]
    
-    public async Task<IActionResult> Index(string search = "", string sort = "Name", string dir = "asc", int page = 1)
+    public async Task<IActionResult> Index(TrainingFilter? filter, string search = "", string sort = "Name", string dir = "asc", int page = 1)
     {
-        var result = await _getAllTrainingsQuery.HandleAsync(new GetAllTrainingsQuery());
-        var list = result.IsSuccess ? result.Value : new List<Training>();
+        filter ??= new TrainingFilter();
+        if (!string.IsNullOrWhiteSpace(search)) filter.SearchTerm = search;
+        if (!string.IsNullOrWhiteSpace(sort)) filter.SortBy = sort;
+        if (!string.IsNullOrWhiteSpace(dir)) filter.SortDescending = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase);
+        if (page > 0) filter.PageNumber = page;
 
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            list = list.Where(x => x.Name.Contains(search, StringComparison.OrdinalIgnoreCase) || 
-                                   (x.Description != null && x.Description.Contains(search, StringComparison.OrdinalIgnoreCase))).ToList();
-        }
+        var result = await _getAllTrainingsQuery.HandleAsync(new GetAllTrainingsQuery(filter));
+        var paged = result.IsSuccess 
+            ? result.Value 
+            : new AzureTest.Contracts.DTOs.Common.PagedResult<Training, TrainingFilter>(new List<Training>(), 0, 1, 10, filter);
 
-        if (dir == "asc")
-        {
-            list = sort switch {
-                "Type" => list.OrderBy(x => x.Type.ToString()).ToList(),
-                _ => list.OrderBy(x => x.Name).ToList()
-            };
-        }
-        else
-        {
-            list = sort switch {
-                "Type" => list.OrderByDescending(x => x.Type.ToString()).ToList(),
-                _ => list.OrderByDescending(x => x.Name).ToList()
-            };
-        }
+        ViewBag.Search = filter.SearchTerm ?? "";
+        ViewBag.Sort = filter.SortBy;
+        ViewBag.Dir = filter.SortDescending ? "desc" : "asc";
+        ViewBag.Page = paged.PageNumber;
+        ViewBag.TotalPages = paged.TotalPages;
+        ViewBag.Filters = filter;
 
-        int pageSize = 10;
-        int totalItems = list.Count;
-        int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
-        page = Math.Max(1, Math.Min(page, totalPages > 0 ? totalPages : 1));
-
-        var pagedList = list.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-        ViewBag.Search = search;
-        ViewBag.Sort = sort;
-        ViewBag.Dir = dir;
-        ViewBag.Page = page;
-        ViewBag.TotalPages = totalPages;
-
-        return View(pagedList);
+        return View(paged.Items);
     }
 
     [HttpGet]
@@ -93,7 +74,7 @@ public class GymAdminController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Create Training")]
     [Description("Action: Create Training")]
-    public async Task<IActionResult> CreateTraining(Training model, string EquipmentsStr)
+    public async Task<IActionResult> CreateTraining(Training model, string? EquipmentsStr=null)
     {
         if (ModelState.IsValid)
         {
@@ -123,7 +104,7 @@ public class GymAdminController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Edit Training")]
     [Description("Action: Edit Training")]
-    public async Task<IActionResult> EditTraining(Guid id, Training model, string EquipmentsStr)
+    public async Task<IActionResult> EditTraining(Guid id, Training model, string? EquipmentsStr=null)
     {
         if (id != model.Id) return BadRequest();
         
@@ -140,9 +121,9 @@ public class GymAdminController : Controller
         return View(model);
     }
 
-    private List<string> ParseTags(string input)
+    private List<string>? ParseTags(string? input)
     {
-        if (string.IsNullOrWhiteSpace(input)) return new List<string>();
+        if (string.IsNullOrWhiteSpace(input)) return null;
         try {
             var tags = System.Text.Json.JsonSerializer.Deserialize<List<Dictionary<string, string>>>(input);
             return tags?.Select(t => t["value"]).ToList() ?? new List<string>();

@@ -2,7 +2,7 @@ using AzureTest.Domain.Enums;
 
 namespace AzureTest.Contracts.DTOs.SampleNotes;
 
-public sealed class UpdateSampleNoteDto
+public sealed class UpdateSampleNoteDto : ISampleNoteFormDto
 {
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;

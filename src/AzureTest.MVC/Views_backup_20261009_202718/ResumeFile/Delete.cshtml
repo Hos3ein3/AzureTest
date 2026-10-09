@@ -1,0 +1,40 @@
+@model AzureTest.Contracts.DTOs.Resumes.ResumeFileDto
+@{
+    ViewData["Title"] = "Delete Resume Files";
+}
+
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Resume Files</a></li>
+        <li class="breadcrumb-item active">Delete</li>
+    </ol>
+</nav>
+
+<div class="card border-danger shadow-sm" style="max-width: 600px;">
+    <div class="card-header bg-danger text-white"><h5 class="mb-0">Delete Resume Files</h5></div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <h6 class="alert-heading fw-bold">Are you sure?</h6>
+            <p class="mb-0">This will permanently delete the CV and Cover Letter files from storage, as well as the database record. This action cannot be undone.</p>
+        </div>
+
+        <dl class="row mb-0 mt-4">
+            <dt class="col-sm-4">Resume ID</dt>
+            <dd class="col-sm-8">@Model.ResumeId</dd>
+
+            <dt class="col-sm-4">CV File</dt>
+            <dd class="col-sm-8">@(string.IsNullOrWhiteSpace(Model.RealNameOfCV) ? "None" : Model.RealNameOfCV)</dd>
+
+            <dt class="col-sm-4">Cover Letter</dt>
+            <dd class="col-sm-8">@(string.IsNullOrWhiteSpace(Model.RealNameOfCL) ? "None" : Model.RealNameOfCL)</dd>
+        </dl>
+    </div>
+    <div class="card-footer bg-light d-flex gap-2">
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <button type="submit" class="btn btn-danger">Yes, Delete Files</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    </div>
+</div>

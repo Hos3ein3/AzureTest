@@ -13,7 +13,37 @@ namespace AzureTest.MVC.Controllers;
 [Authorize]
 [DisplayName("Workout Management")]
 [Description("Allows users to enroll in courses, customize days, and perform sessions.")]
+
+public class HistoryLogItem { public TrainingLog Log { get; set; } public DateTime SessionDate { get; set; } }
 public class WorkoutController : Controller {
+    [HttpGet]
+    [DisplayName("Workout History")]
+    [Description("View logs grouped by training exercise.")]
+    public async Task<IActionResult> History()
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if(string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId)) return Unauthorized();
+
+        var sessionsRes = await _getUserSessions.HandleAsync(new GetUserTrainingSessionsQuery(userId));
+        var sessions = sessionsRes.IsSuccess ? sessionsRes.Value : new List<UserTrainingSession>();
+
+        var allTrainingsRes = await _getAllTrainings.HandleAsync(new GetAllTrainingsQuery(new TrainingFilter { PageSize = -1 }));
+        var allTrainings = allTrainingsRes.IsSuccess ? allTrainingsRes.Value.Items : new List<Training>();
+        var trainingsDict = allTrainings.ToDictionary(t => t.Id, t => t);
+
+        // Flatten all logs and enrich with Date from the Session, then group by TrainingId
+        var allLogs = sessions.SelectMany(s => s.Logs.Select(l => new HistoryLogItem {
+            Log = l,
+            SessionDate = s.StartTime
+        })).ToList();
+
+        var grouped = allLogs.GroupBy(x => x.Log.TrainingId)
+                             .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.SessionDate).ToList());
+
+        ViewBag.TrainingsDict = trainingsDict;
+        return View(grouped);
+    }
+
     private readonly GetAllTrainingCoursesQueryHandler _getAllCourses;
     private readonly GetTrainingCourseByIdQueryHandler _getCourseById;
     private readonly GetUserGymCoursesQueryHandler _getUserGymCourses;
@@ -60,8 +90,8 @@ public class WorkoutController : Controller {
         var res = await _getCourseById.HandleAsync(new GetTrainingCourseByIdQuery(id));
         if (!res.IsSuccess) return NotFound();
 
-        var trainingsRes = await _getAllTrainings.HandleAsync(new GetAllTrainingsQuery());
-        ViewBag.Trainings = trainingsRes.IsSuccess ? trainingsRes.Value.ToDictionary(t => t.Id) : new Dictionary<Guid, AzureTest.Domain.Documents.Gym.Training>();
+        var trainingsRes = await _getAllTrainings.HandleAsync(new GetAllTrainingsQuery(new TrainingFilter { PageSize = -1 }));
+        ViewBag.Trainings = trainingsRes.IsSuccess ? trainingsRes.Value.Items.ToDictionary(t => t.Id) : new Dictionary<Guid, AzureTest.Domain.Documents.Gym.Training>();
 
         return View(res.Value);
     }
@@ -69,10 +99,10 @@ public class WorkoutController : Controller {
     [DisplayName("Workout Dashboard")]
     [Description("View enrolled courses and available global courses.")]
     public async Task<IActionResult> Index() {
-        var coursesRes = await _getAllCourses.HandleAsync(new GetAllTrainingCoursesQuery());
+        var coursesRes = await _getAllCourses.HandleAsync(new GetAllTrainingCoursesQuery(new TrainingCourseFilter { PageSize = -1 }));
         var userGymCoursesRes = await _getUserGymCourses.HandleAsync(new GetUserGymCoursesQuery(GetUserId()));
 
-        ViewBag.AvailableCourses = coursesRes.IsSuccess ? coursesRes.Value : new();
+        ViewBag.AvailableCourses = coursesRes.IsSuccess ? coursesRes.Value.Items : new List<AzureTest.Domain.Documents.Gym.TrainingCourse>();
         ViewBag.UserGymCourses = userGymCoursesRes.IsSuccess ? userGymCoursesRes.Value : new();
 
         return View();
@@ -129,8 +159,8 @@ public class WorkoutController : Controller {
         ViewBag.UserGymCourseId = userGymCourseId;
         ViewBag.WeekNumber = week;
         
-        var trainingsRes = await _getAllTrainings.HandleAsync(new AzureTest.Application.Gym.GetAllTrainingsQuery());
-        ViewBag.Trainings = trainingsRes.IsSuccess ? trainingsRes.Value : new List<AzureTest.Domain.Documents.Gym.Training>();
+        var trainingsRes = await _getAllTrainings.HandleAsync(new AzureTest.Application.Gym.GetAllTrainingsQuery(new TrainingFilter { PageSize = -1 }));
+        ViewBag.Trainings = trainingsRes.IsSuccess ? trainingsRes.Value.Items : new List<AzureTest.Domain.Documents.Gym.Training>();
 
         return View(courseDay);
     }
@@ -146,8 +176,8 @@ public class WorkoutController : Controller {
         var courseDay = course.Weeks.SelectMany(w => w.Days).FirstOrDefault(d => d.Id == dayId);
         if (courseDay == null) return NotFound();
 
-        var trainingsRes = await _getAllTrainings.HandleAsync(new GetAllTrainingsQuery());
-        var allTrainings = trainingsRes.IsSuccess ? trainingsRes.Value : new List<AzureTest.Domain.Documents.Gym.Training>();
+        var trainingsRes = await _getAllTrainings.HandleAsync(new GetAllTrainingsQuery(new TrainingFilter { PageSize = -1 }));
+        var allTrainings = trainingsRes.IsSuccess ? trainingsRes.Value.Items : new List<AzureTest.Domain.Documents.Gym.Training>();
 
         var sessionsRes = await _getUserSessions.HandleAsync(new GetUserTrainingSessionsQuery(GetUserId()));
         var userLogs = sessionsRes.IsSuccess ? sessionsRes.Value.SelectMany(s => s.Logs).ToList() : new List<AzureTest.Domain.Documents.Gym.TrainingLog>();

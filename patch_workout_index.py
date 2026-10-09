@@ -3,22 +3,25 @@ import re
 path = "src/AzureTest.MVC/Views/Workout/Index.cshtml"
 with open(path, "r") as f: c = f.read()
 
-# I want to add a Details button next to Enroll, or wrap the Course Name in a link.
-# Let's add a View Details button.
-btn = """<div class="flex gap-2">
-                                <a href="@Url.Action("Details", new { id = course.Id })" class="bg-slate-700/50 hover:bg-slate-600 text-slate-300 hover:text-white px-6 py-2 rounded-lg font-semibold transition-colors border border-slate-600">
-                                    <i class="fa-solid fa-circle-info mr-2"></i> Details
-                                </a>
-                                <form method="post" action="@Url.Action("Enroll", new { id = course.Id })">
-                                    <button type="submit" class="bg-brand-500 hover:bg-brand-600 text-white px-6 py-2 rounded-lg font-semibold transition-all hover:scale-105 shadow-lg shadow-brand-500/20">
-                                        <i class="fa-solid fa-user-plus mr-2"></i> Enroll Now
-                                    </button>
-                                </form>
-                            </div>"""
+# Replace the header div
+old_header = """<div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Workout Dashboard</h1>
+    <p class="text-gray-600 dark:text-gray-400">Track your progress and discover new training courses.</p>
+</div>"""
 
-# Find the Enroll form and replace it.
-c = re.sub(r'<form method="post" action="@Url\.Action\("Enroll", new \{ id = course\.Id \}\)">\s*<button.*?</form>', btn, c, flags=re.DOTALL)
+new_header = """<div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Workout Dashboard</h1>
+        <p class="text-gray-600 dark:text-gray-400">Track your progress and discover new training courses.</p>
+    </div>
+    <div class="mt-4 md:mt-0">
+        <a href="@Url.Action("History")" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+            <i class="fa-solid fa-clock-rotate-left mr-2"></i> View Exercise History
+        </a>
+    </div>
+</div>"""
+
+c = c.replace(old_header, new_header)
 
 with open(path, "w") as f: f.write(c)
-
-print("Index.cshtml patched")
+print("Workout Index patched")

@@ -1,0 +1,54 @@
+@model AzureTest.MVC.ViewModels.Users.UserEditViewModel
+@{
+    ViewData["Title"] = "Edit User";
+}
+
+<div class="flex items-center mb-6">
+    <a asp-action="Index" class="text-slate-400 hover:text-brand-600 mr-4 transition-colors">
+        <i class="fa-solid fa-arrow-left text-xl"></i>
+    </a>
+    <h1 class="text-2xl font-bold text-slate-800">Edit User</h1>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden max-w-2xl">
+    <form asp-action="Edit" method="post" class="p-6 md:p-8">
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="text-red-500 text-sm mb-6 bg-red-50 p-4 rounded-lg"></div>
+
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-slate-700 mb-2">Email Address</label>
+            <input asp-for="Email" class="block w-full px-4 py-2 border border-slate-200 bg-slate-50 text-slate-500 rounded-lg cursor-not-allowed" readonly />
+            <p class="text-xs text-slate-500 mt-2"><i class="fa-solid fa-circle-info mr-1"></i> Email address cannot be changed.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <label asp-for="FirstName" class="block text-sm font-medium text-slate-700 mb-2">First Name <span class="text-red-500">*</span></label>
+                <input asp-for="FirstName" class="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500" />
+                <span asp-validation-for="FirstName" class="text-red-500 text-xs mt-1 block"></span>
+            </div>
+            <div>
+                <label asp-for="LastName" class="block text-sm font-medium text-slate-700 mb-2">Last Name <span class="text-red-500">*</span></label>
+                <input asp-for="LastName" class="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500" />
+                <span asp-validation-for="LastName" class="text-red-500 text-xs mt-1 block"></span>
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <label asp-for="PhoneNumber" class="block text-sm font-medium text-slate-700 mb-2">Phone Number</label>
+            <input asp-for="PhoneNumber" class="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500" />
+            <span asp-validation-for="PhoneNumber" class="text-red-500 text-xs mt-1 block"></span>
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 pt-6 border-t border-slate-100">
+            <a asp-action="Index" class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">Cancel</a>
+            <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-brand-600 border border-transparent rounded-lg hover:bg-brand-700 transition-colors shadow-sm flex items-center">
+                <i class="fa-solid fa-floppy-disk mr-2"></i> Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

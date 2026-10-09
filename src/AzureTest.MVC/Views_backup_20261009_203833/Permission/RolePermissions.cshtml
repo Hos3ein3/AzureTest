@@ -1,0 +1,183 @@
+@model AzureTest.MVC.ViewModels.Permissions.RolePermissionsViewModel
+
+@{
+    ViewData["Title"] = $"Permissions for {Model.RoleName}";
+    var groupedPermissions = Model.Permissions.GroupBy(p => p.ControllerName);
+}
+
+<div class="flex justify-between items-center mb-6">
+    <div class="flex items-center">
+        <a asp-controller="Role" asp-action="Index" class="text-slate-400 hover:text-brand-600 mr-4 transition-colors">
+            <i class="fa-solid fa-arrow-left text-xl"></i>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">Permissions: <span class="text-brand-600">@Model.RoleName</span></h1>
+            <p class="text-sm text-slate-500 mt-1">Configure which endpoints this role can access.</p>
+        </div>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 flex items-start" role="alert">
+        <i class="fa-solid fa-circle-check text-emerald-500 mt-0.5 mr-3"></i>
+        <div class="flex-1">
+            <p class="text-sm text-emerald-800 font-medium">@TempData["SuccessMessage"]</p>
+        </div>
+        <button type="button" class="text-emerald-500 hover:text-emerald-700 focus:outline-none" onclick="this.parentElement.style.display='none';">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+}
+
+<form asp-action="UpdateRolePermissions" method="post">
+    <input type="hidden" asp-for="RoleName" />
+    
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-6">
+        <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+            <h3 class="font-medium text-slate-800">Endpoint Access Checklist</h3>
+            
+            <div class="flex items-center space-x-4">
+                <div class="relative w-64">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-search text-slate-400"></i>
+                    </div>
+                    <input type="text" id="permissionSearch" class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-brand-500 focus:border-brand-500" placeholder="Search endpoints...">
+                </div>
+                <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors flex items-center">
+                    <i class="fa-solid fa-floppy-disk mr-2"></i> Save Changes
+                </button>
+            </div>
+
+        </div>
+
+        <div class="p-6">
+            @if (!groupedPermissions.Any())
+            {
+                <div class="text-center py-10">
+                    <i class="fa-solid fa-shield-halved text-4xl text-slate-300 mb-3"></i>
+                    <p class="text-slate-500">No permissions synced yet.</p>
+                    <a asp-action="Index" class="text-brand-600 hover:underline mt-2 inline-block">Go sync endpoints first</a>
+                </div>
+            }
+
+            <div class="space-y-8">
+                @foreach (var group in groupedPermissions)
+                {
+                    <div class="border border-slate-200 rounded-xl overflow-hidden perm-group">
+                        
+                        <div class="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center cursor-pointer group-header">
+                            <h4 class="font-bold text-slate-700 flex items-center">
+                                <i class="fa-solid fa-chevron-down mr-2 transition-transform duration-200 group-chevron text-slate-400"></i>
+                                <i class="fa-solid fa-layer-group text-slate-400 mr-2"></i> @group.Key Controller
+                            </h4>
+                            <label class="flex items-center cursor-pointer group-select-all text-sm font-medium text-brand-600 hover:text-brand-800" onclick="event.stopPropagation();">
+                                <input type="checkbox" class="form-checkbox h-4 w-4 text-brand-600 rounded border-slate-300 mr-2 toggle-group" data-group="@group.Key" />
+                                Select All
+                            </label>
+                        </div>
+                        <div class="divide-y divide-slate-100 group-body">
+
+                            @foreach (var perm in group)
+                            {
+                                <label class="px-5 py-4 flex items-center hover:bg-slate-50 transition-colors cursor-pointer perm-item">
+                                    <div class="flex-shrink-0 mr-4">
+                                        <input type="checkbox" name="selectedPermissions" value="@perm.PermissionId" checked="@perm.IsAssigned"  class="form-checkbox h-5 w-5 text-brand-600 rounded border-slate-300 shadow-sm focus:ring-brand-500 group-cb-@group.Key" />
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center">
+                                            <span class="text-sm font-medium text-slate-900">@perm.DisplayName</span>
+                                            @if (!perm.IsRestricted)
+                                            {
+                                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Unrestricted</span>
+                                            }
+                                        </div>
+                                        <div class="text-sm text-slate-500 mt-0.5">@perm.Description</div>
+                                        <div class="text-xs font-mono text-slate-400 mt-1"><span class="text-slate-500">@perm.ControllerName</span>/@perm.ActionName</div>
+                                    </div>
+                                </label>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+            <button type="button" id="scrollTopBtn" class="px-4 py-2 text-slate-600 hover:text-brand-600 font-medium text-sm transition-colors flex items-center">
+                <i class="fa-solid fa-arrow-up mr-2"></i> Back to Top
+            </button>
+            <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors flex items-center">
+                <i class="fa-solid fa-floppy-disk mr-2"></i> Save Changes
+            </button>
+        </div>
+    </div>
+</form>
+
+
+@section Scripts {
+    
+    <script>
+        // Toggle checkboxes
+        document.querySelectorAll('.toggle-group').forEach(toggler => {
+            toggler.addEventListener('change', function() {
+                const groupClass = 'group-cb-' + this.dataset.group;
+                const isChecked = this.checked;
+                document.querySelectorAll('.' + groupClass + ':not([disabled])').forEach(cb => {
+                    cb.checked = isChecked;
+                });
+            });
+        });
+
+        // Collapsible groups
+        document.querySelectorAll('.group-header').forEach(header => {
+            header.addEventListener('click', function() {
+                const body = this.nextElementSibling;
+                const chevron = this.querySelector('.group-chevron');
+                if (body.style.display === 'none') {
+                    body.style.display = '';
+                    chevron.classList.remove('-rotate-90');
+                } else {
+                    body.style.display = 'none';
+                    chevron.classList.add('-rotate-90');
+                }
+            });
+        });
+
+        // Search functionality
+        document.getElementById('permissionSearch').addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            document.querySelectorAll('.perm-group').forEach(group => {
+                let hasVisible = false;
+                group.querySelectorAll('.perm-item').forEach(item => {
+                    const text = item.innerText.toLowerCase();
+                    if (text.includes(term)) {
+                        item.style.display = '';
+                        hasVisible = true;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                
+                // Keep the group body visible during search if there are matches
+                const body = group.querySelector('.group-body');
+                const chevron = group.querySelector('.group-chevron');
+                
+                if (hasVisible) {
+                    group.style.display = '';
+                    if (term !== '') {
+                        body.style.display = ''; // Expand to show results
+                        chevron.classList.remove('-rotate-90');
+                    }
+                } else {
+                    group.style.display = 'none';
+                }
+            });
+        });
+
+        // Scroll to top
+        document.getElementById('scrollTopBtn').addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    </script>
+
+}

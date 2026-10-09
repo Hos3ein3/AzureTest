@@ -1,0 +1,38 @@
+@model AzureTest.MVC.Models.HomeDashboardViewModel
+
+<!-- Events Widget -->
+<div class="col-span-1 bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+        <h5 class="text-lg font-semibold text-slate-800 m-0">Upcoming Events</h5>
+        <a asp-controller="Calendar" asp-action="Index" class="text-xs text-brand-600 hover:text-brand-500 font-medium">Calendar &rarr;</a>
+    </div>
+    <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
+        @if (!Model.RecentEvents.Any())
+        {
+            <div class="text-center text-slate-400 mt-6">
+                <i class="fa-regular fa-calendar-xmark text-3xl mb-2 block"></i>
+                <p class="text-sm">No upcoming events.</p>
+            </div>
+        }
+        else
+        {
+            <div class="space-y-4">
+                @foreach (var e in Model.RecentEvents)
+                {
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 flex flex-col items-center justify-center text-blue-600 flex-shrink-0">
+                            <span class="text-[10px] font-bold uppercase leading-none mb-0.5">@e.StartDate.ToString("MMM")</span>
+                            <span class="text-sm font-bold leading-none">@e.StartDate.ToString("dd")</span>
+                        </div>
+                        <div class="flex-1 truncate mt-0.5">
+                            <p class="text-sm font-medium text-slate-700 truncate">@e.Title</p>
+                            <p class="text-xs text-slate-500">
+                                @(e.IsAllDay ? "All Day" : e.StartDate.ToString("t"))
+                            </p>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

@@ -7,11 +7,11 @@ namespace AzureTest.Application.Events;
 
 public class EventQueryUnit : IEventQueryUnit
 {
-    public IQueryHandler<GetAllEventsQuery, IReadOnlyList<EventDto>> GetAllEvents { get; }
+    public IQueryHandler<GetAllEventsQuery, AzureTest.Contracts.DTOs.Common.PagedResult<EventDto, GetAllEventsFilters>> GetAllEvents { get; }
     public IQueryHandler<GetEventByIdQuery, EventDto?> GetEventById { get; }
 
     public EventQueryUnit(
-        IQueryHandler<GetAllEventsQuery, IReadOnlyList<EventDto>> getAllEvents,
+        IQueryHandler<GetAllEventsQuery, AzureTest.Contracts.DTOs.Common.PagedResult<EventDto, GetAllEventsFilters>> getAllEvents,
         IQueryHandler<GetEventByIdQuery, EventDto?> getEventById)
     {
         GetAllEvents = getAllEvents;

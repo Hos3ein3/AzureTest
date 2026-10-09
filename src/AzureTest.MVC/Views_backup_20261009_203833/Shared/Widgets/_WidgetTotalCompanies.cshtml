@@ -1,0 +1,12 @@
+@model AzureTest.MVC.Models.HomeDashboardViewModel
+
+<!-- Stat Card: Total Companies -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center hover:shadow-md transition-shadow">
+    <div class="h-14 w-14 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
+        <i class="fa-solid fa-building text-purple-500 text-2xl"></i>
+    </div>
+    <div class="ml-4 truncate">
+        <p class="text-sm font-medium text-slate-500 truncate">Total Companies</p>
+        <p class="text-3xl font-bold text-slate-800">@Model.Analytics.TotalCompanies</p>
+    </div>
+</div>

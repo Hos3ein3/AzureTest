@@ -48,56 +48,19 @@ namespace AzureTest.MVC.Controllers;
 
     [DisplayName("Index")]
     [Description("View a list of Ticket.")]
-    public async Task<IActionResult> Index(
-        string? status = null,
-        string? priority = null,
-        string? sortBy = null,
-        string? sortOrder = null,
-        int? page = null,
-        int? pageNumber = null,
-        int pageSize = 10)
+    public async Task<IActionResult> Index([FromQuery] GetAllTicketsFilters filters, [FromQuery] int? page, CancellationToken cancellationToken)
     {
+        filters ??= new GetAllTicketsFilters();
+        if (page.HasValue && page.Value > 0)
+        {
+            filters.PageNumber = page.Value;
+        }
+
         bool isStaff = _currentUser.Roles.Contains("Admin") || _currentUser.Permissions.Contains("Ticket/UpdateStatus");
-        var tickets = await _ticketQuery.GetAllTickets.HandleAsync(new GetAllTicketsQuery(isStaff ? null : _currentUser.Id), default);
-
-        IEnumerable<TicketDto> query = tickets;
-
-        if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<TicketStatus>(status, true, out var parsedStatus))
-        {
-            query = query.Where(t => t.Status == parsedStatus);
-        }
-
-        if (!string.IsNullOrWhiteSpace(priority) && Enum.TryParse<TicketPriority>(priority, true, out var parsedPriority))
-        {
-            query = query.Where(t => t.Priority == parsedPriority);
-        }
-
-        bool isDesc = string.Equals(sortOrder, "desc", StringComparison.OrdinalIgnoreCase);
-
-        query = (sortBy?.ToLower()) switch
-        {
-            "subject" => isDesc ? query.OrderByDescending(t => t.Subject) : query.OrderBy(t => t.Subject),
-            "priority" => isDesc ? query.OrderByDescending(t => t.Priority) : query.OrderBy(t => t.Priority),
-            "status" => isDesc ? query.OrderByDescending(t => t.Status) : query.OrderBy(t => t.Status),
-            "date" => isDesc ? query.OrderByDescending(t => t.CreatedOn) : query.OrderBy(t => t.CreatedOn),
-            _ => (sortOrder != null && !isDesc) ? query.OrderBy(t => t.CreatedOn) : query.OrderByDescending(t => t.CreatedOn)
-        };
-
-        var ticketList = query.ToList();
-        int totalCount = ticketList.Count;
-        int currentPage = page ?? pageNumber ?? 1;
-        if (currentPage < 1) currentPage = 1;
-        if (pageSize < 1) pageSize = 10;
-
-        var items = ticketList.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
-        var pagedResult = new PagedResult<TicketDto>(items, totalCount, currentPage, pageSize);
+        var pagedResult = await _ticketQuery.GetAllTickets.HandleAsync(new GetAllTicketsQuery(filters, isStaff ? null : _currentUser.Id), cancellationToken);
 
         ViewBag.IsAdmin = isStaff;
-        ViewBag.Status = status;
-        ViewBag.Priority = priority;
-        ViewBag.SortBy = sortBy ?? "date";
-        ViewBag.SortOrder = sortOrder ?? (sortBy == "subject" || sortBy == "priority" || sortBy == "status" ? "asc" : "desc");
-        ViewBag.PageSize = pageSize;
+        ViewBag.Filters = filters;
 
         return View(pagedResult);
     }

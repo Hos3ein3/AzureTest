@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AzureTest.MVC.ViewModels.Users;
 
-public class UserEditViewModel
+public class UserEditViewModel : IUserFormViewModel
 {
     public Guid Id { get; set; }
 

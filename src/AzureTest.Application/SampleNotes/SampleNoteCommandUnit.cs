@@ -1,25 +1,27 @@
+using AzureTest.Application.Abstractions;
 using AzureTest.Application.Messaging;
 using AzureTest.Application.SampleNotes.Commands;
+using AzureTest.Domain.Entities;
 
 namespace AzureTest.Application.SampleNotes;
 
 public interface ISampleNoteCommandUnit
 {
-    ICommandHandler<CreateSampleNoteCommand, Guid> Create { get; }
-    ICommandHandler<UpdateSampleNoteCommand, bool> Update { get; }
-    ICommandHandler<DeleteSampleNoteCommand, bool> Delete { get; }
+    ICommandHandler<CreateSampleNoteCommand, Result<SampleNote>> Create { get; }
+    ICommandHandler<UpdateSampleNoteCommand, Result> Update { get; }
+    ICommandHandler<DeleteSampleNoteCommand, Result> Delete { get; }
 }
 
 public sealed class SampleNoteCommandUnit : ISampleNoteCommandUnit
 {
-    public ICommandHandler<CreateSampleNoteCommand, Guid> Create { get; }
-    public ICommandHandler<UpdateSampleNoteCommand, bool> Update { get; }
-    public ICommandHandler<DeleteSampleNoteCommand, bool> Delete { get; }
+    public ICommandHandler<CreateSampleNoteCommand, Result<SampleNote>> Create { get; }
+    public ICommandHandler<UpdateSampleNoteCommand, Result> Update { get; }
+    public ICommandHandler<DeleteSampleNoteCommand, Result> Delete { get; }
 
     public SampleNoteCommandUnit(
-        ICommandHandler<CreateSampleNoteCommand, Guid> create,
-        ICommandHandler<UpdateSampleNoteCommand, bool> update,
-        ICommandHandler<DeleteSampleNoteCommand, bool> delete)
+        ICommandHandler<CreateSampleNoteCommand, Result<SampleNote>> create,
+        ICommandHandler<UpdateSampleNoteCommand, Result> update,
+        ICommandHandler<DeleteSampleNoteCommand, Result> delete)
     {
         Create = create;
         Update = update;

@@ -44,6 +44,7 @@ public class Result
     public IDictionary<string, string[]> ValidationErrors { get; } = new Dictionary<string, string[]>();
 
     public static Result Success() => new(true, null);
+    public static Result Failure() => new(false, "non deterministic error happened");
     public static Result Failure(string error) => new(false, error);
     
     public static Result Failure(string title, string message) 

@@ -1,0 +1,241 @@
+@model AzureTest.Contracts.DTOs.Resumes.CreateResumeDto
+@{
+    ViewData["Title"] = "Add Resume";
+}
+
+<nav aria-label="breadcrumb" class="mb-6">
+    <ol class="flex items-center space-x-2 text-sm text-slate-500">
+        <li>
+            <a asp-action="Index" class="hover:text-brand-600 transition-colors">Resumes</a>
+        </li>
+        <li>
+            <i class="fa-solid fa-chevron-right text-xs mx-1"></i>
+        </li>
+        <li class="font-medium text-slate-800" aria-current="page">Add New</li>
+    </ol>
+</nav>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    
+    <!-- Form Column -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden h-fit">
+        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+            <h5 class="text-lg font-semibold text-slate-800 m-0">Add New Resume</h5>
+        </div>
+        <div class="p-6 md:p-8">
+            <form asp-action="Create" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                
+                <partial name="_ResumeFormPartial" />
+                
+                <div class="relative py-6">
+                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div class="w-full border-t border-slate-200"></div>
+                    </div>
+                    <div class="relative flex justify-start">
+                        <span class="pr-3 bg-white text-sm font-medium text-slate-500">Attachments</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-6 mb-8">
+                    <div>
+                        <label for="cvFile" class="block text-sm font-medium text-slate-700 mb-1">Upload CV (PDF)</label>
+                        <input type="file" id="cvFile" name="cvFile" accept=".pdf"
+                               class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
+                    </div>
+                    <div>
+                        <label for="clFile" class="block text-sm font-medium text-slate-700 mb-1">Upload Cover Letter (PDF)</label>
+                        <input type="file" id="clFile" name="clFile" accept=".pdf"
+                               class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4 pt-4 border-t border-slate-100">
+                    <button type="submit" class="inline-flex justify-center rounded-lg border border-transparent bg-brand-600 py-2 px-6 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
+                        Save
+                    </button>
+                    <a asp-action="Index" class="inline-flex justify-center rounded-lg border border-slate-300 bg-white py-2 px-6 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Preview Column -->
+    <div class="hidden lg:flex flex-col gap-4 sticky top-6" style="height: calc(100vh - 120px);">
+        
+        <!-- CV Preview -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex-1 flex flex-col">
+            <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <h5 class="text-sm font-semibold text-slate-800 m-0">CV Preview</h5>
+            </div>
+            <div class="w-full flex-1 p-0 flex items-center justify-center bg-slate-100 relative">
+                <div id="noPreviewMsg" class="text-slate-400 text-center p-6">
+                    <i class="fa-regular fa-file-pdf text-3xl mb-2 block"></i>
+                    <p class="text-xs">Select a CV (PDF)</p>
+                </div>
+                <embed id="pdfPreview" class="hidden w-full h-full absolute inset-0" src="" type="application/pdf" />
+            </div>
+        </div>
+
+        <!-- Cover Letter Preview -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex-1 flex flex-col">
+            <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <h5 class="text-sm font-semibold text-slate-800 m-0">Cover Letter Preview</h5>
+            </div>
+            <div class="w-full flex-1 p-0 flex items-center justify-center bg-slate-100 relative">
+                <div id="noPreviewMsg2" class="text-slate-400 text-center p-6">
+                    <i class="fa-regular fa-file-pdf text-3xl mb-2 block"></i>
+                    <p class="text-xs">Select a CL (PDF)</p>
+                </div>
+                <embed id="pdfPreview2" class="hidden w-full h-full absolute inset-0" src="" type="application/pdf" />
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Initialize CKEditor ---
+        ClassicEditor
+            .create(document.querySelector('#Description'))
+            .catch(error => { console.error(error); });
+
+        ClassicEditor
+            .create(document.querySelector('#Note'))
+            .catch(error => { console.error(error); });
+
+        // --- Local PDF Preview ---
+        const cvFileInput = document.getElementById('cvFile');
+        const clFileInput = document.getElementById('clFile');
+        const pdfPreview = document.getElementById('pdfPreview');
+        const pdfPreview2 = document.getElementById('pdfPreview2');
+        const noPreviewMsg = document.getElementById('noPreviewMsg');
+        const noPreviewMsg2 = document.getElementById('noPreviewMsg2');
+
+        cvFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                const fileURL = URL.createObjectURL(file);
+                pdfPreview.src = fileURL;
+                pdfPreview.classList.remove('hidden');
+                noPreviewMsg.classList.add('hidden');
+            } else {
+                // If there's an existing PDF from server, this won't reset it to server one, 
+                // but since they picked non-pdf, we just hide preview or leave it as is.
+                // It's cleaner to hide it.
+                pdfPreview.src = "";
+                pdfPreview.classList.add('hidden');
+                noPreviewMsg.classList.remove('hidden');
+            }
+        });
+
+        clFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                const fileURL = URL.createObjectURL(file);
+                pdfPreview2.src = fileURL;
+                pdfPreview2.classList.remove('hidden');
+                noPreviewMsg2.classList.add('hidden');
+            } else {
+                // If there's an existing PDF from server, this won't reset it to server one, 
+                // but since they picked non-pdf, we just hide preview or leave it as is.
+                // It's cleaner to hide it.
+                pdfPreview2.src = "";
+                pdfPreview2.classList.add('hidden');
+                noPreviewMsg2.classList.remove('hidden');
+            }
+        });
+
+        // --- TomSelect & Company Search logic ---
+        const selectEl = document.getElementById('companySelect');
+        let tsInstance = null;
+        
+        if (selectEl) {
+            tsInstance = new TomSelect(selectEl, {
+                create: false,
+                sortField: { field: "text", direction: "asc" }
+            });
+        }
+
+        const toggleBtn = document.getElementById('toggleNewCompany');
+        const newPanel  = document.getElementById('newCompanyPanel');
+        const newInput  = document.getElementById('newCompanyInput');
+        const acList    = document.getElementById('companyAutocomplete');
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                const isVisible = newPanel.style.display !== 'none';
+                if (isVisible) {
+                    newPanel.style.display = 'none';
+                    newInput.value = '';
+                    if (tsInstance) tsInstance.enable();
+                } else {
+                    newPanel.style.display = 'block';
+                    if (tsInstance) {
+                        tsInstance.clear();
+                        tsInstance.disable();
+                    }
+                    newInput.focus();
+                }
+            });
+        }
+
+        if (tsInstance) {
+            tsInstance.on('change', function(value) {
+                if (value) {
+                    newPanel.style.display = 'none';
+                    newInput.value = '';
+                }
+            });
+        }
+
+        let debounceTimer;
+        if (newInput) {
+            newInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                const term = newInput.value.trim();
+                if (term.length < 1) { acList.style.display = 'none'; return; }
+
+                debounceTimer = setTimeout(async () => {
+                    const res  = await fetch(`/Resume/SearchCompanies?term=${encodeURIComponent(term)}`);
+                    const data = await res.json();
+
+                    acList.innerHTML = '';
+                    if (data.length === 0) { acList.style.display = 'none'; return; }
+
+                    data.forEach(c => {
+                        const item = document.createElement('button');
+                        item.type = 'button';
+                        item.className = 'w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-brand-600 focus:outline-none focus:bg-slate-50';
+                        item.textContent = c.name;
+                        item.addEventListener('click', () => {
+                            if (tsInstance) {
+                                tsInstance.enable();
+                                tsInstance.setValue(c.id);
+                            }
+                            newInput.value = '';
+                            newPanel.style.display = 'none';
+                            acList.style.display = 'none';
+                        });
+                        acList.appendChild(item);
+                    });
+                    acList.style.display = 'block';
+                }, 300);
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (acList && !acList.contains(e.target) && e.target !== newInput) {
+                acList.style.display = 'none';
+            }
+        });
+    });
+    </script>
+}

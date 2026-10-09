@@ -5,4 +5,9 @@ using AzureTest.Contracts.DTOs.Tickets;
 
 namespace AzureTest.Application.Tickets.Queries;
 
-public record GetAllTicketsQuery(Guid? UserId = null) : IQuery<IReadOnlyList<TicketDto>>;
+using AzureTest.Contracts.DTOs.Common;
+
+public record GetAllTicketsQuery(GetAllTicketsFilters? Filters = null, Guid? UserId = null) : IQuery<PagedResult<TicketDto, GetAllTicketsFilters>>
+{
+    public GetAllTicketsQuery(Guid? userId) : this(null, userId) {}
+}

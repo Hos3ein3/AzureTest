@@ -17,13 +17,7 @@
         <div asp-validation-summary="ModelOnly" class="mb-6 p-4 rounded-lg bg-red-50 text-red-700 text-sm border border-red-200 hidden"></div>
         <input type="hidden" asp-for="Id" />
 
-        <div class="space-y-6">
-            <div>
-                <label asp-for="FullName" class="block text-sm font-medium text-slate-700 mb-1">Full Name <span class="text-red-500">*</span></label>
-                <input asp-for="FullName" class="block w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors bg-slate-50 focus:bg-white text-slate-900" placeholder="e.g. John Doe" required />
-                <span asp-validation-for="FullName" class="text-xs text-red-500 mt-1 block"></span>
-            </div>
-        </div>
+        <partial name="_UpsertPartial" />
 
         <div class="mt-8 flex items-center justify-end space-x-4 pt-6 border-t border-slate-100">
             <a asp-action="Index" class="px-5 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors">

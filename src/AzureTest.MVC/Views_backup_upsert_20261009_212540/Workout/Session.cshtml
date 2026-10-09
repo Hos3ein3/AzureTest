@@ -1,0 +1,331 @@
+@model AzureTest.Domain.Documents.Gym.CourseDay
+@using System.Text.Json
+@using AzureTest.Domain.Enums
+@{
+    ViewData["Title"] = "Active Session - " + Model.Name;
+    var userGymCourseId = ViewBag.UserGymCourseId;
+    var allTrainingsList = ViewBag.Trainings as List<AzureTest.Domain.Documents.Gym.Training> ?? new();
+    var allTrainings = ViewBag.AllTrainings as Dictionary<Guid, AzureTest.Domain.Documents.Gym.Training> ?? new();
+    var userLogs = ViewBag.UserLogs as List<AzureTest.Domain.Documents.Gym.TrainingLog> ?? new();
+}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="session-app">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 sticky top-4 z-10">
+        <div class="mb-4 md:mb-0">
+            <h2 class="text-3xl font-extrabold text-slate-900 mb-1 flex items-center gap-3">
+                @Model.Name 
+                <span class="bg-brand-100 text-brand-700 text-sm px-3 py-1 rounded-full font-bold uppercase tracking-wide">Active Session</span>
+            </h2>
+            <div class="text-slate-500 font-medium text-sm">@Model.Description</div>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="text-center bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                <div class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-0.5">Elapsed Time</div>
+                <div class="text-3xl font-mono text-slate-800 font-black tracking-tight" id="global-timer">00:00</div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="saveLayout()" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+                    <i class="fa-solid fa-save mr-2 text-slate-400"></i> Save Layout
+                </button>
+                <button id="btn-finish" class="inline-flex items-center justify-center rounded-xl border border-transparent bg-emerald-500 px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-emerald-600 transition-colors">
+                    <i class="fa-solid fa-check-double mr-2"></i> Finish Session
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="session-editor" class="space-y-8"></div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+    <script>
+        let dayData = @Html.Raw(JsonSerializer.Serialize(Model, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+        const availableTrainingsList = @Html.Raw(JsonSerializer.Serialize(allTrainingsList, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+        const allTrainingsMap = @Html.Raw(JsonSerializer.Serialize(allTrainings, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+        const userLogs = @Html.Raw(JsonSerializer.Serialize(userLogs, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+
+        // Global Timer
+        let startTime = new Date();
+        setInterval(() => {
+            let diff = Math.floor((new Date() - startTime) / 1000);
+            let m = Math.floor(diff / 60).toString().padStart(2, '0');
+            let s = (diff % 60).toString().padStart(2, '0');
+            document.getElementById('global-timer').innerText = m + ':' + s;
+        }, 1000);
+
+        function updateField(path, field, value) {
+            let obj = dayData;
+            let parts = path.split('.');
+            for (let i = 0; i < parts.length; i++) {
+                let match = parts[i].match(/(.+)\[(\d+)\]/);
+                if (match) obj = obj[match[1]][match[2]];
+                else obj = obj[parts[i]];
+            }
+            obj[field] = value;
+            if(field === 'trainingId') renderSession(); // Re-render for type toggle
+        }
+
+        function addSection() { dayData.sections.push({ name: 'New Section', trainings: [] }); renderSession(); }
+        function removeSection(s) { 
+            Swal.fire({
+                title: 'Remove Section?', text: "This will delete the section and all its exercises.", icon: 'warning',
+                showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Yes, delete it!'
+            }).then((result) => { if (result.isConfirmed) { dayData.sections.splice(s, 1); renderSession(); }});
+        }
+        function moveSection(s, dir) {
+            if (s+dir >= 0 && s+dir < dayData.sections.length) {
+                let temp = dayData.sections[s]; dayData.sections[s] = dayData.sections[s+dir]; dayData.sections[s+dir] = temp;
+                renderSession();
+            }
+        }
+        function addTraining(s) { dayData.sections[s].trainings.push({ trainingId: '', sets: 3, reps: 10, weight: 0, durationSeconds: 0, restSeconds: 60 }); renderSession(); }
+        function removeTraining(s, t) { dayData.sections[s].trainings.splice(t, 1); renderSession(); }
+        function moveTraining(s, t, dir) {
+            if (t+dir >= 0 && t+dir < dayData.sections[s].trainings.length) {
+                let temp = dayData.sections[s].trainings[t]; dayData.sections[s].trainings[t] = dayData.sections[s].trainings[t+dir]; dayData.sections[s].trainings[t+dir] = temp;
+                renderSession();
+            }
+        }
+
+        function renderSession() {
+            const container = document.getElementById('session-editor');
+            let html = '';
+            dayData.sections.forEach((section, sIdx) => {
+                let secPath = `sections[${sIdx}]`;
+                html += `
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+                        <div class="bg-slate-50/80 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                            <div class="flex items-center gap-3 w-1/2">
+                                <div class="flex flex-col">
+                                    <button onclick="moveSection(${sIdx}, -1)" class="text-slate-400 hover:text-brand-600 p-0.5"><i class="fa-solid fa-chevron-up text-xs"></i></button>
+                                    <button onclick="moveSection(${sIdx}, 1)" class="text-slate-400 hover:text-brand-600 p-0.5"><i class="fa-solid fa-chevron-down text-xs"></i></button>
+                                </div>
+                                <input type="text" value="${section.name}" oninput="updateField('${secPath}', 'name', this.value)" class="bg-transparent border-none text-xl font-bold text-slate-800 focus:outline-none focus:ring-0 p-0 w-full" placeholder="Section Name" />
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="addTraining(${sIdx})" class="bg-brand-50 text-brand-600 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm"><i class="fa-solid fa-plus mr-1"></i> Add Exercise</button>
+                                <button onclick="removeSection(${sIdx})" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                        <div class="p-6 space-y-6">
+                `;
+
+                if (section.trainings.length === 0) {
+                    html += `<div class="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">No exercises yet. Add one above!</div>`;
+                }
+
+                section.trainings.forEach((tr, tIdx) => {
+                    let trPath = `${secPath}.trainings[${tIdx}]`;
+                    let tDef = allTrainingsMap[tr.trainingId] || { name: 'Select Training', type: 0, mediaUrl: '' };
+                    let options = availableTrainingsList.map(t => {
+                        let eq = (t.equipments && t.equipments.length > 0) ? ` (${t.equipments.join(', ')})` : '';
+                        return `<option value="${t.id}" ${t.id === tr.trainingId ? 'selected' : ''}>${t.name}${eq}</option>`;
+                    }).join('');
+
+                    let isDuration = tDef.type === 1;
+
+                    let prevLogsHtml = '';
+                    if (tr.trainingId) {
+                        let logs = userLogs.filter(l => l.trainingId === tr.trainingId).sort((a,b) => new Date(b.loggedAt) - new Date(a.loggedAt)).slice(0, 3);
+                        if (logs.length > 0) {
+                            prevLogsHtml = `<div class="bg-slate-50 p-3 rounded-lg mb-4 text-sm border border-slate-200">
+                                <div class="text-slate-500 font-bold uppercase tracking-wider text-xs mb-2">Previous Logs</div>
+                                <div class="flex flex-wrap gap-2">
+                                    ${logs.map(l => {
+                                        let metric = isDuration ? `${l.durationCompletedSeconds}s` : `${l.setsCompleted}x${l.repsCompleted}`;
+                                        return `<span class="bg-white text-slate-600 px-2 py-1 rounded border border-slate-200 shadow-sm text-xs font-medium">${metric} @@ ${l.weightUsed}kg <span class="text-slate-400 ml-1">(${new Date(l.loggedAt).toLocaleDateString()})</span></span>`;
+                                    }).join('')}
+                                </div>
+                            </div>`;
+                        }
+                    }
+
+                    let detailsHtml = '';
+                    if (tDef && tDef.id) {
+                        let desc = tDef.description ? `<p class="text-sm text-slate-500 mt-3 bg-white p-3 rounded-lg border border-slate-100 shadow-inner italic">${tDef.description}</p>` : '';
+                        let eq = (tDef.equipments && tDef.equipments.length > 0) ? `<div class="mt-3 flex flex-wrap gap-2">${tDef.equipments.map(e => `<span class="bg-indigo-50 text-indigo-700 text-xs font-bold uppercase px-2.5 py-1 rounded-md border border-indigo-100 shadow-sm"><i class="fa-solid fa-dumbbell mr-1"></i>${e}</span>`).join('')}</div>` : '';
+                        let mediaHtml = '';
+                        if (tDef.mediaUrl) {
+                            if (tDef.mediaUrl.includes('youtube.com') || tDef.mediaUrl.includes('youtu.be')) {
+                                let videoId = tDef.mediaUrl.split('v=')[1] || tDef.mediaUrl.split('youtu.be/')[1];
+                                if(videoId) videoId = videoId.split('&')[0];
+                                mediaHtml = `<div class="mt-4 aspect-video rounded-xl overflow-hidden border border-slate-200 shadow-sm"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
+                            } else if (tDef.mediaUrl.match(/\.(jpeg|jpg|gif|png)$/i)) {
+                                mediaHtml = `<div class="mt-4"><img src="${tDef.mediaUrl}" class="rounded-xl max-h-48 object-cover border border-slate-200 shadow-sm" /></div>`;
+                            } else {
+                                mediaHtml = `<div class="mt-4"><a href="${tDef.mediaUrl}" target="_blank" class="text-brand-600 font-bold hover:underline bg-brand-50 px-3 py-1.5 rounded-lg border border-brand-100 inline-block"><i class="fa-solid fa-link mr-1"></i> View Media</a></div>`;
+                            }
+                        }
+                        detailsHtml = desc + eq + mediaHtml;
+                    }
+                    
+                    let inputsHtml = '';
+                    if (isDuration) {
+                        inputsHtml = `
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Dur(s)</label>
+                                <input type="number" value="${tr.durationSeconds}" oninput="updateField('${trPath}', 'durationSeconds', parseInt(this.value)||0)" class="t-duration w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:ring-brand-500 font-bold text-center shadow-sm" />
+                                <input type="hidden" value="0" class="t-sets" /><input type="hidden" value="0" class="t-reps" />
+                            </div>
+                        `;
+                    } else {
+                        inputsHtml = `
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Sets</label>
+                                <input type="number" value="${tr.sets}" oninput="updateField('${trPath}', 'sets', parseInt(this.value)||0)" class="t-sets w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:ring-brand-500 font-bold text-center shadow-sm" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Reps</label>
+                                <input type="number" value="${tr.reps}" oninput="updateField('${trPath}', 'reps', parseInt(this.value)||0)" class="t-reps w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:ring-brand-500 font-bold text-center shadow-sm" />
+                            </div>
+                            <input type="hidden" value="0" class="t-duration" />
+                        `;
+                    }
+
+                    html += `
+                        <div class="bg-white border-2 border-slate-200 rounded-2xl p-6 relative training-card shadow-sm hover:border-brand-300 transition-colors" data-training-id="${tr.trainingId}">
+                            <div class="absolute right-4 top-4 flex gap-2">
+                                <button onclick="moveTraining(${sIdx}, ${tIdx}, -1)" class="text-slate-400 hover:text-brand-600 bg-slate-50 w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 shadow-sm"><i class="fa-solid fa-arrow-up"></i></button>
+                                <button onclick="moveTraining(${sIdx}, ${tIdx}, 1)" class="text-slate-400 hover:text-brand-600 bg-slate-50 w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 shadow-sm"><i class="fa-solid fa-arrow-down"></i></button>
+                                <button onclick="removeTraining(${sIdx}, ${tIdx})" class="text-red-400 hover:text-red-600 bg-red-50 w-8 h-8 rounded-lg flex items-center justify-center border border-red-100 shadow-sm"><i class="fa-solid fa-trash text-xs"></i></button>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                                <div class="md:col-span-5 pt-2">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Exercise Selection</label>
+                                    <select onchange="updateField('${trPath}', 'trainingId', this.value)" class="searchable-select">
+                                        <option value="">--Select Exercise--</option>
+                                        ${options}
+                                    </select>
+                                    ${detailsHtml}
+                                </div>
+                                <div class="md:col-span-7 pt-2">
+                                    ${prevLogsHtml}
+                                    <div class="grid grid-cols-3 md:grid-cols-4 gap-4 items-end bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner">
+                                        ${inputsHtml}
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Wt(kg)</label>
+                                            <input type="number" step="0.5" value="${tr.weight}" oninput="updateField('${trPath}', 'weight', parseFloat(this.value)||0)" class="t-weight w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:ring-brand-500 font-bold text-center shadow-sm" />
+                                        </div>
+                                        <div class="col-span-3 md:col-span-1 border-t border-slate-200 md:border-t-0 md:border-l pl-0 md:pl-4 pt-4 md:pt-0 mt-2 md:mt-0">
+                                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Rest Timer</label>
+                                            <div class="flex flex-col gap-2">
+                                                <input type="number" value="${tr.restSeconds}" class="rest-timer-val w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:ring-brand-500 font-bold text-center shadow-sm" />
+                                                <button class="btn-rest w-full bg-slate-800 hover:bg-slate-900 text-white px-2 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm">Start Rest</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
+            });
+            container.innerHTML = html;
+            initSelects();
+            initTimers();
+        }
+
+        function initSelects() {
+            document.querySelectorAll('.searchable-select').forEach(el => {
+                if(!el.tomselect) new TomSelect(el, { create: false, sortField: {field: "text", direction: "asc"} });
+            });
+        }
+
+        function initTimers() {
+            document.querySelectorAll('.btn-rest').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    let container = this.closest('div');
+                    let input = container.querySelector('.rest-timer-val');
+                    
+                    if (this.innerText.includes('Start')) {
+                        this.innerText = 'Stop';
+                        this.classList.replace('bg-slate-800', 'bg-red-500');
+                        this.classList.replace('hover:bg-slate-900', 'hover:bg-red-600');
+                        
+                        let val = parseInt(input.value) || 0;
+                        let interval = setInterval(() => {
+                            if (val > 0) { val--; input.value = val; }
+                            else {
+                                clearInterval(interval);
+                                this.innerText = 'Done';
+                                this.classList.replace('bg-red-500', 'bg-emerald-500');
+                                this.classList.replace('hover:bg-red-600', 'hover:bg-emerald-600');
+                                this.disabled = true;
+                                
+                                let ctx = new (window.AudioContext || window.webkitAudioContext)();
+                                let osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.setValueAtTime(800, ctx.currentTime);
+                                osc.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.3);
+                            }
+                        }, 1000);
+                        this.dataset.interval = interval;
+                    } else if (this.innerText === 'Stop') {
+                        clearInterval(this.dataset.interval);
+                        this.innerText = 'Start Rest';
+                        this.classList.replace('bg-red-500', 'bg-slate-800');
+                        this.classList.replace('hover:bg-red-600', 'hover:bg-slate-900');
+                    }
+                });
+            });
+        }
+
+        async function saveLayout() {
+            let payload = { userGymCourseId: '@userGymCourseId', weekNumber: parseInt('@(ViewBag.WeekNumber ?? 1)'), day: dayData };
+            try {
+                let response = await fetch('@Url.Action("UpdateDay")', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+                let result = await response.json();
+                if(result.success) Swal.fire('Saved!', 'Layout saved successfully.', 'success');
+                else Swal.fire('Error', result.message, 'error');
+            } catch(e) { Swal.fire('Error', 'Request failed', 'error'); }
+        }
+
+        document.getElementById('btn-finish').addEventListener('click', async function() {
+            let endTime = new Date();
+            let totalSecs = Math.floor((endTime - startTime) / 1000);
+
+            let logs = [];
+            document.querySelectorAll('.training-card').forEach(card => {
+                let id = card.dataset.trainingId;
+                if(id) {
+                    logs.push({
+                        TrainingId: id,
+                        SetsCompleted: parseInt(card.querySelector('.t-sets')?.value) || 0,
+                        RepsCompleted: parseInt(card.querySelector('.t-reps')?.value) || 0,
+                        WeightUsed: parseFloat(card.querySelector('.t-weight')?.value) || 0,
+                        DurationCompletedSeconds: parseInt(card.querySelector('.t-duration')?.value) || 0,
+                        CaloriesBurned: 0
+                    });
+                }
+            });
+
+            let payload = {
+                UserGymCourseId: '@userGymCourseId', CourseDayId: '@Model.Id', StartTime: startTime.toISOString(), EndTime: endTime.toISOString(),
+                TotalDurationSeconds: totalSecs, TotalCaloriesBurned: 0, Logs: logs
+            };
+
+            let response = await fetch('@Url.Action("FinishSession", "Workout")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                let result = await response.json();
+                if (result.success) {
+                    Swal.fire({
+                        title: 'Session Complete!', text: 'Great job!', icon: 'success', confirmButtonText: 'View Dashboard'
+                    }).then(() => window.location.href = result.redirectUrl);
+                } else Swal.fire('Error', result.message, 'error');
+            } else Swal.fire('Error', 'Server error saving session.', 'error');
+        });
+
+        document.addEventListener('DOMContentLoaded', renderSession);
+    </script>
+}

@@ -1,0 +1,113 @@
+@model Dictionary<Guid, List<AzureTest.MVC.Controllers.HistoryLogItem>>
+@{
+    ViewData["Title"] = "Workout History";
+    var trainingsDict = ViewBag.TrainingsDict as Dictionary<Guid, AzureTest.Domain.Documents.Gym.Training> ?? new();
+}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="mb-8 border-b border-slate-200 pb-5 flex justify-between items-end">
+        <div>
+            <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Workout History</h2>
+            <p class="text-slate-500 mt-2">Your complete exercise log, grouped by exercise, so you can track your progress.</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="historySearch" placeholder="Search exercises..." class="pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-64 shadow-sm" oninput="filterHistory()" />
+            </div>
+            <a href="@Url.Action("Index")" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Back
+            </a>
+        </div>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                <i class="fa-solid fa-clock-rotate-left text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 mb-1">No History Yet</h3>
+            <p class="text-slate-500">Complete some workout sessions to see your logs appear here.</p>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            @foreach (var kvp in Model)
+            {
+                var trainingId = kvp.Key;
+                var logs = kvp.Value;
+                var tDef = trainingsDict.ContainsKey(trainingId) ? trainingsDict[trainingId] : null;
+                var trainingName = tDef?.Name ?? "Unknown Exercise";
+                var isDuration = tDef?.Type == AzureTest.Domain.Enums.TrainingType.DurationAndRest;
+
+                <div class="workout-history-card bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+                    <div class="bg-slate-50 px-5 py-4 border-b border-slate-100 flex justify-between items-center">
+                        <h4 class="font-bold text-slate-800 text-lg">@trainingName</h4>
+                        <span class="bg-brand-100 text-brand-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">
+                            @logs.Count Log(s)
+                        </span>
+                    </div>
+                    <div class="p-0 flex-1 overflow-y-auto max-h-80">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-white sticky top-0 border-b border-slate-100 shadow-sm z-10 text-slate-500">
+                                <tr>
+                                    <th class="px-5 py-3 font-semibold">Date</th>
+                                    @if (isDuration) {
+                                        <th class="px-5 py-3 font-semibold text-center">Duration</th>
+                                    } else {
+                                        <th class="px-5 py-3 font-semibold text-center">Sets × Reps</th>
+                                    }
+                                    <th class="px-5 py-3 font-semibold text-right">Weight (kg)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-slate-700">
+                                @foreach (var item in logs)
+                                {
+                                    
+                                    var log = item.Log;
+                                    var date = item.SessionDate;
+                                    
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="px-5 py-3 font-medium text-slate-900">@date.ToString("MMM dd, yyyy")</td>
+                                        
+                                        @if (isDuration) {
+                                            <td class="px-5 py-3 text-center">
+                                                <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold border border-slate-200">
+                                                    @(log?.DurationCompletedSeconds ?? 0)s
+                                                </span>
+                                            </td>
+                                        } else {
+                                            <td class="px-5 py-3 text-center">
+                                                <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold border border-slate-200">
+                                                    @(log?.SetsCompleted ?? 0) × @(log?.RepsCompleted ?? 0)
+                                                </span>
+                                            </td>
+                                        }
+                                        
+                                        <td class="px-5 py-3 text-right font-mono font-bold text-brand-600">
+                                            @(log?.WeightUsed ?? 0)
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<script>
+    function filterHistory() {
+        var query = document.getElementById('historySearch').value.toLowerCase();
+        var cards = document.querySelectorAll('.workout-history-card');
+        cards.forEach(card => {
+            var title = card.querySelector('h4').innerText.toLowerCase();
+            if (title.includes(query)) card.style.display = '';
+            else card.style.display = 'none';
+        });
+    }
+</script>

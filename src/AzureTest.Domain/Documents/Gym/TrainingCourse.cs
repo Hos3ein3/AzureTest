@@ -6,6 +6,9 @@ public class TrainingCourse {
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public List<string> Tags { get; set; } = new();
+    public string? ImagePath { get; set; }
+    public string? VideoPath { get; set; }
+
     public List<CourseWeek> Weeks { get; set; } = new();
 }
 public class CourseWeek {
@@ -17,6 +20,9 @@ public class CourseDay {
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public List<string> Tags { get; set; } = new();
+    public string? ImagePath { get; set; }
+    public string? VideoPath { get; set; }
+
     public List<string> Equipments { get; set; } = new();
     public List<CourseSection> Sections { get; set; } = new();
 }

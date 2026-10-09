@@ -28,7 +28,7 @@ public sealed record UpdateDebtCommand(
     string? NewDebtPersonName,
     string? Description,
     bool IsDone
-) : ICommand<Result<bool>>;
+) : ICommand<Result<bool>>, IDebtFormModel;
 
 // ── Validator ─────────────────────────────────────────────────────────────────
 

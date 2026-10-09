@@ -50,43 +50,24 @@ public class PermissionController : Controller
         return View();
     }
 
-    public async Task<IActionResult> Index(int page = 1, string sort = "ControllerName", string dir = "asc", string search = "", CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Index(PermissionFilter? filter, int page = 1, string sort = "ControllerName", string dir = "asc", string search = "", CancellationToken cancellationToken = default)
     {
-        var result = await _queryUnit.GetPermissions.HandleAsync(new GetPermissionsQuery(), cancellationToken);
-        var permissions = result.AsEnumerable();
-        
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            permissions = permissions.Where(p => 
-                (p.ControllerName != null && p.ControllerName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (p.ActionName != null && p.ActionName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (p.DisplayName != null && p.DisplayName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                (p.Description != null && p.Description.Contains(search, StringComparison.OrdinalIgnoreCase))
-            );
-        }
+        filter ??= new PermissionFilter();
+        if (!string.IsNullOrWhiteSpace(search)) filter.SearchTerm = search;
+        if (!string.IsNullOrWhiteSpace(sort)) filter.SortBy = sort;
+        if (!string.IsNullOrWhiteSpace(dir)) filter.SortDescending = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase);
+        if (page > 0) filter.PageNumber = page;
 
-        permissions = sort switch
-        {
-            "ActionName" => dir == "asc" ? permissions.OrderBy(p => p.ActionName) : permissions.OrderByDescending(p => p.ActionName),
-            "DisplayName" => dir == "asc" ? permissions.OrderBy(p => p.DisplayName) : permissions.OrderByDescending(p => p.DisplayName),
-            "IsRestricted" => dir == "asc" ? permissions.OrderBy(p => p.IsRestricted) : permissions.OrderByDescending(p => p.IsRestricted),
-            _ => dir == "asc" ? permissions.OrderBy(p => p.ControllerName).ThenBy(p => p.ActionName) : permissions.OrderByDescending(p => p.ControllerName).ThenByDescending(p => p.ActionName),
-        };
+        var paged = await _queryUnit.GetPermissions.HandleAsync(new GetPermissionsQuery(filter), cancellationToken);
 
-        int pageSize = 15;
-        var totalItems = permissions.Count();
-        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
-        page = Math.Max(1, Math.Min(page, totalPages > 0 ? totalPages : 1));
+        ViewBag.CurrentPage = paged.PageNumber;
+        ViewBag.TotalPages = paged.TotalPages;
+        ViewBag.Sort = filter.SortBy;
+        ViewBag.Dir = filter.SortDescending ? "desc" : "asc";
+        ViewBag.Search = filter.SearchTerm ?? "";
+        ViewBag.Filters = filter;
 
-        var paginated = permissions.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-        ViewBag.CurrentPage = page;
-        ViewBag.TotalPages = totalPages;
-        ViewBag.Sort = sort;
-        ViewBag.Dir = dir;
-        ViewBag.Search = search;
-
-        return View(paginated);
+        return View(paged.Items);
     }
 
     [HttpPost]
@@ -133,7 +114,8 @@ public class PermissionController : Controller
     
     public async Task<IActionResult> RolePermissions(string roleName)
     {
-        var allPermissions = await _queryUnit.GetPermissions.HandleAsync(new GetPermissionsQuery());
+        var allPermissionsResult = await _queryUnit.GetPermissions.HandleAsync(new GetPermissionsQuery(new PermissionFilter { PageSize = -1 }));
+        var allPermissions = allPermissionsResult.Items;
         var assignedPermissions = await _queryUnit.GetRolePermissions.HandleAsync(new GetRolePermissionsQuery(roleName));
         var assignedIds = System.Linq.Enumerable.ToHashSet(System.Linq.Enumerable.Select(assignedPermissions, rp => rp.PermissionId));
 

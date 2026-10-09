@@ -1,3 +1,6 @@
+using AzureTest.Contracts.DTOs.Events;
+using AzureTest.Contracts.DTOs.Tickets;
+using AzureTest.Contracts.DTOs.Debts;
 using AzureTest.Application.Abstractions;
 
 
@@ -101,7 +104,8 @@ namespace AzureTest.MVC.Controllers;
             var now = DateTime.UtcNow;
             
             // Recent Events (upcoming within 7 days)
-            var allEvents = await _eventQuery.GetAllEvents.HandleAsync(new AzureTest.Application.Events.Queries.GetAllEventsQuery(parsedUserId), cancellationToken);
+            var allEventsResult = await _eventQuery.GetAllEvents.HandleAsync(new AzureTest.Application.Events.Queries.GetAllEventsQuery(new GetAllEventsFilters { PageSize = -1 }, parsedUserId), cancellationToken);
+            var allEvents = allEventsResult.Items;
             model.RecentEvents = allEvents.Where(e => e.StartDate >= now.AddDays(-1) && e.StartDate <= now.AddDays(7)).Take(5).ToList();
 
             // Pending Tasks
@@ -125,7 +129,8 @@ namespace AzureTest.MVC.Controllers;
             }
             
             // Ticket Analytics
-            var allUserTickets = await _ticketQuery.GetAllTickets.HandleAsync(new AzureTest.Application.Tickets.Queries.GetAllTicketsQuery(parsedUserId), cancellationToken);
+            var allUserTicketsResult = await _ticketQuery.GetAllTickets.HandleAsync(new AzureTest.Application.Tickets.Queries.GetAllTicketsQuery(new GetAllTicketsFilters { PageSize = -1 }, parsedUserId), cancellationToken);
+            var allUserTickets = allUserTicketsResult.Items;
             model.TicketStatusCounts = allUserTickets.GroupBy(t => t.Status.ToString()).ToDictionary(g => g.Key, g => g.Count());
             
             // Habit Adherence (Last 30 days)
@@ -146,7 +151,8 @@ namespace AzureTest.MVC.Controllers;
             model.HabitAdherence["Pending/Failed"] = pendingHabits;
 
             // Recent Debts
-            var allDebts = await _debtQuery.GetAll.HandleAsync(new AzureTest.Application.Debts.Queries.GetAllDebtsQuery(parsedUserId), cancellationToken);
+            var allDebtsResult = await _debtQuery.GetAll.HandleAsync(new AzureTest.Application.Debts.Queries.GetAllDebtsQuery(new GetAllDebtsFilters { PageSize = -1 }, parsedUserId), cancellationToken);
+            var allDebts = allDebtsResult.Items;
             model.RecentDebts = allDebts.Take(5).ToList();
             
             // Promissed Debts (Due Soon)

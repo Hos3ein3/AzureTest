@@ -38,9 +38,17 @@ namespace AzureTest.MVC.Controllers;
     // GET: User
     [DisplayName("Index")]
     [Description("View a list of User.")]
-    public async Task<IActionResult> Index(string? searchTerm, string? role, string? sortBy, bool sortDescending = false, int pageNumber = 1, int pageSize = 10)
+    public async Task<IActionResult> Index([FromQuery] AzureTest.Contracts.DTOs.Users.GetAllUsersFilters filters, [FromQuery] string? searchTerm, [FromQuery] string? role, [FromQuery] string? sortBy, [FromQuery] bool? sortDescending, [FromQuery] int? pageNumber, [FromQuery] int? pageSize)
     {
-        var query = new GetAllUsersQuery(searchTerm, role, sortBy, sortDescending, pageNumber, pageSize);
+        filters ??= new AzureTest.Contracts.DTOs.Users.GetAllUsersFilters();
+        if (!string.IsNullOrWhiteSpace(searchTerm)) filters.SearchTerm = searchTerm;
+        if (!string.IsNullOrWhiteSpace(role)) filters.Role = role;
+        if (!string.IsNullOrWhiteSpace(sortBy)) filters.SortBy = sortBy;
+        if (sortDescending.HasValue) filters.SortDescending = sortDescending.Value;
+        if (pageNumber.HasValue && pageNumber.Value > 0) filters.PageNumber = pageNumber.Value;
+        if (pageSize.HasValue && pageSize.Value > 0) filters.PageSize = pageSize.Value;
+
+        var query = new GetAllUsersQuery(filters);
         var result = await _queryUnit.GetAllUsers.HandleAsync(query);
 
         var roles = await _queryUnit.GetAllRoles.HandleAsync(new GetAllRolesQuery());
@@ -48,18 +56,23 @@ namespace AzureTest.MVC.Controllers;
         var vm = new UserListViewModel
         {
             Users = result,
-            SearchTerm = searchTerm,
-            Role = role,
-            SortBy = sortBy,
-            SortDescending = sortDescending,
-            PageSize = pageSize,
-            AvailableRoles = roles.Select(r => new SelectListItem(r.Name, r.Name)).ToList()
+            SearchTerm = filters.SearchTerm,
+            Role = filters.Role,
+            SortBy = filters.SortBy,
+            SortDescending = filters.SortDescending,
+            PageNumber = filters.PageNumber,
+            PageSize = filters.PageSize,
+            AvailableRoles = roles.Select(r => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+            {
+                Value = r.Name,
+                Text = r.Name,
+                Selected = r.Name == filters.Role
+            }).ToList()
         };
 
+        ViewBag.Filters = filters;
         return View(vm);
     }
-
-    // GET: User/Create
     [DisplayName("Create")]
     [Description("Create a new User.")]
     public async Task<IActionResult> Create()

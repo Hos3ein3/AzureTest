@@ -1,0 +1,15 @@
+@model AzureTest.MVC.Models.HomeDashboardViewModel
+
+@if (Model.IsAdmin)
+{
+    <!-- Stat Card: Registered Users (Admin Only) -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center hover:shadow-md transition-shadow">
+        <div class="h-14 w-14 rounded-xl bg-slate-200 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-users text-slate-500 text-2xl"></i>
+        </div>
+        <div class="ml-4 truncate">
+            <p class="text-sm font-medium text-slate-400 truncate">Registered Users</p>
+            <p class="text-3xl font-bold">@Model.Analytics.TotalUsers</p>
+        </div>
+    </div>
+}

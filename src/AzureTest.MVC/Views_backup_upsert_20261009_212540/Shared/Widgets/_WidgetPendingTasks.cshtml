@@ -1,0 +1,58 @@
+@model AzureTest.MVC.Models.HomeDashboardViewModel
+
+<!-- Tasks Widget -->
+<div class="col-span-1 bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
+    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+        <h5 class="text-lg font-semibold text-slate-800 m-0">Pending Tasks</h5>
+        <a asp-controller="Task" asp-action="Index" class="text-xs text-brand-600 hover:text-brand-500 font-medium">Manage &rarr;</a>
+    </div>
+    <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
+        @if (!Model.PendingTasks.Any())
+        {
+            <div class="text-center text-slate-400 mt-6">
+                <i class="fa-solid fa-check-double text-3xl mb-2 block"></i>
+                <p class="text-sm">All caught up!</p>
+            </div>
+        }
+        else
+        {
+            <div class="space-y-3">
+                @foreach (var t in Model.PendingTasks)
+                {
+                    <div class="flex items-start gap-3">
+                        @if (!Model.IsViewingOtherUser)
+                        {
+                            <form asp-controller="Task" asp-action="Toggle" method="post" class="mt-0.5">
+                                <input type="hidden" name="id" value="@t.Id" />
+                                <button type="submit" class="text-slate-300 hover:text-brand-400 focus:outline-none">
+                                    <i class="fa-regular fa-circle"></i>
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <div class="mt-0.5 text-slate-300">
+                                <i class="fa-regular fa-circle"></i>
+                            </div>
+                        }
+                        <div class="flex-1 truncate">
+                            <p class="text-sm font-medium text-slate-700 truncate">@t.Title</p>
+                            @if (t.StartDate.HasValue && t.EndDate.HasValue)
+                            {
+                                <p class="text-xs text-slate-400">@t.StartDate.Value.ToString("MMM dd") &rarr; @t.EndDate.Value.ToString("MMM dd")</p>
+                            }
+                            else if (t.EndDate.HasValue)
+                            {
+                                <p class="text-xs text-slate-400">Due: @t.EndDate.Value.ToString("MMM dd")</p>
+                            }
+                            else if (t.StartDate.HasValue)
+                            {
+                                <p class="text-xs text-slate-400">Start: @t.StartDate.Value.ToString("MMM dd")</p>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

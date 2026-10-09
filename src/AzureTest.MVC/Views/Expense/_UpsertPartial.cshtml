@@ -1,0 +1,60 @@
+@model AzureTest.Contracts.DTOs.Expenses.IExpenseFormDto
+
+<div class="grid grid-cols-1 gap-6 mb-6">
+                    <div>
+                        <label asp-for="Amount" class="block text-sm font-medium text-slate-700 mb-1">
+                            Amount <span class="text-red-500">*</span>
+                        </label>
+                        <input asp-for="Amount" type="number" step="0.01" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="0.00" />
+                        <span asp-validation-for="Amount" class="text-red-500 text-xs mt-1 block"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Date" class="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                        <input asp-for="Date" type="date" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" />
+                        <span asp-validation-for="Date" class="text-red-500 text-xs mt-1 block"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="Description" class="block text-sm font-medium text-slate-700 mb-1">
+                            Description <span class="text-red-500">*</span>
+                        </label>
+                        <textarea asp-for="Description" rows="3" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="What was this expense for?"></textarea>
+                        <span asp-validation-for="Description" class="text-red-500 text-xs mt-1 block"></span>
+                    </div>
+
+                    <div class="relative">
+                        <div class="flex justify-between items-end mb-1">
+                            <label class="block text-sm font-medium text-slate-700">Category</label>
+                            <button type="button" class="text-xs font-medium text-brand-600 hover:text-brand-700 focus:outline-none flex items-center" id="toggleNewCategory">
+                                <i class="fa-solid fa-plus mr-1"></i> Add new category
+                            </button>
+                        </div>
+                        
+                        <div>
+                            <select id="categorySelect" name="CategoryId" class="search-select w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm border px-4 py-2">
+                                <option value="">— Search or select existing category —</option>
+                                @if (ViewBag.Categories != null)
+                                {
+                                    foreach (var item in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Categories)
+                                    {
+                                        <option value="@item.Value" selected="@(Model.CategoryId?.ToString() == item.Value)">@item.Text</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <div id="newCategoryPanel" class="mt-3 bg-slate-50 p-4 rounded-lg border border-slate-200" style="display:none;">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">New Category Name</label>
+                            <div class="relative">
+                                <input type="text" id="newCategoryInput" name="NewCategoryName" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border"
+                                       placeholder="Type new category name..." autocomplete="off" value="@Model.NewCategoryName" />
+                                <div id="categoryAutocomplete" class="absolute z-10 w-full mt-1 bg-white shadow-lg rounded-md border border-slate-200 max-h-60 overflow-y-auto" style="display:none;"></div>
+                            </div>
+                            <p class="mt-2 text-xs text-slate-500">
+                                <i class="fa-solid fa-circle-info mr-1"></i>
+                                If this category already exists it will be linked automatically; otherwise a new one will be created.
+                            </p>
+                        </div>
+                    </div>
+                </div>

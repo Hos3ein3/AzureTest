@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AzureTest.Application.Gym;
 
-public record CreateTrainingCommand(string Name, string Description, string? MediaUrl, TrainingType Type, double? BaseCaloriesBurn, System.Collections.Generic.List<string>? Equipments) : ICommand<Result<Guid>>;
+public record CreateTrainingCommand(string Name, string? Description, string? MediaUrl, TrainingType Type, double? BaseCaloriesBurn, System.Collections.Generic.List<string>? Equipments=null) : ICommand<Result<Guid>>;
 public class CreateTrainingCommandValidator : AbstractValidator<CreateTrainingCommand> {
     public CreateTrainingCommandValidator() {
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
@@ -21,7 +21,7 @@ public class CreateTrainingCommandHandler : ICommandHandler<CreateTrainingComman
     private readonly INoSqlUnitOfWork _uow;
     public CreateTrainingCommandHandler(INoSqlUnitOfWork uow) { _uow = uow; }
     public async Task<Result<Guid>> HandleAsync(CreateTrainingCommand request, CancellationToken ct = default) {
-        var training = new Training { Name = request.Name, Description = request.Description, MediaUrl = request.MediaUrl, Type = request.Type, BaseCaloriesBurn = request.BaseCaloriesBurn, Equipments = request.Equipments ?? new() };
+        var training = new Training { Name = request.Name, Description = request.Description, MediaUrl = request.MediaUrl, Type = request.Type, BaseCaloriesBurn = request.BaseCaloriesBurn, Equipments = request.Equipments };
         await _uow.Trainings.AddAsync(training);
         return Result.Success(training.Id);
     }

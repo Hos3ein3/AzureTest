@@ -1,183 +1,71 @@
-import os
+import re
 
-gym_admin_index = """
-@model IEnumerable<AzureTest.Domain.Documents.Gym.Training>
+def patch_view(path):
+    with open(path, "r") as f: c = f.read()
 
-@{
-    ViewData["Title"] = "Gym Trainings";
-    string search = ViewBag.Search as string ?? "";
-    string sort = ViewBag.Sort as string ?? "Name";
-    string dir = ViewBag.Dir as string ?? "asc";
-    int pageNo = ViewBag.Page ?? 1;
-    int totalPages = ViewBag.TotalPages ?? 1;
-}
+    # Replace Image URL block
+    old_img = """<label class="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                <input id="imagePath" type="text" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 sm:text-sm" placeholder="https://..." """
+    if "value=\"@Model.ImagePath\"" in c:
+        old_img += 'value="@Model.ImagePath" />'
+    else:
+        old_img += '/>'
 
-<div class="mb-6 flex justify-between items-center">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Gym Trainings</h1>
-    <a asp-action="CreateTraining" class="btn-primary flex items-center gap-2">
-        <i class="fa-solid fa-plus"></i> Add Training
-    </a>
-</div>
+    new_img = old_img.replace('<input id="imagePath"', '<div class="flex gap-2">\n                    <input id="imagePath"').replace('/>', '/>\n                    <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-700 flex items-center shadow-sm whitespace-nowrap">\n                        Browse PC\n                        <input type="file" class="hidden" accept="image/*" onchange="uploadMedia(this, \'imagePath\')" />\n                    </label>\n                </div>')
+    
+    c = c.replace(old_img, new_img)
 
-<div class="card p-6">
-    <form method="get" class="mb-4 flex gap-4 items-center">
-        <input type="hidden" name="sort" value="@sort" />
-        <input type="hidden" name="dir" value="@dir" />
-        <input type="text" name="search" value="@search" placeholder="Search trainings..." class="form-input max-w-sm" />
-        <button type="submit" class="btn-secondary">Search</button>
-        @if(!string.IsNullOrEmpty(search)) {
-            <a asp-action="Index" class="text-sm text-gray-500 hover:text-gray-700">Clear</a>
+    # Replace Video URL block
+    old_vid = """<label class="block text-sm font-medium text-gray-700 mb-1">Video URL (Hover Play)</label>
+                <input id="videoPath" type="text" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 sm:text-sm" placeholder="https://..." """
+    if "value=\"@Model.VideoPath\"" in c:
+        old_vid += 'value="@Model.VideoPath" />'
+    else:
+        old_vid += '/>'
+
+    new_vid = old_vid.replace('<input id="videoPath"', '<div class="flex gap-2">\n                    <input id="videoPath"').replace('/>', '/>\n                    <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-700 flex items-center shadow-sm whitespace-nowrap">\n                        Browse PC\n                        <input type="file" class="hidden" accept="video/*" onchange="uploadMedia(this, \'videoPath\')" />\n                    </label>\n                </div>')
+    
+    c = c.replace(old_vid, new_vid)
+
+    # Add uploadMedia JS function
+    js_func = """
+        async function uploadMedia(inputElement, targetInputId) {
+            if (!inputElement.files || inputElement.files.length === 0) return;
+            const file = inputElement.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const btn = inputElement.parentElement;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Uploading...';
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            try {
+                const response = await fetch('@Url.Action("UploadMedia")', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById(targetInputId).value = result.url;
+                } else {
+                    alert('Upload failed: ' + result.message);
+                }
+            } catch (e) {
+                alert('Upload error: ' + e);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                inputElement.value = ''; // reset so it can be selected again
+            }
         }
-    </form>
+    """
+    
+    if "uploadMedia(" not in c:
+        c = c.replace("// --- Tags Logic ---", js_func + "\n        // --- Tags Logic ---")
 
-    <div class="overflow-x-auto">
-        <table class="table w-full">
-            <thead>
-                <tr>
-                    <th>
-                        <a asp-action="Index" asp-route-search="@search" asp-route-sort="Name" asp-route-dir="@(sort == "Name" && dir == "asc" ? "desc" : "asc")" class="flex items-center gap-1">
-                            Name
-                            @if(sort == "Name") { <i class="fa-solid fa-sort-@(dir == "asc" ? "up" : "down")"></i> }
-                        </a>
-                    </th>
-                    <th>
-                        <a asp-action="Index" asp-route-search="@search" asp-route-sort="Type" asp-route-dir="@(sort == "Type" && dir == "asc" ? "desc" : "asc")" class="flex items-center gap-1">
-                            Type
-                            @if(sort == "Type") { <i class="fa-solid fa-sort-@(dir == "asc" ? "up" : "down")"></i> }
-                        </a>
-                    </th>
-                    <th>Base Calories</th>
-                    <th class="text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model)
-                {
-                    <tr>
-                        <td class="font-medium">@item.Name</td>
-                        <td>
-                            <span class="badge @(item.Type == AzureTest.Domain.Enums.TrainingType.SetAndRest ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800")">
-                                @item.Type
-                            </span>
-                        </td>
-                        <td>@item.BaseCaloriesBurn kcal</td>
-                        <td class="text-right flex justify-end gap-2">
-                            <a asp-action="EditTraining" asp-route-id="@item.Id" class="text-blue-500 hover:text-blue-700 p-2">
-                                <i class="fa-solid fa-pen-to-square"></i>
-                            </a>
-                        </td>
-                    </tr>
-                }
-                @if(!Model.Any()) {
-                    <tr><td colspan="4" class="text-center py-4 text-gray-500">No trainings found.</td></tr>
-                }
-            </tbody>
-        </table>
-    </div>
+    with open(path, "w") as f: f.write(c)
 
-    @if (totalPages > 1)
-    {
-        <div class="mt-4 flex justify-between items-center">
-            <span class="text-sm text-gray-600 dark:text-gray-400">Page @pageNo of @totalPages</span>
-            <div class="flex gap-2">
-                @if (pageNo > 1) {
-                    <a asp-action="Index" asp-route-search="@search" asp-route-sort="@sort" asp-route-dir="@dir" asp-route-page="@(pageNo - 1)" class="btn-secondary px-3 py-1">Previous</a>
-                }
-                @if (pageNo < totalPages) {
-                    <a asp-action="Index" asp-route-search="@search" asp-route-sort="@sort" asp-route-dir="@dir" asp-route-page="@(pageNo + 1)" class="btn-secondary px-3 py-1">Next</a>
-                }
-            </div>
-        </div>
-    }
-</div>
-"""
-
-gym_courses_index = """
-@model IEnumerable<AzureTest.Domain.Documents.Gym.TrainingCourse>
-
-@{
-    ViewData["Title"] = "Gym Courses";
-    string search = ViewBag.Search as string ?? "";
-    string sort = ViewBag.Sort as string ?? "Name";
-    string dir = ViewBag.Dir as string ?? "asc";
-    int pageNo = ViewBag.Page ?? 1;
-    int totalPages = ViewBag.TotalPages ?? 1;
-}
-
-<div class="mb-6 flex justify-between items-center">
-    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Gym Courses</h1>
-    <a asp-action="Create" class="btn-primary flex items-center gap-2">
-        <i class="fa-solid fa-plus"></i> Add Course
-    </a>
-</div>
-
-<div class="card p-6">
-    <form method="get" class="mb-4 flex gap-4 items-center">
-        <input type="hidden" name="sort" value="@sort" />
-        <input type="hidden" name="dir" value="@dir" />
-        <input type="text" name="search" value="@search" placeholder="Search courses..." class="form-input max-w-sm" />
-        <button type="submit" class="btn-secondary">Search</button>
-        @if(!string.IsNullOrEmpty(search)) {
-            <a asp-action="Index" class="text-sm text-gray-500 hover:text-gray-700">Clear</a>
-        }
-    </form>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        @foreach (var item in Model)
-        {
-            <div class="border rounded-xl p-5 hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-                <div class="flex justify-between items-start mb-2">
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">@item.Name</h3>
-                    <a asp-action="Edit" asp-route-id="@item.Id" class="text-blue-500 hover:text-blue-700"><i class="fa-solid fa-pen-to-square"></i></a>
-                </div>
-                <p class="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">@item.Description</p>
-                
-                <div class="flex flex-wrap gap-2 mb-4">
-                    @foreach(var tag in item.Tags) {
-                        <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs rounded-md">@tag</span>
-                    }
-                </div>
-                
-                <div class="text-sm text-gray-500">
-                    <i class="fa-regular fa-calendar"></i> @item.Weeks.Count Weeks
-                </div>
-            </div>
-        }
-        @if(!Model.Any()) {
-            <div class="col-span-full text-center py-8 text-gray-500">No courses found.</div>
-        }
-    </div>
-
-    @if (totalPages > 1)
-    {
-        <div class="mt-6 flex justify-between items-center">
-            <span class="text-sm text-gray-600 dark:text-gray-400">Page @pageNo of @totalPages</span>
-            <div class="flex gap-2">
-                @if (pageNo > 1) {
-                    <a asp-action="Index" asp-route-search="@search" asp-route-sort="@sort" asp-route-dir="@dir" asp-route-page="@(pageNo - 1)" class="btn-secondary px-3 py-1">Previous</a>
-                }
-                @if (pageNo < totalPages) {
-                    <a asp-action="Index" asp-route-search="@search" asp-route-sort="@sort" asp-route-dir="@dir" asp-route-page="@(pageNo + 1)" class="btn-secondary px-3 py-1">Next</a>
-                }
-            </div>
-        </div>
-    }
-</div>
-"""
-
-with open("src/AzureTest.MVC/Views/GymAdmin/Index.cshtml", "w") as f:
-    f.write(gym_admin_index)
-
-with open("src/AzureTest.MVC/Views/GymCourses/Index.cshtml", "w") as f:
-    f.write(gym_courses_index)
-
-# Update POST urls in GymCourses/Create and Edit to use /GymCourses/ instead of GymAdmin/Course
-for fname, rep_from, rep_to in [("src/AzureTest.MVC/Views/GymCourses/Create.cshtml", "/GymAdmin/CourseCreate", "/GymCourses/Create"), 
-                               ("src/AzureTest.MVC/Views/GymCourses/Edit.cshtml", "/GymAdmin/CourseEdit", "/GymCourses/Edit")]:
-    with open(fname, "r") as f:
-        c = f.read()
-    c = c.replace(rep_from, rep_to)
-    with open(fname, "w") as f:
-        f.write(c)
-
-print("Views updated")
+patch_view("src/AzureTest.MVC/Views/GymCourses/Create.cshtml")
+patch_view("src/AzureTest.MVC/Views/GymCourses/Edit.cshtml")
+print("Views patched")

@@ -1,0 +1,714 @@
+@using AzureTest.Application.Interfaces.Services
+@using AzureTest.Infrastructure.Services
+@inject  ICurrentUser _CurrentUser
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment _HostEnv
+@inject AzureTest.Application.Messaging.IQueryHandler<AzureTest.Application.UserPreferences.Queries.GetUserPreferenceQuery, AzureTest.Domain.Documents.UserPreference> _PrefQuery
+@{
+    bool isDarkMode = false;
+    if (_CurrentUser != null && _CurrentUser.Id != Guid.Empty)
+    {
+        try {
+            var pref = _PrefQuery.HandleAsync(new AzureTest.Application.UserPreferences.Queries.GetUserPreferenceQuery(_CurrentUser.Id), default).GetAwaiter().GetResult();
+            isDarkMode = pref?.IsDarkMode ?? false;
+        } catch {}
+    }
+}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50 @(isDarkMode ? "dark" : "")">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>@ViewData["Title"] - TrackerPro</title>
+    
+    <!-- Favicon and PWA -->
+    <link rel="icon" type="image/png" href="~/favicon.png">
+    <link rel="manifest" href="~/manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <link rel="apple-touch-icon" href="~/icon-192.png">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- TomSelect -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.default.min.css" rel="stylesheet">
+    
+    <!-- Tailwind Config -->
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: '#f0fdfa',
+                100: '#ccfbf1',
+                500: '#14b8a6',
+                600: '#0d9488',
+                900: '#134e4a',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    
+    @await RenderSectionAsync("Styles", required: false)
+
+    <!-- Custom Styles -->
+    <style>
+        #sidebar.collapsed summary i.fa-chevron-down {
+            display: none !important;
+        }
+        #sidebar {
+            transition: width 0.3s ease;
+        }
+        #sidebar.collapsed {
+            width: 4.5rem !important;
+        }
+        #sidebar.collapsed .sidebar-text {
+            display: none !important;
+        }
+        #sidebar.collapsed .logo-brand {
+            display: none !important;
+        }
+        #sidebar.collapsed .logo-container {
+            justify-content: center !important;
+            padding: 0 !important;
+        }
+        #sidebar.collapsed .logo-icon {
+            display: none !important;
+        }
+        #sidebar.collapsed #sidebarToggle {
+            margin-left: 0 !important;
+            margin: 0 auto;
+        }
+        #sidebar.collapsed .nav-item-link {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            position: relative;
+        }
+        #sidebar.collapsed .nav-item-link i {
+            margin: 0 !important;
+        }
+        /* Tooltip */
+        #sidebar.collapsed .nav-item-link:hover::after {
+            content: attr(data-title);
+            position: absolute;
+            left: calc(100% + 8px);
+            background-color: #1e293b;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 1;
+        }
+    </style>
+
+</head>
+<body class="h-full flex overflow-hidden text-gray-800 font-sans">
+    
+    <!-- Global Page Loader Overlay -->
+    <div id="globalPageLoader" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs transition-opacity duration-200 opacity-0 pointer-events-none" style="display: none;" aria-hidden="true">
+        <div class="flex flex-col items-center bg-white/95 rounded-2xl p-6 shadow-2xl border border-slate-100 max-w-xs text-center">
+            <div class="relative w-12 h-12 mb-3">
+                <div class="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-brand-500 border-t-transparent animate-spin"></div>
+            </div>
+            <span class="text-sm font-semibold text-slate-800">Loading...</span>
+            <span class="text-xs text-slate-500 mt-1 mb-4">Please wait while the page loads</span>
+            <button id="cancelPageLoadBtn" type="button" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm pointer-events-auto">
+                <i class="fa-solid fa-xmark mr-1"></i> Cancel
+            </button>
+        </div>
+    </div>
+
+    <partial name="_Sidebar" />
+
+    <!-- Main Content wrapper -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden">
+        
+        <!-- Top Navbar -->
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
+            <!-- Mobile Menu Button (hidden on md) -->
+            <button id="mobileMenuBtn" class="md:hidden text-slate-500 hover:text-slate-700 focus:outline-none">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+            
+            <div class="hidden md:flex items-center text-sm text-slate-500">
+                <i class="fa-solid fa-house mr-2"></i>
+                <span class="mx-2">/</span>
+                <span class="font-medium text-slate-700">@ViewData["Title"]</span>
+            </div>
+            
+            <div class="flex items-center space-x-6">
+                <button onclick="toggleOmnibar()" class="hidden md:flex items-center space-x-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg text-sm text-slate-400 hover:text-slate-500 hover:border-slate-300 transition-colors shadow-sm w-48 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span class="flex-1 text-left">Search...</span>
+                    <span class="text-xs border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 bg-slate-50 dark:bg-slate-900 font-sans tracking-widest">⌘K</span>
+                </button>
+                
+                <div class="hidden sm:block text-sm font-medium text-slate-500">
+                    <i class="fa-regular fa-calendar mr-1.5"></i>
+                    @DateTime.Now.ToString("dd MMM yyyy")
+                </div>
+                <!-- Notification Bell -->
+                <div class="relative" id="notificationDropdownContainer">
+                    <button id="notificationBtn" onclick="document.getElementById('notificationDropdown').classList.toggle('hidden')" class="text-slate-400 hover:text-brand-500 transition-colors relative">
+                        <i class="fa-regular fa-bell text-lg"></i>
+                        <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center hidden">0</span>
+                    </button>
+                    <!-- Dropdown -->
+                    <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-50 flex flex-col">
+                        <div class="p-3 border-b border-slate-100 dark:border-slate-700 font-semibold text-slate-700 dark:text-slate-200">Notifications</div>
+                        <div id="notificationList" class="max-h-64 overflow-y-auto p-2 space-y-1">
+                            <div class="text-sm text-slate-500 dark:text-slate-400 text-center py-4" id="noNotifications">No new notifications</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="toggleGlobalDarkMode()" class="text-slate-400 hover:text-brand-500 transition-colors" title="Toggle Dark Mode">
+                    <i class="fa-solid @(isDarkMode ? "fa-sun" : "fa-moon") text-lg" id="darkModeIcon"></i>
+                </button>
+
+                <a asp-action="Manage" asp-controller="Dashboard" class="text-slate-400 hover:text-brand-500 transition-colors" title="Dashboards">
+                    <i class="fab fa-windows text-lg"></i>
+                </a>
+                
+                <a asp-action="Index" asp-controller="Profile" class="text-slate-400 hover:text-brand-500 transition-colors flex items-center" title="My Profile">
+                    @if(!string.IsNullOrEmpty(_CurrentUser.ProfileImage)){
+                        <img src="@_CurrentUser.ProfileImage" class="w-7 h-7 rounded-full object-cover border border-slate-200" />
+                    } else {
+                        <i class="fa-solid fa-circle-user text-xl"></i>
+                    }
+                </a>
+
+                <form asp-controller="Auth" asp-action="Logout" method="post" class="inline">
+                    <button type="submit" class="text-slate-400 hover:text-brand-500 transition-colors" title="Logout">
+                        <i class="fa-solid fa-arrow-right-from-bracket text-lg"></i>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <!-- Main Scrollable Area -->
+        <main class="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-50">
+            <div class="max-w-7xl mx-auto">
+                @RenderBody()
+            </div>
+            <partial name="_Toast" />
+        </main>
+        
+    </div>
+
+    <!-- User Preference Modal -->
+    <div id="userPreferenceModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="prefModalTitle" role="dialog" aria-modal="true">
+        <!-- Backdrop -->
+        <div id="prefModalBackdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300 opacity-0"></div>
+
+        <div class="min-h-full flex items-center justify-center p-4 text-center sm:p-0">
+            <div id="prefModalDialog" class="relative bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-lg w-full scale-95 opacity-0 border border-slate-100">
+                <!-- Modal Header -->
+                <div class="bg-slate-900 px-6 py-4 flex items-center justify-between text-white">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center">
+                            <i class="fa-solid fa-sliders text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-semibold text-white leading-6" id="prefModalTitle">User Preferences</h3>
+                            <p class="text-xs text-slate-400">Customize your display language and theme</p>
+                        </div>
+                    </div>
+                    <button type="button" id="closePrefModalBtn" class="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-slate-800">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Modal Body -->
+                <form id="userPreferenceForm" class="p-6 space-y-5">
+                    <!-- Status message banner -->
+                    <div id="prefModalAlert" class="hidden p-3 rounded-lg text-xs font-medium flex items-center space-x-2"></div>
+
+                    <!-- Loading state indicator -->
+                    <div id="prefModalLoading" class="py-8 flex flex-col items-center justify-center space-y-3">
+                        <div class="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-xs text-slate-500 font-medium">Fetching your preferences...</span>
+                    </div>
+
+                    <!-- Fields container -->
+                    <div id="prefModalFields" class="hidden space-y-4">
+                        <!-- Language -->
+                        <div>
+                            <label for="prefLanguage" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                <i class="fa-solid fa-globe mr-1.5 text-brand-600"></i> Interface Language
+                            </label>
+                            <select id="prefLanguage" name="language" class="block w-full rounded-lg border-slate-300 text-sm py-2 px-3 focus:border-brand-500 focus:ring-brand-500 border bg-white">
+                                <option value="en">English (en)</option>
+                                <option value="nl">Dutch (nl)</option>
+                                <option value="es">Spanish (es)</option>
+                                <option value="fr">French (fr)</option>
+                                <option value="de">German (de)</option>
+                            </select>
+                        </div>
+
+                        <!-- Theme Color -->
+                        <div>
+                            <label for="prefThemeColor" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                <i class="fa-solid fa-palette mr-1.5 text-brand-600"></i> Theme Accent Color
+                            </label>
+                            <select id="prefThemeColor" name="themeColor" class="block w-full rounded-lg border-slate-300 text-sm py-2 px-3 focus:border-brand-500 focus:ring-brand-500 border bg-white">
+                                <option value="slate">Slate (Default Dark)</option>
+                                <option value="blue">Blue Ocean</option>
+                                <option value="emerald">Emerald Green</option>
+                                <option value="indigo">Indigo Modern</option>
+                                <option value="rose">Rose Elegance</option>
+                            </select>
+                        </div>
+
+                        <!-- Currency -->
+                        <div>
+                            <label for="prefCurrency" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                <i class="fa-solid fa-coins mr-1.5 text-brand-600"></i> Preferred Currency
+                            </label>
+                            <select id="prefCurrency" name="currency" class="block w-full rounded-lg border-slate-300 text-sm py-2 px-3 focus:border-brand-500 focus:ring-brand-500 border bg-white">
+                                <option value="USD">USD ($)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="GBP">GBP (£)</option>
+                                <option value="JPY">JPY (¥)</option>
+                            </select>
+                        </div>
+
+                        <!-- Preferred Dashboard -->
+                        <div>
+                            <label for="prefDashboard" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                <i class="fa-solid fa-chart-line mr-1.5 text-brand-600"></i> Default Dashboard
+                            </label>
+                            <select id="prefDashboard" name="preferredDashboard" class="block w-full rounded-lg border-slate-300 text-sm py-2 px-3 focus:border-brand-500 focus:ring-brand-500 border bg-white">
+                                <option value="">Standard View (Default)</option>
+                                <!-- Dashboards will be loaded here via JS -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-3">
+                        <button type="button" id="cancelPrefModalBtn" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" id="savePrefModalBtn" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors disabled:opacity-50">
+                            <span id="savePrefBtnSpinner" class="hidden mr-2"><i class="fa-solid fa-spinner fa-spin"></i></span>
+                            <span id="savePrefBtnText">Save Preferences</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <!-- Global Page Loader and Setting Modal Scripts -->
+    <script>
+        // Global Page Loader handling
+        (function () {
+            const loader = document.getElementById('globalPageLoader');
+            if (!loader) return;
+
+            function showLoader() {
+                loader.style.display = 'flex';
+                requestAnimationFrame(() => {
+                    loader.classList.remove('opacity-0', 'pointer-events-none');
+                    loader.classList.add('opacity-100');
+                    loader.removeAttribute('aria-hidden');
+                });
+            }
+
+            function hideLoader() {
+                loader.classList.remove('opacity-100');
+                loader.classList.add('opacity-0', 'pointer-events-none');
+                loader.setAttribute('aria-hidden', 'true');
+                setTimeout(() => {
+                    if (loader.classList.contains('opacity-0')) {
+                        loader.style.display = 'none';
+                    }
+                }, 250);
+            }
+
+            window.addEventListener('beforeunload', function () {
+                showLoader();
+            });
+
+            window.addEventListener('pageshow', function () {
+                hideLoader();
+            });
+
+            document.getElementById('cancelPageLoadBtn')?.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.stop(); // Stops the HTTP request, triggering the CancellationToken on the server
+                hideLoader();
+            });
+        })();
+
+        // Setting Gear & User Preference Modal Logic
+        (function () {
+            const gearBtn = document.getElementById('settingGear');
+            const modal = document.getElementById('userPreferenceModal');
+            const backdrop = document.getElementById('prefModalBackdrop');
+            const dialog = document.getElementById('prefModalDialog');
+            const closeBtn = document.getElementById('closePrefModalBtn');
+            const cancelBtn = document.getElementById('cancelPrefModalBtn');
+            const form = document.getElementById('userPreferenceForm');
+            const loadingIndicator = document.getElementById('prefModalLoading');
+            const fieldsContainer = document.getElementById('prefModalFields');
+            const alertBox = document.getElementById('prefModalAlert');
+            const languageSelect = document.getElementById('prefLanguage');
+            const themeColorSelect = document.getElementById('prefThemeColor');
+            const saveBtn = document.getElementById('savePrefModalBtn');
+            const saveSpinner = document.getElementById('savePrefBtnSpinner');
+            const saveText = document.getElementById('savePrefBtnText');
+
+            if (!gearBtn || !modal) return;
+
+            function showAlert(msg, isSuccess) {
+                alertBox.textContent = msg;
+                alertBox.className = isSuccess 
+                    ? 'p-3 rounded-lg text-xs font-medium flex items-center space-x-2 bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'p-3 rounded-lg text-xs font-medium flex items-center space-x-2 bg-rose-50 text-rose-700 border border-rose-200';
+                alertBox.classList.remove('hidden');
+            }
+
+            function hideAlert() {
+                alertBox.classList.add('hidden');
+                alertBox.textContent = '';
+            }
+
+            function openModal() {
+                hideAlert();
+                modal.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    backdrop.classList.remove('opacity-0');
+                    dialog.classList.remove('opacity-0', 'scale-95');
+                    dialog.classList.add('opacity-100', 'scale-100');
+                });
+                fetchPreferences();
+            }
+
+            function closeModal() {
+                backdrop.classList.add('opacity-0');
+                dialog.classList.remove('opacity-100', 'scale-100');
+                dialog.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+
+            async function fetchPreferences() {
+                loadingIndicator.classList.remove('hidden');
+                fieldsContainer.classList.add('hidden');
+                saveBtn.disabled = true;
+
+                try {
+                    const response = await fetch('/UserPreference/Get', {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.language && languageSelect) {
+                            languageSelect.value = data.language;
+                        }
+                        if (data.themeColor && themeColorSelect) {
+                            themeColorSelect.value = data.themeColor;
+                        }
+                        
+                        const currencySelect = document.getElementById('prefCurrency');
+                        if (data.currency && currencySelect) {
+                            currencySelect.value = data.currency;
+                        }
+                        
+                        const dashSelect = document.getElementById('prefDashboard');
+                        if (dashSelect && data.dashboards) {
+                            dashSelect.innerHTML = '<option value="">Standard View (Default)</option>';
+                            data.dashboards.forEach(d => {
+                                const opt = document.createElement('option');
+                                opt.value = d.slug;
+                                opt.textContent = d.name;
+                                dashSelect.appendChild(opt);
+                            });
+                            
+                            if (data.preferredDashboard) {
+                                dashSelect.value = data.preferredDashboard;
+                            }
+                        }
+                        
+                    } else {
+                        showAlert('Failed to load user preferences.', false);
+                    }
+                } catch (err) {
+                    console.error('Error fetching preferences:', err);
+                    showAlert('An unexpected error occurred while loading preferences.', false);
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                    fieldsContainer.classList.remove('hidden');
+                    saveBtn.disabled = false;
+                }
+            }
+
+            async function savePreferences(e) {
+                e.preventDefault();
+                hideAlert();
+                saveBtn.disabled = true;
+                saveSpinner.classList.remove('hidden');
+                saveText.textContent = 'Saving...';
+
+                const payload = {
+                    language: languageSelect.value,
+                    themeColor: themeColorSelect.value
+                };
+
+                try {
+                    const response = await fetch('/UserPreference/Update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        showAlert('Preferences updated successfully!', true);
+                        setTimeout(() => {
+                            closeModal();
+                        }, 900);
+                    } else {
+                        showAlert('Failed to save preferences. Please try again.', false);
+                    }
+                } catch (err) {
+                    console.error('Error saving preferences:', err);
+                    showAlert('Error updating preferences.', false);
+                } finally {
+                    saveBtn.disabled = false;
+                    saveSpinner.classList.add('hidden');
+                    saveText.textContent = 'Save Preferences';
+                }
+            }
+
+            gearBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                openModal();
+            });
+
+            if (closeBtn) closeBtn.addEventListener('click', closeModal);
+            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+            if (backdrop) backdrop.addEventListener('click', closeModal);
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    closeModal();
+                }
+            });
+
+            if (form) {
+                form.addEventListener('submit', savePreferences);
+            }
+        })();
+    </script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Sidebar logic moved to _Sidebar.cshtml
+    });
+</script>
+
+
+    <!-- PWA Service WorkPaer Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    console.log('ServiceWorker registration successful with scope: ', reg.scope);
+                }).catch(err => {
+                    console.error('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+
+    
+    <!-- Omnibar Modal -->
+    <div id="omnibarModal" class="fixed inset-0 z-[100] hidden">
+        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" onclick="toggleOmnibar()"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto p-4 sm:p-6 md:p-20">
+            <div class="mx-auto max-w-2xl transform divide-y divide-slate-100 dark:divide-slate-700 overflow-hidden rounded-xl bg-white dark:bg-slate-800 shadow-2xl ring-1 ring-black ring-opacity-5 transition-all">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass pointer-events-none absolute top-4 left-4 h-5 w-5 text-slate-400"></i>
+                    <input type="text" id="omnibarInput" class="h-14 w-full border-0 bg-transparent pl-12 pr-4 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-0 sm:text-lg focus:outline-none" placeholder="Search tasks, ideas, events, and features..." autocomplete="off">
+                </div>
+                <ul id="omnibarResults" class="max-h-96 scroll-py-2 overflow-y-auto py-2 text-sm text-slate-800 dark:text-slate-200 hidden" role="listbox">
+                </ul>
+                <div id="omnibarEmpty" class="py-14 px-6 text-center text-sm sm:px-14 hidden">
+                    <i class="fa-regular fa-face-frown text-4xl text-slate-300 dark:text-slate-600 mb-4"></i>
+                    <p class="text-slate-900 dark:text-slate-100 font-semibold text-lg">No results found</p>
+                    <p class="text-slate-500 dark:text-slate-400 mt-1">We couldn't find anything matching that search term.</p>
+                </div>
+                <div class="flex flex-wrap items-center bg-slate-50 dark:bg-slate-900/50 py-3 px-4 text-xs text-slate-500 dark:text-slate-400">
+                    <span class="flex items-center mr-4"><kbd class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-1.5 py-0.5 font-sans font-medium mr-1.5 shadow-sm text-slate-400">esc</kbd> to close</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SignalR & Notifications -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.12/signalr.min.js"></script>
+    <script>
+        let unreadCount = 0;
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/notificationHub")
+            .build();
+
+        connection.on("ReceiveTicketNotification", (title, message) => {
+            // Play sound
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.play().catch(e => console.log("Audio play blocked by browser", e));
+
+            // Update UI
+            document.getElementById('noNotifications')?.remove();
+            unreadCount++;
+            const badge = document.getElementById('notificationBadge');
+            badge.innerText = unreadCount;
+            badge.classList.remove('hidden');
+
+            const list = document.getElementById('notificationList');
+            const item = document.createElement('div');
+            item.className = "p-2 rounded bg-blue-50 dark:bg-blue-900/30 text-sm border-l-4 border-blue-500 mb-1 cursor-pointer";
+            item.innerHTML = `<p class="font-semibold text-blue-700 dark:text-blue-300">${title}</p><p class="text-slate-600 dark:text-slate-400 text-xs">${message}</p>`;
+            item.onclick = () => { window.location.href = '/Ticket'; };
+            list.prepend(item);
+        });
+
+        connection.start().catch(err => console.error(err.toString()));
+
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const container = document.getElementById('notificationDropdownContainer');
+            if (container && !container.contains(e.target)) {
+                document.getElementById('notificationDropdown').classList.add('hidden');
+            }
+        });
+
+        // Dark Mode Toggle
+        function toggleGlobalDarkMode() {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            const icon = document.getElementById('darkModeIcon');
+            if (isDark) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+
+            // Save to UserPreferences
+            fetch('/UserPreference/Update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ IsDarkMode: isDark })
+            });
+        }
+    </script>
+
+
+<script>
+    // Omnibar Logic
+    const omnibarModal = document.getElementById('omnibarModal');
+    const omnibarInput = document.getElementById('omnibarInput');
+    const omnibarResults = document.getElementById('omnibarResults');
+    const omnibarEmpty = document.getElementById('omnibarEmpty');
+    let searchTimeout = null;
+
+    function toggleOmnibar() {
+        if (!omnibarModal) return;
+        if (omnibarModal.classList.contains('hidden')) {
+            omnibarModal.classList.remove('hidden');
+            setTimeout(() => omnibarInput.focus(), 50);
+        } else {
+            omnibarModal.classList.add('hidden');
+            omnibarInput.value = '';
+            omnibarResults.innerHTML = '';
+            omnibarResults.classList.add('hidden');
+            omnibarEmpty.classList.add('hidden');
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            toggleOmnibar();
+        }
+        if (e.key === 'Escape' && omnibarModal && !omnibarModal.classList.contains('hidden')) {
+            toggleOmnibar();
+        }
+    });
+
+    if(omnibarInput) {
+        omnibarInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const q = e.target.value.trim();
+            if (!q) {
+                omnibarResults.innerHTML = '';
+                omnibarResults.classList.add('hidden');
+                omnibarEmpty.classList.add('hidden');
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                fetch('/Search/Omnibar?q=' + encodeURIComponent(q))
+                    .then(res => res.json())
+                    .then(data => {
+                        omnibarResults.innerHTML = '';
+                        if (data.length === 0) {
+                            omnibarResults.classList.add('hidden');
+                            omnibarEmpty.classList.remove('hidden');
+                        } else {
+                            omnibarEmpty.classList.add('hidden');
+                            omnibarResults.classList.remove('hidden');
+                            
+                            data.forEach(item => {
+                                const li = document.createElement('li');
+                                li.className = "cursor-pointer select-none hover:bg-slate-100 dark:hover:bg-slate-700/50 transition border-b border-slate-50 dark:border-slate-800/50 last:border-0";
+                                li.innerHTML = `
+                                    <a href="${item.url}" class="flex items-center px-4 py-3 block w-full h-full">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 ${item.color}">
+                                            <i class="${item.icon} text-lg"></i>
+                                        </div>
+                                        <div class="ml-4 flex-auto">
+                                            <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">${item.title}</p>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${item.type} &middot; ${item.subtitle}</p>
+                                        </div>
+                                        <i class="fa-solid fa-chevron-right text-slate-300 dark:text-slate-600 text-xs"></i>
+                                    </a>
+                                `;
+                                omnibarResults.appendChild(li);
+                            });
+                        }
+                    });
+            }, 250);
+        });
+    }
+</script>
+
+</body>
+</html>

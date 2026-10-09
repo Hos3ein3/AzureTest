@@ -1,0 +1,78 @@
+@model AzureTest.Domain.Documents.DashboardRawComponent
+
+<div>
+                <label asp-for="Name" class="block text-sm font-medium text-slate-700">Component Name</label>
+                <input asp-for="Name" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" placeholder="e.g. Live Sales Chart" />
+                <span asp-validation-for="Name" class="text-xs text-red-500"></span>
+            </div>
+            
+            <div>
+                <label asp-for="Category" class="block text-sm font-medium text-slate-700">Category (Optional)</label>
+                <input asp-for="Category" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" placeholder="e.g. Financials, HR, Metrics" />
+                <span asp-validation-for="Category" class="text-xs text-red-500"></span>
+            </div>
+            
+            <div>
+                <label asp-for="RequiredRole" class="block text-sm font-medium text-slate-700">Required Role (Optional)</label>
+                <input asp-for="RequiredRole" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" placeholder="e.g. Admin" />
+                <span asp-validation-for="RequiredRole" class="text-xs text-red-500"></span>
+            </div>
+            
+            <div>
+                <label asp-for="Type" class="block text-sm font-medium text-slate-700">Component Type</label>
+                <select asp-for="Type" id="componentTypeSelect" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm">
+                    <option value="RawHtml">Approach 1: Raw HTML / JS</option>
+                    <option value="JsonConfig">Approach 2: JSON Configuration</option>
+                </select>
+                <span asp-validation-for="Type" class="text-xs text-red-500"></span>
+            </div>
+
+            <!-- HTML Content Area -->
+            <div id="htmlSection" class="@(Model.Type == "RawHtml" ? "" : "hidden")">
+                <label asp-for="HtmlContent" class="block text-sm font-medium text-slate-700">Raw HTML & JavaScript</label>
+                <p class="text-xs text-slate-500 mb-2">Write full HTML, CSS, and script tags here. Will be rendered exactly as-is.</p>
+                <textarea asp-for="HtmlContent" rows="10" class="mt-1 block w-full font-mono rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm bg-slate-900 text-green-400 p-3" placeholder="<div>Hello World</div>"></textarea>
+                <span asp-validation-for="HtmlContent" class="text-xs text-red-500"></span>
+            </div>
+
+            <!-- JSON Content Area -->
+            <div id="jsonSection" class="@(Model.Type == "JsonConfig" ? "" : "hidden")">
+                <label asp-for="JsonConfiguration" class="block text-sm font-medium text-slate-700">JSON Configuration</label>
+                <p class="text-xs text-slate-500 mb-2">Provide a JSON object to configure the universal dynamic widget.</p>
+                <textarea asp-for="JsonConfiguration" rows="10" class="mt-1 block w-full font-mono rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm bg-slate-50 text-slate-800 p-3" placeholder='{ "chartType": "bar" }'></textarea>
+                <span asp-validation-for="JsonConfiguration" class="text-xs text-red-500"></span>
+                
+                <div class="mt-4">
+                    <label asp-for="ViewName" class="block text-sm font-medium text-slate-700">View Name (Optional)</label>
+                    <p class="text-xs text-slate-500 mb-1">Specifies the Partial View that will render this JSON config (e.g. "Widgets/_ResumeStatsA").</p>
+                    <input asp-for="ViewName" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" />
+                </div>
+            </div>
+            
+
+            <div class="md:col-span-1 pt-4 border-t border-slate-100">
+                <h3 class="text-lg font-medium text-slate-800 mb-3">Grid Constraints</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label asp-for="MinWidth" class="block text-sm font-medium text-slate-700">Min Width</label>
+                        <input asp-for="MinWidth" type="number" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" />
+                    </div>
+                    <div>
+                        <label asp-for="MaxWidth" class="block text-sm font-medium text-slate-700">Max Width</label>
+                        <input asp-for="MaxWidth" type="number" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" />
+                    </div>
+                    <div>
+                        <label asp-for="MinHeight" class="block text-sm font-medium text-slate-700">Min Height</label>
+                        <input asp-for="MinHeight" type="number" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" />
+                    </div>
+                    <div>
+                        <label asp-for="MaxHeight" class="block text-sm font-medium text-slate-700">Max Height</label>
+                        <input asp-for="MaxHeight" type="number" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm" />
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center">
+                    <input asp-for="IsResizable" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                    <label asp-for="IsResizable" class="ml-2 block text-sm text-slate-700">Is Resizable</label>
+                </div>
+            </div>
+        </div>

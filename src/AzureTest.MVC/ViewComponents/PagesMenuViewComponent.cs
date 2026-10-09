@@ -16,10 +16,10 @@ public class PagesMenuViewComponent : ViewComponent
 
     public async Task<IViewComponentResult> InvokeAsync()
     {
-        var filter = new PageFilter { Status = AzureTest.Domain.Enums.PageStatus.Published };
+        var filter = new PageFilter { Status = AzureTest.Domain.Enums.PageStatus.Published, PageSize = -1 };
         var result = await _getAllPagesQuery.HandleAsync(new GetAllPagesQuery(filter));
         
-        var pages = result.IsSuccess ? result.Value.OrderBy(p => p.Title).ToList() : new();
+        var pages = result.IsSuccess ? result.Value.Items.OrderBy(p => p.Title).ToList() : new();
         return View(pages);
     }
 }

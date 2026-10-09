@@ -1,3 +1,5 @@
+using AzureTest.Contracts.DTOs.Common;
+using AzureTest.Contracts.DTOs.Dashboards;
 using AzureTest.Application.Abstractions;
 
 
@@ -49,20 +51,27 @@ namespace AzureTest.MVC.Controllers;
 
     [DisplayName("Index")]
     [Description("View a list of Component.")]
-    public async Task<IActionResult> Index(CancellationToken cancellationToken, string? search = null, string? category = null, string? type = null, string sort = "Name", string dir = "asc", int page = 1)
+    public async Task<IActionResult> Index([FromQuery] AzureTest.Contracts.DTOs.Dashboards.GetAllComponentsFilters filters, [FromQuery] string? search, [FromQuery] string? category, [FromQuery] string? type, [FromQuery] string? sort, [FromQuery] string? dir, [FromQuery] int? page, CancellationToken cancellationToken = default)
     {
-        var query = new GetAllComponentsQuery(search, category, type, sort, dir, page, 10);
+        filters ??= new AzureTest.Contracts.DTOs.Dashboards.GetAllComponentsFilters();
+        if (!string.IsNullOrWhiteSpace(search)) filters.SearchTerm = search;
+        if (!string.IsNullOrWhiteSpace(category)) filters.Category = category;
+        if (!string.IsNullOrWhiteSpace(type)) filters.Type = type;
+        if (!string.IsNullOrWhiteSpace(sort)) filters.SortBy = sort;
+        if (!string.IsNullOrWhiteSpace(dir)) filters.SortDescending = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase);
+        if (page.HasValue && page.Value > 0) filters.PageNumber = page.Value;
+
+        var query = new GetAllComponentsQuery(filters);
         var components = await _getAllComponentsQuery.HandleAsync(query, cancellationToken);
-        
-        ViewBag.CurrentSearch = search;
-        ViewBag.Category = category;
-        ViewBag.CurrentType = type;
-        ViewBag.CurrentSort = sort;
-        ViewBag.CurrentDir = dir;
-        ViewBag.CurrentPage = page;
-        ViewBag.TotalPages = components.TotalPages;
-        
-        return View(components);
+
+        var pagedWithFilters = new PagedResult<UnifiedComponentDto, AzureTest.Contracts.DTOs.Dashboards.GetAllComponentsFilters>(
+            components.Items, components.TotalCount, components.PageNumber, components.PageSize, filters);
+
+        var allCats = components.Items.Select(c => c.Category ?? "General").Distinct().OrderBy(c => c).ToList();
+        ViewBag.AllCategories = allCats;
+        ViewBag.Filters = filters;
+
+        return View(pagedWithFilters);
     }
 
     [DisplayName("Create")]

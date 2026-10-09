@@ -1,8 +1,9 @@
 {
-  "Integrated Calendar": false,
-  "Log Status": false,
+  "Integrated Calendar": true,
+  "Log Status": true,
   "hangfire reminder": false,
-  "Authentication": false,
+  "Authentication": true,
+  "Google Authentication": false,
   "ChromeExtension to scan linkedin job description and send to the api": false,
   "RAW HTML SAMPLE": "<div class=\"p-6 bg-slate-900 rounded-xl shadow-lg h-full flex flex-col items-center justify-center border border-slate-700 text-white\">\n    <h3 class=\"text-sm font-semibold text-slate-400 mb-2 uppercase tracking-widest\">Local Time</h3>\n    <div id=\"liveClockDisplay\" class=\"text-4xl font-mono font-bold tracking-tight text-emerald-400 drop-shadow-md\">\n        --:--:--\n    </div>\n    <div id=\"liveDateDisplay\" class=\"text-sm font-medium text-slate-400 mt-2\">\n        Loading...\n    </div>\n</div>\n\n<script>\n    (function() {\n        function updateClock() {\n            const clockEl = document.getElementById('liveClockDisplay');\n            const dateEl = document.getElementById('liveDateDisplay');\n            if(!clockEl) return;\n            \n            const now = new Date();\n            clockEl.textContent = now.toLocaleTimeString('en-US', { hour12: false });\n            dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });\n        }\n        \n        // Initial call\n        updateClock();\n        // Update every second\n        setInterval(updateClock, 1000);\n    })();\n</script>",
   "JSON SAMPLE": "{\n  \"title\": \"Monthly Revenue ($)\",\n  \"chartType\": \"line\",\n  \"themeColor\": \"#10b981\",\n  \"endpointUrl\": \"\" \n}",
@@ -13,6 +14,15 @@
   "Identity_Setting_from_mongo": false,
   "Reading_User_Register_Role_From_Setting": false,
   "Football_Fantasy": false,
-  "Football_Game": false
+  "Football_Game": false,
+  "Football_Prediction": false,
+  "Football_bet": false,
+  "rewrite all controllers with Result.ToForm Or Result.ToView": false,
+  "rewrite all controllers, Index Action to follow filter class": false,
+  "rewrite all controller to inject validator service": false,
+  "rewrite all command and queries to saparete the VSA": false,
+  "Create component for filter, sorting and searching for all index with same style": false,
+  "Create a component for everything to rewrite all button and other things with same style": false,
+  
   
 }

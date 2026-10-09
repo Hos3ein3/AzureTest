@@ -4,7 +4,7 @@ using System;
 
 namespace AzureTest.Contracts.DTOs.Expenses;
 
-public class CreateExpenseDto
+public class CreateExpenseDto : IExpenseFormDto
 {
     public decimal Amount { get; set; }
     public DateTime Date { get; set; }

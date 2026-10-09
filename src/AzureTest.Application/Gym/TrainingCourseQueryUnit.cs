@@ -11,13 +11,43 @@ using Microsoft.Extensions.Logging;
 
 namespace AzureTest.Application.Gym;
 
-public record GetAllTrainingCoursesQuery() : IQuery<Result<List<TrainingCourse>>>;
-public class GetAllTrainingCoursesQueryHandler : BaseQueryHandler<GetAllTrainingCoursesQuery, Result<List<TrainingCourse>>> {
+public class TrainingCourseFilter : AzureTest.Contracts.DTOs.Common.PagedFilterRequest
+{
+    public TrainingCourseFilter()
+    {
+        SortBy = "Name";
+        SortDescending = false;
+        PageSize = 10;
+    }
+}
+
+public record GetAllTrainingCoursesQuery(TrainingCourseFilter? Filter = null) : IQuery<Result<AzureTest.Contracts.DTOs.Common.PagedResult<TrainingCourse, TrainingCourseFilter>>>;
+public class GetAllTrainingCoursesQueryHandler : BaseQueryHandler<GetAllTrainingCoursesQuery, Result<AzureTest.Contracts.DTOs.Common.PagedResult<TrainingCourse, TrainingCourseFilter>>> {
     private readonly INoSqlUnitOfWork _uow;
     public GetAllTrainingCoursesQueryHandler(INoSqlUnitOfWork uow, ILogger<GetAllTrainingCoursesQueryHandler> logger) : base(logger) => _uow = uow;
-    protected override async Task<Result<List<TrainingCourse>>> ExecuteAsync(GetAllTrainingCoursesQuery request, CancellationToken ct) {
+    protected override async Task<Result<AzureTest.Contracts.DTOs.Common.PagedResult<TrainingCourse, TrainingCourseFilter>>> ExecuteAsync(GetAllTrainingCoursesQuery request, CancellationToken ct) {
+        var filter = request.Filter ?? new TrainingCourseFilter();
         var items = await _uow.TrainingCourses.GetAllAsync();
-        return Result.Success(items.ToList());
+        var query = items.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
+        {
+            query = query.Where(x => x.Name != null && x.Name.Contains(filter.SearchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+
+        bool desc = filter.SortDescending;
+        query = desc ? query.OrderByDescending(x => x.Name) : query.OrderBy(x => x.Name);
+
+        var list = query.ToList();
+        int totalItems = list.Count;
+        int pageSize = filter.PageSize < 1 ? 10 : filter.PageSize;
+        int currentPage = filter.PageNumber < 1 ? 1 : filter.PageNumber;
+
+        var pagedList = (filter.PageSize <= 0)
+            ? list
+            : list.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
+
+        return Result.Success(new AzureTest.Contracts.DTOs.Common.PagedResult<TrainingCourse, TrainingCourseFilter>(pagedList, totalItems, currentPage, pageSize, filter));
     }
 }
 

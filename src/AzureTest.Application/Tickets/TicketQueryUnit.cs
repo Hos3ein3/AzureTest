@@ -7,13 +7,13 @@ namespace AzureTest.Application.Tickets;
 
 public class TicketQueryUnit : ITicketQueryUnit
 {
-    public IQueryHandler<GetAllTicketsQuery, IReadOnlyList<TicketDto>> GetAllTickets { get; }
+    public IQueryHandler<GetAllTicketsQuery, AzureTest.Contracts.DTOs.Common.PagedResult<TicketDto, GetAllTicketsFilters>> GetAllTickets { get; }
     public IQueryHandler<GetTicketByIdQuery, TicketDto?> GetTicketById { get; }
     public IQueryHandler<GetUnansweredTicketsQuery, IReadOnlyList<TicketDto>> GetUnansweredTickets { get; }
     public IQueryHandler<GetUnreadTicketsQuery, IReadOnlyList<TicketDto>> GetUnreadTickets { get; }
 
     public TicketQueryUnit(
-        IQueryHandler<GetAllTicketsQuery, IReadOnlyList<TicketDto>> getAllTickets,
+        IQueryHandler<GetAllTicketsQuery, AzureTest.Contracts.DTOs.Common.PagedResult<TicketDto, GetAllTicketsFilters>> getAllTickets,
         IQueryHandler<GetTicketByIdQuery, TicketDto?> getTicketById,
         IQueryHandler<GetUnansweredTicketsQuery, IReadOnlyList<TicketDto>> getUnansweredTickets,
         IQueryHandler<GetUnreadTicketsQuery, IReadOnlyList<TicketDto>> getUnreadTickets)

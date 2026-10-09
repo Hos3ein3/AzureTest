@@ -34,38 +34,36 @@ namespace AzureTest.MVC.Controllers;
 
     [DisplayName("Index")]
     [Description("View a list of Event.")]
-    public async Task<IActionResult> Index(string searchString, string sortOrder, int? pageNumber)
+    public async Task<IActionResult> Index([FromQuery] GetAllEventsFilters filters, [FromQuery] int? pageNumber, [FromQuery] string? searchString, [FromQuery] string? sortOrder, CancellationToken cancellationToken)
     {
-        ViewData["CurrentSort"] = sortOrder;
-        ViewData["TitleSortParm"] = String.IsNullOrEmpty(sortOrder) ? "title_desc" : "";
-        ViewData["DateSortParm"] = sortOrder == "Date" ? "date_desc" : "Date";
-        ViewData["CurrentFilter"] = searchString;
-
-        var userId = _currentUser.Id;
-        var eventsResult = await _queryUnit.GetAllEvents.HandleAsync(new GetAllEventsQuery(userId), default);
-        var events = eventsResult.AsQueryable();
-
-        if (!String.IsNullOrEmpty(searchString))
+        filters ??= new GetAllEventsFilters();
+        if (!string.IsNullOrWhiteSpace(searchString) && string.IsNullOrWhiteSpace(filters.SearchTerm))
         {
-            events = events.Where(e => e.Title.Contains(searchString, StringComparison.OrdinalIgnoreCase)
-                                       || (e.Description != null && e.Description.Contains(searchString, StringComparison.OrdinalIgnoreCase)));
+            filters.SearchTerm = searchString;
+        }
+        if (pageNumber.HasValue && pageNumber.Value > 0)
+        {
+            filters.PageNumber = pageNumber.Value;
+        }
+        if (!string.IsNullOrWhiteSpace(sortOrder))
+        {
+            if (sortOrder.Contains("desc"))
+            {
+                filters.SortDescending = true;
+                filters.SortBy = sortOrder.Replace("_desc", "");
+            }
+            else
+            {
+                filters.SortDescending = false;
+                filters.SortBy = sortOrder;
+            }
         }
 
-        events = sortOrder switch
-        {
-            "title_desc" => events.OrderByDescending(e => e.Title),
-            "Date" => events.OrderBy(e => e.StartDate),
-            "date_desc" => events.OrderByDescending(e => e.StartDate),
-            _ => events.OrderBy(e => e.Title),
-        };
+        var userId = _currentUser.Id;
+        var pagedResult = await _queryUnit.GetAllEvents.HandleAsync(new GetAllEventsQuery(filters, userId), cancellationToken);
 
-        int pageSize = 10;
-        int pageIndex = pageNumber ?? 1;
-        var count = events.Count();
-        var items = events.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();
-        var pagedList = new PagedResult<EventDto>(items, count, pageIndex, pageSize);
-
-        return View(pagedList);
+        ViewBag.Filters = filters;
+        return View(pagedResult);
     }
 
     [DisplayName("Create")]
