@@ -82,6 +82,10 @@ public static class DependencyInjection
             services.AddScoped<IDebtPersonRepository, DebtPersonRepository>();
             services.AddScoped<IExpenseCategoryRepository, ExpenseCategoryRepository>();
             services.AddScoped<IUserPreferenceRepository, UserPreferenceRepository>();
+            services.AddScoped<ITrainingRepository, TrainingRepository>();
+            services.AddScoped<ITrainingCourseRepository, TrainingCourseRepository>();
+            services.AddScoped<IUserGymCourseRepository, UserGymCourseRepository>();
+            services.AddScoped<IUserTrainingSessionRepository, UserTrainingSessionRepository>();
             services.AddScoped<INoSqlUnitOfWork, NoSqlUnitOfWork>();
             services.AddScoped<AzureTest.Persistence.Seeding.CompanyDataSeeder>();
         }

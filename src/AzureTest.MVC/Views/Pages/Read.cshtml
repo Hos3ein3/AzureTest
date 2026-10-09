@@ -1,0 +1,66 @@
+@model AzureTest.Contracts.DTOs.Pages.PageDto
+@using System.Security.Claims
+
+<div class="max-w-5xl mx-auto p-6">
+    @if(!string.IsNullOrEmpty(Model.ImagePath))
+    {
+        <img src="@Model.ImagePath" alt="@Model.Title" class="w-full h-64 object-cover rounded-xl mb-8 border border-slate-700">
+    }
+    
+    <h1 class="text-4xl font-bold mb-4">@Model.Title</h1>
+    
+    <div class="prose prose-invert max-w-none mb-12">
+        @Html.Raw(Model.Content)
+    </div>
+    
+    <div class="flex items-center gap-4 mb-12 border-t border-b border-slate-800 py-4">
+        <form method="post" action="@Url.Action("ToggleLike", new { id = Model.Id })">
+            <button type="submit" class="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors @(Model.LikedBy.Contains(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier))) ? "bg-brand-500 text-white" : "bg-slate-800 hover:bg-slate-700 text-slate-300")">
+                <i class="fa-solid fa-thumbs-up"></i> @Model.LikedBy.Count
+            </button>
+        </form>
+        <form method="post" action="@Url.Action("ToggleDislike", new { id = Model.Id })">
+            <button type="submit" class="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors @(Model.DislikedBy.Contains(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier))) ? "bg-red-500 text-white" : "bg-slate-800 hover:bg-slate-700 text-slate-300")">
+                <i class="fa-solid fa-thumbs-down"></i> @Model.DislikedBy.Count
+            </button>
+        </form>
+    </div>
+
+    <h3 class="text-2xl font-bold mb-6">Comments</h3>
+    
+    <form method="post" action="@Url.Action("AddComment", new { id = Model.Id })" class="mb-10 flex gap-4">
+        <input type="text" name="content" placeholder="Add a comment..." class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-brand-500">
+        <button type="submit" class="bg-brand-500 px-6 py-3 rounded-lg hover:bg-brand-600 font-medium">Post</button>
+    </form>
+    
+    <div class="space-y-6">
+        @foreach(var c in Model.Comments.OrderByDescending(x => x.CreatedAt))
+        {
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="font-medium text-brand-400">@c.UserName</span>
+                    <span class="text-xs text-slate-500">@c.CreatedAt.ToString("g")</span>
+                </div>
+                <p class="text-slate-300 mb-4">@c.Content</p>
+                
+                @if(!string.IsNullOrEmpty(c.AdminReply))
+                {
+                    <div class="ml-6 pl-4 border-l-2 border-brand-500 mt-4">
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Admin Reply</span>
+                            <span class="text-xs text-slate-500">@c.AdminReplyAt?.ToString("g")</span>
+                        </div>
+                        <p class="text-slate-400 italic">@c.AdminReply</p>
+                    </div>
+                }
+                else if (User.IsInRole("Admin"))
+                {
+                    <form method="post" action="@Url.Action("AnswerComment", new { id = Model.Id, commentId = c.Id })" class="mt-4 flex gap-2 ml-6">
+                        <input type="text" name="reply" placeholder="Reply as admin..." class="flex-1 text-sm bg-slate-900 border border-slate-700 rounded px-3 py-1.5 focus:outline-none focus:border-brand-500">
+                        <button type="submit" class="bg-slate-700 px-3 py-1.5 rounded text-sm hover:bg-slate-600">Reply</button>
+                    </form>
+                }
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,93 @@
+@model AzureTest.Domain.Documents.Gym.Training
+@using AzureTest.Domain.Enums
+@{
+    ViewData["Title"] = "Create Training";
+}
+
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="md:flex md:items-center md:justify-between mb-6">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">Create Training</h2>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-6">
+        @Html.AntiForgeryToken()
+        <div class="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
+            <div class="md:grid md:grid-cols-3 md:gap-6">
+                <div class="md:col-span-1">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900">Details</h3>
+                    <p class="mt-1 text-sm text-gray-500">Provide basic info for the new training.</p>
+                </div>
+                <div class="mt-5 md:mt-0 md:col-span-2 space-y-4">
+                    <div asp-validation-summary="All" class="text-red-500 text-sm"></div>
+
+                    <div>
+                        <label asp-for="Name" class="block text-sm font-medium text-gray-700">Name</label>
+                        <input asp-for="Name" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md py-2 px-3 border" required />
+                    </div>
+
+                    <div>
+                        <label asp-for="Description" class="block text-sm font-medium text-gray-700">Description</label>
+                        <textarea asp-for="Description" id="Description"></textarea>
+                    </div>
+
+                    <div>
+                        <label asp-for="MediaUrl" class="block text-sm font-medium text-gray-700">Media URL (e.g., YouTube)</label>
+                        <input asp-for="MediaUrl" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md py-2 px-3 border" />
+                    </div>
+
+                    <div>
+                        <label asp-for="Type" class="block text-sm font-medium text-gray-700">Type</label>
+                        <select asp-for="Type" asp-items="Html.GetEnumSelectList<TrainingType>()" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></select>
+                    </div>
+
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Equipments</label>
+                        <input name="EquipmentsStr" id="EquipmentsStr" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="e.g. Dumbbell, Barbell" value="@(Model?.Equipments != null ? string.Join(",", Model.Equipments) : "")" />
+                    </div>
+                    <div>
+                        <label asp-for="BaseCaloriesBurn" class="block text-sm font-medium text-gray-700">Base Calories Burn</label>
+                        <input asp-for="BaseCaloriesBurn" type="number" step="0.1" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md py-2 px-3 border" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <a href="@Url.Action("Index")" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Cancel</a>
+            <button type="submit" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Save</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            tinymce.init({
+                selector: '#Description',
+                plugins: 'lists link image preview searchreplace wordcount code',
+                toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | link image | code',
+                height: 300,
+                promotion: false,
+                branding: false,
+                setup: function(editor) {
+                    editor.on('change', function() {
+                        editor.save();
+                    });
+                }
+            });
+        });
+    </script>
+
+    <link href="https://cdn.jsdelivr.net/npm/@@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.jsdelivr.net/npm/@@yaireo/tagify"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            var input = document.querySelector('#EquipmentsStr');
+            new Tagify(input);
+        });
+    </script>
+}

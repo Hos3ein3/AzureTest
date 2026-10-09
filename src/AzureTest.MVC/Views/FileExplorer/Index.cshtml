@@ -195,6 +195,8 @@
     <div id="cm-paste" class="px-6 py-1 hover:bg-blue-500 hover:text-white cursor-default" onclick="handleCmAction('paste')">Paste</div>
     <div class="my-1 border-t border-slate-300"></div>
     <div id="cm-download" class="px-6 py-1 hover:bg-blue-500 hover:text-white cursor-default" onclick="handleCmAction('download')">Download</div>
+    <div id="cm-copydl" class="px-6 py-1 hover:bg-blue-500 hover:text-white cursor-default" onclick="handleCmAction('copydl')">Copy DL Link</div>
+
     <div class="my-1 border-t border-slate-300" id="cm-download-sep"></div>
     <div id="cm-rename" class="px-6 py-1 hover:bg-blue-500 hover:text-white cursor-default" onclick="handleCmAction('rename')">Rename</div>
     <div id="cm-delete" class="px-6 py-1 hover:bg-blue-500 hover:text-white cursor-default" onclick="handleCmAction('delete')">Delete</div>
@@ -319,6 +321,47 @@
             }
         }
 
+        
+        // --- Keyboard Navigation ---
+        document.addEventListener('keydown', (e) => {
+            const isInputFocused = document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA';
+            if (isInputFocused) return;
+            
+            const menuOpen = !document.getElementById('contextMenu').classList.contains('hidden');
+            if (menuOpen) return;
+
+            const items = Array.from(document.querySelectorAll('.file-item'));
+            if (items.length === 0) return;
+
+            let currentIndex = items.findIndex(el => el.classList.contains('selected'));
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                let nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+                selectItem(items[nextIndex], e);
+                items[nextIndex].scrollIntoView({ block: 'nearest' });
+            } 
+            else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                let prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+                selectItem(items[prevIndex], e);
+                items[prevIndex].scrollIntoView({ block: 'nearest' });
+            }
+            else if (e.key === 'Enter') {
+                if (currentIndex !== -1) {
+                    e.preventDefault();
+                    const path = items[currentIndex].getAttribute('data-path');
+                    const isDir = items[currentIndex].getAttribute('data-isdir') === 'true';
+                    openItem(path, isDir);
+                }
+            }
+            else if (e.key === 'Backspace') {
+                e.preventDefault();
+                const parentPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+                window.location.href = '?path=' + encodeURIComponent(parentPath);
+            }
+        });
+
         // --- Context Menu Logic ---
         let contextTarget = null;
         let contextType = 'background';
@@ -349,9 +392,12 @@
             document.getElementById('cm-rename').style.display = isItem ? 'block' : 'none';
             document.getElementById('cm-delete').style.display = isItem ? 'block' : 'none';
             
+            
             const isDir = isItem && target.getAttribute('data-isdir') === 'true';
             document.getElementById('cm-download').style.display = (isItem && !isDir) ? 'block' : 'none';
+            document.getElementById('cm-copydl').style.display = (isItem && !isDir) ? 'block' : 'none';
             document.getElementById('cm-download-sep').style.display = (isItem && !isDir) ? 'block' : 'none';
+
             
             document.getElementById('cm-paste').style.display = (!isItem && hasClipboard) ? 'block' : 'none';
             document.getElementById('cm-newfolder').style.display = !isItem ? 'block' : 'none';
@@ -376,6 +422,7 @@
         function handleCmAction(action) {
             document.getElementById('contextMenu').classList.add('hidden');
             
+            
             if (action === 'download') {
                 const path = contextTarget.getAttribute('data-path');
                 const url = '/' + path.split('/').map(p => encodeURIComponent(p)).join('/');
@@ -386,6 +433,16 @@
                 a.click();
                 document.body.removeChild(a);
             }
+            else if (action === 'copydl') {
+                const path = contextTarget.getAttribute('data-path');
+                const url = window.location.origin + '/' + path.split('/').map(p => encodeURIComponent(p)).join('/');
+                navigator.clipboard.writeText(url).then(() => {
+                    // Optional toast
+                }).catch(err => {
+                    alert("Failed to copy URL: " + err);
+                });
+            }
+
             else if (action === 'open') {
                 const path = contextTarget.getAttribute('data-path');
                 const isDir = contextTarget.getAttribute('data-isdir') === 'true';

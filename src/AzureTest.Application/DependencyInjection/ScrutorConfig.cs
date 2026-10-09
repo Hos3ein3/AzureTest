@@ -12,13 +12,13 @@ public static class ScrutorConfig
         services.Scan(selector => selector
             .FromAssemblies(typeof(ScrutorConfig).Assembly)
             .AddClasses(filter => filter.AssignableTo(typeof(ICommandHandler<>)))
-                .AsImplementedInterfaces()
+                .AsImplementedInterfaces().AsSelf()
                 .WithScopedLifetime()
             .AddClasses(filter => filter.AssignableTo(typeof(ICommandHandler<,>)))
-                .AsImplementedInterfaces()
+                .AsImplementedInterfaces().AsSelf()
                 .WithScopedLifetime()
             .AddClasses(filter => filter.AssignableTo(typeof(IQueryHandler<,>)))
-                .AsImplementedInterfaces()
+                .AsImplementedInterfaces().AsSelf()
                 .WithScopedLifetime()
         );
 

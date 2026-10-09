@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel;
 using Microsoft.Extensions.Options;
+using AzureTest.Application.IdentitySettings;
+using AzureTest.Domain.Documents;
 
 using AzureTest.Application.Users.Commands.LoginUser;
 using AzureTest.Application.Users.Commands.RegisterUser;
@@ -30,6 +32,7 @@ namespace AzureTest.MVC.Controllers;
     private readonly InfrastructureFeatureOptions _featureOptions;
     private readonly IRedisService _redisService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly GetIdentitySettingQueryHandler _getIdentitySettingQuery;
 
     public AuthController(
         IUserCommandUnit commands,
@@ -37,7 +40,8 @@ namespace AzureTest.MVC.Controllers;
         UserManager<ApplicationUser> userManager,
         IOptions<InfrastructureFeatureOptions> featureOptions,
         IRedisService redisService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        GetIdentitySettingQueryHandler getIdentitySettingQuery)
     {
         _commands = commands;
         _signInManager = signInManager;
@@ -45,6 +49,7 @@ namespace AzureTest.MVC.Controllers;
         _featureOptions = featureOptions.Value;
         _redisService = redisService;
         _unitOfWork = unitOfWork;
+        _getIdentitySettingQuery = getIdentitySettingQuery;
     }
 
     [HttpGet]
@@ -66,30 +71,19 @@ namespace AzureTest.MVC.Controllers;
         {
             if (_featureOptions.UseJWT)
             {
-                // Store JWT in cookie
                 var cookieOptions = new CookieOptions
                 {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    Expires = DateTime.UtcNow.AddDays(1)
+                    HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict, Expires = DateTime.UtcNow.AddDays(1)
                 };
                 Response.Cookies.Append("jwt", result.Value.Token!, cookieOptions);
                 if (!string.IsNullOrEmpty(result.Value.RefreshToken))
-                {
                     Response.Cookies.Append("refreshToken", result.Value.RefreshToken, cookieOptions);
-                }
             }
             else
             {
-                // Use Identity Cookie SignIn
                 var user = await _userManager.FindByEmailAsync(email);
-                if (user != null)
-                {
-                    await _signInManager.SignInAsync(user, isPersistent: true);
-                }
+                if (user != null) await _signInManager.SignInAsync(user, isPersistent: true);
             }
-            
             
             var userObj = await _userManager.FindByEmailAsync(email);
             if (userObj != null)
@@ -104,29 +98,22 @@ namespace AzureTest.MVC.Controllers;
                 
                 var sessionDto = new UserSessionCacheDto
                 {
-                    Id = userObj.Id,
-                    Email = userObj.Email,
-                    PhoneNumber = userObj.PhoneNumber,
-                    ProfileImage = userObj.ProfileImage,
-                    FirstName = userObj.FirstName,
-                    LastName = userObj.LastName,
-                    FullName = userObj.FullName,
+                    Id = userObj.Id, Email = userObj.Email, PhoneNumber = userObj.PhoneNumber,
+                    ProfileImage = userObj.ProfileImage, FirstName = userObj.FirstName,
+                    LastName = userObj.LastName, FullName = userObj.FullName,
                     Roles = System.Linq.Enumerable.ToList(roles),
                     Permissions = System.Linq.Enumerable.ToList(System.Linq.Enumerable.Distinct(permissions))
                 };
-                
                 await _redisService.SetAsync($"User_Info_{userObj.Id}", sessionDto, TimeSpan.FromDays(7));
             }
-            
-            return RedirectToAction("Index", "Home");
 
+            var settingRes = await _getIdentitySettingQuery.HandleAsync(new GetIdentitySettingQuery());
+            var redirectUrl = settingRes.IsSuccess ? settingRes.Value.RedirectAfterLogin : "/Home/Index";
+            return LocalRedirect(redirectUrl ?? "/Home/Index");
         }
         if (result.IsSuccess && result.Value.Errors != null)
         {
-            foreach (var error in result.Value.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error);
-            }
+            foreach (var error in result.Value.Errors) ModelState.AddModelError(string.Empty, error);
         }
         return View();
     }
@@ -158,7 +145,31 @@ namespace AzureTest.MVC.Controllers;
         var result = await _commands.Register.HandleAsync(new RegisterUserCommand(email, password, firstName, lastName), cancellationToken);
         if (result.IsSuccess)
         {
-            return RedirectToAction(nameof(Login));
+            var settingRes = await _getIdentitySettingQuery.HandleAsync(new GetIdentitySettingQuery());
+            var setting = settingRes.IsSuccess ? settingRes.Value : new IdentitySetting();
+
+            var userObj = await _userManager.FindByEmailAsync(email);
+            if (userObj != null)
+            {
+                if (setting.RolesForRegister != null && setting.RolesForRegister.Any())
+                {
+                    foreach (var role in setting.RolesForRegister)
+                    {
+                        if (!await _userManager.IsInRoleAsync(userObj, role))
+                        {
+                            await _userManager.AddToRoleAsync(userObj, role);
+                        }
+                    }
+                }
+
+                if (setting.StayLoginAfterRegister)
+                {
+                    await _signInManager.SignInAsync(userObj, isPersistent: true);
+                    return LocalRedirect(setting.RedirectAfterLogin ?? "/");
+                }
+            }
+
+            return LocalRedirect(setting.RedirectAfterRegister ?? "/Auth/Login");
         }
 
         if (result.Error != null)

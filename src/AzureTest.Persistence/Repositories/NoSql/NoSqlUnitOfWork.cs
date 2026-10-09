@@ -7,11 +7,16 @@ using AzureTest.Application.Interfaces.Data.NoSql;
 using MongoDB.Driver;
 
 namespace AzureTest.Persistence.Repositories.NoSql;
+using AzureTest.Application.Interfaces.Data.NoSql;
+using AzureTest.Domain.Documents.Pages;
+
+public class PageRepository : DocumentRepository<PageDocument>, IPageRepository { public PageRepository(IMongoDatabase db) : base(db, "Pages") { } }
 
 public class NoSqlUnitOfWork : INoSqlUnitOfWork
 {
     private readonly IMongoClient _mongoClient;
     private readonly IMongoDatabase _database;
+    private IIdentitySettingRepository? _identitySettings;
     private IClientSessionHandle? _session;
 
     private IResumeFilesRepository? _resumeFiles;
@@ -50,7 +55,20 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     public IJobSearchHistoryRepository JobSearchHistories => _jobSearchHistories ??= new JobSearchHistoryRepository(_database);
     public IIdeaRepository Ideas => _ideas ??= new IdeaRepository(_database);
     public IIdeaPageRepository IdeaPages => _ideaPages ??= new IdeaPageRepository(_database);
+    private IPageRepository? _pages;
+    public IPageRepository Pages => _pages ??= new PageRepository(_database);
+
     public IIdeaSectionRepository IdeaSections => _ideaSections ??= new IdeaSectionRepository(_database);
+    private ITrainingRepository? _trainings;
+    private ITrainingCourseRepository? _trainingCourses;
+    private IUserGymCourseRepository? _userGymCourses;
+    private IUserTrainingSessionRepository? _userTrainingSessions;
+
+    public ITrainingRepository Trainings => _trainings ??= new TrainingRepository(_database);
+    public ITrainingCourseRepository TrainingCourses => _trainingCourses ??= new TrainingCourseRepository(_database);
+    public IUserGymCourseRepository UserGymCourses => _userGymCourses ??= new UserGymCourseRepository(_database);
+    public IUserTrainingSessionRepository UserTrainingSessions => _userTrainingSessions ??= new UserTrainingSessionRepository(_database);
+
     public IHouseSearchHistoryRepository HouseSearchHistories => _houseSearchHistories ??= new HouseSearchHistoryRepository(_database);
     public IHouseCrawlerCredentialRepository HouseCrawlerCredentials => _houseCrawlerCredentials ??= new HouseCrawlerCredentialRepository(_database);
 
@@ -69,6 +87,8 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
         // If no explicit transaction, modifications are already saved incrementally.
         return true;
     }
+
+    public IIdentitySettingRepository IdentitySettings => _identitySettings ??= new IdentitySettingRepository(_database);
 
     public void Dispose()
     {

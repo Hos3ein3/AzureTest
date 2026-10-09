@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 
 
 using AzureTest.Application.Interfaces.Data.NoSql;
@@ -7,9 +8,6 @@ using AzureTest.Domain.Entities;
 using AzureTest.Domain.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System;
 
 using AzureTest.Persistence.Seeding;
 
@@ -23,6 +21,7 @@ public class IdentityDataSeeder
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<IdentityDataSeeder> _logger;
     private readonly Microsoft.Extensions.Options.IOptions<AzureTest.Infrastructure.Configuration.DashboardSettings> _dashboardSettings;
+    private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
 
     public IdentityDataSeeder(
         UserManager<ApplicationUser> userManager,
@@ -30,7 +29,7 @@ public class IdentityDataSeeder
         INoSqlUnitOfWork noSqlUnitOfWork,
         IUnitOfWork unitOfWork,
         ILogger<IdentityDataSeeder> logger,
-        Microsoft.Extensions.Options.IOptions<AzureTest.Infrastructure.Configuration.DashboardSettings> dashboardSettings)
+        Microsoft.Extensions.Options.IOptions<AzureTest.Infrastructure.Configuration.DashboardSettings> dashboardSettings, Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
         _userManager = userManager;
         _roleManager = roleManager;
@@ -38,6 +37,7 @@ public class IdentityDataSeeder
         _unitOfWork = unitOfWork;
         _logger = logger;
         _dashboardSettings = dashboardSettings;
+        _configuration = configuration;
     }
 
     public async Task SeedAsync()
@@ -191,6 +191,8 @@ var userUserEmail = "mohammadhosein.behzadifard@gmail.com";
             }
             
             _logger.LogInformation("Identity data seeded successfully.");
+
+            await SeedIdentitySettingAsync();
         }
         catch (System.Exception ex)
         {
@@ -198,6 +200,28 @@ var userUserEmail = "mohammadhosein.behzadifard@gmail.com";
         }
     }
     
+    
+    private async Task SeedIdentitySettingAsync ()
+    {
+        var settings = await _noSqlUnitOfWork.IdentitySettings.GetAllAsync();
+        if (settings.Count == 0)
+        {
+            var conf = _configuration.GetSection("AppIdentitySetting");
+            var setting = new AzureTest.Domain.Documents.IdentitySetting
+            {
+                Id = Guid.CreateVersion7(),
+                RedirectAfterRegister = conf["RedirectAfterRegister"] ?? "/",
+                RedirectAfterLogin = conf["RedirectAfterLogin"] ?? "/",
+                StayLoginAfterRegister = bool.TryParse(conf["StayLoginAfterRegister"], out var b) ? b : true,
+                RolesForRegister = conf.GetSection("RolesForRegister").Get<List<string>>() ?? new List<string> { "User" }
+            };
+            
+            await _noSqlUnitOfWork.IdentitySettings.AddAsync(setting);
+            await _noSqlUnitOfWork.SaveChangesAsync();
+            _logger.LogInformation("IdentitySetting document seeded from appsettings.");
+        }
+    }
+
     private async Task SeedDashboardComponentsAsync(System.Guid userId)
     {
         var existingDashboard = await _noSqlUnitOfWork.UserDashboards.GetByUserIdAndSlugAsync(userId, "dynamic-analytics");

@@ -721,6 +721,8 @@ public static class FakeDataGenerator
 
         return user;
     }
+    
+    
     public static List<DashboardComponent> BuildDashboardComponents()
     {
         

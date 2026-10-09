@@ -13,7 +13,7 @@ using AzureTest.Application.Messaging;
 namespace AzureTest.Application.Permissions;
 
 
-public record CreatePermissionCommand(string ControllerName, string ActionName, string DisplayName, string Description) : ICommand;
+public record CreatePermissionCommand(string ControllerName, string ActionName, string DisplayName, string? Description) : ICommand;
 
 public class CreatePermissionCommandHandler : ICommandHandler<CreatePermissionCommand>
 {

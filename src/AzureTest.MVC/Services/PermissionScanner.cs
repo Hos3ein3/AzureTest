@@ -43,14 +43,8 @@ public class PermissionScanner : IPermissionScanner
                 var actionDisplayNameAttr = action.GetCustomAttribute<DisplayNameAttribute>();
                 var actionDescAttr = action.GetCustomAttribute<DescriptionAttribute>();
 
-                // Skip if DisplayName or Description is missing (inner API)
-                if (actionDisplayNameAttr == null || actionDescAttr == null)
-                {
-                    continue;
-                }
-
-                var aDisplayName = actionDisplayNameAttr.DisplayName;
-                var aDesc = actionDescAttr.Description;
+                var aDisplayName = actionDisplayNameAttr?.DisplayName ?? actionName;
+                var aDesc = actionDescAttr?.Description ?? $"{controllerName} {actionName}";
 
                 if (!permissions.Any(p => p.ControllerName == controllerName && p.ActionName == actionName))
                 {

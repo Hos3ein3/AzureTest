@@ -6,6 +6,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 
 namespace AzureTest.Persistence.Configurations.NoSql;
+using AzureTest.Domain.Documents.Pages;
 
 /// <summary>
 /// Configures MongoDB BSON class mappings for all document types.

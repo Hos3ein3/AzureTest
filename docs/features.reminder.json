@@ -9,6 +9,10 @@
   "Social_Media_manager": false,
   "House_crawler": false,
   "markdown_Editor": false,
-  "Dutch_Language": false
+  "Dutch_Language": false,
+  "Identity_Setting_from_mongo": false,
+  "Reading_User_Register_Role_From_Setting": false,
+  "Football_Fantasy": false,
+  "Football_Game": false
   
 }
