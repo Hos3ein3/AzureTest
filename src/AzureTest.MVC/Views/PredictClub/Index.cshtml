@@ -1,0 +1,126 @@
+@model AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.FootballFantasy.PredictClubDto, AzureTest.Contracts.DTOs.FootballFantasy.PredictClubFilter>
+@{
+    ViewData["Title"] = "Fantasy Predict Clubs";
+    var filter = ViewBag.Filter as AzureTest.Contracts.DTOs.FootballFantasy.PredictClubFilter ?? new AzureTest.Contracts.DTOs.FootballFantasy.PredictClubFilter();
+}
+
+<div class="space-y-6">
+    <!-- Header banner -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-indigo-900 via-brand-900 to-slate-900 p-6 md:p-8 rounded-3xl text-white shadow-xl">
+        <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold mb-3 border border-indigo-500/30">
+                <i class="fa-solid fa-bullseye"></i> Match Facts & Outcome Predictions
+            </div>
+            <h1 class="text-3xl font-black tracking-tight">Fantasy Predict Clubs</h1>
+            <p class="text-slate-300 text-sm mt-1 max-w-xl">
+                Compete by predicting match facts, scores, possession, cards, MVP, and tournament champions across global tournaments.
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a asp-action="Create" class="inline-flex items-center px-5 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all">
+                <i class="fa-solid fa-plus mr-2"></i> Create Predict Club
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <form method="get" asp-action="Index" class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div class="flex-1 w-full md:w-auto relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input type="text" name="SearchTerm" value="@filter.SearchTerm" placeholder="Search Predict Club by name or #TAG..." class="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <select name="Visibility" onchange="this.form.submit()" class="px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900">
+                <option value="">All Visibilities</option>
+                <option value="Global" selected="@(filter.Visibility == AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueVisibility.Global)">Global</option>
+                <option value="Public" selected="@(filter.Visibility == AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueVisibility.Public)">Public</option>
+                <option value="Private" selected="@(filter.Visibility == AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueVisibility.Private)">Private (Joined)</option>
+            </select>
+            <button type="submit" class="px-4 py-2 bg-slate-900 hover:bg-black text-white text-sm font-semibold rounded-xl">
+                Filter
+            </button>
+        </div>
+    </form>
+
+    <!-- Predict Clubs Grid -->
+    @if (!Model.Items.Any())
+    {
+        <div class="text-center py-12 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-8">
+            <i class="fa-solid fa-crystal-ball text-4xl text-slate-300 dark:text-slate-600 mb-3"></i>
+            <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200">No Predict Clubs Found</h3>
+            <p class="text-slate-500 text-sm mt-1">Be the first to create a Predict Club or join with an invite code!</p>
+            <a asp-action="Create" class="mt-4 inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold">
+                Create First Club
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach (var club in Model.Items)
+            {
+                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between gap-3 mb-4">
+                            <div class="flex items-center gap-3">
+                                @if (!string.IsNullOrWhiteSpace(club.LogoUrl))
+                                {
+                                    <img src="@club.LogoUrl" alt="Logo" class="w-12 h-12 rounded-xl object-contain bg-slate-50 border p-1" />
+                                }
+                                else
+                                {
+                                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-black text-lg">
+                                        @club.Name.Substring(0, Math.Min(2, club.Name.Length)).ToUpper()
+                                    </div>
+                                }
+                                <div>
+                                    <h3 class="font-bold text-base text-slate-900 dark:text-slate-100 line-clamp-1">@club.Name</h3>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <span class="text-xs font-mono text-slate-500 font-semibold">#@club.ClubTag</span>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full @(club.Visibility == AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueVisibility.Public ? "bg-emerald-50 text-emerald-600" : club.Visibility == AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueVisibility.Global ? "bg-indigo-50 text-indigo-600" : "bg-amber-50 text-amber-600")">
+                                            @club.Visibility
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-slate-500 line-clamp-2 mb-4">
+                            @(string.IsNullOrWhiteSpace(club.Description) ? "Test your football instincts by predicting scores and match facts." : club.Description)
+                        </p>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50 mb-4">
+                            <div>
+                                <span class="text-slate-400 block text-[10px] uppercase font-semibold">Members</span>
+                                <span class="font-bold text-slate-800 dark:text-slate-200">
+                                    @club.MemberCount @(club.MaxMembers.HasValue ? $"/ {club.MaxMembers}" : "")
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block text-[10px] uppercase font-semibold">Scope</span>
+                                <span class="font-bold text-indigo-600 truncate block">@club.ScopeValue</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block text-[10px] uppercase font-semibold">Exact Score</span>
+                                <span class="font-bold text-emerald-600">@club.ExactScorePoints pts</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block text-[10px] uppercase font-semibold">Format</span>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">@club.Format</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-slate-50/50 dark:bg-slate-900/20 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
+                        <span class="text-xs text-slate-400">
+                            Starts: @club.StartsAt.ToString("MMM dd, yyyy")
+                        </span>
+                        <a asp-action="Details" asp-route-id="@club.Id" class="inline-flex items-center px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors">
+                            Enter Club <i class="fa-solid fa-arrow-right ml-1.5"></i>
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

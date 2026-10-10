@@ -339,6 +339,7 @@ app.UseAuthorization();
 app.MapStaticAssets();
 
 app.MapHub<AzureTest.MVC.Hubs.NotificationHub>("/notificationHub");
+app.MapHub<AzureTest.MVC.Hubs.FantasyAuctionHub>("/auctionHub");
 
 app.MapControllerRoute(
         name: "dashboard_dynamic",

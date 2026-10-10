@@ -1,0 +1,259 @@
+@model AzureTest.Application.FootballFantasy.Queries.PredictClubDetailsDto
+@{
+    ViewData["Title"] = Model.Club.Name + " - Predict Club";
+    var club = Model.Club;
+    var userTournament = Model.UserTournamentPrediction;
+    var availableTeams = ViewBag.AvailableTeams as IEnumerable<AzureTest.Contracts.DTOs.FootballFantasy.TeamDto> ?? Enumerable.Empty<AzureTest.Contracts.DTOs.FootballFantasy.TeamDto>();
+    var availablePlayers = ViewBag.AvailablePlayers as IEnumerable<AzureTest.Contracts.DTOs.FootballFantasy.PlayerDto> ?? Enumerable.Empty<AzureTest.Contracts.DTOs.FootballFantasy.PlayerDto>();
+}
+
+<!-- Club Header -->
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+    <div class="flex items-center gap-4">
+        <a asp-action="Index" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        @if (!string.IsNullOrWhiteSpace(club.LogoUrl))
+        {
+            <img src="@club.LogoUrl" alt="Logo" class="w-14 h-14 object-contain rounded-2xl bg-slate-50 border p-1" />
+        }
+        else
+        {
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-black text-xl">
+                @club.Name.Substring(0, Math.Min(2, club.Name.Length)).ToUpper()
+            </div>
+        }
+        <div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-black text-slate-900 dark:text-slate-100">@club.Name</h1>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-100 text-slate-600">#@club.ClubTag</span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold @(club.Visibility == AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueVisibility.Public ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600")">
+                    @club.Visibility
+                </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">@club.Description</p>
+        </div>
+    </div>
+
+    <div>
+        @if (!Model.IsUserMember)
+        {
+            <a asp-action="Join" asp-route-id="@club.Id" class="inline-flex items-center px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-md shadow-indigo-500/20 transition-all">
+                <i class="fa-solid fa-plus mr-2"></i> Join Predict Club
+            </a>
+        }
+        else
+        {
+            <span class="inline-flex items-center px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold">
+                <i class="fa-solid fa-check-circle mr-1.5"></i> Active Member
+            </span>
+        }
+    </div>
+</div>
+
+@if (ViewBag.InviteLink is string inviteLink)
+{
+    <div class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-link text-amber-600 text-xl"></i>
+            <div>
+                <div class="font-bold text-slate-900 text-sm">Private Predict Club Invite Link</div>
+                <div class="text-xs text-slate-500 font-mono select-all">@inviteLink</div>
+            </div>
+        </div>
+        <button type="button" onclick="navigator.clipboard.writeText('@inviteLink'); alert('Invite link copied!');" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-colors">
+            <i class="fa-solid fa-copy mr-1.5"></i> Copy Link
+        </button>
+    </div>
+}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Left: Upcoming Fixtures & User Predictions -->
+    <div class="lg:col-span-2 space-y-6">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center">
+                    <i class="fa-solid fa-futbol text-indigo-600 mr-2"></i> Upcoming Match Predictions
+                </h3>
+                <span class="text-xs text-slate-400">Locked 1 min before kickoff</span>
+            </div>
+
+            @if (!Model.UpcomingFixtures.Any())
+            {
+                <div class="text-center py-8 text-slate-400">
+                    <i class="fa-solid fa-calendar-xmark text-3xl opacity-50 mb-2"></i>
+                    <p class="text-sm">No upcoming fixtures scheduled in this competition scope yet.</p>
+                </div>
+            }
+            else
+            {
+                <div class="space-y-4">
+                    @foreach (var fixture in Model.UpcomingFixtures)
+                    {
+                        <form asp-action="PredictMatch" method="post" class="p-4 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 space-y-3">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="PredictClubId" value="@club.Id" />
+                            <input type="hidden" name="FixtureId" value="@fixture.FixtureId" />
+
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-slate-800 dark:text-slate-200">@fixture.HomeTeamName</span>
+                                    <span class="text-xs text-slate-400 font-bold">vs</span>
+                                    <span class="text-xs font-bold text-slate-800 dark:text-slate-200">@fixture.AwayTeamName</span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 font-medium">
+                                    @fixture.KickoffAt.ToString("MMM dd - HH:mm") UTC
+                                </span>
+                            </div>
+
+                            <!-- Input Row for Match Facts -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-200/50">
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-500 uppercase">Score (H - A)</label>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" min="0" max="20" name="HomeScore" value="@fixture.PredictedHomeScore" placeholder="H" @(fixture.CanEdit && Model.IsUserMember ? "" : "disabled") class="w-full px-2 py-1 text-xs text-center font-bold rounded border bg-white" />
+                                        <span class="text-slate-400 font-bold">-</span>
+                                        <input type="number" min="0" max="20" name="AwayScore" value="@fixture.PredictedAwayScore" placeholder="A" @(fixture.CanEdit && Model.IsUserMember ? "" : "disabled") class="w-full px-2 py-1 text-xs text-center font-bold rounded border bg-white" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-500 uppercase">Half-Time</label>
+                                    <div class="flex items-center gap-1">
+                                        <input type="number" min="0" max="10" name="HalfTimeHomeScore" value="@fixture.PredictedHalfTimeHomeScore" placeholder="H" @(fixture.CanEdit && Model.IsUserMember ? "" : "disabled") class="w-full px-2 py-1 text-xs text-center rounded border bg-white" />
+                                        <span class="text-slate-400 font-bold">-</span>
+                                        <input type="number" min="0" max="10" name="HalfTimeAwayScore" value="@fixture.PredictedHalfTimeAwayScore" placeholder="A" @(fixture.CanEdit && Model.IsUserMember ? "" : "disabled") class="w-full px-2 py-1 text-xs text-center rounded border bg-white" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-500 uppercase">Both Score?</label>
+                                    <select name="BothTeamsToScore" @(fixture.CanEdit && Model.IsUserMember ? "" : "disabled") class="w-full px-2 py-1 text-xs rounded border bg-white">
+                                        <option value="">Select...</option>
+                                        <option value="true" selected="@(fixture.BothTeamsToScore == true)">Yes</option>
+                                        <option value="false" selected="@(fixture.BothTeamsToScore == false)">No</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-500 uppercase">Total Cards</label>
+                                    <input type="number" min="0" max="15" name="YellowCards" value="@fixture.PredictedTotalYellowCards" placeholder="e.g. 4" @(fixture.CanEdit && Model.IsUserMember ? "" : "disabled") class="w-full px-2 py-1 text-xs text-center rounded border bg-white" />
+                                </div>
+                            </div>
+
+                            @if (Model.IsUserMember && fixture.CanEdit)
+                            {
+                                <div class="flex justify-end gap-2 pt-2">
+                                    <button type="submit" name="Submit" value="false" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg">
+                                        Save Draft
+                                    </button>
+                                    <button type="submit" name="Submit" value="true" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg">
+                                        Submit Prediction
+                                    </button>
+                                </div>
+                            }
+                            else if (!fixture.CanEdit)
+                            {
+                                <div class="text-[11px] font-semibold text-rose-500 flex items-center justify-end">
+                                    <i class="fa-solid fa-lock mr-1"></i> Predictions Locked for this match
+                                </div>
+                            }
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Tournament Level Predictions (1st, 2nd, 3rd, MVP) -->
+        @if (club.EnableTournamentPredictions)
+        {
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center">
+                        <i class="fa-solid fa-trophy text-amber-500 mr-2"></i> Tournament Champions & Individual Awards
+                    </h3>
+                    <span class="text-xs text-slate-400">Podium: @club.TournamentPodiumPoints pts</span>
+                </div>
+
+                <form asp-action="PredictTournament" method="post" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="PredictClubId" value="@club.Id" />
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-amber-600 uppercase mb-1">1st Place (Winner)</label>
+                            <select name="FirstPlaceTeamId" class="w-full px-3 py-2 text-xs rounded-lg border bg-white">
+                                <option value="">Select Champion...</option>
+                                @foreach (var team in availableTeams)
+                                {
+                                    <option value="@team.Id" selected="@(userTournament?.FirstPlaceTeamId == team.Id)">@team.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">2nd Place (Runner-Up)</label>
+                            <select name="SecondPlaceTeamId" class="w-full px-3 py-2 text-xs rounded-lg border bg-white">
+                                <option value="">Select 2nd Place...</option>
+                                @foreach (var team in availableTeams)
+                                {
+                                    <option value="@team.Id" selected="@(userTournament?.SecondPlaceTeamId == team.Id)">@team.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-amber-700 uppercase mb-1">3rd Place</label>
+                            <select name="ThirdPlaceTeamId" class="w-full px-3 py-2 text-xs rounded-lg border bg-white">
+                                <option value="">Select 3rd Place...</option>
+                                @foreach (var team in availableTeams)
+                                {
+                                    <option value="@team.Id" selected="@(userTournament?.ThirdPlaceTeamId == team.Id)">@team.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    @if (Model.IsUserMember)
+                    {
+                        <div class="flex justify-end pt-2">
+                            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm">
+                                Save Tournament Predictions
+                            </button>
+                        </div>
+                    }
+                </form>
+            </div>
+        }
+    </div>
+
+    <!-- Right Sidebar: Leaderboard & Members -->
+    <div class="space-y-6">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 p-6 shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center justify-between">
+                <span><i class="fa-solid fa-ranking-star text-amber-500 mr-2"></i> Leaderboard</span>
+                <span class="text-xs text-slate-400 font-normal">@Model.Members.Count Predictors</span>
+            </h3>
+
+            @if (!Model.Members.Any())
+            {
+                <p class="text-xs text-slate-400 text-center py-4">No predictors have joined yet.</p>
+            }
+            else
+            {
+                <div class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @foreach (var m in Model.Members)
+                    {
+                        <div class="py-3 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="font-black text-sm @(m.Rank == 1 ? "text-amber-500" : m.Rank == 2 ? "text-slate-400" : m.Rank == 3 ? "text-amber-700" : "text-slate-500")">
+                                    #@m.Rank
+                                </span>
+                                <div>
+                                    <div class="text-xs font-bold text-slate-800 dark:text-slate-200">@m.UserName</div>
+                                    <div class="text-[10px] text-slate-400">@m.CorrectExactScores exact · @m.TotalPredictionsCount total</div>
+                                </div>
+                            </div>
+                            <span class="text-sm font-black text-indigo-600">@m.TotalPoints pts</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,49 @@
+@model AzureTest.Application.FootballFantasy.Commands.CreateAchievementCommand
+@{
+    ViewData["Title"] = "Create Achievement";
+}
+
+<div class="container py-4" style="max-width: 600px;">
+    <div class="d-flex align-items-center mb-4">
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="h4 mb-0 fw-bold">Create Achievement</h2>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label fw-semibold">Title</label>
+                    <input asp-for="Title" class="form-control" placeholder="e.g. Master Strategist" required />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label fw-semibold">Description</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="e.g. Win 3 consecutive Head-to-Head matchups" required></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="BadgeIcon" class="form-label fw-semibold">Bootstrap Icon Class</label>
+                    <input asp-for="BadgeIcon" class="form-control" placeholder="bi-trophy-fill" value="bi-trophy-fill" required />
+                    <div class="form-text">Choose any Bootstrap Icon name (e.g. bi-shield-check, bi-star-fill, bi-lightning-charge).</div>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="PointsReward" class="form-label fw-semibold">XP Reward Points</label>
+                    <input asp-for="PointsReward" type="number" class="form-control" value="100" min="0" max="10000" required />
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-light rounded-pill px-4">Cancel</a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Create Achievement</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

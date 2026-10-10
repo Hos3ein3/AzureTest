@@ -1,0 +1,277 @@
+@model AzureTest.Contracts.DTOs.FootballFantasy.FantasyLeagueDto
+@{
+    ViewData["Title"] = Model.Name + " - Live Auction Room";
+    var userTeam = ViewBag.Team as AzureTest.Contracts.DTOs.FootballFantasy.FantasyTeamDto;
+    var candidates = ViewBag.Players as List<AzureTest.Contracts.DTOs.FootballFantasy.PlayerDto> ?? new();
+}
+
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <div class="flex items-center gap-3">
+            <a asp-action="Details" asp-route-id="@Model.Id" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center">
+                        <i class="fa-solid fa-gavel text-amber-500 mr-2"></i> Live Auction Room
+                    </h1>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400">
+                        Exclusive Ownership Mode
+                    </span>
+                </div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    League: <span class="font-bold text-slate-800 dark:text-slate-200">@Model.Name</span> &bull; 
+                    Team: <span class="font-bold text-brand-600">@(userTeam?.Name ?? "Manager")</span> &bull; 
+                    Available Budget: <span class="font-bold text-emerald-600">£@(userTeam?.CreditsLeft.ToString("F1") ?? "100.0")m</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex items-center space-x-3">
+        <a asp-action="Team" asp-route-id="@userTeam?.Id" class="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center">
+            <i class="fa-solid fa-shirt mr-1.5"></i> View Squad & Pitch
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Center Auction Stage -->
+    <div class="lg:col-span-8 space-y-6">
+        <!-- Live Bid Card / Podium -->
+        <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-amber-950/40 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-amber-500/30">
+            <!-- Background glow -->
+            <div class="absolute -right-16 -top-16 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
+                <!-- Nominated Player Spotlight -->
+                <div class="flex items-center space-x-6 text-center sm:text-left">
+                    <div id="auctionPodiumCard" class="w-24 h-32 fut-card fut-gold rounded-2xl p-1.5 flex flex-col justify-between shadow-2xl flex-shrink-0">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-black">88</span>
+                            <span id="auctionPlayerPos" class="font-bold">FWD</span>
+                        </div>
+                        <div class="w-12 h-12 mx-auto rounded-full overflow-hidden bg-black/20 border border-white/60">
+                            <img id="auctionPlayerPhoto" src="https://cdn-icons-png.flaticon.com/512/166/166258.png" class="w-full h-full object-cover" />
+                        </div>
+                        <div id="auctionPlayerName" class="text-[10px] font-black truncate">Waiting...</div>
+                    </div>
+
+                    <div>
+                        <span class="text-xs uppercase tracking-wider text-amber-400 font-bold">Current Lot Under Hammer</span>
+                        <h2 id="auctionPlayerTitle" class="text-2xl font-black text-white mt-0.5">No Player on Stage</h2>
+                        <div class="flex items-center gap-3 mt-2">
+                            <span class="text-xs text-slate-300">Highest Bidder:</span>
+                            <span id="highestBidderBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                None
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live 10-Second Countdown & Price -->
+                <div class="flex flex-col items-center bg-black/40 backdrop-blur px-6 py-4 rounded-2xl border border-white/10 min-w-[180px]">
+                    <div class="text-[11px] text-slate-400 uppercase tracking-widest font-bold">10s Bidding Clock</div>
+                    <div id="countdownTimer" class="text-4xl font-black text-amber-400 my-1 font-mono tracking-tight">10s</div>
+                    <div class="text-xs text-slate-400 mt-1">Current Bid: <span id="currentBidAmount" class="font-black text-emerald-400 text-lg">£0.0m</span></div>
+                </div>
+            </div>
+
+            <!-- Bidding Controls -->
+            <div class="mt-8 pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-4 relative z-10">
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="increaseBid(0.5)" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors">+ £0.5m</button>
+                    <button type="button" onclick="increaseBid(1.0)" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors">+ £1.0m</button>
+                    <button type="button" onclick="increaseBid(2.0)" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors">+ £2.0m</button>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <input type="number" id="customBidInput" step="0.5" placeholder="Custom Bid" class="w-28 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-xs font-bold focus:outline-none focus:ring-1 focus:ring-amber-500" />
+                    <button type="button" onclick="submitBid()" class="px-6 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-900 font-black text-xs uppercase tracking-wider rounded-lg shadow-lg hover:shadow-amber-500/30 transition-all flex items-center">
+                        <i class="fa-solid fa-gavel mr-1.5"></i> Place Bid
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Auction Activity Feed -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider mb-3 flex items-center">
+                <i class="fa-solid fa-clock-rotate-left text-slate-400 mr-2"></i> Live Auction Activity & Sold History
+            </h3>
+            <div id="auctionFeedList" class="space-y-2 h-48 overflow-y-auto pr-1 text-xs">
+                <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/40 text-slate-500 flex items-center justify-between">
+                    <span>Connected to live auction room. Waiting for manager nominations...</span>
+                    <span class="text-[10px] text-slate-400">Just now</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Sidebar: Nominate Candidates Drawer -->
+    <div class="lg:col-span-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm flex flex-col h-[650px]">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center">
+                <i class="fa-solid fa-user-plus text-brand-600 mr-2"></i> Nominate Player
+            </h3>
+            <span class="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded font-semibold text-slate-600 dark:text-slate-300">Your Turn</span>
+        </div>
+
+        <input type="text" id="nominateSearchBox" oninput="filterNominationCards(this.value)" placeholder="Search player to nominate..." class="w-full px-3 py-2 text-xs border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 mb-3" />
+
+        <div id="nominateCandidatesList" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+            @foreach (var p in candidates)
+            {
+                <div class="nominate-card-item p-2 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-amber-500 bg-slate-50 dark:bg-slate-900/30 flex items-center justify-between cursor-pointer group"
+                     data-id="@p.Id"
+                     data-name="@p.DisplayName"
+                     data-pos="@p.Position"
+                     data-photo="@(p.PhotoUrl ?? "https://cdn-icons-png.flaticon.com/512/166/166258.png")"
+                     data-price="@p.CurrentPrice">
+                    
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-8 h-8 rounded-full overflow-hidden bg-slate-200 border border-slate-300">
+                            <img src="@(string.IsNullOrWhiteSpace(p.PhotoUrl) ? "https://cdn-icons-png.flaticon.com/512/166/166258.png" : p.PhotoUrl)" class="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-amber-600 transition-colors">@p.DisplayName</div>
+                            <div class="text-[10px] text-slate-400">@p.Position &bull; Base: £@p.CurrentPrice.ToString("F1")m</div>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="nominatePlayerFromItem(this.parentElement)" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-900 text-[10px] font-black rounded-lg shadow-sm transition-colors">
+                        Nominate
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<script>
+    const leagueId = '@Model.Id';
+    const teamId = '@(userTeam?.Id.ToString() ?? "")';
+    const teamName = '@(userTeam?.Name ?? "Manager")';
+
+    let currentLot = null;
+    let timerInterval = null;
+    let countdown = 10;
+
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/auctionHub")
+        .withAutomaticReconnect()
+        .build();
+
+    connection.on("AuctionStateUpdated", (state) => {
+        if (state.currentPlayerId) {
+            updateLot(state.currentPlayerId, state.currentPlayerName, state.currentPlayerPosition, state.currentPlayerPhoto, state.currentPrice, state.highestBidderTeamName, state.secondsRemaining);
+        }
+    });
+
+    connection.on("PlayerNominated", (data) => {
+        updateLot(data.playerId, data.playerName, data.position, data.photoUrl, data.currentBid, data.highestBidderTeamName, data.secondsRemaining);
+        addFeed(`📢 <strong>${data.highestBidderTeamName}</strong> nominated <strong>${data.playerName}</strong> for £${data.currentBid.toFixed(1)}m!`);
+    });
+
+    connection.on("BidPlaced", (data) => {
+        updateLot(data.playerId, data.playerName, data.position, data.photoUrl, data.currentBid, data.highestBidderTeamName, 10);
+        addFeed(`🔥 <strong>${data.highestBidderTeamName}</strong> raised bid to <strong>£${data.currentBid.toFixed(1)}m</strong>!`);
+    });
+
+    connection.on("PlayerHammerSold", (data) => {
+        clearInterval(timerInterval);
+        document.getElementById('countdownTimer').textContent = "SOLD!";
+        document.getElementById('auctionPlayerTitle').textContent = `SOLD to ${data.teamName} for £${data.price.toFixed(1)}m!`;
+        addFeed(`🔨 <strong>SOLD!</strong> ${data.playerName} joins <strong>${data.teamName}</strong> for £${data.price.toFixed(1)}m!`);
+        currentLot = null;
+    });
+
+    connection.on("ManagerJoined", (name) => {
+        addFeed(`👋 Manager <strong>${name}</strong> entered the auction room.`);
+    });
+
+    connection.start().then(() => {
+        connection.invoke("JoinAuctionRoom", leagueId, teamId, teamName);
+    }).catch(err => console.error(err));
+
+    function updateLot(id, name, pos, photo, price, highestTeam, seconds) {
+        currentLot = { id, name, pos, photo, price };
+        document.getElementById('auctionPlayerName').textContent = name;
+        document.getElementById('auctionPlayerTitle').textContent = name;
+        document.getElementById('auctionPlayerPos').textContent = pos;
+        document.getElementById('auctionPlayerPhoto').src = photo || 'https://cdn-icons-png.flaticon.com/512/166/166258.png';
+        document.getElementById('currentBidAmount').textContent = `£${price.toFixed(1)}m`;
+        document.getElementById('highestBidderBadge').textContent = highestTeam || 'None';
+        document.getElementById('customBidInput').value = (price + 0.5).toFixed(1);
+
+        countdown = seconds || 10;
+        startTimer();
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval);
+        const timerEl = document.getElementById('countdownTimer');
+        timerEl.textContent = `${countdown}s`;
+
+        timerInterval = setInterval(() => {
+            countdown--;
+            if (countdown <= 0) {
+                clearInterval(timerInterval);
+                timerEl.textContent = "0s";
+                if (currentLot && currentLot.id) {
+                    connection.invoke("PlayerSold", leagueId, currentLot.id, teamId, currentLot.price);
+                }
+            } else {
+                timerEl.textContent = `${countdown}s`;
+            }
+        }, 1000);
+    }
+
+    function increaseBid(delta) {
+        if (!currentLot) return;
+        const nextBid = currentLot.price + delta;
+        document.getElementById('customBidInput').value = nextBid.toFixed(1);
+        submitBid();
+    }
+
+    function submitBid() {
+        if (!currentLot) {
+            alert('No player is currently on stage!');
+            return;
+        }
+        const bidVal = parseFloat(document.getElementById('customBidInput').value);
+        if (bidVal <= currentLot.price) {
+            alert(`Your bid must be higher than £${currentLot.price.toFixed(1)}m`);
+            return;
+        }
+        connection.invoke("PlaceBid", leagueId, teamId, teamName, bidVal);
+    }
+
+    function nominatePlayerFromItem(el) {
+        const id = el.getAttribute('data-id');
+        const name = el.getAttribute('data-name');
+        const pos = el.getAttribute('data-pos');
+        const photo = el.getAttribute('data-photo');
+        const price = parseFloat(el.getAttribute('data-price')) || 5.0;
+
+        connection.invoke("NominatePlayer", leagueId, id, name, pos, photo, price, teamId, teamName);
+    }
+
+    function addFeed(html) {
+        const list = document.getElementById('auctionFeedList');
+        const row = document.createElement('div');
+        row.className = 'p-2 rounded-lg bg-slate-50 dark:bg-slate-900/40 text-slate-700 dark:text-slate-300 flex items-center justify-between animate-in fade-in duration-200';
+        row.innerHTML = `<span>${html}</span><span class="text-[10px] text-slate-400 font-mono">${new Date().toLocaleTimeString()}</span>`;
+        list.prepend(row);
+    }
+
+    function filterNominationCards(q) {
+        const term = (q || '').toLowerCase();
+        document.querySelectorAll('.nominate-card-item').forEach(el => {
+            const name = (el.getAttribute('data-name') || '').toLowerCase();
+            el.style.display = name.includes(term) ? 'flex' : 'none';
+        });
+    }
+</script>

@@ -1,0 +1,86 @@
+@model AzureTest.Application.FootballFantasy.Commands.CreateLeagueCommand
+@{
+    ViewData["Title"] = "Add League";
+    var countries = ViewBag.Countries as List<AzureTest.Contracts.DTOs.FootballFantasy.CountryDto>;
+}
+
+<div class="max-w-2xl mx-auto mb-6">
+    <div class="flex items-center space-x-2 text-sm text-slate-500 mb-2">
+        <a asp-action="Index" class="hover:text-slate-700">Leagues</a>
+        <span>/</span>
+        <span class="text-slate-800 dark:text-slate-200">New</span>
+    </div>
+    <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Add League</h1>
+</div>
+
+<div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+    <form asp-action="Create" method="post" class="space-y-4">
+        @Html.AntiForgeryToken()
+
+        <div>
+            <label asp-for="Name" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-1">League Name</label>
+            <input asp-for="Name" class="w-full text-sm rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 py-2 px-3" required />
+            <span asp-validation-for="Name" class="text-xs text-rose-500"></span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label asp-for="ShortName" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-1">Short Name / Code</label>
+                <input asp-for="ShortName" class="w-full text-sm rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 py-2 px-3" placeholder="e.g. EPL" />
+                <span asp-validation-for="ShortName" class="text-xs text-rose-500"></span>
+            </div>
+            <div>
+                <label asp-for="Type" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-1">Type</label>
+                <select asp-for="Type" class="w-full text-sm rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 py-2 px-3">
+                    <option value="1">Domestic League</option>
+                    <option value="2">Domestic Cup</option>
+                    <option value="3">International Club</option>
+                    <option value="4">International Country</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label asp-for="CountryId" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-1">Country (Optional)</label>
+                <select asp-for="CountryId" class="w-full text-sm rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 py-2 px-3">
+                    <option value="">None (International / Regional)</option>
+                    @if (countries != null)
+                    {
+                        foreach (var c in countries)
+                        {
+                            <option value="@c.Id">@c.Name (@c.Code)</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div>
+                <label asp-for="Continent" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-1">Continent (Optional)</label>
+                <select asp-for="Continent" class="w-full text-sm rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 py-2 px-3">
+                    <option value="">Worldwide / Specific Country</option>
+                    <option value="Europe">Europe</option>
+                    <option value="South America">South America</option>
+                    <option value="North America">North America</option>
+                    <option value="Africa">Africa</option>
+                    <option value="Asia">Asia</option>
+                </select>
+            </div>
+        </div>
+
+        <div>
+            <label asp-for="LogoUrl" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-1">Logo URL</label>
+            <input asp-for="LogoUrl" class="w-full text-sm rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 py-2 px-3" placeholder="https://..." />
+            <span asp-validation-for="LogoUrl" class="text-xs text-rose-500"></span>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <input type="checkbox" asp-for="IsActive" id="IsActive" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+            <label for="IsActive" class="text-sm font-medium text-slate-700 dark:text-slate-300">Active competition</label>
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+            <a asp-action="Index" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Cancel</a>
+            <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg shadow-sm">Save League</button>
+        </div>
+    </form>
+</div>

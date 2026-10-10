@@ -71,6 +71,7 @@ namespace AzureTest.MVC.Controllers;
         var note = await _queries.GetById.HandleAsync(new GetSampleNoteByIdQuery(id), ct);
         if (note is null) return NotFound();
 
+        
         var dto = new UpdateSampleNoteDto
         {
             Id = note.Id,

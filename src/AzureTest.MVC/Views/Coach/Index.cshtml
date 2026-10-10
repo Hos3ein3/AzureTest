@@ -1,0 +1,73 @@
+@model AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.FootballFantasy.CoachDto>
+@{
+    ViewData["Title"] = "Football Coaches";
+    var filter = ViewBag.Filter as AzureTest.Contracts.DTOs.FootballFantasy.CoachFilter;
+}
+
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <i class="fa-solid fa-user-tie text-blue-600"></i> Football Coaches
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage head coaches and managers across clubs and nations.</p>
+    </div>
+    <div class="flex items-center space-x-3">
+        <a asp-action="Create" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
+            <i class="fa-solid fa-plus mr-2"></i> Add Coach
+        </a>
+    </div>
+</div>
+
+<div class="mb-6 bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+    <form asp-action="Index" method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">Search</label>
+            <input type="text" name="SearchTerm" value="@filter?.SearchTerm" placeholder="Coach name..." class="w-full text-sm rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 py-2 px-3" />
+        </div>
+        <div class="flex items-end space-x-2">
+            <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-medium rounded-lg">Filter</button>
+            <a asp-action="Index" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-lg">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+    <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-700 text-sm">
+        <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400 font-semibold text-xs uppercase tracking-wider">
+            <tr>
+                <th class="py-3.5 px-4 text-left">Coach</th>
+                <th class="py-3.5 px-4 text-left">Nationality</th>
+                <th class="py-3.5 px-4 text-right">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+            @if (Model.Items.Count == 0)
+            {
+                <tr>
+                    <td colspan="3" class="py-8 text-center text-slate-400">No coaches found.</td>
+                </tr>
+            }
+            @foreach (var c in Model.Items)
+            {
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40">
+                    <td class="py-3 px-4 font-semibold text-slate-800 dark:text-slate-100 flex items-center space-x-3">
+                        @if (!string.IsNullOrWhiteSpace(c.PhotoUrl))
+                        {
+                            <img src="@c.PhotoUrl" class="w-8 h-8 rounded-full object-cover border" alt="@c.FirstName @c.LastName" />
+                        }
+                        <span>@c.FirstName @c.LastName</span>
+                    </td>
+                    <td class="py-3 px-4 text-slate-600 dark:text-slate-400">@c.CountryName</td>
+                    <td class="py-3 px-4 text-right space-x-2">
+                        <a asp-action="Details" asp-route-id="@c.Id" class="text-slate-600 hover:text-brand-600 text-xs font-semibold">Details</a>
+                        <a asp-action="Edit" asp-route-id="@c.Id" class="text-brand-600 hover:text-brand-700 text-xs font-semibold">Edit</a>
+                        <form asp-action="Delete" asp-route-id="@c.Id" method="post" class="inline" onsubmit="return confirm('Delete this coach?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="text-rose-600 hover:text-rose-700 text-xs font-semibold">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

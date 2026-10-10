@@ -1,0 +1,74 @@
+@model AzureTest.Application.FootballFantasy.Commands.CreateFixtureCommand
+@{
+    ViewData["Title"] = "Schedule Match";
+    var teams = ViewBag.Teams as List<AzureTest.Contracts.DTOs.FootballFantasy.TeamDto>;
+}
+
+<div class="max-w-2xl mx-auto mb-6">
+    <div class="flex items-center space-x-2 text-sm text-slate-500 mb-2">
+        <a asp-action="Index" class="hover:text-slate-700">Fixtures</a>
+        <span>/</span>
+        <span class="text-slate-800 dark:text-slate-200">New</span>
+    </div>
+    <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Schedule Match Fixture</h1>
+</div>
+
+<div class="max-w-2xl mx-auto bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+    <form asp-action="Create" method="post" class="space-y-4">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="SeasonId" />
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label asp-for="HomeTeamId" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-1">Home Team</label>
+                <select asp-for="HomeTeamId" class="w-full text-sm rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 py-2 px-3" required>
+                    <option value="">Select Home Team</option>
+                    @if (teams != null)
+                    {
+                        foreach (var t in teams)
+                        {
+                            <option value="@t.Id">@t.Name</option>
+                        }
+                    }
+                </select>
+                <span asp-validation-for="HomeTeamId" class="text-xs text-rose-500"></span>
+            </div>
+            <div>
+                <label asp-for="AwayTeamId" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-1">Away Team</label>
+                <select asp-for="AwayTeamId" class="w-full text-sm rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 py-2 px-3" required>
+                    <option value="">Select Away Team</option>
+                    @if (teams != null)
+                    {
+                        foreach (var t in teams)
+                        {
+                            <option value="@t.Id">@t.Name</option>
+                        }
+                    }
+                </select>
+                <span asp-validation-for="AwayTeamId" class="text-xs text-rose-500"></span>
+            </div>
+        </div>
+
+        <div>
+            <label asp-for="KickoffAt" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-1">Kickoff Date & Time</label>
+            <input asp-for="KickoffAt" type="datetime-local" class="w-full text-sm rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 py-2 px-3" required />
+            <span asp-validation-for="KickoffAt" class="text-xs text-rose-500"></span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label asp-for="Round" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-1">Matchday / Round</label>
+                <input asp-for="Round" class="w-full text-sm rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 py-2 px-3" placeholder="Gameweek 1" />
+            </div>
+            <div>
+                <label asp-for="Venue" class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-1">Stadium Venue</label>
+                <input asp-for="Venue" class="w-full text-sm rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 py-2 px-3" placeholder="Stadium name" />
+            </div>
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+            <a asp-action="Index" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Cancel</a>
+            <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg shadow-sm">Schedule Fixture</button>
+        </div>
+    </form>
+</div>

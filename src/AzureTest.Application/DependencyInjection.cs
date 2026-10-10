@@ -74,6 +74,10 @@ public static class DependencyInjection
 
 
 
+        // Football Fantasy
+        services.AddScoped<AzureTest.Application.FootballFantasy.IFootballFantasyQueryUnit, AzureTest.Application.FootballFantasy.FootballFantasyQueryUnit>();
+        services.AddScoped<AzureTest.Application.FootballFantasy.IFootballFantasyCommandUnit, AzureTest.Application.FootballFantasy.FootballFantasyCommandUnit>();
+
         return services;
     }
 }

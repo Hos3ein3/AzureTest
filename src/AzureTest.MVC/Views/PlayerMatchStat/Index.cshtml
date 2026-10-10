@@ -1,0 +1,78 @@
+@model AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.FootballFantasy.PlayerMatchStatDto>
+@{
+    ViewData["Title"] = "Player Match Stats";
+    var filter = ViewBag.Filter as AzureTest.Contracts.DTOs.FootballFantasy.PlayerMatchStatFilter;
+}
+
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <i class="fa-solid fa-chart-simple text-amber-500"></i> Match Performance Stats
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Record individual player performance per fixture to calculate fantasy points.</p>
+    </div>
+    <div class="flex items-center space-x-3">
+        <a asp-action="Create" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
+            <i class="fa-solid fa-plus mr-2"></i> Record Match Stats
+        </a>
+    </div>
+</div>
+
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+    <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-700 text-sm">
+        <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-400 font-semibold text-xs uppercase tracking-wider">
+            <tr>
+                <th class="py-3.5 px-4 text-left">Player</th>
+                <th class="py-3.5 px-4 text-left">Fixture</th>
+                <th class="py-3.5 px-4 text-center">Min</th>
+                <th class="py-3.5 px-4 text-center">G / A</th>
+                <th class="py-3.5 px-4 text-center">Cards</th>
+                <th class="py-3.5 px-4 text-center">Clean Sheet</th>
+                <th class="py-3.5 px-4 text-right">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+            @if (Model.Items.Count == 0)
+            {
+                <tr>
+                    <td colspan="7" class="py-8 text-center text-slate-400">No match stats recorded yet.</td>
+                </tr>
+            }
+            @foreach (var s in Model.Items)
+            {
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40">
+                    <td class="py-3 px-4 font-semibold text-slate-800 dark:text-slate-100">
+                        <div>@s.PlayerName</div>
+                        <span class="text-xs text-slate-400 font-normal">@s.TeamName</span>
+                    </td>
+                    <td class="py-3 px-4 text-slate-600 dark:text-slate-400">@s.FixtureName</td>
+                    <td class="py-3 px-4 text-center font-bold">@s.MinutesPlayed'</td>
+                    <td class="py-3 px-4 text-center font-semibold text-emerald-600">@s.Goals / @s.Assists</td>
+                    <td class="py-3 px-4 text-center">
+                        @if (s.YellowCards > 0) { <span class="text-xs font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">@s.YellowCards Y</span> }
+                        @if (s.RedCards > 0) { <span class="text-xs font-bold bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded ml-1">@s.RedCards R</span> }
+                        @if (s.YellowCards == 0 && s.RedCards == 0) { <span class="text-slate-400">-</span> }
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        @if (s.CleanSheet)
+                        {
+                            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded">Yes</span>
+                        }
+                        else
+                        {
+                            <span class="text-xs text-slate-400">No</span>
+                        }
+                    </td>
+                    <td class="py-3 px-4 text-right space-x-2">
+                        <a asp-action="Details" asp-route-id="@s.Id" class="text-slate-600 hover:text-brand-600 text-xs font-semibold">Details</a>
+                        <a asp-action="Edit" asp-route-id="@s.Id" class="text-brand-600 hover:text-brand-700 text-xs font-semibold">Edit</a>
+                        <form asp-action="Delete" asp-route-id="@s.Id" method="post" class="inline" onsubmit="return confirm('Delete stats?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="text-rose-600 hover:text-rose-700 text-xs font-semibold">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

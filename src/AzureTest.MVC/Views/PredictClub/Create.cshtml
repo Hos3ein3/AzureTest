@@ -1,0 +1,203 @@
+@model AzureTest.Application.FootballFantasy.Commands.CreatePredictClubCommand
+@{
+    ViewData["Title"] = "Create Predict Club";
+}
+
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-2">
+                <a asp-action="Index" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+                <h1 class="text-2xl font-black text-slate-900 dark:text-slate-100">Create Predict Club</h1>
+            </div>
+            <p class="text-sm text-slate-500 mt-1 ml-9">Set up rules, score points, and select competition scope. Rules cannot be modified once started.</p>
+        </div>
+    </div>
+
+    <form asp-action="Create" method="post" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm p-6 sm:p-8 space-y-6">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-sm text-red-600 bg-red-50 p-3 rounded-lg"></div>
+
+        <!-- Basic Information -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+                <label asp-for="Name" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Club Name</label>
+                <input asp-for="Name" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" placeholder="e.g. World Cup 2026 Oracle Club" required />
+                <span asp-validation-for="Name" class="text-xs text-red-500"></span>
+            </div>
+            <div>
+                <label asp-for="LogoUrl" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Logo URL (Optional)</label>
+                <input asp-for="LogoUrl" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" placeholder="https://..." />
+            </div>
+        </div>
+
+        <div>
+            <label asp-for="Description" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Description</label>
+            <textarea asp-for="Description" rows="2" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" placeholder="Explain the club's challenge..."></textarea>
+        </div>
+
+        <!-- Visibility & Schedule -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t border-slate-100 dark:border-slate-700">
+            <div>
+                <label asp-for="Visibility" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Visibility</label>
+                <select asp-for="Visibility" id="visibilitySelect" onchange="handleVisibilityChange(this.value)" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm">
+                    <option value="@AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueVisibility.Public">Public (Apply / Join)</option>
+                    <option value="@AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueVisibility.Private">Private (Invite Link / Code Only)</option>
+                    <option value="@AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueVisibility.Global">Global (Open to All)</option>
+                </select>
+            </div>
+            <div id="joinCodeContainer" class="hidden">
+                <label asp-for="JoinCode" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Private Join Code</label>
+                <input asp-for="JoinCode" id="joinCodeInput" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" placeholder="e.g. PREDICT2026" />
+            </div>
+            <div>
+                <label asp-for="Format" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Format Mode</label>
+                <select asp-for="Format" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm">
+                    <option value="@AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueFormat.TotalPoints">Classic Total Points Table</option>
+                    <option value="@AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueFormat.HeadToHead">Head to Head (1v1 Predictor)</option>
+                    <option value="@AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueFormat.Knockout">Knockout Elimination</option>
+                    <option value="@AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueFormat.GroupedKnockout">Group Stage & Knockout</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+                <label asp-for="StartsAt" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Starts At (UTC)</label>
+                <input asp-for="StartsAt" type="datetime-local" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" required />
+            </div>
+            <div>
+                <label asp-for="EndsAt" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Ends At (UTC)</label>
+                <input asp-for="EndsAt" type="datetime-local" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" required />
+            </div>
+        </div>
+
+        <!-- Competition Scope & Target -->
+        <div class="pt-6 border-t border-slate-100 dark:border-slate-700">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider mb-1">
+                <i class="fa-solid fa-earth-americas text-indigo-600 mr-1.5"></i> Competition Scope & Diversity
+            </h3>
+            <p class="text-xs text-slate-500 mb-4">Select which competitions or tournament fixtures are included in this Predict Club.</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                    <label asp-for="ScopeType" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Scope Type</label>
+                    <select asp-for="ScopeType" id="scopeTypeSelect" onchange="updateDiversityOptions(this.value)" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm">
+                        <option value="@AzureTest.Domain.Entities.FootballFantasy.Enums.PoolScopeType.All">Worldwide (All Competitions)</option>
+                        <option value="@AzureTest.Domain.Entities.FootballFantasy.Enums.PoolScopeType.Continent">Continental (e.g. Champions League, Europe)</option>
+                        <option value="@AzureTest.Domain.Entities.FootballFantasy.Enums.PoolScopeType.Country">Specific Country (e.g. England, Spain)</option>
+                        <option value="@AzureTest.Domain.Entities.FootballFantasy.Enums.PoolScopeType.League">Specific Tournament / League (e.g. World Cup 2026, Premier League)</option>
+                    </select>
+                </div>
+                <div>
+                    <label asp-for="ScopeValue" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Scope Target / Competition</label>
+                    <input asp-for="ScopeValue" id="scopeValueInput" list="scopeDatalist" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" placeholder="Search or select..." value="All" autocomplete="off" />
+                    <datalist id="scopeDatalist"></datalist>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scoring Rules Configuration -->
+        <div class="pt-6 border-t border-slate-100 dark:border-slate-700">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider mb-1">
+                <i class="fa-solid fa-calculator text-amber-500 mr-1.5"></i> Custom Point Scoring System
+            </h3>
+            <p class="text-xs text-slate-500 mb-4">Determine the points users earn for each accurate match fact or tournament outcome.</p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-700">
+                <div>
+                    <label asp-for="ExactScorePoints" class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Exact Score</label>
+                    <input asp-for="ExactScorePoints" type="number" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-center font-bold text-indigo-600" />
+                </div>
+                <div>
+                    <label asp-for="OutcomePoints" class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Win/Draw/Loss</label>
+                    <input asp-for="OutcomePoints" type="number" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-center font-bold" />
+                </div>
+                <div>
+                    <label asp-for="HalfTimeScorePoints" class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Half-Time Score</label>
+                    <input asp-for="HalfTimeScorePoints" type="number" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-center font-bold" />
+                </div>
+                <div>
+                    <label asp-for="BothTeamsToScorePoints" class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Both Teams Score</label>
+                    <input asp-for="BothTeamsToScorePoints" type="number" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-center font-bold" />
+                </div>
+                <div>
+                    <label asp-for="YellowCardsPoints" class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Total Cards</label>
+                    <input asp-for="YellowCardsPoints" type="number" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-center font-bold" />
+                </div>
+                <div>
+                    <label asp-for="CornersPoints" class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Total Corners</label>
+                    <input asp-for="CornersPoints" type="number" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-center font-bold" />
+                </div>
+                <div>
+                    <label asp-for="MatchMvpPoints" class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">Match MVP</label>
+                    <input asp-for="MatchMvpPoints" type="number" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-center font-bold" />
+                </div>
+                <div>
+                    <label asp-for="TournamentPodiumPoints" class="block text-[11px] font-semibold text-slate-600 uppercase mb-1">1st/2nd/3rd Podium</label>
+                    <input asp-for="TournamentPodiumPoints" type="number" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-center font-bold text-amber-600" />
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-700">
+            <a asp-action="Index" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-50">Cancel</a>
+            <button type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-md shadow-indigo-500/20">
+                Create & Launch Predict Club
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function handleVisibilityChange(val) {
+        const joinCodeContainer = document.getElementById('joinCodeContainer');
+        const joinCodeInput = document.getElementById('joinCodeInput');
+        if (val === 'Private') {
+            joinCodeContainer.classList.remove('hidden');
+            joinCodeInput.required = true;
+        } else {
+            joinCodeContainer.classList.add('hidden');
+            joinCodeInput.required = false;
+        }
+    }
+
+    const dbLeagues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((ViewBag.AvailableLeagues as IEnumerable<AzureTest.Contracts.DTOs.FootballFantasy.LeagueDto>)?.Select(l => l.Name).Distinct() ?? Enumerable.Empty<string>()));
+    const dbCountries = @Html.Raw(System.Text.Json.JsonSerializer.Serialize((ViewBag.AvailableCountries as IEnumerable<AzureTest.Contracts.DTOs.FootballFantasy.CountryDto>)?.Select(c => c.Name).Distinct() ?? Enumerable.Empty<string>()));
+    const continents = ['Europe', 'South America', 'Asia', 'Africa', 'North America', 'Oceania'];
+
+    function updateDiversityOptions(val) {
+        const datalist = document.getElementById('scopeDatalist');
+        const input = document.getElementById('scopeValueInput');
+        datalist.innerHTML = '';
+
+        if (val === 'All') {
+            input.value = 'All';
+            input.readOnly = true;
+            return;
+        }
+
+        input.readOnly = false;
+        let options = [];
+        if (val === 'Continent') options = continents;
+        else if (val === 'Country') options = dbCountries;
+        else if (val === 'League') options = dbLeagues;
+
+        options.forEach(opt => {
+            const el = document.createElement('option');
+            el.value = opt;
+            datalist.appendChild(el);
+        });
+
+        if (input.value === 'All' && options.length > 0) input.value = options[0];
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const vis = document.getElementById('visibilitySelect');
+        if (vis) handleVisibilityChange(vis.value);
+        const sc = document.getElementById('scopeTypeSelect');
+        if (sc) updateDiversityOptions(sc.value);
+    });
+</script>

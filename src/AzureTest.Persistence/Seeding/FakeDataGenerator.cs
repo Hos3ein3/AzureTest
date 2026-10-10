@@ -8,6 +8,8 @@ using AzureTest.Application.Configuration;
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Domain.Documents;
 using AzureTest.Domain.Entities;
+using AzureTest.Domain.Entities.FootballFantasy;
+using AzureTest.Domain.Entities.FootballFantasy.Enums;
 using AzureTest.Domain.Entities.Identity;
 using AzureTest.Domain.Enums;
 using AzureTest.Persistence.Context;
@@ -327,6 +329,9 @@ public static class FakeDataGenerator
         }
         await sqlContext.TicketMessages.AddRangeAsync(allMessages);
         await sqlContext.SaveChangesAsync();
+
+        // ── Step 5 ── Football Fantasy Domain ─────────────────────────────────
+        await SeedFootballFantasyAsync(sqlContext, userId, adminId, allUserIds);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -818,5 +823,350 @@ public static class FakeDataGenerator
             }
         }
         return (ideas, pages, sections);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Step 5: Football Fantasy Fake Data Seeder
+    // ──────────────────────────────────────────────────────────────────────────
+    private static async Task SeedFootballFantasyAsync(
+        AzureTestDbContext db,
+        Guid userId,
+        Guid adminId,
+        List<Guid> allUserIds)
+    {
+        // Check if data already exists to avoid duplication
+        if (db.Countries.Any()) return;
+
+        var f = new Faker();
+
+        // 1. Countries (Real-world)
+        var countryData = new[]
+        {
+            ("England", "ENG", "Europe", "https://flagcdn.com/w80/gb-eng.png"),
+            ("Spain", "ESP", "Europe", "https://flagcdn.com/w80/es.png"),
+            ("Germany", "DEU", "Europe", "https://flagcdn.com/w80/de.png"),
+            ("Italy", "ITA", "Europe", "https://flagcdn.com/w80/it.png"),
+            ("France", "FRA", "Europe", "https://flagcdn.com/w80/fr.png"),
+            ("Netherlands", "NLD", "Europe", "https://flagcdn.com/w80/nl.png"),
+            ("Portugal", "PRT", "Europe", "https://flagcdn.com/w80/pt.png"),
+            ("Brazil", "BRA", "South America", "https://flagcdn.com/w80/br.png"),
+            ("Argentina", "ARG", "South America", "https://flagcdn.com/w80/ar.png")
+        };
+
+        var countries = new List<Country>();
+        foreach (var (name, code, cont, flag) in countryData)
+        {
+            var country = Country.Create(name, code, cont, flag);
+            countries.Add(country);
+        }
+        await db.Countries.AddRangeAsync(countries);
+        await db.SaveChangesAsync();
+
+        var england = countries[0];
+        var spain = countries[1];
+        var germany = countries[2];
+
+        // 2. Real Leagues & Seasons
+        var premierLeague = League.Create("Premier League", LeagueType.League, LeagueLevel.Domestic, "EPL", england.Id, "Europe", "https://media.api-sports.io/football/leagues/39.png", true);
+        var laLiga = League.Create("La Liga", LeagueType.League, LeagueLevel.Domestic, "LL", spain.Id, "Europe", "https://media.api-sports.io/football/leagues/140.png", true);
+        var bundesliga = League.Create("Bundesliga", LeagueType.League, LeagueLevel.Domestic, "BL", germany.Id, "Europe", "https://media.api-sports.io/football/leagues/78.png", true);
+        var ucl = League.Create("UEFA Champions League", LeagueType.Cup, LeagueLevel.Continental, "UCL", null, "Europe", "https://media.api-sports.io/football/leagues/2.png", true);
+
+        var leagues = new List<League> { premierLeague, laLiga, bundesliga, ucl };
+        await db.Leagues.AddRangeAsync(leagues);
+        await db.SaveChangesAsync();
+
+        var now = DateTime.UtcNow;
+        var seasonEpl = Season.Create(premierLeague.Id, "2026/2027", Utc(now.AddMonths(-2)), Utc(now.AddMonths(8)), true);
+        var seasonLaLiga = Season.Create(laLiga.Id, "2026/2027", Utc(now.AddMonths(-2)), Utc(now.AddMonths(8)), true);
+        var seasonUcl = Season.Create(ucl.Id, "2026/2027", Utc(now.AddMonths(-1)), Utc(now.AddMonths(7)), true);
+
+        var seasons = new List<Season> { seasonEpl, seasonLaLiga, seasonUcl };
+        await db.Seasons.AddRangeAsync(seasons);
+        await db.SaveChangesAsync();
+
+        // 3. Real Teams
+        var teamData = new[]
+        {
+            ("Arsenal FC", "ARS", "ARS", england.Id, 1886, "Emirates Stadium", 60704, "https://media.api-sports.io/football/teams/42.png"),
+            ("Manchester City", "MCI", "MCI", england.Id, 1880, "Etihad Stadium", 53400, "https://media.api-sports.io/football/teams/50.png"),
+            ("Liverpool FC", "LIV", "LIV", england.Id, 1892, "Anfield", 61276, "https://media.api-sports.io/football/teams/40.png"),
+            ("Real Madrid", "RMA", "RMA", spain.Id, 1902, "Santiago Bernabéu", 81044, "https://media.api-sports.io/football/teams/541.png"),
+            ("FC Barcelona", "FCB", "BAR", spain.Id, 1899, "Camp Nou", 99354, "https://media.api-sports.io/football/teams/529.png"),
+            ("Bayern Munich", "BAY", "BAY", germany.Id, 1900, "Allianz Arena", 75000, "https://media.api-sports.io/football/teams/157.png")
+        };
+
+        var teams = new List<Team>();
+        foreach (var (tName, sName, code, cId, year, stadium, cap, logo) in teamData)
+        {
+            teams.Add(Team.Create(tName, sName, TeamType.Club, cId, code, year, stadium, cap, logo));
+        }
+        await db.Teams.AddRangeAsync(teams);
+        await db.SaveChangesAsync();
+
+        // 4. Team Seasons
+        var teamSeasons = new List<TeamSeason>();
+        foreach (var team in teams)
+        {
+            var season = team.CountryId == spain.Id ? seasonLaLiga : seasonEpl;
+            teamSeasons.Add(TeamSeason.Create(team.Id, season.Id, "Premier Division"));
+        }
+        await db.TeamSeasons.AddRangeAsync(teamSeasons);
+        await db.SaveChangesAsync();
+
+        // 5. Coaches & Team Coaches
+        var coaches = new List<Coach>();
+        var teamCoaches = new List<TeamCoach>();
+        for (int i = 0; i < teams.Count; i++)
+        {
+            var coach = Coach.Create(f.Name.FirstName(), f.Name.LastName(), countries[i % countries.Count].Id, Utc(f.Date.Past(50, now.AddYears(-35))));
+            coaches.Add(coach);
+        }
+        await db.Coaches.AddRangeAsync(coaches);
+        await db.SaveChangesAsync();
+
+        for (int i = 0; i < teams.Count; i++)
+        {
+            teamCoaches.Add(TeamCoach.Create(coaches[i].Id, teams[i].Id, CoachRole.Head, Utc(now.AddMonths(-12))));
+        }
+        await db.TeamCoaches.AddRangeAsync(teamCoaches);
+        await db.SaveChangesAsync();
+
+        // 6. Players, Squads, and Prices
+        var players = new List<Player>();
+        var playerSquads = new List<PlayerSquad>();
+        var playerPrices = new List<PlayerPrice>();
+
+        var positions = new[] { PlayerPosition.Goalkeeper, PlayerPosition.Defender, PlayerPosition.Defender, PlayerPosition.Defender, PlayerPosition.Midfielder, PlayerPosition.Midfielder, PlayerPosition.Midfielder, PlayerPosition.Forward, PlayerPosition.Forward };
+
+        for (int tIdx = 0; tIdx < teams.Count; tIdx++)
+        {
+            var team = teams[tIdx];
+            var ts = teamSeasons[tIdx];
+
+            for (int pIdx = 0; pIdx < positions.Length; pIdx++)
+            {
+                var pos = positions[pIdx];
+                var fName = f.Name.FirstName();
+                var lName = f.Name.LastName();
+                var dName = $"{fName[0]}. {lName}";
+                var country = countries[(tIdx + pIdx) % countries.Count];
+                var height = f.Random.Int(172, 195);
+                var weight = f.Random.Int(68, 88);
+                var dob = Utc(f.Date.Past(12, now.AddYears(-20)));
+
+                var player = Player.Create(fName, lName, dName, country.Id, pos, dob, f.PickRandom<PreferredFoot>(), height, weight);
+                players.Add(player);
+            }
+        }
+        await db.Players.AddRangeAsync(players);
+        await db.SaveChangesAsync();
+
+        // Attach Squads and Prices
+        for (int i = 0; i < players.Count; i++)
+        {
+            var player = players[i];
+            var ts = teamSeasons[i / positions.Length];
+            var squad = PlayerSquad.Create(player.Id, ts.Id, Utc(now.AddMonths(-6)), (i % 25) + 1);
+            playerSquads.Add(squad);
+
+            var basePrice = player.Position switch
+            {
+                PlayerPosition.Goalkeeper => 5.0m,
+                PlayerPosition.Defender => 5.5m,
+                PlayerPosition.Midfielder => 7.5m,
+                _ => 9.0m
+            };
+            var price = PlayerPrice.Create(player.Id, ts.SeasonId, basePrice, Utc(now.AddMonths(-2)), PlayerPriceReason.SeasonStart);
+            playerPrices.Add(price);
+        }
+        await db.PlayerSquads.AddRangeAsync(playerSquads);
+        await db.PlayerPrices.AddRangeAsync(playerPrices);
+        await db.SaveChangesAsync();
+
+        // 7. Fixtures & Match Stats
+        var fixtures = new List<Fixture>();
+        var fixture1 = Fixture.Create(seasonEpl.Id, teams[0].Id, teams[1].Id, Utc(now.AddDays(-7)), null, "Gameweek 1", 1, "Emirates Stadium", "Michael Oliver");
+        var fixture2 = Fixture.Create(seasonEpl.Id, teams[2].Id, teams[0].Id, Utc(now.AddDays(3)), null, "Gameweek 2", 2, "Anfield", "Anthony Taylor");
+        fixtures.Add(fixture1);
+        fixtures.Add(fixture2);
+        await db.Fixtures.AddRangeAsync(fixtures);
+        await db.SaveChangesAsync();
+
+        // Match Stats for Finished Fixture
+        fixture1.UpdateScore(2, 1, 90);
+        fixture1.UpdateStatus(FixtureStatus.Finished);
+        fixture1.FinalizeStats();
+
+        var playerStats = new List<PlayerMatchStat>();
+        var homePlayers = players.Take(positions.Length).ToList();
+        for (int i = 0; i < homePlayers.Count; i++)
+        {
+            var hp = homePlayers[i];
+            var isGk = hp.Position == PlayerPosition.Goalkeeper;
+            var isFwd = hp.Position == PlayerPosition.Forward;
+            var stat = PlayerMatchStat.Create(
+                fixture1.Id,
+                hp.Id,
+                teams[0].Id,
+                true,
+                90,
+                isFwd ? (i == 7 ? 2 : 0) : 0,
+                isFwd ? (i == 8 ? 1 : 0) : 0,
+                saves: isGk ? 4 : 0,
+                cleanSheet: false,
+                providerRating: f.Random.Decimal(6.5m, 8.8m)
+            );
+            playerStats.Add(stat);
+        }
+        await db.PlayerMatchStats.AddRangeAsync(playerStats);
+        await db.SaveChangesAsync();
+
+        // 8. Scoring Rule Sets
+        var defaultRuleSet = ScoringRuleSet.Create("Standard Global Fantasy Scoring", null, true);
+        await db.ScoringRuleSets.AddAsync(defaultRuleSet);
+        await db.SaveChangesAsync();
+
+        var scoringRules = new List<ScoringRule>
+        {
+            ScoringRule.Create(defaultRuleSet.Id, ScoringMetric.Appearance, 2),
+            ScoringRule.Create(defaultRuleSet.Id, ScoringMetric.Played60Plus, 1),
+            ScoringRule.Create(defaultRuleSet.Id, ScoringMetric.Goal, 4, PlayerPosition.Forward),
+            ScoringRule.Create(defaultRuleSet.Id, ScoringMetric.Goal, 5, PlayerPosition.Midfielder),
+            ScoringRule.Create(defaultRuleSet.Id, ScoringMetric.Goal, 6, PlayerPosition.Defender),
+            ScoringRule.Create(defaultRuleSet.Id, ScoringMetric.Assist, 3),
+            ScoringRule.Create(defaultRuleSet.Id, ScoringMetric.CleanSheet, 4, PlayerPosition.Defender),
+            ScoringRule.Create(defaultRuleSet.Id, ScoringMetric.CleanSheet, 4, PlayerPosition.Goalkeeper),
+            ScoringRule.Create(defaultRuleSet.Id, ScoringMetric.PenaltySaved, 5, PlayerPosition.Goalkeeper),
+            ScoringRule.Create(defaultRuleSet.Id, ScoringMetric.YellowCard, -1),
+            ScoringRule.Create(defaultRuleSet.Id, ScoringMetric.RedCard, -3)
+        };
+        await db.ScoringRules.AddRangeAsync(scoringRules);
+        await db.SaveChangesAsync();
+
+        // 9. Fantasy Leagues
+        // a) Global Championship (Unlimited members, no owner)
+        var globalLeague = FantasyLeague.Create(
+            "Global World Cup Fantasy",
+            "GLOBAL2026W",
+            FantasyLeagueVisibility.Global,
+            FantasyLeagueMode.FreeForAll,
+            FantasyPeriodType.Weekly,
+            FantasySquadMode.SeasonSquad,
+            15,
+            11,
+            100.0m,
+            defaultRuleSet.Id,
+            Utc(now.AddDays(-10)),
+            Utc(now.AddMonths(9)),
+            ownerUserId: null,
+            description: "The official global fantasy championship open to all players worldwide with unlimited capacity.",
+            maxMembers: null
+        );
+
+        // b) Public Premier Cup (Owned by user)
+        var publicLeague = FantasyLeague.Create(
+            "Premier League Masters",
+            "PREMIER2026M",
+            FantasyLeagueVisibility.Public,
+            FantasyLeagueMode.FreeForAll,
+            FantasyPeriodType.Weekly,
+            FantasySquadMode.SeasonSquad,
+            15,
+            11,
+            100.0m,
+            defaultRuleSet.Id,
+            Utc(now.AddDays(-5)),
+            Utc(now.AddMonths(8)),
+            ownerUserId: userId,
+            description: "Public league competing with real Premier League stars.",
+            maxMembers: 32
+        );
+
+        // c) Private Champions League with invite code
+        var privateLeague = FantasyLeague.Create(
+            "Champions League Elite",
+            "CHAMP2026EL",
+            FantasyLeagueVisibility.Private,
+            FantasyLeagueMode.FreeForAll,
+            FantasyPeriodType.Weekly,
+            FantasySquadMode.SeasonSquad,
+            15,
+            11,
+            100.0m,
+            defaultRuleSet.Id,
+            Utc(now.AddDays(-2)),
+            Utc(now.AddMonths(7)),
+            ownerUserId: adminId,
+            description: "Invite-only league for high stakes fantasy managers.",
+            maxMembers: 16,
+            joinCode: "ELITE2026"
+        );
+
+        var fantasyLeagues = new List<FantasyLeague> { globalLeague, publicLeague, privateLeague };
+        await db.FantasyLeagues.AddRangeAsync(fantasyLeagues);
+        await db.SaveChangesAsync();
+
+        // Pool Rules
+        var poolGlobal = FantasyLeaguePoolRule.Create(globalLeague.Id, PoolScopeType.All, "All");
+        var poolPublic = FantasyLeaguePoolRule.Create(publicLeague.Id, PoolScopeType.League, "Premier League");
+        var poolPrivate = FantasyLeaguePoolRule.Create(privateLeague.Id, PoolScopeType.Continent, "Europe");
+        await db.FantasyLeaguePoolRules.AddRangeAsync(new[] { poolGlobal, poolPublic, poolPrivate });
+
+        // League Members
+        var memberGlobalUser = FantasyLeagueMember.Create(globalLeague.Id, userId, FantasyMemberRole.Member);
+        var memberGlobalAdmin = FantasyLeagueMember.Create(globalLeague.Id, adminId, FantasyMemberRole.Admin);
+        var memberPublicUser = FantasyLeagueMember.Create(publicLeague.Id, userId, FantasyMemberRole.Admin);
+        var memberPrivateAdmin = FantasyLeagueMember.Create(privateLeague.Id, adminId, FantasyMemberRole.Admin);
+        await db.FantasyLeagueMembers.AddRangeAsync(new[] { memberGlobalUser, memberGlobalAdmin, memberPublicUser, memberPrivateAdmin });
+        await db.SaveChangesAsync();
+
+        // 10. Fantasy Periods
+        var periodGlobal1 = FantasyPeriod.Create(globalLeague.Id, 1, "Gameweek 1", Utc(now.AddDays(-7)), Utc(now.AddDays(-1)), Utc(now.AddDays(-8)));
+        var periodGlobal2 = FantasyPeriod.Create(globalLeague.Id, 2, "Gameweek 2", Utc(now.AddDays(1)), Utc(now.AddDays(7)), Utc(now.AddDays(1)));
+        var periodPublic1 = FantasyPeriod.Create(publicLeague.Id, 1, "Gameweek 1", Utc(now.AddDays(-7)), Utc(now.AddDays(-1)), Utc(now.AddDays(-8)));
+        await db.FantasyPeriods.AddRangeAsync(new[] { periodGlobal1, periodGlobal2, periodPublic1 });
+        await db.SaveChangesAsync();
+
+        // 11. Fantasy Teams for Seed Users
+        var userGlobalTeam = FantasyTeam.Create(globalLeague.Id, userId, "Apex Predators FC", 100.0m);
+        var adminGlobalTeam = FantasyTeam.Create(globalLeague.Id, adminId, "Galactic Stars", 100.0m);
+        var userPublicTeam = FantasyTeam.Create(publicLeague.Id, userId, "Red Dragons United", 100.0m);
+
+        var fantasyTeams = new List<FantasyTeam> { userGlobalTeam, adminGlobalTeam, userPublicTeam };
+        await db.FantasyTeams.AddRangeAsync(fantasyTeams);
+        await db.SaveChangesAsync();
+
+        // 12. Squad Entries for userGlobalTeam (pick 15 players)
+        var squadPool = players.Take(15).ToList();
+        var squadEntries = new List<FantasySquadEntry>();
+        decimal spent = 0;
+        foreach (var sp in squadPool)
+        {
+            var price = playerPrices.First(pr => pr.PlayerId == sp.Id).Price;
+            spent += price;
+            squadEntries.Add(FantasySquadEntry.Create(userGlobalTeam.Id, sp.Id, price));
+        }
+        await db.FantasySquadEntries.AddRangeAsync(squadEntries);
+
+        // 13. Lineup & Slots for periodGlobal1
+        var starters = squadPool.Take(11).ToList();
+        var bench = squadPool.Skip(11).Take(4).ToList();
+
+        var lineup = FantasyLineup.Create(userGlobalTeam.Id, periodGlobal1.Id, "4-3-3", starters[7].Id, starters[8].Id);
+        await db.FantasyLineups.AddAsync(lineup);
+        await db.SaveChangesAsync();
+
+        var slots = new List<FantasyLineupSlot>();
+        for (int i = 0; i < starters.Count; i++)
+        {
+            slots.Add(FantasyLineupSlot.Create(lineup.Id, starters[i].Id, true));
+        }
+        for (int i = 0; i < bench.Count; i++)
+        {
+            slots.Add(FantasyLineupSlot.Create(lineup.Id, bench[i].Id, false, i + 1));
+        }
+        await db.FantasyLineupSlots.AddRangeAsync(slots);
+        await db.SaveChangesAsync();
     }
 }

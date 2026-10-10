@@ -1,0 +1,54 @@
+@model AzureTest.Application.FootballFantasy.Commands.UpdateAchievementCommand
+@{
+    ViewData["Title"] = "Edit Achievement";
+}
+
+<div class="container py-4" style="max-width: 600px;">
+    <div class="d-flex align-items-center mb-4">
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="h4 mb-0 fw-bold">Edit Achievement</h2>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label fw-semibold">Title</label>
+                    <input asp-for="Title" class="form-control" required />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label fw-semibold">Description</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" required></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="BadgeIcon" class="form-label fw-semibold">Bootstrap Icon Class</label>
+                    <input asp-for="BadgeIcon" class="form-control" required />
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="PointsReward" class="form-label fw-semibold">XP Reward Points</label>
+                    <input asp-for="PointsReward" type="number" class="form-control" min="0" max="10000" required />
+                </div>
+
+                <div class="mb-4 form-check form-switch">
+                    <input class="form-check-input" type="checkbox" asp-for="IsActive" id="isActiveSwitch">
+                    <label class="form-check-label fw-semibold" for="isActiveSwitch">Is Active</label>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="Index" class="btn btn-light rounded-pill px-4">Cancel</a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
