@@ -32,6 +32,7 @@ public static class DependencyInjection
 
         // ── PostgreSQL / EF Core ──────────────────────────────────────────────
         var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var readOnlyConnectionString = configuration.GetConnectionString("ReadOnlyConnection") ?? connectionString;
 
         services.AddDbContext<AzureTestDbContext>((sp, options) =>
         {
@@ -43,6 +44,12 @@ public static class DependencyInjection
                 sp.GetRequiredService<DomainEventsInterceptor>());
         });
 
+        // ── Read-Only DbContext for CQRS Read Scale-Out ───────────────────────
+        services.AddDbContext<ReadOnlyAzureTestDbContext>(options =>
+        {
+            options.UseNpgsql(readOnlyConnectionString);
+            options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+        });
 
         // ── SQL Repositories & Unit of Work ───────────────────────────────────
         services.AddScoped<IUnitOfWork, UnitOfWork>();

@@ -370,6 +370,15 @@ public record ManagerLeagueHistoryDto(
     bool HasLeft
 );
 
+public record PredictionProfileSummaryDto(
+    int TotalPredictionPoints,
+    int TotalPredictionsMade,
+    int CorrectExactScores,
+    int CorrectOutcomes,
+    int PredictClubsCount,
+    List<PredictClubMemberDto> ClubMemberships
+);
+
 // Manager Profile DTO
 public record ManagerProfileDto(
     Guid UserId,
@@ -380,7 +389,8 @@ public record ManagerProfileDto(
     int TotalTrophies,
     List<FantasyTeamDto> ActiveTeams,
     List<UserAchievementDto> Achievements,
-    List<ManagerLeagueHistoryDto> LeagueHistory
+    List<ManagerLeagueHistoryDto> LeagueHistory,
+    PredictionProfileSummaryDto? PredictionSummary = null
 );
 
 // Match Facts & Stats DTO

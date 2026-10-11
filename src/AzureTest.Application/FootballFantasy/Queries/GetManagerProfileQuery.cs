@@ -88,6 +88,43 @@ public sealed class GetManagerProfileQueryHandler : IQueryHandler<GetManagerProf
             );
         }).OrderByDescending(h => h.JoinedAt).ToList();
 
+        // Fetch user's predict club memberships and stats
+        var predictMemberships = await _uow.PredictClubMembers.FindAsync(m => m.UserId == request.UserId && m.Status == AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyMemberStatus.Active);
+        var predictClubs = await _uow.PredictClubs.GetAllAsync();
+        var clubMap = predictClubs.ToDictionary(c => c.Id);
+
+        int totalPredPoints = predictMemberships.Sum(p => p.TotalPoints);
+        int totalPredsMade = predictMemberships.Sum(p => p.TotalPredictionsCount);
+        int correctExact = predictMemberships.Sum(p => p.CorrectExactScores);
+        int correctOutcomes = predictMemberships.Sum(p => p.CorrectOutcomes);
+
+        var clubDtos = predictMemberships.Select(m =>
+        {
+            var c = clubMap.ContainsKey(m.PredictClubId) ? clubMap[m.PredictClubId] : null;
+            return new PredictClubMemberDto(
+                m.Id,
+                m.PredictClubId,
+                m.UserId,
+                c?.Name ?? "Predict Club",
+                m.Role,
+                m.Status,
+                m.JoinedAt,
+                m.TotalPoints,
+                m.CorrectExactScores,
+                m.CorrectOutcomes,
+                m.TotalPredictionsCount
+            );
+        }).ToList();
+
+        var predSummary = new PredictionProfileSummaryDto(
+            totalPredPoints,
+            totalPredsMade,
+            correctExact,
+            correctOutcomes,
+            predictMemberships.Count,
+            clubDtos
+        );
+
         var profileDto = new ManagerProfileDto(
             request.UserId,
             userTeams.FirstOrDefault()?.Name != null ? $"Manager ({userTeams.First().Name})" : "Fantasy Manager",
@@ -97,7 +134,8 @@ public sealed class GetManagerProfileQueryHandler : IQueryHandler<GetManagerProf
             userTeams.Count(t => t.TotalPoints > 50),
             teamDtos,
             achievementDtos,
-            historyDtos
+            historyDtos,
+            predSummary
         );
 
         return Result<ManagerProfileDto>.Success(profileDto);
