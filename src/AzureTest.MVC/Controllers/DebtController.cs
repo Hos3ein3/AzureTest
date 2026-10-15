@@ -75,6 +75,12 @@ namespace AzureTest.MVC.Controllers;
         var pagedResult = await _queries.GetAll.HandleAsync(new GetAllDebtsQuery(filters), cancellationToken);
 
         ViewBag.Filters = filters;
+        ViewBag.CurrentPage = pagedResult.PageNumber;
+        ViewBag.TotalPages = pagedResult.TotalPages;
+        ViewBag.CurrentSearch = filters.SearchTerm;
+        ViewBag.CurrentSort = filters.SortBy;
+        ViewBag.CurrentDir = filters.SortDescending ? "desc" : "asc";
+
         return View(pagedResult);
     }
 

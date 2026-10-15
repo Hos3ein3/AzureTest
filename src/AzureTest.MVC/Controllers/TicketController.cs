@@ -61,6 +61,11 @@ namespace AzureTest.MVC.Controllers;
 
         ViewBag.IsAdmin = isStaff;
         ViewBag.Filters = filters;
+        ViewBag.Status = filters.Status?.ToString();
+        ViewBag.Priority = filters.Priority?.ToString();
+        ViewBag.SortBy = filters.SortBy;
+        ViewBag.SortOrder = filters.SortOrder;
+        ViewBag.PageSize = filters.PageSize;
 
         return View(pagedResult);
     }
