@@ -1,4 +1,4 @@
-@model System.Collections.Generic.IReadOnlyList<AzureTest.Contracts.DTOs.Debts.DebtDto>
+@model AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.Debts.DebtDto,AzureTest.Contracts.DTOs.Debts.GetAllDebtsFilters>
 @{
     ViewData["Title"] = "Debts";
 }
@@ -69,9 +69,9 @@
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-slate-200">
-                @if (Model != null && Model.Any())
+                @if (Model != null && Model.Items.Any())
                 {
-                    foreach (var item in Model)
+                    foreach (var item in Model.Items)
                     {
                         <tr class="hover:bg-slate-50 transition-colors">
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
