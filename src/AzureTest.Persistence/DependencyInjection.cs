@@ -36,8 +36,8 @@ public static class DependencyInjection
 
         services.AddDbContext<AzureTestDbContext>((sp, options) =>
         {
-            options.UseNpgsql(connectionString);
-
+            options.UseNpgsql(connectionString, npgsql =>
+                npgsql.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorCodesToAdd: null));
             // Interceptors are injected via the service provider
             options.AddInterceptors(
                 sp.GetRequiredService<AuditInterceptor>(),

@@ -17,6 +17,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
 
+using Npgsql;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -226,15 +228,8 @@ if (!isSimulateEnv)
     try
     {
         using var scope = app.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AzureTestDbContext>();
-        var pending = await db.Database.GetPendingMigrationsAsync();
-        if (pending.Any())
-        {
-            app.Logger.LogInformation("Applying {Count} pending migration(s)...", pending.Count());
-            await db.Database.MigrateAsync();
-            app.Logger.LogInformation("Migrations applied successfully.");
-        }
-
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        await MigrateWithRetryAsync(app.Services, logger);
         // ── Auto-seed IND Companies on cold start ────────────────────────────────
         var companySeeder = scope.ServiceProvider.GetService<AzureTest.Persistence.Seeding.CompanyDataSeeder>();
         if (companySeeder != null)
@@ -378,3 +373,33 @@ if (builder.Configuration.GetValue<bool>("FeatureManagement:EnableHangfire"))
 }
 
 app.Run();
+
+static async Task MigrateWithRetryAsync(IServiceProvider services, ILogger logger)
+{
+    const int maxAttempts = 10;
+    var delay = TimeSpan.FromSeconds(3);
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++)
+    {
+        try
+        {
+            using var scope = services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AzureTestDbContext>();
+
+            var pending = await db.Database.GetPendingMigrationsAsync();
+            if (pending.Any())
+                await db.Database.MigrateAsync();
+
+            return;
+        }
+        catch (Exception ex) when (attempt < maxAttempts &&
+                                   (ex is NpgsqlException || ex is TimeoutException ||
+                                    ex.InnerException is System.Net.Sockets.SocketException))
+        {
+            logger.LogWarning(ex,
+                "Database not ready (attempt {Attempt}/{Max}). Retrying in {Delay}s...",
+                attempt, maxAttempts, delay.TotalSeconds);
+            await Task.Delay(delay);
+        }
+    }
+}
