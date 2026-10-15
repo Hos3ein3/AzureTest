@@ -13,7 +13,7 @@ using AzureTest.Application.Messaging;
 namespace AzureTest.Application.Permissions;
 
 
-public record CreatePermissionCommand(string ControllerName, string ActionName, string DisplayName, string? Description) : ICommand;
+public record CreatePermissionCommand(string ControllerName, string ActionName, string DisplayName, string? Description, string? AreaName = null) : ICommand;
 
 public class CreatePermissionCommandHandler : ICommandHandler<CreatePermissionCommand>
 {
@@ -23,14 +23,18 @@ public class CreatePermissionCommandHandler : ICommandHandler<CreatePermissionCo
     public async Task<Result> HandleAsync(CreatePermissionCommand command, CancellationToken cancellationToken = default)
     {
         var existing = await _unitOfWork.Permissions.GetAllPermissionsAsync();
-        var match = existing.FirstOrDefault(p => p.ControllerName == command.ControllerName && p.ActionName == command.ActionName);
+        var match = existing.FirstOrDefault(p => 
+            string.Equals(p.AreaName ?? "", command.AreaName ?? "", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(p.ControllerName, command.ControllerName, StringComparison.OrdinalIgnoreCase) && 
+            string.Equals(p.ActionName, command.ActionName, StringComparison.OrdinalIgnoreCase));
         if (match != null)
         {
-            return Result.Failure("Permission already exists for this Controller/Action.");
+            return Result.Failure("Permission already exists for this Area/Controller/Action.");
         }
         
         _unitOfWork.Permissions.Add(new Permission
         {
+            AreaName = command.AreaName ?? string.Empty,
             ControllerName = command.ControllerName,
             ActionName = command.ActionName,
             DisplayName = command.DisplayName,
@@ -60,11 +64,15 @@ public class SyncPermissionsCommandHandler : ICommandHandler<SyncPermissionsComm
         var existing = await _unitOfWork.Permissions.GetAllPermissionsAsync();
         foreach (var discovered in command.DiscoveredPermissions)
         {
-            var match = existing.FirstOrDefault(p => p.ControllerName == discovered.ControllerName && p.ActionName == discovered.ActionName);
+            var match = existing.FirstOrDefault(p => 
+                string.Equals(p.AreaName ?? "", discovered.AreaName ?? "", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(p.ControllerName, discovered.ControllerName, StringComparison.OrdinalIgnoreCase) && 
+                string.Equals(p.ActionName, discovered.ActionName, StringComparison.OrdinalIgnoreCase));
             if (match == null)
             {
                 _unitOfWork.Permissions.Add(new Permission
                 {
+                    AreaName = discovered.AreaName ?? string.Empty,
                     ControllerName = discovered.ControllerName,
                     ActionName = discovered.ActionName,
                     DisplayName = discovered.DisplayName,
@@ -74,6 +82,7 @@ public class SyncPermissionsCommandHandler : ICommandHandler<SyncPermissionsComm
             }
             else
             {
+                match.AreaName = discovered.AreaName ?? string.Empty;
                 match.DisplayName = discovered.DisplayName;
                 match.Description = discovered.Description;
                 _unitOfWork.Permissions.Update(match);

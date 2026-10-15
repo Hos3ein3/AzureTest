@@ -159,21 +159,25 @@
             <!-- Fantasy Football Section -->
             <li class="pt-4 mt-4 border-t border-slate-100">
                 <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sidebar-text transition-all duration-300">Football Fantasy</p>
-                <a asp-area="" asp-controller="FantasyLeague" asp-action="Index" data-title="Fantasy Leagues" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("FantasyLeague")">
+                <a asp-area="FootballFantasy" asp-controller="FantasyLeague" asp-action="Index" data-title="Fantasy Leagues" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("FantasyLeague")">
                     <i class="fa-solid fa-trophy w-6 text-center text-lg transition-colors @GetActiveIconClasses("FantasyLeague")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Fantasy Leagues</span>
                 </a>
-                <a asp-area="" asp-controller="PredictClub" asp-action="Index" data-title="Predict Clubs" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("PredictClub")">
+                <a asp-area="FootballFantasy" asp-controller="PredictClub" asp-action="Index" data-title="Predict Clubs" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("PredictClub")">
                     <i class="fa-solid fa-bullseye w-6 text-center text-lg transition-colors @GetActiveIconClasses("PredictClub")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Predict Clubs</span>
                 </a>
-                <a asp-area="" asp-controller="Achievement" asp-action="Index" data-title="Achievements" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Achievement")">
+                <a asp-area="FootballFantasy" asp-controller="Achievement" asp-action="Index" data-title="Achievements" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Achievement")">
                     <i class="fa-solid fa-award w-6 text-center text-lg transition-colors @GetActiveIconClasses("Achievement")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Achievements</span>
                 </a>
-                <a asp-area="" asp-controller="FantasyAdmin" asp-action="Index" data-title="Fantasy Admin" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("FantasyAdmin")">
+                <a asp-area="FootballFantasy" asp-controller="FantasyAdmin" asp-action="Index" data-title="Fantasy Admin" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("FantasyAdmin")">
                     <i class="fa-solid fa-screwdriver-wrench w-6 text-center text-lg transition-colors @GetActiveIconClasses("FantasyAdmin")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Fantasy Admin</span>
+                </a>
+                <a asp-area="FootballFantasy" asp-controller="Venue" asp-action="Index" data-title="Venues & Stadiums" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Venue")">
+                    <i class="fa-solid fa-landmark w-6 text-center text-lg transition-colors @GetActiveIconClasses("Venue")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Venues & Stadiums</span>
                 </a>
             </li>
 

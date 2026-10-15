@@ -14,9 +14,9 @@ public sealed record GetLeagueTournamentDetailsQuery(Guid FantasyLeagueId) : IQu
 
 public sealed class GetLeagueTournamentDetailsQueryHandler : IQueryHandler<GetLeagueTournamentDetailsQuery, Result<List<FantasyLeagueGroupDto>>>
 {
-    private readonly IUnitOfWork _uow;
+    private readonly IReadOnlyFootballFantasyUnitOfWork _uow;
 
-    public GetLeagueTournamentDetailsQueryHandler(IUnitOfWork uow)
+    public GetLeagueTournamentDetailsQueryHandler(IReadOnlyFootballFantasyUnitOfWork uow)
     {
         _uow = uow;
     }

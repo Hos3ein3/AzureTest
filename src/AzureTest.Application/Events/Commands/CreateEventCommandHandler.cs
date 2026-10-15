@@ -23,7 +23,7 @@ public class CreateEventCommandHandler : BaseCommandHandler<CreateEventCommand, 
 
     protected override async Task<Result<Guid>> ExecuteAsync(CreateEventCommand command, CancellationToken cancellationToken)
     {
-        var ev = Event.Create(command.Title, command.Description, command.StartDate, command.EndDate, command.IsAllDay, command.Color, _currentUser.Id);
+        var ev = Event.Create(command.Title, command.Description, command.StartDate.ToUtc(), command.EndDate.ToUtc(), command.IsAllDay, command.Color, _currentUser.Id);
         UnitOfWork.Events.Add(ev);
         return await Task.FromResult(ev.Id);
     }

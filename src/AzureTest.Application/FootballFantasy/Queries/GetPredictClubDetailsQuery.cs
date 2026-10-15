@@ -35,10 +35,10 @@ public sealed class GetPredictClubDetailsQueryValidator : AbstractValidator<GetP
 
 public sealed class GetPredictClubDetailsQueryHandler : IQueryHandler<GetPredictClubDetailsQuery, Result<PredictClubDetailsDto>>
 {
-    private readonly IUnitOfWork _uow;
+    private readonly IReadOnlyFootballFantasyUnitOfWork _uow;
     private readonly ICurrentUser _currentUser;
 
-    public GetPredictClubDetailsQueryHandler(IUnitOfWork uow, ICurrentUser currentUser)
+    public GetPredictClubDetailsQueryHandler(IReadOnlyFootballFantasyUnitOfWork uow, ICurrentUser currentUser)
     {
         _uow = uow;
         _currentUser = currentUser;

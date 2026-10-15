@@ -15,9 +15,9 @@ public sealed record GetAdminFantasyTeamsQuery() : IQuery<Result<List<AdminFanta
 
 public sealed class GetAdminFantasyTeamsQueryHandler : BaseQueryHandler<GetAdminFantasyTeamsQuery, Result<List<AdminFantasyTeamOverviewDto>>>
 {
-    private readonly IUnitOfWork _uow;
+    private readonly IReadOnlyFootballFantasyUnitOfWork _uow;
 
-    public GetAdminFantasyTeamsQueryHandler(IUnitOfWork uow, ILogger<GetAdminFantasyTeamsQueryHandler> logger) : base(logger)
+    public GetAdminFantasyTeamsQueryHandler(IReadOnlyFootballFantasyUnitOfWork uow, ILogger<GetAdminFantasyTeamsQueryHandler> logger) : base(logger)
     {
         _uow = uow;
     }

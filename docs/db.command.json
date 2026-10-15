@@ -1,4 +1,4 @@
 {
-  "add migration": "dotnet ef migrations add IDk --project src/AzureTest.Persistence --startup-project src/AzureTest.MVC --context AzureTestDbContext",
+  "add migration": "dotnet ef migrations add Foof --project src/AzureTest.Persistence --startup-project src/AzureTest.MVC --context AzureTestDbContext",
   "remove migration": "dotnet ef migrations remove --project src/AzureTest.Persistence --startup-project src/AzureTest.MVC --context AzureTestDbContext"
 }

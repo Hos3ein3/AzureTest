@@ -56,13 +56,16 @@ public sealed class SaveLineupCommandHandler : BaseCommandHandler<SaveLineupComm
         if (req.Slots != null && req.Slots.Count > 0)
         {
             var requestedPlayerIds = req.Slots.Select(s => s.PlayerId).Distinct().ToList();
-            var existingSquadPlayerIds = team.SquadEntries.Select(se => se.PlayerId).ToHashSet();
-            bool isAddingNewPlayers = requestedPlayerIds.Any(pid => !existingSquadPlayerIds.Contains(pid));
+            var existingSquadEntries = team.SquadEntries.Where(se => !se.IsDeleted).ToList();
+            var existingSquadPlayerIds = existingSquadEntries.Select(se => se.PlayerId).ToHashSet();
+            var newPlayerIds = requestedPlayerIds.Where(pid => !existingSquadPlayerIds.Contains(pid)).ToList();
+            var removedPlayerIds = existingSquadPlayerIds.Where(pid => !requestedPlayerIds.Contains(pid)).ToList();
+            bool isTransferring = newPlayerIds.Count > 0 || removedPlayerIds.Count > 0;
 
-            // If team already has a registered squad and is trying to buy/sell outside market window
-            if (existingSquadPlayerIds.Count > 0 && isAddingNewPlayers && !league.IsTransferMarketOpen())
+            // Roster lock enforcement: If team already has a squad and is transferring players
+            if (existingSquadPlayerIds.Count > 0 && isTransferring && !league.IsTransferMarketOpen())
             {
-                return Result.Failure("Transfer market is currently closed. You cannot buy new players outside the official transfer windows, but you can rearrange your lineup and bench.");
+                return Result.Failure("Transfer market is currently closed. You cannot buy or sell players outside the official transfer windows, but you can rearrange your starting lineup and bench.");
             }
 
             if (req.Slots.Count > league.SquadSize)
@@ -76,12 +79,84 @@ public sealed class SaveLineupCommandHandler : BaseCommandHandler<SaveLineupComm
                 return Result.Failure($"Starting players ({starterCount}) cannot exceed league starting limit ({league.StartingSize}).");
             }
 
+            var allPlayers = await UnitOfWork.Players.GetPlayersWithDetailsAsync(cancellationToken);
+            var playerMap = allPlayers.ToDictionary(p => p.Id);
+
+            decimal GetPlayerPrice(Player player)
+            {
+                var latest = player.Prices.OrderByDescending(pr => pr.ValidFrom).Select(pr => pr.Price).FirstOrDefault();
+                return latest == 0 ? 5.0m : latest;
+            }
+
+            // Formation Position Validation: Ensure starters match formation position counts (e.g. 4-3-3 requires 1 GK, 4 DEF, 3 MID, 3 FWD)
+            var starterSlots = req.Slots.Where(s => s.IsStarter).ToList();
+            if (starterSlots.Count == league.StartingSize && !string.IsNullOrWhiteSpace(req.Formation))
+            {
+                var formParts = req.Formation.Split(new[] { '-', 'x', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (formParts.Length == 3 &&
+                    int.TryParse(formParts[0], out int reqDef) &&
+                    int.TryParse(formParts[1], out int reqMid) &&
+                    int.TryParse(formParts[2], out int reqFwd))
+                {
+                    var starterPlayerEntities = allPlayers.Where(p => starterSlots.Any(ss => ss.PlayerId == p.Id)).ToList();
+                    int actualGk = starterPlayerEntities.Count(p => p.Position == PlayerPosition.Goalkeeper);
+                    int actualDef = starterPlayerEntities.Count(p => p.Position == PlayerPosition.Defender);
+                    int actualMid = starterPlayerEntities.Count(p => p.Position == PlayerPosition.Midfielder);
+                    int actualFwd = starterPlayerEntities.Count(p => p.Position == PlayerPosition.Forward);
+
+                    if (actualGk != 1)
+                    {
+                        return Result.Failure($"A starting lineup must have exactly 1 Goalkeeper (found {actualGk}).");
+                    }
+                    if (actualDef != reqDef)
+                    {
+                        return Result.Failure($"Formation '{req.Formation}' requires exactly {reqDef} Defenders, but {actualDef} were selected in the starting lineup.");
+                    }
+                    if (actualMid != reqMid)
+                    {
+                        return Result.Failure($"Formation '{req.Formation}' requires exactly {reqMid} Midfielders, but {actualMid} were selected in the starting lineup.");
+                    }
+                    if (actualFwd != reqFwd)
+                    {
+                        return Result.Failure($"Formation '{req.Formation}' requires exactly {reqFwd} Forwards/Attackers, but {actualFwd} were selected in the starting lineup.");
+                    }
+                }
+            }
+
+            // Enforce transfer rules: 1 free transfer per gameweek, extra transfers point penalty
+            if (existingSquadPlayerIds.Count > 0 && newPlayerIds.Count > 0)
+            {
+                int newTransfersCount = newPlayerIds.Count;
+                int currentTransfersMade = team.GameweekTransfersMade;
+                int freeTransfersAllowed = Math.Max(0, league.FreeTransfersPerGameweek);
+
+                for (int i = 0; i < newTransfersCount; i++)
+                {
+                    int transferIndex = currentTransfersMade + i + 1;
+                    if (transferIndex > freeTransfersAllowed)
+                    {
+                        if (!league.ExtraTransferPointPenalty.HasValue)
+                        {
+                            return Result.Failure($"Extra transfers beyond the {freeTransfersAllowed} free transfer(s) per gameweek are not permitted in this league.");
+                        }
+
+                        int penalty = league.ExtraTransferPointPenalty.Value;
+                        team.RecordTransfer(penalty);
+                    }
+                    else
+                    {
+                        team.RecordTransfer(0);
+                    }
+                }
+            }
+
             // Auction Mode Rule: Player & Coach Uniqueness across the entire league
             if (league.Mode == FantasyLeagueMode.Auction)
             {
                 var otherLeagueTeams = await UnitOfWork.FantasyTeams.FindAsync(t => t.FantasyLeagueId == league.Id && t.Id != team.Id);
                 var takenPlayerIds = otherLeagueTeams
                     .SelectMany(t => t.SquadEntries)
+                    .Where(se => !se.IsDeleted)
                     .Select(se => se.PlayerId)
                     .ToHashSet();
 
@@ -104,7 +179,6 @@ public sealed class SaveLineupCommandHandler : BaseCommandHandler<SaveLineupComm
             // Check max players per real-world team if configured
             if (league.MaxPlayersPerRealTeam.HasValue && league.MaxPlayersPerRealTeam.Value > 0)
             {
-                var allPlayers = await UnitOfWork.Players.GetPlayersWithDetailsAsync(cancellationToken);
                 var squadPlayers = allPlayers.Where(p => requestedPlayerIds.Contains(p.Id)).ToList();
 
                 var teamsGrouped = squadPlayers
@@ -119,6 +193,40 @@ public sealed class SaveLineupCommandHandler : BaseCommandHandler<SaveLineupComm
                     {
                         return Result.Failure($"Squad exceeds maximum allowed players from the same real team (Limit: {league.MaxPlayersPerRealTeam.Value}).");
                     }
+                }
+            }
+
+            // Handle player sales (credit refunds with profit tax deduction)
+            foreach (var remId in removedPlayerIds)
+            {
+                var entry = existingSquadEntries.FirstOrDefault(e => e.PlayerId == remId);
+                if (entry != null)
+                {
+                    decimal purchasePrice = entry.PricePaid;
+                    decimal currentPrice = playerMap.TryGetValue(remId, out var p) ? GetPlayerPrice(p) : purchasePrice;
+                    decimal sellPrice = league.CalculateSellPrice(purchasePrice, currentPrice);
+                    team.AddCredits(sellPrice);
+
+                    entry.IsDeleted = true;
+                    entry.DeletedOn = DateTime.UtcNow;
+                    entry.DeletedBy = _currentUser.Email ?? _currentUser.FullName;
+                }
+            }
+
+            // Handle player purchases
+            foreach (var addId in newPlayerIds)
+            {
+                if (playerMap.TryGetValue(addId, out var playerToBuy))
+                {
+                    decimal price = GetPlayerPrice(playerToBuy);
+                    if (team.CreditsLeft < price)
+                    {
+                        return Result.Failure($"Insufficient credits to buy {playerToBuy.DisplayName} (Costs £{price:F1}m, available £{team.CreditsLeft:F1}m).");
+                    }
+
+                    team.DeductCredits(price);
+                    var newEntry = FantasySquadEntry.Create(team.Id, playerToBuy.Id, price);
+                    UnitOfWork.FantasySquadEntries.Add(newEntry);
                 }
             }
         }
@@ -175,12 +283,30 @@ public sealed class SaveLineupCommandHandler : BaseCommandHandler<SaveLineupComm
             UnitOfWork.FantasyLineups.Add(lineup);
         }
 
+        // Save Lineup Slots
+        if (req.Slots != null && req.Slots.Count > 0)
+        {
+            var existingSlots = await UnitOfWork.FantasyLineupSlots.FindAsync(s => s.FantasyLineupId == lineup.Id);
+            foreach (var s in existingSlots)
+            {
+                s.IsDeleted = true;
+                s.DeletedOn = DateTime.UtcNow;
+            }
+
+            foreach (var slotReq in req.Slots)
+            {
+                var slot = FantasyLineupSlot.Create(lineup.Id, slotReq.PlayerId, slotReq.IsStarter, slotReq.BenchOrder);
+                UnitOfWork.FantasyLineupSlots.Add(slot);
+            }
+        }
+
         // Finalize squad status if manager has met the league's MinSquadSize rule
         if (req.Slots != null && req.Slots.Count >= league.MinSquadSize)
         {
             team.FinalizeSquad();
         }
 
+        await UnitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
 }

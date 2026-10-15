@@ -93,7 +93,13 @@ namespace AzureTest.MVC.Controllers;
                 foreach (var role in roles)
                 {
                     var rolePerms = await _unitOfWork.RolePermissions.GetPermissionsByRoleAsync(role);
-                    permissions.AddRange(System.Linq.Enumerable.Select(rolePerms, rp => rp.Permission.ControllerName + "/" + rp.Permission.ActionName));
+                    foreach (var rp in rolePerms)
+                    {
+                        var areaPrefix = !string.IsNullOrWhiteSpace(rp.Permission.AreaName) ? $"{rp.Permission.AreaName}/" : "";
+                        permissions.Add($"{areaPrefix}{rp.Permission.ControllerName}/{rp.Permission.ActionName}");
+                        // Also keep short key for compatibility
+                        permissions.Add($"{rp.Permission.ControllerName}/{rp.Permission.ActionName}");
+                    }
                 }
                 
                 var sessionDto = new UserSessionCacheDto

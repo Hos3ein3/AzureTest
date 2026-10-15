@@ -70,6 +70,12 @@
                             <h4 class="font-bold text-slate-700 flex items-center">
                                 <i class="fa-solid fa-chevron-down mr-2 transition-transform duration-200 group-chevron text-slate-400"></i>
                                 <i class="fa-solid fa-layer-group text-slate-400 mr-2"></i> @group.Key Controller
+                                @if (!string.IsNullOrEmpty(group.FirstOrDefault()?.AreaName))
+                                {
+                                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                        <i class="fa-solid fa-box mr-1"></i> Area: @group.First().AreaName
+                                    </span>
+                                }
                             </h4>
                             <label class="flex items-center cursor-pointer group-select-all text-sm font-medium text-brand-600 hover:text-brand-800" onclick="event.stopPropagation();">
                                 <input type="checkbox" class="form-checkbox h-4 w-4 text-brand-600 rounded border-slate-300 mr-2 toggle-group" data-group="@group.Key" />
@@ -87,13 +93,25 @@
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center">
                                             <span class="text-sm font-medium text-slate-900">@perm.DisplayName</span>
+                                            @if (!string.IsNullOrEmpty(perm.AreaName))
+                                            {
+                                                <span class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+                                                    @perm.AreaName
+                                                </span>
+                                            }
                                             @if (!perm.IsRestricted)
                                             {
                                                 <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Unrestricted</span>
                                             }
                                         </div>
                                         <div class="text-sm text-slate-500 mt-0.5">@perm.Description</div>
-                                        <div class="text-xs font-mono text-slate-400 mt-1"><span class="text-slate-500">@perm.ControllerName</span>/@perm.ActionName</div>
+                                        <div class="text-xs font-mono text-slate-400 mt-1">
+                                            @if (!string.IsNullOrEmpty(perm.AreaName))
+                                            {
+                                                <span class="text-purple-600 font-semibold">@perm.AreaName</span><text>/</text>
+                                            }
+                                            <span class="text-slate-500">@perm.ControllerName</span>/@perm.ActionName
+                                        </div>
                                     </div>
                                 </label>
                             }

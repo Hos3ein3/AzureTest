@@ -8,7 +8,7 @@ using AzureTest.Application.Messaging;
 
 namespace AzureTest.Application.Permissions;
 
-public record PermissionDto(Guid Id, string ControllerName, string ActionName, string DisplayName, string Description, bool IsRestricted);
+public record PermissionDto(Guid Id, string ControllerName, string ActionName, string DisplayName, string Description, bool IsRestricted, string? AreaName = null);
 public record RolePermissionDto(Guid Id, string RoleName, Guid PermissionId, PermissionDto Permission);
 
 public class PermissionFilter : AzureTest.Contracts.DTOs.Common.PagedFilterRequest
@@ -35,12 +35,13 @@ public class GetPermissionsQueryHandler : IQueryHandler<GetPermissionsQuery, Azu
     {
         var filter = query.Filter ?? new PermissionFilter();
         var permissions = await _unitOfWork.Permissions.GetAllPermissionsAsync();
-        var dtos = permissions.Select(p => new PermissionDto(p.Id, p.ControllerName, p.ActionName, p.DisplayName, p.Description, p.IsRestricted)).AsQueryable();
+        var dtos = permissions.Select(p => new PermissionDto(p.Id, p.ControllerName, p.ActionName, p.DisplayName, p.Description, p.IsRestricted, p.AreaName)).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
         {
             var search = filter.SearchTerm;
             dtos = dtos.Where(p => 
+                (p.AreaName != null && p.AreaName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (p.ControllerName != null && p.ControllerName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (p.ActionName != null && p.ActionName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                 (p.DisplayName != null && p.DisplayName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
@@ -53,10 +54,11 @@ public class GetPermissionsQueryHandler : IQueryHandler<GetPermissionsQuery, Azu
 
         dtos = sortBy switch
         {
+            "AreaName" => dirAsc ? dtos.OrderBy(p => p.AreaName).ThenBy(p => p.ControllerName) : dtos.OrderByDescending(p => p.AreaName).ThenByDescending(p => p.ControllerName),
             "ActionName" => dirAsc ? dtos.OrderBy(p => p.ActionName) : dtos.OrderByDescending(p => p.ActionName),
             "DisplayName" => dirAsc ? dtos.OrderBy(p => p.DisplayName) : dtos.OrderByDescending(p => p.DisplayName),
             "IsRestricted" => dirAsc ? dtos.OrderBy(p => p.IsRestricted) : dtos.OrderByDescending(p => p.IsRestricted),
-            _ => dirAsc ? dtos.OrderBy(p => p.ControllerName).ThenBy(p => p.ActionName) : dtos.OrderByDescending(p => p.ControllerName).ThenByDescending(p => p.ActionName),
+            _ => dirAsc ? dtos.OrderBy(p => p.AreaName).ThenBy(p => p.ControllerName).ThenBy(p => p.ActionName) : dtos.OrderByDescending(p => p.AreaName).ThenByDescending(p => p.ControllerName).ThenByDescending(p => p.ActionName),
         };
 
         var list = dtos.ToList();
@@ -81,7 +83,7 @@ public class GetRolePermissionsQueryHandler : IQueryHandler<GetRolePermissionsQu
     {
         var rolePermissions = await _unitOfWork.RolePermissions.GetPermissionsByRoleAsync(query.RoleName);
         return rolePermissions.Select(rp => new RolePermissionDto(rp.Id, rp.RoleName, rp.PermissionId, 
-            new PermissionDto(rp.Permission.Id, rp.Permission.ControllerName, rp.Permission.ActionName, rp.Permission.DisplayName, rp.Permission.Description, rp.Permission.IsRestricted))).ToList();
+            new PermissionDto(rp.Permission.Id, rp.Permission.ControllerName, rp.Permission.ActionName, rp.Permission.DisplayName, rp.Permission.Description, rp.Permission.IsRestricted, rp.Permission.AreaName))).ToList();
     }
 }
 

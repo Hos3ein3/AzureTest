@@ -140,10 +140,23 @@ public class CurrentUser : ICurrentUser
         if (string.IsNullOrWhiteSpace(targetUrl) || targetUrl == "/")
             targetUrl = "Home/Index";
 
-        // Extract controller and action from URL
+        // Extract area, controller and action from URL
         var parts = targetUrl.TrimStart('/').Split('?')[0].Split('/');
-        var controller = parts.Length > 0 && !string.IsNullOrWhiteSpace(parts[0]) ? parts[0] : "Home";
-        var action     = parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]) ? parts[1] : "Index";
+        string? area = null;
+        string controller;
+        string action;
+
+        if (parts.Length >= 3)
+        {
+            area = parts[0];
+            controller = parts[1];
+            action = parts[2];
+        }
+        else
+        {
+            controller = parts.Length > 0 && !string.IsNullOrWhiteSpace(parts[0]) ? parts[0] : "Home";
+            action     = parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]) ? parts[1] : "Index";
+        }
 
         // Users with the "User" role get automatic access to reserved slugs (Home, Ticket, etc.)
         if (Roles.Contains("User") && httpContext != null)
@@ -162,8 +175,11 @@ public class CurrentUser : ICurrentUser
            
         }
 
-        // Fall back to explicit permission check: "Controller/Action"
-        var permissionKey = $"{controller}/{action}";
-        return Permissions.Any(p => p.Equals(permissionKey, StringComparison.OrdinalIgnoreCase));
+        // Fall back to explicit permission check: "Area/Controller/Action" or "Controller/Action"
+        var fullKey = !string.IsNullOrWhiteSpace(area) ? $"{area}/{controller}/{action}" : null;
+        var shortKey = $"{controller}/{action}";
+
+        return (fullKey != null && Permissions.Any(p => p.Equals(fullKey, StringComparison.OrdinalIgnoreCase)))
+            || Permissions.Any(p => p.Equals(shortKey, StringComparison.OrdinalIgnoreCase));
     }
 }

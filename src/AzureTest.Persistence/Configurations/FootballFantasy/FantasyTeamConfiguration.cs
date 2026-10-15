@@ -16,7 +16,7 @@ public sealed class FantasyTeamConfiguration : IEntityTypeConfiguration<FantasyT
             .IsRequired();
 
         builder.Property(x => x.LogoUrl)
-            .HasMaxLength(FantasyTeam.Rules.LogoUrlMaxLength);
+            .HasColumnType("text");
 
         builder.Property(x => x.CreditsLeft)
             .HasPrecision(FantasyTeam.Rules.CreditsPrecision, FantasyTeam.Rules.CreditsScale);

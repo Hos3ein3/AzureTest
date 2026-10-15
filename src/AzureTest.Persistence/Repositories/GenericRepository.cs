@@ -1,5 +1,3 @@
-
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,24 +5,24 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Domain.Primitives;
-using AzureTest.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace AzureTest.Persistence.Repositories;
 
+/// <summary>
+/// Generic repository that can operate against any DbContext (Master or ReadOnly replica).
+/// </summary>
 public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEntity : BaseEntity
 {
-    protected readonly AzureTestDbContext _dbContext;
+    protected readonly DbContext _dbContext;
     protected readonly DbSet<TEntity> _dbSet;
 
-    public GenericRepository(AzureTestDbContext dbContext)
+    public GenericRepository(DbContext dbContext)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         _dbSet = _dbContext.Set<TEntity>();
     }
 
-
-    
     public virtual async Task<TEntity?> GetByIdAsync(Guid id)
     {
         return await _dbSet.FindAsync(id);

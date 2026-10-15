@@ -1,0 +1,221 @@
+@model PagedResult<FantasyLeagueDto,FantasyLeagueFilter>
+@{
+    ViewData["Title"] = "Fantasy Football Leagues";
+    var filter = ViewBag.Filter as AzureTest.Contracts.DTOs.FootballFantasy.FantasyLeagueFilter;
+
+    string GetSortLink(string sortBy, string label)
+    {
+        var isCurrent = filter?.SortBy?.Equals(sortBy, StringComparison.OrdinalIgnoreCase) ?? (sortBy == "StartsAt");
+        var desc = isCurrent ? !(filter?.SortDescending ?? false) : false;
+        var icon = isCurrent ? (filter?.SortDescending ?? false ? "fa-sort-down text-brand-600" : "fa-sort-up text-brand-600") : "fa-sort text-slate-300";
+        var url = $"?PageNumber=1&PageSize={filter?.PageSize}&SearchTerm={filter?.SearchTerm}&Visibility={filter?.Visibility}&Status={filter?.Status}&SortBy={sortBy}&SortDescending={desc}";
+        return $@"<a href=""{url}"" class=""group inline-flex items-center hover:text-slate-700 transition-colors"">{label} <i class=""fa-solid {icon} ml-1""></i></a>";
+    }
+
+    string GetPageUrl(int pageNumber)
+    {
+        return $"?PageNumber={pageNumber}&PageSize={filter?.PageSize}&SearchTerm={filter?.SearchTerm}&Visibility={filter?.Visibility}&Status={filter?.Status}&SortBy={filter?.SortBy}&SortDescending={filter?.SortDescending}";
+    }
+}
+
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <i class="fa-solid fa-trophy text-amber-500"></i> Fantasy Leagues
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Join an existing fantasy championship or create your own custom league with friends.</p>
+    </div>
+
+    <div class="flex items-center space-x-3">
+        <a asp-action="Create" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
+            <i class="fa-solid fa-plus mr-2"></i> Create League
+        </a>
+    </div>
+</div>
+
+<!-- Filter Section (Matches Resume/Index pattern) -->
+<div class="mb-6 bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center">
+            <i class="fa-solid fa-filter text-brand-600 mr-2"></i> Filter & Search Leagues
+        </h3>
+    </div>
+    <form asp-action="Index" method="get">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">Search</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                    </div>
+                    <input name="SearchTerm" type="text" value="@filter?.SearchTerm" class="block w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500 text-sm" placeholder="Name or #tag..." />
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">Visibility</label>
+                <select name="Visibility" class="block w-full py-2 px-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-brand-500 text-sm">
+                    <option value="">All Visibilities</option>
+                    @foreach (var val in Enum.GetValues<AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueVisibility>())
+                    {
+                        <!option value="@val" @(filter?.Visibility == val ? "selected" : "")>@val</!option>
+                    }
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">Status</label>
+                <select name="Status" class="block w-full py-2 px-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-brand-500 text-sm">
+                    <option value="">All Statuses</option>
+                    @foreach (var val in Enum.GetValues<AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueStatus>())
+                    {
+                        <!option value="@val" @(filter?.Status == val ? "selected" : "")>@val</!option>
+                    }
+                </select>
+            </div>
+
+            <div class="flex items-end space-x-2">
+                <button type="submit" class="flex-1 inline-flex justify-center items-center px-4 py-2 bg-slate-800 hover:bg-slate-900 dark:bg-brand-600 dark:hover:bg-brand-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
+                    <i class="fa-solid fa-magnifying-glass mr-2"></i> Apply
+                </button>
+                <a asp-action="Index" class="inline-flex items-center px-3 py-2 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors">
+                    Reset
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- League Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="col-span-full bg-white dark:bg-slate-800 p-12 text-center rounded-2xl border border-slate-100 dark:border-slate-700">
+            <i class="fa-solid fa-futbol text-4xl text-slate-300 dark:text-slate-600 mb-3"></i>
+            <h4 class="text-lg font-semibold text-slate-700 dark:text-slate-200">No fantasy leagues found</h4>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Be the first to create a public or private fantasy league.</p>
+            <a asp-action="Create" class="mt-4 inline-flex items-center px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-semibold hover:bg-brand-700">
+                <i class="fa-solid fa-plus mr-2"></i> Create Now
+            </a>
+        </div>
+    }
+    else
+    {
+        @foreach (var league in Model.Items)
+        {
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col justify-between">
+                <div class="p-5">
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold @(league.Visibility == AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueVisibility.Public ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" : league.Visibility == AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueVisibility.Private ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" : "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400")">
+                                <i class="fa-solid @(league.Visibility == AzureTest.Domain.Entities.FootballFantasy.Enums.FantasyLeagueVisibility.Private ? "fa-lock" : "fa-globe") mr-1 text-[10px]"></i>
+                                @league.Visibility
+                            </span>
+                            <span class="text-xs text-slate-400 font-mono ml-2">#@league.LeagueTag</span>
+                        </div>
+                        <span class="inline-flex items-center text-xs font-bold text-slate-500 dark:text-slate-400">
+                            <i class="fa-solid fa-users mr-1"></i> @league.MemberCount @(league.MaxMembers.HasValue ? $"/{league.MaxMembers}" : "")
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        @if (!string.IsNullOrWhiteSpace(league.LogoUrl))
+                        {
+                            <img src="@league.LogoUrl" alt="Logo" class="w-10 h-10 object-contain rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex-shrink-0" />
+                        }
+                        else
+                        {
+                            <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 flex items-center justify-center flex-shrink-0 text-amber-500 font-bold">
+                                <i class="fa-solid fa-trophy"></i>
+                            </div>
+                        }
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 hover:text-brand-600 transition-colors">
+                            <a asp-action="Details" asp-route-id="@league.Id">@league.Name</a>
+                        </h3>
+                    </div>
+
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                        @(string.IsNullOrWhiteSpace(league.Description) ? "No description provided." : league.Description)
+                    </p>
+
+                    <div class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700/60 text-center">
+                        <div class="bg-slate-50 dark:bg-slate-900/40 p-2 rounded-lg">
+                            <div class="text-[10px] uppercase font-semibold text-slate-400">Budget</div>
+                            <div class="text-sm font-black text-slate-700 dark:text-slate-200">£@league.Budget.ToString("F0")m</div>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-900/40 p-2 rounded-lg">
+                            <div class="text-[10px] uppercase font-semibold text-slate-400">Squad</div>
+                            <div class="text-sm font-black text-slate-700 dark:text-slate-200">@league.SquadSize</div>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-900/40 p-2 rounded-lg">
+                            <div class="text-[10px] uppercase font-semibold text-slate-400">Mode</div>
+                            <div class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate mt-0.5">@league.PeriodType</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-5 py-3.5 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
+                    <span class="text-xs text-slate-400">
+                        Starts: @league.StartsAt.ToString("MMM dd, yyyy")
+                    </span>
+                    
+                    <div class="space-x-2">
+                        <a asp-action="Details" asp-route-id="@league.Id" class="inline-flex items-center px-3 py-1.5 border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition-colors">
+                            Details
+                        </a>
+                        @if (league.UserHasTeam)
+                        {
+                            <a asp-action="Details" asp-route-id="@league.Id" class="inline-flex items-center px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold transition-colors">
+                                <i class="fa-solid fa-shirt mr-1"></i> My Team
+                            </a>
+                        }
+                        else if (league.MaxMembers.HasValue && league.MemberCount >= league.MaxMembers.Value)
+                        {
+                            <span class="inline-flex items-center px-2.5 py-1.5 bg-slate-200 dark:bg-slate-700 text-slate-500 rounded-lg text-xs font-semibold cursor-not-allowed">
+                                <i class="fa-solid fa-ban mr-1"></i> Full
+                            </span>
+                        }
+                        else
+                        {
+                            <a asp-action="Join" asp-route-id="@league.Id" class="inline-flex items-center px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors">
+                                <i class="fa-solid fa-plus mr-1"></i> Join
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<!-- Pagination Section -->
+@if (Model.TotalPages > 1)
+{
+    <div class="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-4">
+        <div class="text-sm text-slate-500 dark:text-slate-400">
+            Showing <span class="font-semibold text-slate-800 dark:text-slate-200">@((Model.PageNumber - 1) * Model.PageSize + 1)</span> to 
+            <span class="font-semibold text-slate-800 dark:text-slate-200">@(Math.Min(Model.PageNumber * Model.PageSize, Model.TotalCount))</span> of 
+            <span class="font-semibold text-slate-800 dark:text-slate-200">@Model.TotalCount</span> leagues
+        </div>
+        <div class="flex space-x-1">
+            @if (Model.HasPreviousPage)
+            {
+                <a href="@GetPageUrl(Model.PageNumber - 1)" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm">
+                    <i class="fa-solid fa-chevron-left mr-1"></i> Prev
+                </a>
+            }
+            @for (int p = 1; p <= Model.TotalPages; p++)
+            {
+                <a href="@GetPageUrl(p)" class="px-3 py-1.5 rounded-lg text-sm font-semibold @(p == Model.PageNumber ? "bg-brand-600 text-white" : "border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700")">
+                    @p
+                </a>
+            }
+            @if (Model.HasNextPage)
+            {
+                <a href="@GetPageUrl(Model.PageNumber + 1)" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm">
+                    Next <i class="fa-solid fa-chevron-right ml-1"></i>
+                </a>
+            }
+        </div>
+    </div>
+}

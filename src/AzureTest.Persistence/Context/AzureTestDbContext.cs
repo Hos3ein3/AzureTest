@@ -53,6 +53,7 @@ public class AzureTestDbContext : IdentityDbContext<ApplicationUser, Application
 
     // Football Fantasy - Real-World Tables
     public DbSet<AzureTest.Domain.Entities.FootballFantasy.Country> Countries => Set<AzureTest.Domain.Entities.FootballFantasy.Country>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.Venue> Venues => Set<AzureTest.Domain.Entities.FootballFantasy.Venue>();
     public DbSet<AzureTest.Domain.Entities.FootballFantasy.League> Leagues => Set<AzureTest.Domain.Entities.FootballFantasy.League>();
     public DbSet<AzureTest.Domain.Entities.FootballFantasy.Season> Seasons => Set<AzureTest.Domain.Entities.FootballFantasy.Season>();
     public DbSet<AzureTest.Domain.Entities.FootballFantasy.Stage> Stages => Set<AzureTest.Domain.Entities.FootballFantasy.Stage>();
@@ -66,6 +67,25 @@ public class AzureTestDbContext : IdentityDbContext<ApplicationUser, Application
     public DbSet<AzureTest.Domain.Entities.FootballFantasy.FixtureEvent> FixtureEvents => Set<AzureTest.Domain.Entities.FootballFantasy.FixtureEvent>();
     public DbSet<AzureTest.Domain.Entities.FootballFantasy.PlayerMatchStat> PlayerMatchStats => Set<AzureTest.Domain.Entities.FootballFantasy.PlayerMatchStat>();
     public DbSet<AzureTest.Domain.Entities.FootballFantasy.PlayerPrice> PlayerPrices => Set<AzureTest.Domain.Entities.FootballFantasy.PlayerPrice>();
+
+    // Extended Football API Domains
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.LeagueStanding> LeagueStandings => Set<AzureTest.Domain.Entities.FootballFantasy.LeagueStanding>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.Bookmaker> Bookmakers => Set<AzureTest.Domain.Entities.FootballFantasy.Bookmaker>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.FixtureOdd> FixtureOdds => Set<AzureTest.Domain.Entities.FootballFantasy.FixtureOdd>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.BetType> BetTypes => Set<AzureTest.Domain.Entities.FootballFantasy.BetType>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.PlayerTransfer> PlayerTransfers => Set<AzureTest.Domain.Entities.FootballFantasy.PlayerTransfer>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.PlayerInjury> PlayerInjuries => Set<AzureTest.Domain.Entities.FootballFantasy.PlayerInjury>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.TeamTrophy> TeamTrophies => Set<AzureTest.Domain.Entities.FootballFantasy.TeamTrophy>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.Sidelined> Sidelined => Set<AzureTest.Domain.Entities.FootballFantasy.Sidelined>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.HeadToHead> HeadToHeads => Set<AzureTest.Domain.Entities.FootballFantasy.HeadToHead>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.TeamStatistic> TeamStatistics => Set<AzureTest.Domain.Entities.FootballFantasy.TeamStatistic>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.FixtureLineup> FixtureLineups => Set<AzureTest.Domain.Entities.FootballFantasy.FixtureLineup>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.FixtureStatistic> FixtureStatistics => Set<AzureTest.Domain.Entities.FootballFantasy.FixtureStatistic>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.FixtureLiveUpdate> FixtureLiveUpdates => Set<AzureTest.Domain.Entities.FootballFantasy.FixtureLiveUpdate>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.PlayerTopScorer> PlayerTopScorers => Set<AzureTest.Domain.Entities.FootballFantasy.PlayerTopScorer>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.PlayerSeasonStatistic> PlayerSeasonStatistics => Set<AzureTest.Domain.Entities.FootballFantasy.PlayerSeasonStatistic>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.PlayerProfile> PlayerProfiles => Set<AzureTest.Domain.Entities.FootballFantasy.PlayerProfile>();
+    public DbSet<AzureTest.Domain.Entities.FootballFantasy.PlayerTeamHistory> PlayerTeamHistories => Set<AzureTest.Domain.Entities.FootballFantasy.PlayerTeamHistory>();
 
     // Football Fantasy - Game Tables
     public DbSet<AzureTest.Domain.Entities.FootballFantasy.ScoringRuleSet> ScoringRuleSets => Set<AzureTest.Domain.Entities.FootballFantasy.ScoringRuleSet>();

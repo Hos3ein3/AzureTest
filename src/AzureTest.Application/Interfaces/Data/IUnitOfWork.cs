@@ -22,6 +22,7 @@ public interface IUnitOfWork : IDisposable
 
     // Football Fantasy
     ICountryRepository Countries { get; }
+    IVenueRepository Venues { get; }
     ILeagueRepository Leagues { get; }
     ISeasonRepository Seasons { get; }
     IStageRepository Stages { get; }
@@ -63,6 +64,25 @@ public interface IUnitOfWork : IDisposable
     IPredictClubMemberRepository PredictClubMembers { get; }
     IMatchPredictionRepository MatchPredictions { get; }
     ITournamentPredictionRepository TournamentPredictions { get; }
+
+    // Extended API-Football Domains
+    ILeagueStandingRepository LeagueStandings { get; }
+    IBookmakerRepository Bookmakers { get; }
+    IFixtureOddRepository FixtureOdds { get; }
+    IBetTypeRepository BetTypes { get; }
+    IPlayerTransferRepository PlayerTransfers { get; }
+    IPlayerInjuryRepository PlayerInjuries { get; }
+    ITeamTrophyRepository TeamTrophies { get; }
+    ISidelinedRepository Sidelined { get; }
+    IHeadToHeadRepository HeadToHeads { get; }
+    ITeamStatisticRepository TeamStatistics { get; }
+    IFixtureLineupRepository FixtureLineups { get; }
+    IFixtureStatisticRepository FixtureStatistics { get; }
+    IFixtureLiveUpdateRepository FixtureLiveUpdates { get; }
+    IPlayerTopScorerRepository PlayerTopScorers { get; }
+    IPlayerSeasonStatisticRepository PlayerSeasonStatistics { get; }
+    IPlayerProfileRepository PlayerProfiles { get; }
+    IPlayerTeamHistoryRepository PlayerTeamHistories { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

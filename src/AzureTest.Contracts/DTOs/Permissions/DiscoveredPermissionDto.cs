@@ -4,5 +4,6 @@ public record DiscoveredPermissionDto(
     string ControllerName,
     string ActionName,
     string DisplayName,
-    string Description
+    string Description,
+    string? AreaName = null
 );

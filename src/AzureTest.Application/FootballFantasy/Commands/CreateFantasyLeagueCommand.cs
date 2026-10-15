@@ -49,6 +49,10 @@ public sealed record CreateFantasyLeagueCommand(
     DateTime? Window1Close = null,
     DateTime? Window2Open = null,
     DateTime? Window2Close = null,
+    // Advanced Transfer Rules & Taxes
+    int FreeTransfersPerGameweek = 1,
+    int? ExtraTransferPointPenalty = 4,
+    decimal ProfitTaxPercent = 50.0m,
     // Scoring Rules Configuration
     int ScoringAppearance = 2,
     int ScoringPlayed60Plus = 1,
@@ -168,6 +172,9 @@ public sealed class CreateFantasyLeagueCommandHandler : BaseCommandHandler<Creat
         }
 
         // 6. Create Fantasy League
+        var startsAt = (cmd.StartsAt == default ? DateTime.UtcNow : cmd.StartsAt).ToUtc();
+        var endsAt = (cmd.EndsAt == default ? DateTime.UtcNow.AddMonths(9) : cmd.EndsAt).ToUtc();
+
         var league = FantasyLeague.Create(
             cmd.Name,
             tag,
@@ -179,8 +186,8 @@ public sealed class CreateFantasyLeagueCommandHandler : BaseCommandHandler<Creat
             cmd.StartingSize <= 0 ? FantasyLeague.Rules.DefaultStartingSize : cmd.StartingSize,
             cmd.Budget <= 0 ? FantasyLeague.Rules.DefaultBudget : cmd.Budget,
             ruleSet.Id,
-            cmd.StartsAt,
-            cmd.EndsAt,
+            startsAt,
+            endsAt,
             isGlobal ? null : _currentUser.Id,
             cmd.Description,
             allowedFormations: cmd.AllowedFormations ?? FantasyLeague.Rules.DefaultAllowedFormations,
@@ -188,19 +195,22 @@ public sealed class CreateFantasyLeagueCommandHandler : BaseCommandHandler<Creat
             maxMembers: maxMembers,
             joinCode: joinCode,
             logoUrl: cmd.LogoUrl,
-            window1Open: cmd.Window1Open,
-            window1Close: cmd.Window1Close,
-            window2Open: cmd.Window2Open,
-            window2Close: cmd.Window2Close,
+            window1Open: cmd.Window1Open.ToUtc(),
+            window1Close: cmd.Window1Close.ToUtc(),
+            window2Open: cmd.Window2Open.ToUtc(),
+            window2Close: cmd.Window2Close.ToUtc(),
             minSquadSize: cmd.MinSquadSize,
             kickoutType: cmd.KickoutType,
-            auctionStartsAt: cmd.AuctionStartsAt,
-            auctionEndsAt: cmd.AuctionEndsAt,
+            auctionStartsAt: cmd.AuctionStartsAt.ToUtc(),
+            auctionEndsAt: cmd.AuctionEndsAt.ToUtc(),
             format: cmd.Format,
             allowAutoSub: cmd.AllowAutoSub,
             enableMvpBonus: cmd.EnableMvpBonus,
             mvpBonusPoints: cmd.MvpBonusPoints,
-            groupCount: cmd.GroupCount
+            groupCount: cmd.GroupCount,
+            freeTransfersPerGameweek: cmd.FreeTransfersPerGameweek,
+            extraTransferPointPenalty: cmd.ExtraTransferPointPenalty,
+            profitTaxPercent: cmd.ProfitTaxPercent
         );
 
         UnitOfWork.FantasyLeagues.Add(league);

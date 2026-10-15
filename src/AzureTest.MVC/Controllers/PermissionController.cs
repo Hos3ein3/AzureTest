@@ -34,9 +34,9 @@ public class PermissionController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(string controllerName, string actionName, string displayName, string description)
+    public async Task<IActionResult> Create(string controllerName, string actionName, string displayName, string description, string? areaName = null)
     {
-        var command = new CreatePermissionCommand(controllerName, actionName, displayName, description);
+        var command = new CreatePermissionCommand(controllerName, actionName, displayName, description, areaName);
         var result = await _commandUnit.CreatePermission.HandleAsync(command);
         
         if (result.IsSuccess)
@@ -125,13 +125,14 @@ public class PermissionController : Controller
             Permissions = System.Linq.Enumerable.ToList(System.Linq.Enumerable.OrderBy(System.Linq.Enumerable.Select(allPermissions, p => new AzureTest.MVC.ViewModels.Permissions.RolePermissionItemViewModel
             {
                 PermissionId = p.Id,
+                AreaName = p.AreaName,
                 ControllerName = p.ControllerName,
                 ActionName = p.ActionName,
                 DisplayName = p.DisplayName,
                 Description = p.Description,
                 IsRestricted = p.IsRestricted,
                 IsAssigned = assignedIds.Contains(p.Id)
-            }), p => p.ControllerName).ThenBy(p => p.ActionName))
+            }), p => p.AreaName).ThenBy(p => p.ControllerName).ThenBy(p => p.ActionName))
         };
 
         return View(model);

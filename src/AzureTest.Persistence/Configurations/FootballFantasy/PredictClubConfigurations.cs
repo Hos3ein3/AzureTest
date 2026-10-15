@@ -35,7 +35,7 @@ public sealed class PredictClubConfiguration : IEntityTypeConfiguration<PredictC
         builder.Property(x => x.Name).HasMaxLength(PredictClub.Rules.NameMaxLength).IsRequired();
         builder.Property(x => x.ClubTag).HasMaxLength(PredictClub.Rules.ClubTagMaxLength).IsRequired();
         builder.Property(x => x.Description).HasMaxLength(PredictClub.Rules.DescriptionMaxLength);
-        builder.Property(x => x.LogoUrl).HasMaxLength(PredictClub.Rules.LogoUrlMaxLength);
+        builder.Property(x => x.LogoUrl).HasColumnType("text");
         builder.Property(x => x.JoinCode).HasMaxLength(PredictClub.Rules.JoinCodeMaxLength);
 
         builder.Property(x => x.Visibility).HasConversion<int>();

@@ -15,10 +15,10 @@ public sealed record GetFantasyLeagueByIdQuery(Guid LeagueId) : IQuery<Result<Fa
 
 public sealed class GetFantasyLeagueByIdQueryHandler : BaseQueryHandler<GetFantasyLeagueByIdQuery, Result<FantasyLeagueDto>>
 {
-    private readonly IUnitOfWork _uow;
+    private readonly IReadOnlyFootballFantasyUnitOfWork _uow;
     private readonly ICurrentUser _currentUser;
 
-    public GetFantasyLeagueByIdQueryHandler(IUnitOfWork uow, ICurrentUser currentUser, ILogger<GetFantasyLeagueByIdQueryHandler> logger) : base(logger)
+    public GetFantasyLeagueByIdQueryHandler(IReadOnlyFootballFantasyUnitOfWork uow, ICurrentUser currentUser, ILogger<GetFantasyLeagueByIdQueryHandler> logger) : base(logger)
     {
         _uow = uow;
         _currentUser = currentUser;
@@ -84,7 +84,12 @@ public sealed class GetFantasyLeagueByIdQueryHandler : BaseQueryHandler<GetFanta
             x.AllowAutoSub,
             x.EnableMvpBonus,
             x.MvpBonusPoints,
-            x.GroupCount
+            x.GroupCount,
+            x.FreeTransfersPerGameweek,
+            x.ExtraTransferPointPenalty,
+            x.ProfitTaxPercent,
+            x.GetNextTransferDeadline(),
+            x.IsTransferMarketOpen()
         );
 
         return Result<FantasyLeagueDto>.Success(dto);

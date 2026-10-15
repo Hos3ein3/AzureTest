@@ -1,0 +1,134 @@
+@model List<AzureTest.Contracts.DTOs.FootballFantasy.PendingJoinRequestDto>
+@{
+    var league = ViewBag.League as AzureTest.Contracts.DTOs.FootballFantasy.FantasyLeagueDto;
+    ViewData["Title"] = $"Join Requests - {league?.Name ?? "League"}";
+}
+
+<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <div class="flex items-center gap-3">
+            <a asp-action="Details" asp-route-id="@league?.Id" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
+                    <i class="fa-solid fa-user-clock text-amber-500"></i> Join Requests Dashboard
+                </h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Review and approve or reject managers applying to enter <strong>@(league?.Name ?? "this fantasy league")</strong>.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <a asp-action="Details" asp-route-id="@league?.Id" class="inline-flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-semibold transition-colors">
+            <i class="fa-solid fa-trophy mr-2 text-amber-500"></i> Back to League Details
+        </a>
+    </div>
+</div>
+
+<div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm overflow-hidden">
+    <div class="p-5 border-b border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Pending Applicants</span>
+            <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400">
+                @Model.Count
+            </span>
+        </div>
+        <div class="text-xs text-slate-400">
+            Current Members: <strong>@(league?.MemberCount ?? 0)</strong> @(league?.MaxMembers.HasValue == true ? $"/ {league.MaxMembers.Value}" : "")
+        </div>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <div class="text-center py-16 px-4">
+            <div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                <i class="fa-solid fa-check-double text-2xl text-emerald-500"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800 dark:text-slate-200">No pending join requests</h3>
+            <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                All applicants have been reviewed. When new managers request to join this public league, they will appear here for your approval.
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="divide-y divide-slate-100 dark:divide-slate-700/60">
+            @foreach (var req in Model)
+            {
+                <div class="p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:bg-slate-50/60 dark:hover:bg-slate-750 transition-colors">
+                    <div class="flex items-center space-x-4">
+                        @if (!string.IsNullOrWhiteSpace(req.LogoUrl))
+                        {
+                            <img src="@req.LogoUrl" alt="Logo" class="w-12 h-12 rounded-xl object-contain bg-white border border-slate-200 shadow-sm" />
+                        }
+                        else
+                        {
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500 to-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                                @req.TeamName.Substring(0, Math.Min(2, req.TeamName.Length)).ToUpper()
+                            </div>
+                        }
+
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-bold text-slate-900 dark:text-slate-100 text-base">@req.TeamName</h4>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40">
+                                    Pending Approval
+                                </span>
+                            </div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-3">
+                                <span><i class="fa-solid fa-clock mr-1 text-slate-400"></i>Applied @req.RequestedAt.ToString("MMM dd, yyyy HH:mm")</span>
+                                <span>&bull;</span>
+                                <a asp-action="Profile" asp-route-userId="@req.UserId" class="text-brand-600 dark:text-brand-400 hover:underline font-semibold flex items-center">
+                                    <i class="fa-solid fa-user-circle mr-1"></i> Manager Profile
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Applicant Stats & Actions -->
+                    <div class="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-700/60">
+                        <div class="flex items-center gap-4 text-center">
+                            <div class="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700/50">
+                                <div class="text-[10px] font-bold uppercase text-slate-400">Career Pts</div>
+                                <div class="text-sm font-black text-slate-800 dark:text-slate-100">@req.CareerPoints</div>
+                            </div>
+                            <div class="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700/50">
+                                <div class="text-[10px] font-bold uppercase text-amber-500">Trophies</div>
+                                <div class="text-sm font-black text-amber-600 dark:text-amber-400">@req.TotalTrophies</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <!-- Approve -->
+                            <form asp-action="ReviewJoin" method="post" class="inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="leagueId" value="@req.LeagueId" />
+                                <input type="hidden" name="targetUserId" value="@req.UserId" />
+                                <input type="hidden" name="approve" value="true" />
+                                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center">
+                                    <i class="fa-solid fa-check mr-1.5"></i> Approve
+                                </button>
+                            </form>
+
+                            <!-- Reject -->
+                            <form asp-action="ReviewJoin" method="post" onsubmit="return confirm('Are you sure you want to reject this request?');" class="inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="leagueId" value="@req.LeagueId" />
+                                <input type="hidden" name="targetUserId" value="@req.UserId" />
+                                <input type="hidden" name="approve" value="false" />
+                                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                <button type="submit" class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 dark:hover:bg-rose-900/50 rounded-xl text-xs font-bold transition-colors border border-rose-200 dark:border-rose-800/40 flex items-center">
+                                    <i class="fa-solid fa-xmark mr-1.5"></i> Reject
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

@@ -16,9 +16,9 @@ public sealed record GetPlayersQuery(PlayerFilter Filter) : IQuery<PagedResult<P
 
 public sealed class GetPlayersQueryHandler : BaseQueryHandler<GetPlayersQuery, PagedResult<PlayerDto, PlayerFilter>>
 {
-    private readonly IUnitOfWork _uow;
+    private readonly IReadOnlyFootballFantasyUnitOfWork _uow;
 
-    public GetPlayersQueryHandler(IUnitOfWork uow, ILogger<GetPlayersQueryHandler> logger) : base(logger)
+    public GetPlayersQueryHandler(IReadOnlyFootballFantasyUnitOfWork uow, ILogger<GetPlayersQueryHandler> logger) : base(logger)
     {
         _uow = uow;
     }

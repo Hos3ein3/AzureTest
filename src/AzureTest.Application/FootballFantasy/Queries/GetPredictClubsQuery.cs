@@ -27,10 +27,10 @@ public sealed class GetPredictClubsQueryValidator : AbstractValidator<GetPredict
 
 public sealed class GetPredictClubsQueryHandler : IQueryHandler<GetPredictClubsQuery, PagedResult<PredictClubDto, PredictClubFilter>>
 {
-    private readonly IUnitOfWork _uow;
+    private readonly IReadOnlyFootballFantasyUnitOfWork _uow;
     private readonly ICurrentUser _currentUser;
 
-    public GetPredictClubsQueryHandler(IUnitOfWork uow, ICurrentUser currentUser)
+    public GetPredictClubsQueryHandler(IReadOnlyFootballFantasyUnitOfWork uow, ICurrentUser currentUser)
     {
         _uow = uow;
         _currentUser = currentUser;

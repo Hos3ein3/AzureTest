@@ -22,6 +22,9 @@ public class PermissionScanner : IPermissionScanner
         foreach (var controller in controllers)
         {
             var controllerName = controller.Name.Replace("Controller", "");
+            var areaAttr = controller.GetCustomAttribute<AreaAttribute>();
+            var areaName = areaAttr?.RouteValue ?? string.Empty;
+
             var controllerDisplayNameAttr = controller.GetCustomAttribute<DisplayNameAttribute>();
             var controllerDescAttr = controller.GetCustomAttribute<DescriptionAttribute>();
 
@@ -46,13 +49,17 @@ public class PermissionScanner : IPermissionScanner
                 var aDisplayName = actionDisplayNameAttr?.DisplayName ?? actionName;
                 var aDesc = actionDescAttr?.Description ?? $"{controllerName} {actionName}";
 
-                if (!permissions.Any(p => p.ControllerName == controllerName && p.ActionName == actionName))
+                if (!permissions.Any(p => string.Equals(p.AreaName ?? "", areaName, System.StringComparison.OrdinalIgnoreCase) && 
+                                          string.Equals(p.ControllerName, controllerName, System.StringComparison.OrdinalIgnoreCase) && 
+                                          string.Equals(p.ActionName, actionName, System.StringComparison.OrdinalIgnoreCase)))
                 {
+                    var prefix = !string.IsNullOrWhiteSpace(areaName) ? $"[{areaName}] " : "";
                     permissions.Add(new DiscoveredPermissionDto(
                         controllerName,
                         actionName,
-                        $"{cDisplayName} - {aDisplayName}",
-                        aDesc
+                        $"{prefix}{cDisplayName} - {aDisplayName}",
+                        aDesc,
+                        areaName
                     ));
                 }
             }

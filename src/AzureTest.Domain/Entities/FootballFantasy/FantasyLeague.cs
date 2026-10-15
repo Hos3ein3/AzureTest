@@ -30,6 +30,11 @@ public sealed class FantasyLeague : AggregateRoot, ISoftDelete, IAudit
         public const int BudgetScale = 2;
         public const int MultiplierPrecision = 4;
         public const int MultiplierScale = 2;
+        public const int DefaultFreeTransfers = 1;
+        public const int DefaultExtraTransferPenalty = 4;
+        public const decimal DefaultProfitTaxPercent = 50.0m;
+        public const int TaxPrecision = 5;
+        public const int TaxScale = 2;
     }
 
     public Guid? OwnerUserId { get; private set; }
@@ -55,6 +60,19 @@ public sealed class FantasyLeague : AggregateRoot, ISoftDelete, IAudit
     public bool AllowAutoSub { get; private set; }
     public bool EnableMvpBonus { get; private set; }
     public int MvpBonusPoints { get; private set; }
+
+    // Advanced Transfer Rules & Taxes
+    public int FreeTransfersPerGameweek { get; private set; } = Rules.DefaultFreeTransfers;
+    /// <summary>
+    /// Point penalty for extra transfers beyond free quota:
+    /// null = extra transfers not allowed; 0 = allowed with 0 penalty; >0 = penalty points deducted per transfer
+    /// </summary>
+    public int? ExtraTransferPointPenalty { get; private set; } = Rules.DefaultExtraTransferPenalty;
+    /// <summary>
+    /// Profit tax percent on player selling profit (e.g. 50% = user gets half of profit earned above purchase price)
+    /// </summary>
+    public decimal ProfitTaxPercent { get; private set; } = Rules.DefaultProfitTaxPercent;
+
     public int? GroupCount { get; private set; }
     public int? MaxMembers { get; private set; }
     public string? JoinCode { get; private set; }
@@ -88,6 +106,33 @@ public sealed class FantasyLeague : AggregateRoot, ISoftDelete, IAudit
         bool inWindow2 = Window2Open.HasValue && Window2Close.HasValue && now >= Window2Open.Value && now <= Window2Close.Value;
 
         return inWindow1 || inWindow2;
+    }
+
+    public DateTime? GetNextTransferDeadline(DateTime? checkDate = null)
+    {
+        var now = checkDate ?? DateTime.UtcNow;
+        if (Window1Open.HasValue && Window1Close.HasValue && now < Window1Close.Value)
+        {
+            return Window1Close.Value;
+        }
+        if (Window2Open.HasValue && Window2Close.HasValue && now < Window2Close.Value)
+        {
+            return Window2Close.Value;
+        }
+        return CloseTime ?? EndsAt;
+    }
+
+    public decimal CalculateSellPrice(decimal purchasePrice, decimal currentMarketPrice)
+    {
+        if (currentMarketPrice <= purchasePrice)
+        {
+            return currentMarketPrice;
+        }
+
+        decimal profit = currentMarketPrice - purchasePrice;
+        decimal taxRate = Math.Clamp(ProfitTaxPercent, 0m, 100m) / 100m;
+        decimal taxableProfit = profit * (1m - taxRate);
+        return purchasePrice + Math.Round(taxableProfit, 2);
     }
 
     public ICollection<FantasyLeaguePositionLimit> PositionLimits { get; private set; } = new List<FantasyLeaguePositionLimit>();
@@ -149,7 +194,10 @@ public sealed class FantasyLeague : AggregateRoot, ISoftDelete, IAudit
         bool allowAutoSub = false,
         bool enableMvpBonus = false,
         int mvpBonusPoints = 3,
-        int? groupCount = null)
+        int? groupCount = null,
+        int freeTransfersPerGameweek = Rules.DefaultFreeTransfers,
+        int? extraTransferPointPenalty = Rules.DefaultExtraTransferPenalty,
+        decimal profitTaxPercent = Rules.DefaultProfitTaxPercent)
     {
         if (string.IsNullOrWhiteSpace(name) || name.Length > Rules.NameMaxLength)
             throw new ArgumentException("Invalid league name.", nameof(name));
@@ -197,6 +245,9 @@ public sealed class FantasyLeague : AggregateRoot, ISoftDelete, IAudit
             EnableMvpBonus = enableMvpBonus,
             MvpBonusPoints = mvpBonusPoints,
             GroupCount = groupCount,
+            FreeTransfersPerGameweek = Math.Max(0, freeTransfersPerGameweek),
+            ExtraTransferPointPenalty = extraTransferPointPenalty,
+            ProfitTaxPercent = Math.Clamp(profitTaxPercent, 0m, 100m),
             MaxMembers = maxMembers ?? Rules.MaxLeagueMembers,
             JoinCode = joinCode?.Trim(),
             KickoutType = kickoutType,

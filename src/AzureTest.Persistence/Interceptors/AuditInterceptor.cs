@@ -50,9 +50,11 @@ public sealed class AuditInterceptor : SaveChangesInterceptor
         {
             if (entry.State == EntityState.Added)
             {
-                if (entry.Entity.CreatedOn == default)
+                if (entry.Entity.CreatedOn == default || entry.Entity.CreatedOn.Kind != DateTimeKind.Utc)
                 {
-                    entry.Entity.CreatedOn = now;
+                    entry.Entity.CreatedOn = entry.Entity.CreatedOn == default 
+                        ? now 
+                        : DateTime.SpecifyKind(entry.Entity.CreatedOn, DateTimeKind.Utc);
                 }
             }
 

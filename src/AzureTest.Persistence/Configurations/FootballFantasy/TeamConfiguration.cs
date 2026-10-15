@@ -35,6 +35,11 @@ public sealed class TeamConfiguration : IEntityTypeConfiguration<Team>
             .HasForeignKey(x => x.CountryId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(x => x.Venue)
+            .WithMany(x => x.Teams)
+            .HasForeignKey(x => x.VenueId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.HasQueryFilter(x => !x.IsDeleted);
     }
 }

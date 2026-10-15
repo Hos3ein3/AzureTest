@@ -15,9 +15,9 @@ public sealed record GetPlayerByIdQuery(Guid Id) : IQuery<Result<PlayerDto>>;
 
 public sealed class GetPlayerByIdQueryHandler : BaseQueryHandler<GetPlayerByIdQuery, Result<PlayerDto>>
 {
-    private readonly IUnitOfWork _uow;
+    private readonly IReadOnlyFootballFantasyUnitOfWork _uow;
 
-    public GetPlayerByIdQueryHandler(IUnitOfWork uow, ILogger<GetPlayerByIdQueryHandler> logger) : base(logger)
+    public GetPlayerByIdQueryHandler(IReadOnlyFootballFantasyUnitOfWork uow, ILogger<GetPlayerByIdQueryHandler> logger) : base(logger)
     {
         _uow = uow;
     }

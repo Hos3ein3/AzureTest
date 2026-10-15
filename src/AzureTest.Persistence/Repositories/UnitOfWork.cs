@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Domain.Primitives;
 using AzureTest.Persistence.Context;
+using AzureTest.Persistence.Repositories.FootballFantasy;
 
 namespace AzureTest.Persistence.Repositories;
 
@@ -46,6 +47,7 @@ public class UnitOfWork : IUnitOfWork
 
     // Football Fantasy
     private ICountryRepository? _countries;
+    private IVenueRepository? _venues;
     private ILeagueRepository? _leagues;
     private ISeasonRepository? _seasons;
     private IStageRepository? _stages;
@@ -82,6 +84,7 @@ public class UnitOfWork : IUnitOfWork
     private IFantasyTeamChipRepository? _fantasyTeamChips;
 
     public ICountryRepository Countries => _countries ??= new CountryRepository(_dbContext);
+    public IVenueRepository Venues => _venues ??= new VenueRepository(_dbContext);
     public ILeagueRepository Leagues => _leagues ??= new LeagueRepository(_dbContext);
     public ISeasonRepository Seasons => _seasons ??= new SeasonRepository(_dbContext);
     public IStageRepository Stages => _stages ??= new StageRepository(_dbContext);
@@ -129,6 +132,43 @@ public class UnitOfWork : IUnitOfWork
     public IPredictClubMemberRepository PredictClubMembers => _predictClubMembers ??= new PredictClubMemberRepository(_dbContext);
     public IMatchPredictionRepository MatchPredictions => _matchPredictions ??= new MatchPredictionRepository(_dbContext);
     public ITournamentPredictionRepository TournamentPredictions => _tournamentPredictions ??= new TournamentPredictionRepository(_dbContext);
+
+    // Extended API-Football Domains
+    private ILeagueStandingRepository? _leagueStandings;
+    private IBookmakerRepository? _bookmakers;
+    private IFixtureOddRepository? _fixtureOdds;
+    private IBetTypeRepository? _betTypes;
+    private IPlayerTransferRepository? _playerTransfers;
+    private IPlayerInjuryRepository? _playerInjuries;
+    private ITeamTrophyRepository? _teamTrophies;
+    private ISidelinedRepository? _sidelined;
+    private IHeadToHeadRepository? _headToHeads;
+    private ITeamStatisticRepository? _teamStatistics;
+    private IFixtureLineupRepository? _fixtureLineups;
+    private IFixtureStatisticRepository? _fixtureStatistics;
+    private IFixtureLiveUpdateRepository? _fixtureLiveUpdates;
+    private IPlayerTopScorerRepository? _playerTopScorers;
+    private IPlayerSeasonStatisticRepository? _playerSeasonStatistics;
+    private IPlayerProfileRepository? _playerProfiles;
+    private IPlayerTeamHistoryRepository? _playerTeamHistories;
+
+    public ILeagueStandingRepository LeagueStandings => _leagueStandings ??= new LeagueStandingRepository(_dbContext);
+    public IBookmakerRepository Bookmakers => _bookmakers ??= new BookmakerRepository(_dbContext);
+    public IFixtureOddRepository FixtureOdds => _fixtureOdds ??= new FixtureOddRepository(_dbContext);
+    public IBetTypeRepository BetTypes => _betTypes ??= new BetTypeRepository(_dbContext);
+    public IPlayerTransferRepository PlayerTransfers => _playerTransfers ??= new PlayerTransferRepository(_dbContext);
+    public IPlayerInjuryRepository PlayerInjuries => _playerInjuries ??= new PlayerInjuryRepository(_dbContext);
+    public ITeamTrophyRepository TeamTrophies => _teamTrophies ??= new TeamTrophyRepository(_dbContext);
+    public ISidelinedRepository Sidelined => _sidelined ??= new SidelinedRepository(_dbContext);
+    public IHeadToHeadRepository HeadToHeads => _headToHeads ??= new HeadToHeadRepository(_dbContext);
+    public ITeamStatisticRepository TeamStatistics => _teamStatistics ??= new TeamStatisticRepository(_dbContext);
+    public IFixtureLineupRepository FixtureLineups => _fixtureLineups ??= new FixtureLineupRepository(_dbContext);
+    public IFixtureStatisticRepository FixtureStatistics => _fixtureStatistics ??= new FixtureStatisticRepository(_dbContext);
+    public IFixtureLiveUpdateRepository FixtureLiveUpdates => _fixtureLiveUpdates ??= new FixtureLiveUpdateRepository(_dbContext);
+    public IPlayerTopScorerRepository PlayerTopScorers => _playerTopScorers ??= new PlayerTopScorerRepository(_dbContext);
+    public IPlayerSeasonStatisticRepository PlayerSeasonStatistics => _playerSeasonStatistics ??= new PlayerSeasonStatisticRepository(_dbContext);
+    public IPlayerProfileRepository PlayerProfiles => _playerProfiles ??= new PlayerProfileRepository(_dbContext);
+    public IPlayerTeamHistoryRepository PlayerTeamHistories => _playerTeamHistories ??= new PlayerTeamHistoryRepository(_dbContext);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

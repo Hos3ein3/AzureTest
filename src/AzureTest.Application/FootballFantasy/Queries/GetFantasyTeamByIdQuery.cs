@@ -14,9 +14,9 @@ public sealed record GetFantasyTeamByIdQuery(Guid TeamId) : IQuery<Result<Fantas
 
 public sealed class GetFantasyTeamByIdQueryHandler : BaseQueryHandler<GetFantasyTeamByIdQuery, Result<FantasyTeamDto>>
 {
-    private readonly IUnitOfWork _uow;
+    private readonly IReadOnlyFootballFantasyUnitOfWork _uow;
 
-    public GetFantasyTeamByIdQueryHandler(IUnitOfWork uow, ILogger<GetFantasyTeamByIdQueryHandler> logger) : base(logger)
+    public GetFantasyTeamByIdQueryHandler(IReadOnlyFootballFantasyUnitOfWork uow, ILogger<GetFantasyTeamByIdQueryHandler> logger) : base(logger)
     {
         _uow = uow;
     }
@@ -44,7 +44,8 @@ public sealed class GetFantasyTeamByIdQueryHandler : BaseQueryHandler<GetFantasy
             team.TotalPoints,
             1,
             team.CoachId,
-            coachName
+            coachName,
+            team.IsApproved
         );
 
         return Result<FantasyTeamDto>.Success(dto);

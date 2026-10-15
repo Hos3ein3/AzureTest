@@ -25,6 +25,7 @@ public sealed class Country : AggregateRoot, ISoftDelete, IAudit
     public ICollection<Team> Teams { get; private set; } = new List<Team>();
     public ICollection<Player> Players { get; private set; } = new List<Player>();
     public ICollection<Coach> Coaches { get; private set; } = new List<Coach>();
+    public ICollection<Venue> Venues { get; private set; } = new List<Venue>();
 
     // ISoftDelete
     public bool IsDeleted { get; set; }

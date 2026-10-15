@@ -24,6 +24,7 @@ public sealed class FantasyTeam : AggregateRoot, ISoftDelete, IAudit
     public Coach? Coach { get; private set; }
     public decimal CreditsLeft { get; private set; }
     public int TotalPoints { get; private set; }
+    public int GameweekTransfersMade { get; private set; }
     public bool IsFinalized { get; private set; }
     public bool IsApproved { get; private set; } = true;
     public bool IsSpectator { get; private set; }
@@ -97,4 +98,19 @@ public sealed class FantasyTeam : AggregateRoot, ISoftDelete, IAudit
     public void MakeSpectator() => IsSpectator = true;
 
     public void AddPoints(int points) => TotalPoints += points;
+    public void DeductPoints(int points) => TotalPoints -= points;
+
+    public void RecordTransfer(int pointPenalty = 0)
+    {
+        GameweekTransfersMade++;
+        if (pointPenalty > 0)
+        {
+            DeductPoints(pointPenalty);
+        }
+    }
+
+    public void ResetGameweekTransfers()
+    {
+        GameweekTransfersMade = 0;
+    }
 }

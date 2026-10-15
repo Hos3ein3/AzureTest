@@ -7,9 +7,10 @@ namespace AzureTest.Contracts.DTOs.FootballFantasy;
 
 // Real-world DTOs
 public record CountryDto(Guid Id, string Name, string Code, string Continent, string? FlagUrl);
+public record VenueDto(Guid Id, string Name, Guid CountryId, string CountryName, string? City, string? Address, int? Capacity, string? Surface, string? ImageUrl, int TeamsCount = 0);
 public record LeagueDto(Guid Id, string Name, string? ShortName, LeagueType Type, LeagueLevel Level, string? CountryName, string? Continent, string? LogoUrl, bool IsActive);
 public record SeasonDto(Guid Id, Guid LeagueId, string LeagueName, string Name, DateTime StartDate, DateTime EndDate, bool IsCurrent);
-public record TeamDto(Guid Id, string Name, string ShortName, string? Code, TeamType TeamType, Guid CountryId, string CountryName, int? FoundedYear, string? StadiumName, int? StadiumCapacity, string? LogoUrl);
+public record TeamDto(Guid Id, string Name, string ShortName, string? Code, TeamType TeamType, Guid CountryId, string CountryName, int? FoundedYear, string? StadiumName, int? StadiumCapacity, string? LogoUrl, Guid? VenueId = null, string? VenueName = null);
 public record PlayerDto(
     Guid Id,
     string FirstName,
@@ -98,7 +99,12 @@ public record FantasyLeagueDto(
     bool AllowAutoSub = false,
     bool EnableMvpBonus = false,
     int MvpBonusPoints = 3,
-    int? GroupCount = null
+    int? GroupCount = null,
+    int FreeTransfersPerGameweek = 1,
+    int? ExtraTransferPointPenalty = 4,
+    decimal ProfitTaxPercent = 50.0m,
+    DateTime? NextTransferDeadline = null,
+    bool IsTransferMarketOpen = true
 );
 
 // Filters
@@ -171,6 +177,13 @@ public class CountryFilter : PagedFilterRequest
     public CountryFilter() { SortBy = "Name"; SortDescending = false; PageSize = 20; }
 }
 
+public class VenueFilter : PagedFilterRequest
+{
+    public Guid? CountryId { get; set; }
+    public string? City { get; set; }
+    public VenueFilter() { SortBy = "Name"; SortDescending = false; PageSize = 20; }
+}
+
 public class LeagueFilter : PagedFilterRequest
 {
     public LeagueType? Type { get; set; }
@@ -181,6 +194,7 @@ public class LeagueFilter : PagedFilterRequest
 public class TeamFilter : PagedFilterRequest
 {
     public Guid? CountryId { get; set; }
+    public Guid? VenueId { get; set; }
     public TeamFilter() { SortBy = "Name"; SortDescending = false; PageSize = 20; }
 }
 
@@ -220,6 +234,17 @@ public record AdminFantasyTeamOverviewDto(
     DateTime JoinedAt
 );
 
+public record PendingJoinRequestDto(
+    Guid LeagueId,
+    Guid UserId,
+    string ManagerName,
+    string TeamName,
+    string? LogoUrl,
+    DateTime RequestedAt,
+    int CareerPoints,
+    int TotalTrophies
+);
+
 
 // Fantasy Team DTOs
 public record FantasyTeamDto(
@@ -233,7 +258,8 @@ public record FantasyTeamDto(
     int TotalPoints,
     int Rank = 1,
     Guid? CoachId = null,
-    string? CoachName = null
+    string? CoachName = null,
+    bool IsApproved = true
 );
 
 public record FantasySquadEntryDto(

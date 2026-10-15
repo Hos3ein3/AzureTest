@@ -21,6 +21,7 @@ public class ReadOnlyAzureTestDbContext : DbContext
 
     // Football Fantasy Core
     public DbSet<Country> Countries => Set<Country>();
+    public DbSet<Venue> Venues => Set<Venue>();
     public DbSet<League> Leagues => Set<League>();
     public DbSet<Season> Seasons => Set<Season>();
     public DbSet<Stage> Stages => Set<Stage>();
@@ -34,6 +35,25 @@ public class ReadOnlyAzureTestDbContext : DbContext
     public DbSet<FixtureEvent> FixtureEvents => Set<FixtureEvent>();
     public DbSet<PlayerMatchStat> PlayerMatchStats => Set<PlayerMatchStat>();
     public DbSet<PlayerPrice> PlayerPrices => Set<PlayerPrice>();
+
+    // Extended Football API Domains
+    public DbSet<LeagueStanding> LeagueStandings => Set<LeagueStanding>();
+    public DbSet<Bookmaker> Bookmakers => Set<Bookmaker>();
+    public DbSet<FixtureOdd> FixtureOdds => Set<FixtureOdd>();
+    public DbSet<BetType> BetTypes => Set<BetType>();
+    public DbSet<PlayerTransfer> PlayerTransfers => Set<PlayerTransfer>();
+    public DbSet<PlayerInjury> PlayerInjuries => Set<PlayerInjury>();
+    public DbSet<TeamTrophy> TeamTrophies => Set<TeamTrophy>();
+    public DbSet<Sidelined> Sidelined => Set<Sidelined>();
+    public DbSet<HeadToHead> HeadToHeads => Set<HeadToHead>();
+    public DbSet<TeamStatistic> TeamStatistics => Set<TeamStatistic>();
+    public DbSet<FixtureLineup> FixtureLineups => Set<FixtureLineup>();
+    public DbSet<FixtureStatistic> FixtureStatistics => Set<FixtureStatistic>();
+    public DbSet<FixtureLiveUpdate> FixtureLiveUpdates => Set<FixtureLiveUpdate>();
+    public DbSet<PlayerTopScorer> PlayerTopScorers => Set<PlayerTopScorer>();
+    public DbSet<PlayerSeasonStatistic> PlayerSeasonStatistics => Set<PlayerSeasonStatistic>();
+    public DbSet<PlayerProfile> PlayerProfiles => Set<PlayerProfile>();
+    public DbSet<PlayerTeamHistory> PlayerTeamHistories => Set<PlayerTeamHistory>();
 
     // Scoring & Leagues
     public DbSet<ScoringRuleSet> ScoringRuleSets => Set<ScoringRuleSet>();

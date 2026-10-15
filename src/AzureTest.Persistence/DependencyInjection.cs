@@ -53,6 +53,7 @@ public static class DependencyInjection
 
         // ── SQL Repositories & Unit of Work ───────────────────────────────────
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IReadOnlyFootballFantasyUnitOfWork, ReadOnlyFootballFantasyUnitOfWork>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IResumeRepository, ResumeRepository>();
         services.AddScoped<IEventRepository, EventRepository>();

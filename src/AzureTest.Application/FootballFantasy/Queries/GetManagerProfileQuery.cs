@@ -14,9 +14,9 @@ public sealed record GetManagerProfileQuery(Guid UserId) : IQuery<Result<Manager
 
 public sealed class GetManagerProfileQueryHandler : IQueryHandler<GetManagerProfileQuery, Result<ManagerProfileDto>>
 {
-    private readonly IUnitOfWork _uow;
+    private readonly IReadOnlyFootballFantasyUnitOfWork _uow;
 
-    public GetManagerProfileQueryHandler(IUnitOfWork uow)
+    public GetManagerProfileQueryHandler(IReadOnlyFootballFantasyUnitOfWork uow)
     {
         _uow = uow;
     }

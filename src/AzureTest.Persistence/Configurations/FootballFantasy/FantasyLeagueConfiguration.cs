@@ -23,7 +23,7 @@ public sealed class FantasyLeagueConfiguration : IEntityTypeConfiguration<Fantas
             .HasMaxLength(FantasyLeague.Rules.DescriptionMaxLength);
 
         builder.Property(x => x.LogoUrl)
-            .HasMaxLength(FantasyLeague.Rules.LogoUrlMaxLength);
+            .HasColumnType("text");
 
         builder.Property(x => x.AllowedFormations)
             .HasMaxLength(FantasyLeague.Rules.AllowedFormationsMaxLength);
@@ -36,6 +36,9 @@ public sealed class FantasyLeagueConfiguration : IEntityTypeConfiguration<Fantas
 
         builder.Property(x => x.CaptainMultiplier)
             .HasPrecision(FantasyLeague.Rules.MultiplierPrecision, FantasyLeague.Rules.MultiplierScale);
+
+        builder.Property(x => x.ProfitTaxPercent)
+            .HasPrecision(FantasyLeague.Rules.TaxPrecision, FantasyLeague.Rules.TaxScale);
 
         builder.Property(x => x.Visibility).HasConversion<int>();
         builder.Property(x => x.Mode).HasConversion<int>();

@@ -26,6 +26,8 @@ public sealed class Team : AggregateRoot, ISoftDelete, IAudit
     public TeamType TeamType { get; private set; }
     public Guid CountryId { get; private set; }
     public Country Country { get; private set; } = default!;
+    public Guid? VenueId { get; private set; }
+    public Venue? Venue { get; private set; }
     public int? FoundedYear { get; private set; }
     public string? StadiumName { get; private set; }
     public int? StadiumCapacity { get; private set; }
@@ -56,7 +58,8 @@ public sealed class Team : AggregateRoot, ISoftDelete, IAudit
         int? foundedYear = null,
         string? stadiumName = null,
         int? stadiumCapacity = null,
-        string? logoUrl = null)
+        string? logoUrl = null,
+        Guid? venueId = null)
     {
         if (string.IsNullOrWhiteSpace(name) || name.Length > Rules.NameMaxLength)
             throw new ArgumentException("Invalid team name.", nameof(name));
@@ -74,7 +77,8 @@ public sealed class Team : AggregateRoot, ISoftDelete, IAudit
             FoundedYear = foundedYear,
             StadiumName = stadiumName?.Trim(),
             StadiumCapacity = stadiumCapacity,
-            LogoUrl = logoUrl?.Trim()
+            LogoUrl = logoUrl?.Trim(),
+            VenueId = venueId
         };
     }
 
@@ -87,7 +91,8 @@ public sealed class Team : AggregateRoot, ISoftDelete, IAudit
         int? foundedYear = null,
         string? stadiumName = null,
         int? stadiumCapacity = null,
-        string? logoUrl = null)
+        string? logoUrl = null,
+        Guid? venueId = null)
     {
         if (string.IsNullOrWhiteSpace(name) || name.Length > Rules.NameMaxLength)
             throw new ArgumentException("Invalid team name.", nameof(name));
@@ -104,6 +109,7 @@ public sealed class Team : AggregateRoot, ISoftDelete, IAudit
         StadiumName = stadiumName?.Trim();
         StadiumCapacity = stadiumCapacity;
         LogoUrl = logoUrl?.Trim();
+        VenueId = venueId;
     }
 }
 

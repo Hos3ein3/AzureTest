@@ -122,6 +122,8 @@ public static class DependencyInjection
         services.AddTransient<AzureTest.Application.Messaging.IEventHandler<AzureTest.Application.Permissions.RolePermissionsChangedEvent>, AzureTest.Application.Permissions.RolePermissionsChangedEventHandler>();
         services.AddTransient<AzureTest.Application.Messaging.IEventHandler<AzureTest.Application.Users.UserRegisteredEvent>, AzureTest.Application.Users.UserRegisteredEventHandler>();
 
+        services.AddHttpClient<AzureTest.Application.Interfaces.Services.IFootballApiService, AzureTest.Infrastructure.Services.FootballApiService>();
+
         return services;
     }
 }

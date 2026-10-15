@@ -885,21 +885,40 @@ public static class FakeDataGenerator
         await db.Seasons.AddRangeAsync(seasons);
         await db.SaveChangesAsync();
 
-        // 3. Real Teams
+        // 3. Venues (Connected to Countries & Teams)
+        var venueData = new[]
+        {
+            ("Emirates Stadium", england.Id, "London", "Hornsey Rd, London N7 7AJ", 60704, "Grass", "https://media.api-sports.io/football/venues/494.png"),
+            ("Etihad Stadium", england.Id, "Manchester", "Ashton New Rd, Manchester M11 3FF", 53400, "Grass", "https://media.api-sports.io/football/venues/555.png"),
+            ("Anfield", england.Id, "Liverpool", "Anfield Rd, Liverpool L4 0TH", 61276, "Grass", "https://media.api-sports.io/football/venues/550.png"),
+            ("Santiago Bernabéu", spain.Id, "Madrid", "Av. de Concha Espina, 1, 28036 Madrid", 81044, "Grass", "https://media.api-sports.io/football/venues/1456.png"),
+            ("Camp Nou", spain.Id, "Barcelona", "C. d'Arístides Maillol, 12, 08028 Barcelona", 99354, "Grass", "https://media.api-sports.io/football/venues/1462.png"),
+            ("Allianz Arena", germany.Id, "Munich", "Werner-Heisenberg-Allee 25, 80939 München", 75000, "Grass", "https://media.api-sports.io/football/venues/700.png")
+        };
+
+        var venues = new List<Venue>();
+        foreach (var (vName, cId, city, address, cap, surface, img) in venueData)
+        {
+            venues.Add(Venue.Create(vName, cId, city, address, cap, surface, img));
+        }
+        await db.Venues.AddRangeAsync(venues);
+        await db.SaveChangesAsync();
+
+        // 4. Real Teams (Connected to Countries & Venues)
         var teamData = new[]
         {
-            ("Arsenal FC", "ARS", "ARS", england.Id, 1886, "Emirates Stadium", 60704, "https://media.api-sports.io/football/teams/42.png"),
-            ("Manchester City", "MCI", "MCI", england.Id, 1880, "Etihad Stadium", 53400, "https://media.api-sports.io/football/teams/50.png"),
-            ("Liverpool FC", "LIV", "LIV", england.Id, 1892, "Anfield", 61276, "https://media.api-sports.io/football/teams/40.png"),
-            ("Real Madrid", "RMA", "RMA", spain.Id, 1902, "Santiago Bernabéu", 81044, "https://media.api-sports.io/football/teams/541.png"),
-            ("FC Barcelona", "FCB", "BAR", spain.Id, 1899, "Camp Nou", 99354, "https://media.api-sports.io/football/teams/529.png"),
-            ("Bayern Munich", "BAY", "BAY", germany.Id, 1900, "Allianz Arena", 75000, "https://media.api-sports.io/football/teams/157.png")
+            ("Arsenal FC", "ARS", "ARS", england.Id, 1886, "Emirates Stadium", 60704, "https://media.api-sports.io/football/teams/42.png", venues[0].Id),
+            ("Manchester City", "MCI", "MCI", england.Id, 1880, "Etihad Stadium", 53400, "https://media.api-sports.io/football/teams/50.png", venues[1].Id),
+            ("Liverpool FC", "LIV", "LIV", england.Id, 1892, "Anfield", 61276, "https://media.api-sports.io/football/teams/40.png", venues[2].Id),
+            ("Real Madrid", "RMA", "RMA", spain.Id, 1902, "Santiago Bernabéu", 81044, "https://media.api-sports.io/football/teams/541.png", venues[3].Id),
+            ("FC Barcelona", "FCB", "BAR", spain.Id, 1899, "Camp Nou", 99354, "https://media.api-sports.io/football/teams/529.png", venues[4].Id),
+            ("Bayern Munich", "BAY", "BAY", germany.Id, 1900, "Allianz Arena", 75000, "https://media.api-sports.io/football/teams/157.png", venues[5].Id)
         };
 
         var teams = new List<Team>();
-        foreach (var (tName, sName, code, cId, year, stadium, cap, logo) in teamData)
+        foreach (var (tName, sName, code, cId, year, stadium, cap, logo, vId) in teamData)
         {
-            teams.Add(Team.Create(tName, sName, TeamType.Club, cId, code, year, stadium, cap, logo));
+            teams.Add(Team.Create(tName, sName, TeamType.Club, cId, code, year, stadium, cap, logo, vId));
         }
         await db.Teams.AddRangeAsync(teams);
         await db.SaveChangesAsync();

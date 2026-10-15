@@ -193,6 +193,7 @@ var userUserEmail = "mohammadhosein.behzadifard@gmail.com";
             _logger.LogInformation("Identity data seeded successfully.");
 
             await SeedIdentitySettingAsync();
+            await SeedDefaultPagesAsync();
         }
         catch (System.Exception ex)
         {
@@ -322,5 +323,168 @@ var userUserEmail = "mohammadhosein.behzadifard@gmail.com";
         }
         
         await _noSqlUnitOfWork.SaveChangesAsync();
+    }
+
+    private async Task SeedDefaultPagesAsync()
+    {
+        try
+        {
+            var pages = await _noSqlUnitOfWork.Pages.GetAllAsync();
+
+            // 1. Subscription Plans Page
+            if (!pages.Any(p => p.Slug == "subscription-plans"))
+            {
+                var subscriptionPage = new AzureTest.Domain.Documents.Pages.PageDocument
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Membership & Subscription Plans",
+                    Slug = "subscription-plans",
+                    Status = AzureTest.Domain.Enums.PageStatus.Published,
+                    CreatedAt = DateTime.UtcNow,
+                    Content = """
+                    <div class="py-8 px-4 max-w-5xl mx-auto font-sans">
+                      <div class="text-center mb-12">
+                        <span class="px-3.5 py-1 text-xs font-bold text-indigo-600 bg-indigo-50 rounded-full border border-indigo-100 uppercase tracking-wider">Premium Experience</span>
+                        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-3 mb-3">Elevate Your Football Fantasy Journey</h2>
+                        <p class="text-slate-600 max-w-2xl mx-auto text-sm sm:text-base">Unlock real-time Opta match analytics, automated lineup auto-subs, unlimited private leagues, and high-stakes prediction club tournaments.</p>
+                      </div>
+
+                      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <!-- Free Tier -->
+                        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+                          <div>
+                            <div class="font-bold text-slate-900 text-lg">Starter Manager</div>
+                            <p class="text-slate-500 text-xs mt-1">Perfect for casual fans and friendly office leagues.</p>
+                            <div class="my-6">
+                              <span class="text-3xl font-extrabold text-slate-900">€0</span>
+                              <span class="text-slate-400 text-xs font-medium">/ forever</span>
+                            </div>
+                            <ul class="space-y-3 text-xs text-slate-600">
+                              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Join up to 3 Public Leagues</li>
+                              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> 1 Fantasy Team per competition</li>
+                              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Standard Gameweek Transfers</li>
+                              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Predict Club match forecasting</li>
+                            </ul>
+                          </div>
+                          <a href="/Auth/Register" class="mt-8 block text-center py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors">Start Free</a>
+                        </div>
+
+                        <!-- Pro Tier -->
+                        <div class="bg-slate-900 rounded-2xl p-6 text-white shadow-xl relative flex flex-col justify-between border-2 border-indigo-500">
+                          <div class="absolute -top-3 right-6 bg-indigo-600 text-white text-[10px] uppercase font-black px-3 py-1 rounded-full tracking-wider">Most Popular</div>
+                          <div>
+                            <div class="font-bold text-lg text-white">Pro Tactician</div>
+                            <p class="text-slate-400 text-xs mt-1">Designed for serious fantasy managers seeking a tactical edge.</p>
+                            <div class="my-6">
+                              <span class="text-3xl font-extrabold text-white">€4.99</span>
+                              <span class="text-slate-400 text-xs font-medium">/ month</span>
+                            </div>
+                            <ul class="space-y-3 text-xs text-slate-300">
+                              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-indigo-400"></i> Unlimited Fantasy Leagues & Private Clubs</li>
+                              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-indigo-400"></i> Automated AI Auto-Substitutions</li>
+                              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-indigo-400"></i> Live In-Match Player Ratings & Heatmaps</li>
+                              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-indigo-400"></i> Advanced Price Rise/Fall Predictor tool</li>
+                              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-indigo-400"></i> Custom League Creation with Head Coach rules</li>
+                            </ul>
+                          </div>
+                          <a href="/Subscription/Checkout?plan=pro" class="mt-8 block text-center py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors shadow-md">Upgrade to Pro</a>
+                        </div>
+
+                        <!-- Elite Tier -->
+                        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+                          <div>
+                            <div class="font-bold text-slate-900 text-lg">Club Owner & VIP</div>
+                            <p class="text-slate-500 text-xs mt-1">Full auction hosting, trophy leagues, and API access.</p>
+                            <div class="my-6">
+                              <span class="text-3xl font-extrabold text-slate-900">€9.99</span>
+                              <span class="text-slate-400 text-xs font-medium">/ month</span>
+                            </div>
+                            <ul class="space-y-3 text-xs text-slate-600">
+                              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Host Live Real-Time Draft & Auction Rooms</li>
+                              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Custom Tournament Brackets & Knockout Cups</li>
+                              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Priority Discord/Telegram Gameweek Webhooks</li>
+                              <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-500"></i> Verified League Badges & Custom Trophies</li>
+                            </ul>
+                          </div>
+                          <a href="/Subscription/Checkout?plan=elite" class="mt-8 block text-center py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors">Go VIP</a>
+                        </div>
+                      </div>
+                    </div>
+                    """
+                };
+                await _noSqlUnitOfWork.Pages.AddAsync(subscriptionPage);
+            }
+
+            // 2. Player Pricing Rules Page
+            if (!pages.Any(p => p.Slug == "player-valuation-rules"))
+            {
+                var valuationPage = new AzureTest.Domain.Documents.Pages.PageDocument
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Player Valuation Models: Performance vs Demanding Mode",
+                    Slug = "player-valuation-rules",
+                    Status = AzureTest.Domain.Enums.PageStatus.Published,
+                    CreatedAt = DateTime.UtcNow,
+                    Content = """
+                    <div class="py-8 px-4 max-w-4xl mx-auto font-sans leading-relaxed text-slate-800">
+                      <div class="border-b border-slate-200 pb-6 mb-8">
+                        <span class="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-full border border-emerald-200">Economic Engine</span>
+                        <h1 class="text-3xl font-black text-slate-900 mt-3">Player Valuation Models: Performance vs Demanding Mode</h1>
+                        <p class="text-sm text-slate-500 mt-1">How dynamic player prices evolve weekly across leagues.</p>
+                      </div>
+
+                      <div class="space-y-8 text-sm">
+                        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+                          <h3 class="text-base font-bold text-slate-900 flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-chart-line text-blue-600"></i> 1. Performance-Driven Valuation Model
+                          </h3>
+                          <p class="text-slate-600 mb-3">Prices fluctuate strictly based on objective on-pitch real-world stats collected via API-Football over a rolling 3-gameweek window:</p>
+                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div class="p-3 bg-white rounded-xl border border-slate-200">
+                              <div class="font-bold text-slate-700 mb-1">Key Growth Drivers (+€0.1M to +€0.3M)</div>
+                              <ul class="list-disc pl-4 space-y-0.5 text-slate-500">
+                                <li>Provider Match Rating ≥ 8.0</li>
+                                <li>Consecutive Goals / Clean Sheets</li>
+                                <li>Key Passes &gt; 3 per 90 mins</li>
+                                <li>Man of the Match (MVP) honors</li>
+                              </ul>
+                            </div>
+                            <div class="p-3 bg-white rounded-xl border border-slate-200">
+                              <div class="font-bold text-slate-700 mb-1">Price Drops (-€0.1M to -€0.2M)</div>
+                              <ul class="list-disc pl-4 space-y-0.5 text-slate-500">
+                                <li>Minutes played &lt; 30 mins</li>
+                                <li>Red cards or conceded penalties</li>
+                                <li>Provider Match Rating &lt; 6.0</li>
+                                <li>Confirmed injury / suspension status</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+                          <h3 class="text-base font-bold text-slate-900 flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-fire text-amber-600"></i> 2. Demanding (Market-Driven) Valuation Model
+                          </h3>
+                          <p class="text-slate-600 mb-3">Modeled after real stock markets and Premier League FPL mechanics, prices fluctuate based on net transfer transactions:</p>
+                          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-2 text-xs">
+                            <div><strong>Net Transfers Threshold:</strong> If net transfers (Purchases − Sales) exceed <strong>+5%</strong> of active managers in a gameweek, the player rises by <strong>+€0.1M</strong>.</div>
+                            <div><strong>Heavy Selling Drops:</strong> If net sales exceed <strong>−5%</strong>, the price drops by <strong>−€0.1M</strong>.</div>
+                            <div><strong>Gameweek Cap:</strong> A player's price cannot rise or fall by more than <strong>±€0.3M</strong> within a single gameweek, preventing sudden economic shocks.</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    """
+                };
+                await _noSqlUnitOfWork.Pages.AddAsync(valuationPage);
+            }
+
+            await _noSqlUnitOfWork.SaveChangesAsync();
+            _logger.LogInformation("Default Pages (Subscription Plans & Player Valuation Rules) seeded successfully.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not seed default pages into NoSQL document store.");
+        }
     }
 }

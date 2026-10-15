@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -66,6 +67,12 @@ public class DynamicAuthorizationFilter : IAsyncAuthorizationFilter
         {
             var controllerName = descriptor.ControllerName;
             var actionName = descriptor.ActionName;
+            var areaName = context.RouteData.Values.TryGetValue("area", out var areaVal) ? areaVal?.ToString() : null;
+            if (string.IsNullOrWhiteSpace(areaName))
+            {
+                var areaAttr = descriptor.ControllerTypeInfo.GetCustomAttribute<AreaAttribute>();
+                areaName = areaAttr?.RouteValue;
+            }
 
             // Cache Permissions
             var allPermissions = await _redisService.GetAsync<List<Permission>>("AllPermissions");
@@ -75,7 +82,16 @@ public class DynamicAuthorizationFilter : IAsyncAuthorizationFilter
                 await _redisService.SetAsync("AllPermissions", allPermissions, System.TimeSpan.FromHours(24));
             }
 
-            var permission = allPermissions.FirstOrDefault(p => p.ControllerName == controllerName && p.ActionName == actionName);
+            // Match permission prioritizing AreaName if specified
+            var permission = allPermissions.FirstOrDefault(p => 
+                (string.IsNullOrWhiteSpace(areaName) ? string.IsNullOrWhiteSpace(p.AreaName) : string.Equals(p.AreaName, areaName, System.StringComparison.OrdinalIgnoreCase)) &&
+                string.Equals(p.ControllerName, controllerName, System.StringComparison.OrdinalIgnoreCase) && 
+                string.Equals(p.ActionName, actionName, System.StringComparison.OrdinalIgnoreCase));
+
+            // Fallback match without area check if not found
+            permission ??= allPermissions.FirstOrDefault(p => 
+                string.Equals(p.ControllerName, controllerName, System.StringComparison.OrdinalIgnoreCase) && 
+                string.Equals(p.ActionName, actionName, System.StringComparison.OrdinalIgnoreCase));
 
             // Everything is restricted by default. Allow only if explicitly marked as unrestricted.
             if (permission != null && !permission.IsRestricted)
@@ -88,7 +104,11 @@ public class DynamicAuthorizationFilter : IAsyncAuthorizationFilter
             var currentUser = context.HttpContext.RequestServices.GetService<ICurrentUser>();
             if (currentUser != null && currentUser.Permissions != null)
             {
-                if (currentUser.Permissions.Contains($"{controllerName}/{actionName}"))
+                var fullKeyWithArea = !string.IsNullOrWhiteSpace(areaName) ? $"{areaName}/{controllerName}/{actionName}" : null;
+                var shortKey = $"{controllerName}/{actionName}";
+
+                if ((fullKeyWithArea != null && currentUser.Permissions.Contains(fullKeyWithArea, System.StringComparer.OrdinalIgnoreCase)) ||
+                    currentUser.Permissions.Contains(shortKey, System.StringComparer.OrdinalIgnoreCase))
                 {
                     return; // Access granted via Redis cached permissions
                 }

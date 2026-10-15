@@ -31,10 +31,38 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ResumeTrackerDb.Dev
+    command: |
+      postgres 
+      -c wal_level=replica 
+      -c max_wal_senders=10 
+      -c max_replication_slots=10 
+      -c hot_standby=on
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  postgres-replica:
+    image: postgres:15-alpine
+    container_name: azuretest-postgres-replica
+    environment:
+      PGPASSWORD: postgres
+    depends_on:
+      - postgres
+    entrypoint: |
+      sh -c "
+      if [ ! -s /var/lib/postgresql/data/PG_VERSION ]; then
+        until pg_isready -h postgres -p 5432 -U postgres; do sleep 1; done;
+        pg_basebackup -h postgres -p 5432 -U postgres -D /var/lib/postgresql/data -Fp -Xs -R;
+      fi;
+      exec docker-entrypoint.sh postgres -c hot_standby=on
+      "
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata_replica:/var/lib/postgresql/data
     networks:
       - app-network
 
@@ -188,6 +216,7 @@ networks:
 
 volumes:
   pgdata:
+  pgdata_replica:
   mongodata:
   redisdata:
   prometheusdata:

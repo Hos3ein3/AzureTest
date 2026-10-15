@@ -17,10 +17,10 @@ public sealed record GetFantasyLeaguesQuery(FantasyLeagueFilter Filter) : IQuery
 
 public sealed class GetFantasyLeaguesQueryHandler : BaseQueryHandler<GetFantasyLeaguesQuery, PagedResult<FantasyLeagueDto, FantasyLeagueFilter>>
 {
-    private readonly IUnitOfWork _uow;
+    private readonly IReadOnlyFootballFantasyUnitOfWork _uow;
     private readonly ICurrentUser _currentUser;
 
-    public GetFantasyLeaguesQueryHandler(IUnitOfWork uow, ICurrentUser currentUser, ILogger<GetFantasyLeaguesQueryHandler> logger) : base(logger)
+    public GetFantasyLeaguesQueryHandler(IReadOnlyFootballFantasyUnitOfWork uow, ICurrentUser currentUser, ILogger<GetFantasyLeaguesQueryHandler> logger) : base(logger)
     {
         _uow = uow;
         _currentUser = currentUser;
@@ -118,7 +118,12 @@ public sealed class GetFantasyLeaguesQueryHandler : BaseQueryHandler<GetFantasyL
                 x.AllowAutoSub,
                 x.EnableMvpBonus,
                 x.MvpBonusPoints,
-                x.GroupCount
+                x.GroupCount,
+                x.FreeTransfersPerGameweek,
+                x.ExtraTransferPointPenalty,
+                x.ProfitTaxPercent,
+                x.GetNextTransferDeadline(),
+                x.IsTransferMarketOpen()
             ))
             .ToList();
 

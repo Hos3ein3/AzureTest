@@ -26,14 +26,15 @@ public class LogHabitCommandHandler : BaseCommandHandler<LogHabitCommand, Result
         var h = await UnitOfWork.Habits.GetByIdAsync(command.HabitId);
         if (h == null || h.UserId != _currentUser.Id) return Result.Failure("Habit not found.");
 
-        var existingLog = await UnitOfWork.HabitLogs.GetHabitLogByDateAsync(command.HabitId, command.LogDate.Date);
+        var logDateUtc = command.LogDate.Date.ToUtc();
+        var existingLog = await UnitOfWork.HabitLogs.GetHabitLogByDateAsync(command.HabitId, logDateUtc);
         if (existingLog != null)
         {
             existingLog.Update(command.BooleanValue, command.NumericValue, command.Notes);
         }
         else
         {
-            var newLog = HabitLog.Create(command.HabitId, command.LogDate.Date, command.BooleanValue, command.NumericValue, command.Notes);
+            var newLog = HabitLog.Create(command.HabitId, logDateUtc, command.BooleanValue, command.NumericValue, command.Notes);
             UnitOfWork.HabitLogs.Add(newLog);
         }
         

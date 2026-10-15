@@ -25,7 +25,7 @@ public class UpdateEventCommandHandler : BaseCommandHandler<UpdateEventCommand, 
         var ev = await UnitOfWork.Events.GetByIdAsync(command.Id);
         if (ev == null || ev.UserId != _currentUser.Id) return Result.Failure("Event not found.");
 
-        ev.Update(command.Title, command.Description, command.StartDate, command.EndDate, command.IsAllDay, command.Color);
+        ev.Update(command.Title, command.Description, command.StartDate.ToUtc(), command.EndDate.ToUtc(), command.IsAllDay, command.Color);
         
         return Result.Success();
     }

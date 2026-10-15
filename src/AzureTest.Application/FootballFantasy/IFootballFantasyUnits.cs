@@ -25,6 +25,8 @@ public interface IFootballFantasyQueryUnit
     // Real-world Entities Queries
     IQueryHandler<GetCountriesQuery, PagedResult<CountryDto, CountryFilter>> GetCountries { get; }
     IQueryHandler<GetCountryByIdQuery, Result<CountryDto>> GetCountryById { get; }
+    IQueryHandler<GetVenuesQuery, PagedResult<VenueDto, VenueFilter>> GetVenues { get; }
+    IQueryHandler<GetVenueByIdQuery, Result<VenueDto>> GetVenueById { get; }
     IQueryHandler<GetLeaguesQuery, PagedResult<LeagueDto, LeagueFilter>> GetLeagues { get; }
     IQueryHandler<GetLeagueByIdQuery, Result<LeagueDto>> GetLeagueById { get; }
     IQueryHandler<GetTeamsQuery, PagedResult<TeamDto, TeamFilter>> GetTeams { get; }
@@ -42,10 +44,20 @@ public interface IFootballFantasyQueryUnit
     IQueryHandler<GetAchievementByIdQuery, Result<AchievementDto>> GetAchievementById { get; }
     IQueryHandler<GetManagerProfileQuery, Result<ManagerProfileDto>> GetManagerProfile { get; }
     IQueryHandler<GetLeagueTournamentDetailsQuery, Result<List<FantasyLeagueGroupDto>>> GetLeagueTournamentDetails { get; }
+    IQueryHandler<GetPendingJoinRequestsQuery, Result<List<PendingJoinRequestDto>>> GetPendingJoinRequests { get; }
 
     // Predict Club
     IQueryHandler<GetPredictClubsQuery, PagedResult<PredictClubDto, PredictClubFilter>> GetPredictClubs { get; }
     IQueryHandler<GetPredictClubDetailsQuery, Result<PredictClubDetailsDto>> GetPredictClubDetails { get; }
+
+    // Extended Football Domains
+    IQueryHandler<GetLeagueStandingsQuery, PagedResult<LeagueStandingDto, LeagueStandingFilter>> GetLeagueStandings { get; }
+    IQueryHandler<GetBookmakersQuery, PagedResult<BookmakerDto, BookmakerFilter>> GetBookmakers { get; }
+    IQueryHandler<GetFixtureOddsQuery, PagedResult<FixtureOddDto, FixtureOddFilter>> GetFixtureOdds { get; }
+    IQueryHandler<GetPlayerTransfersQuery, PagedResult<PlayerTransferDto, PlayerTransferFilter>> GetPlayerTransfers { get; }
+    IQueryHandler<GetPlayerInjuriesQuery, PagedResult<PlayerInjuryDto, PlayerInjuryFilter>> GetPlayerInjuries { get; }
+    IQueryHandler<GetTeamTrophiesQuery, PagedResult<TeamTrophyDto, TeamTrophyFilter>> GetTeamTrophies { get; }
+    IQueryHandler<GetPlayerTopScorersQuery, PagedResult<PlayerTopScorerDto, PlayerTopScorerFilter>> GetPlayerTopScorers { get; }
 }
 
 public sealed class FootballFantasyQueryUnit : IFootballFantasyQueryUnit
@@ -60,6 +72,8 @@ public sealed class FootballFantasyQueryUnit : IFootballFantasyQueryUnit
 
     public IQueryHandler<GetCountriesQuery, PagedResult<CountryDto, CountryFilter>> GetCountries { get; }
     public IQueryHandler<GetCountryByIdQuery, Result<CountryDto>> GetCountryById { get; }
+    public IQueryHandler<GetVenuesQuery, PagedResult<VenueDto, VenueFilter>> GetVenues { get; }
+    public IQueryHandler<GetVenueByIdQuery, Result<VenueDto>> GetVenueById { get; }
     public IQueryHandler<GetLeaguesQuery, PagedResult<LeagueDto, LeagueFilter>> GetLeagues { get; }
     public IQueryHandler<GetLeagueByIdQuery, Result<LeagueDto>> GetLeagueById { get; }
     public IQueryHandler<GetTeamsQuery, PagedResult<TeamDto, TeamFilter>> GetTeams { get; }
@@ -76,9 +90,18 @@ public sealed class FootballFantasyQueryUnit : IFootballFantasyQueryUnit
     public IQueryHandler<GetAchievementByIdQuery, Result<AchievementDto>> GetAchievementById { get; }
     public IQueryHandler<GetManagerProfileQuery, Result<ManagerProfileDto>> GetManagerProfile { get; }
     public IQueryHandler<GetLeagueTournamentDetailsQuery, Result<List<FantasyLeagueGroupDto>>> GetLeagueTournamentDetails { get; }
+    public IQueryHandler<GetPendingJoinRequestsQuery, Result<List<PendingJoinRequestDto>>> GetPendingJoinRequests { get; }
 
     public IQueryHandler<GetPredictClubsQuery, PagedResult<PredictClubDto, PredictClubFilter>> GetPredictClubs { get; }
     public IQueryHandler<GetPredictClubDetailsQuery, Result<PredictClubDetailsDto>> GetPredictClubDetails { get; }
+
+    public IQueryHandler<GetLeagueStandingsQuery, PagedResult<LeagueStandingDto, LeagueStandingFilter>> GetLeagueStandings { get; }
+    public IQueryHandler<GetBookmakersQuery, PagedResult<BookmakerDto, BookmakerFilter>> GetBookmakers { get; }
+    public IQueryHandler<GetFixtureOddsQuery, PagedResult<FixtureOddDto, FixtureOddFilter>> GetFixtureOdds { get; }
+    public IQueryHandler<GetPlayerTransfersQuery, PagedResult<PlayerTransferDto, PlayerTransferFilter>> GetPlayerTransfers { get; }
+    public IQueryHandler<GetPlayerInjuriesQuery, PagedResult<PlayerInjuryDto, PlayerInjuryFilter>> GetPlayerInjuries { get; }
+    public IQueryHandler<GetTeamTrophiesQuery, PagedResult<TeamTrophyDto, TeamTrophyFilter>> GetTeamTrophies { get; }
+    public IQueryHandler<GetPlayerTopScorersQuery, PagedResult<PlayerTopScorerDto, PlayerTopScorerFilter>> GetPlayerTopScorers { get; }
 
     public FootballFantasyQueryUnit(
         IQueryHandler<GetFantasyLeaguesQuery, PagedResult<FantasyLeagueDto, FantasyLeagueFilter>> getFantasyLeagues,
@@ -90,6 +113,8 @@ public sealed class FootballFantasyQueryUnit : IFootballFantasyQueryUnit
         IQueryHandler<GetAdminFantasyTeamsQuery, Result<List<AdminFantasyTeamOverviewDto>>> getAdminFantasyTeams,
         IQueryHandler<GetCountriesQuery, PagedResult<CountryDto, CountryFilter>> getCountries,
         IQueryHandler<GetCountryByIdQuery, Result<CountryDto>> getCountryById,
+        IQueryHandler<GetVenuesQuery, PagedResult<VenueDto, VenueFilter>> getVenues,
+        IQueryHandler<GetVenueByIdQuery, Result<VenueDto>> getVenueById,
         IQueryHandler<GetLeaguesQuery, PagedResult<LeagueDto, LeagueFilter>> getLeagues,
         IQueryHandler<GetLeagueByIdQuery, Result<LeagueDto>> getLeagueById,
         IQueryHandler<GetTeamsQuery, PagedResult<TeamDto, TeamFilter>> getTeams,
@@ -105,8 +130,16 @@ public sealed class FootballFantasyQueryUnit : IFootballFantasyQueryUnit
         IQueryHandler<GetAchievementByIdQuery, Result<AchievementDto>> getAchievementById,
         IQueryHandler<GetManagerProfileQuery, Result<ManagerProfileDto>> getManagerProfile,
         IQueryHandler<GetLeagueTournamentDetailsQuery, Result<List<FantasyLeagueGroupDto>>> getLeagueTournamentDetails,
+        IQueryHandler<GetPendingJoinRequestsQuery, Result<List<PendingJoinRequestDto>>> getPendingJoinRequests,
         IQueryHandler<GetPredictClubsQuery, PagedResult<PredictClubDto, PredictClubFilter>> getPredictClubs,
-        IQueryHandler<GetPredictClubDetailsQuery, Result<PredictClubDetailsDto>> getPredictClubDetails)
+        IQueryHandler<GetPredictClubDetailsQuery, Result<PredictClubDetailsDto>> getPredictClubDetails,
+        IQueryHandler<GetLeagueStandingsQuery, PagedResult<LeagueStandingDto, LeagueStandingFilter>> getLeagueStandings,
+        IQueryHandler<GetBookmakersQuery, PagedResult<BookmakerDto, BookmakerFilter>> getBookmakers,
+        IQueryHandler<GetFixtureOddsQuery, PagedResult<FixtureOddDto, FixtureOddFilter>> getFixtureOdds,
+        IQueryHandler<GetPlayerTransfersQuery, PagedResult<PlayerTransferDto, PlayerTransferFilter>> getPlayerTransfers,
+        IQueryHandler<GetPlayerInjuriesQuery, PagedResult<PlayerInjuryDto, PlayerInjuryFilter>> getPlayerInjuries,
+        IQueryHandler<GetTeamTrophiesQuery, PagedResult<TeamTrophyDto, TeamTrophyFilter>> getTeamTrophies,
+        IQueryHandler<GetPlayerTopScorersQuery, PagedResult<PlayerTopScorerDto, PlayerTopScorerFilter>> getPlayerTopScorers)
     {
         GetFantasyLeagues = getFantasyLeagues;
         GetFantasyLeagueById = getFantasyLeagueById;
@@ -117,6 +150,8 @@ public sealed class FootballFantasyQueryUnit : IFootballFantasyQueryUnit
         GetAdminFantasyTeams = getAdminFantasyTeams;
         GetCountries = getCountries;
         GetCountryById = getCountryById;
+        GetVenues = getVenues;
+        GetVenueById = getVenueById;
         GetLeagues = getLeagues;
         GetLeagueById = getLeagueById;
         GetTeams = getTeams;
@@ -132,8 +167,16 @@ public sealed class FootballFantasyQueryUnit : IFootballFantasyQueryUnit
         GetAchievementById = getAchievementById;
         GetManagerProfile = getManagerProfile;
         GetLeagueTournamentDetails = getLeagueTournamentDetails;
+        GetPendingJoinRequests = getPendingJoinRequests;
         GetPredictClubs = getPredictClubs;
         GetPredictClubDetails = getPredictClubDetails;
+        GetLeagueStandings = getLeagueStandings;
+        GetBookmakers = getBookmakers;
+        GetFixtureOdds = getFixtureOdds;
+        GetPlayerTransfers = getPlayerTransfers;
+        GetPlayerInjuries = getPlayerInjuries;
+        GetTeamTrophies = getTeamTrophies;
+        GetPlayerTopScorers = getPlayerTopScorers;
     }
 }
 
@@ -144,6 +187,7 @@ public interface IFootballFantasyCommandUnit
     ICommandHandler<CreateFantasyTeamCommand, Result<Guid>> CreateFantasyTeam { get; }
     ICommandHandler<SaveLineupCommand, Result> SaveLineup { get; }
     ICommandHandler<ReviewJoinRequestCommand, Result> ReviewJoinRequest { get; }
+    ICommandHandler<WithdrawJoinRequestCommand, Result> WithdrawJoinRequest { get; }
     ICommandHandler<ProcessLeagueKickoutsCommand, Result<int>> ProcessLeagueKickouts { get; }
     ICommandHandler<InitializeLeagueTournamentCommand, Result> InitializeLeagueTournament { get; }
     ICommandHandler<LeaveFantasyLeagueCommand, Result> LeaveFantasyLeague { get; }
@@ -158,6 +202,11 @@ public interface IFootballFantasyCommandUnit
     ICommandHandler<CreateCountryCommand, Result<Guid>> CreateCountry { get; }
     ICommandHandler<UpdateCountryCommand, Result> UpdateCountry { get; }
     ICommandHandler<DeleteCountryCommand, Result> DeleteCountry { get; }
+
+    // Venue
+    ICommandHandler<CreateVenueCommand, Result<Guid>> CreateVenue { get; }
+    ICommandHandler<UpdateVenueCommand, Result> UpdateVenue { get; }
+    ICommandHandler<DeleteVenueCommand, Result> DeleteVenue { get; }
 
     // League
     ICommandHandler<CreateLeagueCommand, Result<Guid>> CreateLeague { get; }
@@ -195,6 +244,12 @@ public interface IFootballFantasyCommandUnit
     ICommandHandler<JoinPredictClubCommand, Result> JoinPredictClub { get; }
     ICommandHandler<SaveMatchPredictionCommand, Result> SaveMatchPrediction { get; }
     ICommandHandler<SaveTournamentPredictionCommand, Result> SaveTournamentPrediction { get; }
+
+    // Extended Football Domains
+    ICommandHandler<CreateBookmakerCommand, Result<Guid>> CreateBookmaker { get; }
+    ICommandHandler<CreateFixtureOddCommand, Result<Guid>> CreateFixtureOdd { get; }
+    ICommandHandler<CreatePlayerTransferCommand, Result<Guid>> CreatePlayerTransfer { get; }
+    ICommandHandler<CreatePlayerInjuryCommand, Result<Guid>> CreatePlayerInjury { get; }
 }
 
 public sealed class FootballFantasyCommandUnit : IFootballFantasyCommandUnit
@@ -203,6 +258,7 @@ public sealed class FootballFantasyCommandUnit : IFootballFantasyCommandUnit
     public ICommandHandler<CreateFantasyTeamCommand, Result<Guid>> CreateFantasyTeam { get; }
     public ICommandHandler<SaveLineupCommand, Result> SaveLineup { get; }
     public ICommandHandler<ReviewJoinRequestCommand, Result> ReviewJoinRequest { get; }
+    public ICommandHandler<WithdrawJoinRequestCommand, Result> WithdrawJoinRequest { get; }
     public ICommandHandler<ProcessLeagueKickoutsCommand, Result<int>> ProcessLeagueKickouts { get; }
     public ICommandHandler<InitializeLeagueTournamentCommand, Result> InitializeLeagueTournament { get; }
     public ICommandHandler<LeaveFantasyLeagueCommand, Result> LeaveFantasyLeague { get; }
@@ -220,6 +276,10 @@ public sealed class FootballFantasyCommandUnit : IFootballFantasyCommandUnit
     public ICommandHandler<CreateCountryCommand, Result<Guid>> CreateCountry { get; }
     public ICommandHandler<UpdateCountryCommand, Result> UpdateCountry { get; }
     public ICommandHandler<DeleteCountryCommand, Result> DeleteCountry { get; }
+
+    public ICommandHandler<CreateVenueCommand, Result<Guid>> CreateVenue { get; }
+    public ICommandHandler<UpdateVenueCommand, Result> UpdateVenue { get; }
+    public ICommandHandler<DeleteVenueCommand, Result> DeleteVenue { get; }
 
     public ICommandHandler<CreateLeagueCommand, Result<Guid>> CreateLeague { get; }
     public ICommandHandler<UpdateLeagueCommand, Result> UpdateLeague { get; }
@@ -251,6 +311,7 @@ public sealed class FootballFantasyCommandUnit : IFootballFantasyCommandUnit
         ICommandHandler<CreateFantasyTeamCommand, Result<Guid>> createFantasyTeam,
         ICommandHandler<SaveLineupCommand, Result> saveLineup,
         ICommandHandler<ReviewJoinRequestCommand, Result> reviewJoinRequest,
+        ICommandHandler<WithdrawJoinRequestCommand, Result> withdrawJoinRequest,
         ICommandHandler<ProcessLeagueKickoutsCommand, Result<int>> processLeagueKickouts,
         ICommandHandler<InitializeLeagueTournamentCommand, Result> initializeLeagueTournament,
         ICommandHandler<LeaveFantasyLeagueCommand, Result> leaveFantasyLeague,
@@ -261,6 +322,9 @@ public sealed class FootballFantasyCommandUnit : IFootballFantasyCommandUnit
         ICommandHandler<CreateCountryCommand, Result<Guid>> createCountry,
         ICommandHandler<UpdateCountryCommand, Result> updateCountry,
         ICommandHandler<DeleteCountryCommand, Result> deleteCountry,
+        ICommandHandler<CreateVenueCommand, Result<Guid>> createVenue,
+        ICommandHandler<UpdateVenueCommand, Result> updateVenue,
+        ICommandHandler<DeleteVenueCommand, Result> deleteVenue,
         ICommandHandler<CreateLeagueCommand, Result<Guid>> createLeague,
         ICommandHandler<UpdateLeagueCommand, Result> updateLeague,
         ICommandHandler<DeleteLeagueCommand, Result> deleteLeague,
@@ -283,12 +347,17 @@ public sealed class FootballFantasyCommandUnit : IFootballFantasyCommandUnit
         ICommandHandler<CreatePredictClubCommand, Result<Guid>> createPredictClub,
         ICommandHandler<JoinPredictClubCommand, Result> joinPredictClub,
         ICommandHandler<SaveMatchPredictionCommand, Result> saveMatchPrediction,
-        ICommandHandler<SaveTournamentPredictionCommand, Result> saveTournamentPrediction)
+        ICommandHandler<SaveTournamentPredictionCommand, Result> saveTournamentPrediction,
+        ICommandHandler<CreateBookmakerCommand, Result<Guid>> createBookmaker,
+        ICommandHandler<CreateFixtureOddCommand, Result<Guid>> createFixtureOdd,
+        ICommandHandler<CreatePlayerTransferCommand, Result<Guid>> createPlayerTransfer,
+        ICommandHandler<CreatePlayerInjuryCommand, Result<Guid>> createPlayerInjury)
     {
         CreateFantasyLeague = createFantasyLeague;
         CreateFantasyTeam = createFantasyTeam;
         SaveLineup = saveLineup;
         ReviewJoinRequest = reviewJoinRequest;
+        WithdrawJoinRequest = withdrawJoinRequest;
         ProcessLeagueKickouts = processLeagueKickouts;
         InitializeLeagueTournament = initializeLeagueTournament;
         LeaveFantasyLeague = leaveFantasyLeague;
@@ -304,6 +373,10 @@ public sealed class FootballFantasyCommandUnit : IFootballFantasyCommandUnit
         CreateCountry = createCountry;
         UpdateCountry = updateCountry;
         DeleteCountry = deleteCountry;
+
+        CreateVenue = createVenue;
+        UpdateVenue = updateVenue;
+        DeleteVenue = deleteVenue;
 
         CreateLeague = createLeague;
         UpdateLeague = updateLeague;
@@ -329,5 +402,15 @@ public sealed class FootballFantasyCommandUnit : IFootballFantasyCommandUnit
         CreatePlayerMatchStat = createPlayerMatchStat;
         UpdatePlayerMatchStat = updatePlayerMatchStat;
         DeletePlayerMatchStat = deletePlayerMatchStat;
+
+        CreateBookmaker = createBookmaker;
+        CreateFixtureOdd = createFixtureOdd;
+        CreatePlayerTransfer = createPlayerTransfer;
+        CreatePlayerInjury = createPlayerInjury;
     }
+
+    public ICommandHandler<CreateBookmakerCommand, Result<Guid>> CreateBookmaker { get; }
+    public ICommandHandler<CreateFixtureOddCommand, Result<Guid>> CreateFixtureOdd { get; }
+    public ICommandHandler<CreatePlayerTransferCommand, Result<Guid>> CreatePlayerTransfer { get; }
+    public ICommandHandler<CreatePlayerInjuryCommand, Result<Guid>> CreatePlayerInjury { get; }
 }
