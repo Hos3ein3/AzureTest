@@ -1,0 +1,98 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  BUILD_CONFIGURATION: 'Release'
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Stage 1: Build & Automated Tests
+  # ─────────────────────────────────────────────────────────────
+  test:
+    name: Build & Run Tests
+    # Use 'ubuntu-latest' for cloud runners, or 'self-hosted' if you want it on your Mac
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x' # matches your net10.0 target
+
+      - name: Restore Dependencies
+        run: dotnet restore AzureTest.sln
+
+      - name: Build Solution
+        run: dotnet build AzureTest.sln --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+
+      # Uncomment test suites as you enable them:
+      # - name: Run Unit Tests
+      #   run: dotnet test test/AzureTest.UnitTest/AzureTest.UnitTest.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build
+
+      # - name: Run Integration Tests
+      #   run: dotnet test test/AzureTest.IntegrationTest/AzureTest.IntegrationTest.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build
+
+  # ─────────────────────────────────────────────────────────────
+  # Stage 2: Deploy to Docker Compose (Runs on your Mac Self-Hosted Runner)
+  # ─────────────────────────────────────────────────────────────
+  deploy:
+    name: Build & Deploy to Docker
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # 'self-hosted' allows this job to run on your local machine to deploy Docker Compose
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Pre-pull .NET Images
+        run: |
+          echo "Pre-pulling .NET images..."
+          for img in mcr.microsoft.com/dotnet/sdk:10.0 mcr.microsoft.com/dotnet/aspnet:10.0; do
+            for i in 1 2 3; do
+              docker pull $img && break || (echo "Retry $i for $img..." && sleep 5)
+            done
+          done
+
+      - name: Docker Compose Build
+        run: docker compose build
+
+      - name: Pre-pull Supporting Docker Images
+        run: |
+          for img in postgres:15-alpine dpage/pgadmin4 mongo:6 mongo-express redis:7-alpine rediscommander/redis-commander:latest rabbitmq:3-management-alpine prom/prometheus:latest prom/node-exporter:latest grafana/loki:latest grafana/promtail:latest grafana/grafana:latest; do
+            echo "Pulling $img..."
+            for i in 1 2 3 4; do
+              docker pull $img && break || (echo "Retry $i for $img in 5 seconds..." && sleep 5)
+            done
+          done
+
+      - name: Docker Compose Up
+        run: docker compose up -d
+
+      - name: Verify Application Health
+        run: |
+          echo "Waiting for application to become healthy..."
+          end=$((SECONDS+60))
+          while [ $SECONDS -lt $end ]; do
+            if curl -s http://localhost:8080/health | grep -q "Healthy"; then
+              echo "Application is up and healthy!"
+              exit 0
+            fi
+            echo "Waiting..."
+            sleep 5
+          done
+          echo "Timeout waiting for application to become healthy."
+          docker logs azuretest-web
+          exit 1

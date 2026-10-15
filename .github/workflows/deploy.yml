@@ -1,0 +1,64 @@
+name: Deploy to Ubuntu Server
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  DEPLOY_DIR: "/home/homelabadmin/wwwroot/azuretest/src"  # or direct path: "/home/ubuntu/projects/src"
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy on Ubuntu
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Source Code into Runner Workspace
+        uses: actions/checkout@v4
+
+      - name: Sync Source Code to projects/src
+        run: |
+          echo "Syncing code to production directory: projects/src..."
+          mkdir -p "$DEPLOY_DIR"
+          # Sync code excluding git and local caches
+          rsync -av --delete \
+            --exclude '.git' \
+            --exclude 'bin/' \
+            --exclude 'obj/' \
+            ./ "$DEPLOY_DIR"/
+
+      - name: Build and Start Containers via Docker Compose
+        run: |
+          cd "$DEPLOY_DIR"
+
+          echo "Pre-pulling .NET runtime & SDK images..."
+          for img in mcr.microsoft.com/dotnet/sdk:10.0 mcr.microsoft.com/dotnet/aspnet:10.0; do
+            for i in 1 2 3; do
+              docker pull $img && break || (echo "Retry $i for $img..." && sleep 5)
+            done
+          done
+
+          echo "Building application container..."
+          docker compose build
+
+          echo "Starting all services (detached)..."
+          docker compose up -d --remove-orphans
+
+      - name: Health Check Verification
+        run: |
+          echo "Verifying application health..."
+          end=$((SECONDS+90))
+          while [ $SECONDS -lt $end ]; do
+            if curl -s http://localhost:8088/health | grep -q "Healthy"; then
+              echo "Deployment succeeded! Application is healthy."
+              exit 0
+            fi
+            echo "Waiting for web container to report Healthy..."
+            sleep 5
+          done
+
+          echo "Health check timed out! Dumping web container logs:"
+          docker logs --tail 100 azuretest-web
+          exit 1

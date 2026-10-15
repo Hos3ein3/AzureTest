@@ -1,3 +1,6 @@
+name:
+  azuretest
+
 services:
   # ── Application ────────────────────────────────────────────────────────────
   web:
@@ -6,16 +9,16 @@ services:
       dockerfile: Dockerfile
     container_name: azuretest-web
     ports:
-      - "8080:8080"
+      - "8088:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      - SeqUrl=http://loki:3100 # This won't work perfectly for Seq sink out of the box if Loki doesn't support Seq API natively, but we will rely on Promtail for logging, or change the sink to OpenTelemetry.
+      
     depends_on:
       - postgres
       - mongo
       - redis
     networks:
-      - app-network
+      - app-azuretest-network
     # Exposing docker logs for Promtail
     logging:
       driver: "json-file"
@@ -38,33 +41,12 @@ services:
       -c max_replication_slots=10 
       -c hot_standby=on
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
-      - app-network
+      - app-azuretest-network
 
-  postgres-replica:
-    image: postgres:15-alpine
-    container_name: azuretest-postgres-replica
-    environment:
-      PGPASSWORD: postgres
-    depends_on:
-      - postgres
-    entrypoint: |
-      sh -c "
-      if [ ! -s /var/lib/postgresql/data/PG_VERSION ]; then
-        until pg_isready -h postgres -p 5432 -U postgres; do sleep 1; done;
-        pg_basebackup -h postgres -p 5432 -U postgres -D /var/lib/postgresql/data -Fp -Xs -R;
-      fi;
-      exec docker-entrypoint.sh postgres -c hot_standby=on
-      "
-    ports:
-      - "5433:5432"
-    volumes:
-      - pgdata_replica:/var/lib/postgresql/data
-    networks:
-      - app-network
 
   pgadmin:
     image: dpage/pgadmin4
@@ -73,22 +55,22 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      - "5050:80"
+      - "5051:80"
     depends_on:
       - postgres
     networks:
-      - app-network
+      - app-azuretest-network
 
   # ── MongoDB & Express ──────────────────────────────────────────────────────
   mongo:
     image: mongo:6
     container_name: azuretest-mongo
     ports:
-      - "27017:27017"
+      - "27018:27017"
     volumes:
       - mongodata:/data/db
     networks:
-      - app-network
+      - app-azuretest-network
 
   mongo-express:
     image: mongo-express
@@ -103,18 +85,18 @@ services:
     depends_on:
       - mongo
     networks:
-      - app-network
+      - app-azuretest-network
 
   # ── Redis & Dashboard ──────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: azuretest-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redisdata:/data
     networks:
-      - app-network
+      - app-azuretest-network
 
   redisinsight:
     image: redis/redisinsight:latest
@@ -124,7 +106,7 @@ services:
     depends_on:
       - redis
     networks:
-      - app-network
+      - app-azuretest-network
 
   # ── RabbitMQ ───────────────────────────────────────────────────────────────
   rabbitmq:
@@ -134,10 +116,10 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "5673:5672"
+      - "15673:15672"
     networks:
-      - app-network
+      - app-azuretest-network
 
   # ── Observability: Prometheus & Node Exporter ──────────────────────────────
   prometheus:
@@ -147,17 +129,17 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheusdata:/prometheus
     ports:
-      - "9090:9090"
+      - "9091:9090"
     networks:
-      - app-network
+      - app-azuretest-network
 
   node-exporter:
     image: prom/node-exporter:latest
     container_name: azuretest-node-exporter
     ports:
-      - "9100:9100"
+      - "9101:9100"
     networks:
-      - app-network
+      - app-azuretest-network
 
   # ── Observability: Loki & Promtail ─────────────────────────────────────────
   loki:
@@ -167,7 +149,7 @@ services:
       - "3100:3100"
     command: -config.file=/etc/loki/local-config.yaml
     networks:
-      - app-network
+      - app-azuretest-network
 
   tempo:
     image: grafana/tempo:latest
@@ -181,7 +163,7 @@ services:
       - "4317:4317"   # OTLP gRPC receiver
       - "4318:4318"   # OTLP HTTP receiver
     networks:
-      - app-network
+      - app-azuretest-network
 
   promtail:
     image: grafana/promtail:latest
@@ -191,7 +173,7 @@ services:
       - ./promtail-config.yml:/etc/promtail/promtail-config.yml
     command: -config.file=/etc/promtail/promtail-config.yml
     networks:
-      - app-network
+      - app-azuretest-network
 
   # ── Observability: Grafana ─────────────────────────────────────────────────
   grafana:
@@ -201,17 +183,17 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
     ports:
-      - "3000:3000"
+      - "3001:3000"
     depends_on:
       - prometheus
       - loki
     volumes:
       - grafanadata:/var/lib/grafana
     networks:
-      - app-network
+      - app-azuretest-network
 
 networks:
-  app-network:
+  app-azuretest-network:
     driver: bridge
 
 volumes:
