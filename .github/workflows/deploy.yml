@@ -48,17 +48,63 @@ jobs:
 
       - name: Health Check Verification
         run: |
-          echo "Verifying application health..."
-          end=$((SECONDS+90))
-          while [ $SECONDS -lt $end ]; do
-            if curl -s http://localhost:8088/health | grep -q "Healthy"; then
-              echo "Deployment succeeded! Application is healthy."
-              exit 0
+          echo "Verifying application health and dependencies (PostgreSQL, MongoDB, Redis, Seq)..."
+          MAX_ATTEMPTS=24
+          SLEEP_SECONDS=5
+
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            echo "Attempt $i/$MAX_ATTEMPTS: Checking http://localhost:8088/health..."
+            RESPONSE=$(curl -s http://localhost:8088/health || true)
+
+            if [ -n "$RESPONSE" ]; then
+              STATUS_REPORT=$(python3 -c "
+import sys, json
+
+try:
+    data = json.loads(sys.argv[1])
+    status = data.get('status', 'Unknown')
+    entries = data.get('entries', {})
+    pg = entries.get('PostgreSQL', {}).get('status', 'Unknown')
+    mongo = entries.get('MongoDB', {}).get('status', 'Unknown')
+    redis = entries.get('Redis', {}).get('status', 'Unknown')
+    seq_entry = entries.get('Seq')
+    seq = seq_entry.get('status', 'Unknown') if seq_entry else 'Disabled'
+
+    print(f'Overall={status} | PostgreSQL={pg} | MongoDB={mongo} | Redis={redis} | Seq={seq}')
+
+    seq_ok = (seq == 'Healthy') if seq_entry else True
+
+    if status == 'Healthy' and pg == 'Healthy' and mongo == 'Healthy' and redis == 'Healthy' and seq_ok:
+        sys.exit(0)
+    else:
+        sys.exit(1)
+except Exception as e:
+    print(f'Parse or connection error: {e}')
+    sys.exit(2)
+" "$RESPONSE" 2>&1)
+
+              EXIT_CODE=$?
+              echo "Status: $STATUS_REPORT"
+
+              # Also verify Seq direct endpoint on host port 5342 if available
+              SEQ_DIRECT=$(curl -s http://localhost:5342/health || true)
+              if [ -n "$SEQ_DIRECT" ]; then
+                echo "Seq Direct (port 5342): $SEQ_DIRECT"
+              fi
+
+              if [ $EXIT_CODE -eq 0 ]; then
+                echo "Deployment succeeded! Application and all services (PostgreSQL, MongoDB, Redis, Seq) are healthy."
+                exit 0
+              fi
+            else
+              echo "No response received yet from web container..."
             fi
-            echo "Waiting for web container to report Healthy..."
-            sleep 5
+
+            sleep $SLEEP_SECONDS
           done
 
-          echo "Health check timed out! Dumping web container logs:"
+          echo "Health check timed out after $((MAX_ATTEMPTS * SLEEP_SECONDS)) seconds! Dumping container logs:"
           docker logs --tail 100 azuretest-web
+          echo "Dumping Seq container logs:"
+          docker logs --tail 50 azuretest-seq || true
           exit 1

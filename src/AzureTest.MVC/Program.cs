@@ -143,16 +143,28 @@ builder.Services.AddScoped<AzureTest.Application.Interfaces.Services.IPermission
 builder.Services.AddScoped<AzureTest.MVC.Filters.DynamicAuthorizationFilter>();
 
 // Add HealthChecks UI with In-Memory Storage
-var hcSettings = builder.Configuration.GetSection("HealthChecksUI").Get<HealthCheckUISettings>();
-builder.Services.AddHealthChecksUI(setup =>
+if (builder.Configuration.GetValue<bool>("FeatureManagement:EnableHealthCheck") &&
+    builder.Configuration.GetValue<bool>("FeatureManagement:EnableHealthCheckUI"))
 {
-    setup.AddHealthCheckEndpoint("AzureTest Health", "/health");
-    if (hcSettings != null)
+    var hcSettings = builder.Configuration.GetSection("HealthChecksUI").Get<HealthCheckUISettings>();
+    builder.Services.AddHealthChecksUI(setup =>
     {
-        setup.SetEvaluationTimeInSeconds(hcSettings.EvaluationTimeInSeconds);
-        setup.SetMinimumSecondsBetweenFailureNotifications(hcSettings.MinimumSecondsBetweenFailureNotifications);
-    }
-}).AddInMemoryStorage();
+        var configuredEndpoints = builder.Configuration.GetSection("HealthChecksUI:HealthChecks").GetChildren();
+        if (!configuredEndpoints.Any())
+        {
+            var defaultUri = builder.Environment.IsDevelopment()
+                ? "http://127.0.0.1:5191/health"
+                : "http://127.0.0.1:8080/health";
+            setup.AddHealthCheckEndpoint("AzureTest Health", defaultUri);
+        }
+
+        if (hcSettings != null)
+        {
+            setup.SetEvaluationTimeInSeconds(hcSettings.EvaluationTimeInSeconds);
+            setup.SetMinimumSecondsBetweenFailureNotifications(hcSettings.MinimumSecondsBetweenFailureNotifications);
+        }
+    }).AddInMemoryStorage();
+}
 
 #pragma warning disable EXTEXP0018 // Type is for evaluation purposes only and is subject to change or removal in future updates.
 builder.Services.AddHybridCache();
@@ -362,10 +374,14 @@ app.MapControllerRoute(
 
 if (builder.Configuration.GetValue<bool>("FeatureManagement:EnableHealthCheck"))
 {
-    app.MapHealthChecksUI(options => 
+    if (builder.Configuration.GetValue<bool>("FeatureManagement:EnableHealthCheckUI"))
     {
-        options.UIPath = "/healthchecks-ui";
-    }).AllowAnonymous();
+        app.MapHealthChecksUI(options => 
+        {
+            options.UIPath = "/healthchecks-ui";
+        }).AllowAnonymous();
+    }
+
     app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
     {
         Predicate = _ => true,

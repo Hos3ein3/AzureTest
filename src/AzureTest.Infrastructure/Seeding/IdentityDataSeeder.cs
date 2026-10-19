@@ -207,19 +207,22 @@ var userUserEmail = "mohammadhosein.behzadifard@gmail.com";
         var settings = await _noSqlUnitOfWork.IdentitySettings.GetAllAsync();
         if (settings.Count == 0)
         {
-            var conf = _configuration.GetSection("AppIdentitySetting");
+            var conf = _configuration.GetSection("IdentitySettings").Exists()
+                ? _configuration.GetSection("IdentitySettings")
+                : _configuration.GetSection("AppIdentitySetting");
+
             var setting = new AzureTest.Domain.Documents.IdentitySetting
             {
                 Id = Guid.CreateVersion7(),
-                RedirectAfterRegister = conf["RedirectAfterRegister"] ?? "/",
+                RedirectAfterRegister = conf["RedirectAfterRegister"] ?? "/Auth/Login",
                 RedirectAfterLogin = conf["RedirectAfterLogin"] ?? "/",
-                StayLoginAfterRegister = bool.TryParse(conf["StayLoginAfterRegister"], out var b) ? b : true,
+                StayLoginAfterRegister = bool.TryParse(conf["StayLoginAfterRegister"], out var b) ? b : false,
                 RolesForRegister = conf.GetSection("RolesForRegister").Get<List<string>>() ?? new List<string> { "User" }
             };
             
             await _noSqlUnitOfWork.IdentitySettings.AddAsync(setting);
             await _noSqlUnitOfWork.SaveChangesAsync();
-            _logger.LogInformation("IdentitySetting document seeded from appsettings.");
+            _logger.LogInformation("IdentitySetting document seeded from IdentitySettings.");
         }
     }
 

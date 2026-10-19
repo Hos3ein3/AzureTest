@@ -17,6 +17,7 @@ services:
       - postgres
       - mongo
       - redis
+      - seq
     networks:
       - app-azuretest-network
     # Exposing docker logs for Promtail
@@ -175,6 +176,20 @@ services:
     networks:
       - app-azuretest-network
 
+  # ── Observability: Seq ─────────────────────────────────────────────────────
+  seq:
+    image: datalust/seq:latest
+    container_name: azuretest-seq
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - "5342:80"
+    volumes:
+      - seqdata:/data
+    networks:
+      - app-azuretest-network
+
   # ── Observability: Grafana ─────────────────────────────────────────────────
   grafana:
     image: grafana/grafana:latest
@@ -204,3 +219,4 @@ volumes:
   prometheusdata:
   grafanadata:
   tempodata:
+  seqdata:

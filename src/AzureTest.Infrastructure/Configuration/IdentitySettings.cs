@@ -11,6 +11,12 @@ public class IdentitySettings
     public UserSettings User { get; set; } = new();
     public SignInSettings SignIn { get; set; } = new();
 
+    // App identity settings (merged)
+    public string RedirectAfterRegister { get; set; } = "/Auth/Login";
+    public string RedirectAfterLogin { get; set; } = "/";
+    public bool StayLoginAfterRegister { get; set; } = false;
+    public List<string> RolesForRegister { get; set; } = new() { "User" };
+
     public class PasswordSettings
     {
         public bool RequireDigit { get; set; } = true;
