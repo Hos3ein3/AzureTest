@@ -156,6 +156,7 @@ builder.Services.AddHybridCache();
 builder.Services.AddExceptionHandler<AzureTest.MVC.Infrastructure.GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<AzureTest.MVC.Services.IUserTracker, AzureTest.MVC.Services.UserTracker>();
 
 // --- HTML, CSS, JS Minification (Only enabled in Production) ---
 if (builder.Environment.IsProduction())

@@ -36,6 +36,7 @@ namespace AzureTest.MVC.Controllers;
     private readonly IHabitQueryUnit _habitQuery;
     private readonly IDebtQueryUnit _debtQuery;
     private readonly IExpenseQueryUnit _expenseQuery;
+    private readonly AzureTest.MVC.Services.IUserTracker _userTracker;
 
     public HomeController(
         IResumeQueryUnit queries, 
@@ -45,7 +46,8 @@ namespace AzureTest.MVC.Controllers;
         ITicketQueryUnit ticketQuery,
         IHabitQueryUnit habitQuery,
         IDebtQueryUnit debtQuery,
-        IExpenseQueryUnit expenseQuery)
+        IExpenseQueryUnit expenseQuery,
+        AzureTest.MVC.Services.IUserTracker userTracker)
     {
         _queries = queries;
         _userManager = userManager;
@@ -55,6 +57,7 @@ namespace AzureTest.MVC.Controllers;
         _habitQuery = habitQuery;
         _debtQuery = debtQuery;
         _expenseQuery = expenseQuery;
+        _userTracker = userTracker;
     }
 
     [DisplayName("Index")]
@@ -89,6 +92,7 @@ namespace AzureTest.MVC.Controllers;
         {
             Analytics = data,
             IsAdmin = data.IsAdmin,
+            OnlineUsersCount = _userTracker.GetOnlineUsersCount(),
             CurrentUserId = targetUserIdStr ?? string.Empty,
             IsViewingOtherUser = !string.IsNullOrWhiteSpace(targetUserIdStr) && targetUserIdStr != currentUserIdStr
         };

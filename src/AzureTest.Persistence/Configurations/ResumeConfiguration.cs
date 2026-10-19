@@ -30,11 +30,11 @@ public class ResumeConfiguration : IEntityTypeConfiguration<Resume>
         
         builder.Property(r => r.Description)
             .HasConversion<string>()
-            .HasMaxLength(10000);
+            .HasMaxLength(20000);
         
         builder.Property(r => r.Note)
             .HasConversion<string>()
-            .HasMaxLength(5000);
+            .HasMaxLength(10000);
 
         builder.Property(r => r.Status)
             .HasConversion<string>()

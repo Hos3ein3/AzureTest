@@ -557,6 +557,17 @@
             list.prepend(item);
         });
 
+        connection.on("UpdateOnlineUsersCount", (count) => {
+            const countEl = document.getElementById('onlineUsersCountDisplay');
+            if (countEl) {
+                countEl.textContent = count;
+                countEl.classList.add('scale-110', 'text-emerald-500');
+                setTimeout(() => {
+                    countEl.classList.remove('scale-110', 'text-emerald-500');
+                }, 300);
+            }
+        });
+
         connection.start().catch(err => console.error(err.toString()));
 
         // Hide dropdown when clicking outside
