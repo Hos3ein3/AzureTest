@@ -17,8 +17,6 @@ services:
       - postgres
       - mongo
       - redis
-    volumes:
-      - dpkeys:/app/keys
     networks:
       - app-azuretest-network
     # Exposing docker logs for Promtail
@@ -199,7 +197,6 @@ networks:
     driver: bridge
 
 volumes:
-  dpkeys:
   pgdata:
   pgdata_replica:
   mongodata:

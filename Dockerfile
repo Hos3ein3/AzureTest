@@ -41,8 +41,8 @@ RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
 
 COPY --from=build /app/publish .
 
-# Ensure the non-root user owns the files
-RUN chown -R appuser:appgroup /app
+# Ensure the keys directory exists and the non-root user owns /app and /app/keys
+RUN mkdir -p /app/keys && chown -R appuser:appgroup /app
 
 USER appuser
 
