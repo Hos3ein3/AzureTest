@@ -64,7 +64,11 @@ namespace AzureTest.MVC.Controllers;
     [ValidateAntiForgeryToken]
     [DisplayName("Login")]
     [Description("Execute Login operation for Auth.")]
-    public async Task<IActionResult> Login(string email, string password, CancellationToken cancellationToken)
+    public async Task<IActionResult> Login(
+        string email, 
+        string password, 
+        [FromForm(Name = "remember-me")] bool rememberMe = true, 
+        CancellationToken cancellationToken = default)
     {
         var result = await _commands.Login.HandleAsync(new LoginUserCommand(email, password), cancellationToken);
         if (result.IsSuccess && result.Value.Success)
@@ -73,7 +77,10 @@ namespace AzureTest.MVC.Controllers;
             {
                 var cookieOptions = new CookieOptions
                 {
-                    HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict, Expires = DateTime.UtcNow.AddDays(1)
+                    HttpOnly = true, 
+                    Secure = Request.IsHttps, 
+                    SameSite = SameSiteMode.Lax, 
+                    Expires = rememberMe ? DateTime.UtcNow.AddDays(14) : null
                 };
                 Response.Cookies.Append("jwt", result.Value.Token!, cookieOptions);
                 if (!string.IsNullOrEmpty(result.Value.RefreshToken))
@@ -82,7 +89,15 @@ namespace AzureTest.MVC.Controllers;
             else
             {
                 var user = await _userManager.FindByEmailAsync(email);
-                if (user != null) await _signInManager.SignInAsync(user, isPersistent: true);
+                if (user != null)
+                {
+                    var authProperties = new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+                    {
+                        IsPersistent = rememberMe,
+                        ExpiresUtc = rememberMe ? DateTimeOffset.UtcNow.AddDays(14) : null
+                    };
+                    await _signInManager.SignInAsync(user, authProperties);
+                }
             }
             
             var userObj = await _userManager.FindByEmailAsync(email);

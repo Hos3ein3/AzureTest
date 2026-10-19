@@ -106,11 +106,15 @@ else
 
     builder.Services.ConfigureApplicationCookie(options =>
     {
+        options.Cookie.Name = ".AzureTest.Auth";
         options.LoginPath = "/Auth/Login";
         options.LogoutPath = "/Auth/Logout";
         options.AccessDeniedPath = "/Auth/AccessDenied";
         options.Cookie.HttpOnly = true;
-        options.ExpireTimeSpan = TimeSpan.FromDays(1);
+        options.Cookie.IsEssential = true;
+        options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest;
+        options.ExpireTimeSpan = TimeSpan.FromDays(14);
         options.SlidingExpiration = true;
     });
 }
@@ -120,6 +124,7 @@ builder.Services.AddFeatureManagement();
 
 // Add services to the container.
 builder.Services.AddDataProtection()
+    .SetApplicationName("AzureTest")
     .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "keys")));
 
 builder.Services.AddControllersWithViews(options => 
