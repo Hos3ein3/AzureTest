@@ -55,8 +55,14 @@ namespace AzureTest.MVC.Controllers;
     [HttpGet]
     [DisplayName("Login")]
     [Description("Execute Login operation for Auth.")]
-    public IActionResult Login()
+    public IActionResult Login(string? returnUrl = null)
     {
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            return RedirectToAction("Index", "Home");
+        }
+
+        ViewData["ReturnUrl"] = returnUrl;
         return View();
     }
 
@@ -68,6 +74,7 @@ namespace AzureTest.MVC.Controllers;
         string email, 
         string password, 
         [FromForm(Name = "remember-me")] bool rememberMe = true, 
+        string? returnUrl = null,
         CancellationToken cancellationToken = default)
     {
         var result = await _commands.Login.HandleAsync(new LoginUserCommand(email, password), cancellationToken);
@@ -128,6 +135,11 @@ namespace AzureTest.MVC.Controllers;
                 await _redisService.SetAsync($"User_Info_{userObj.Id}", sessionDto, TimeSpan.FromDays(7));
             }
 
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl) && !returnUrl.StartsWith("/Auth", StringComparison.OrdinalIgnoreCase) && !returnUrl.StartsWith("/Error", StringComparison.OrdinalIgnoreCase))
+            {
+                return LocalRedirect(returnUrl);
+            }
+
             var settingRes = await _getIdentitySettingQuery.HandleAsync(new GetIdentitySettingQuery());
             var redirectUrl = settingRes.IsSuccess ? settingRes.Value.RedirectAfterLogin : "/Home/Index";
             return LocalRedirect(redirectUrl ?? "/Home/Index");
@@ -136,6 +148,7 @@ namespace AzureTest.MVC.Controllers;
         {
             foreach (var error in result.Value.Errors) ModelState.AddModelError(string.Empty, error);
         }
+        ViewData["ReturnUrl"] = returnUrl;
         return View();
     }
 

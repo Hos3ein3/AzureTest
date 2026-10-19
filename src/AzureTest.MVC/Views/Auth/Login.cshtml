@@ -36,7 +36,7 @@
         </div>
     </div>
 
-    <form class="space-y-6" asp-action="Login" method="POST">
+    <form class="space-y-6" asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]" method="POST">
         <div asp-validation-summary="All" class="text-red-500 text-sm list-disc pl-5"></div>
         <div class="space-y-4">
             <div>

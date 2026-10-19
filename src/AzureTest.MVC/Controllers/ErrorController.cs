@@ -4,8 +4,11 @@ using AzureTest.Application.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace AzureTest.MVC.Controllers;
 
+[AllowAnonymous]
 [Route("Error")]
 [DisplayName("Error")]
 [Description("Manage and control Error operations.")]
