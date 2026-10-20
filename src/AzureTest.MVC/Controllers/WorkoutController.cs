@@ -128,10 +128,42 @@ public class WorkoutController : Controller {
             return RedirectToAction(nameof(Analytics));
         }
 
-        var res = await _logUserWeight.HandleAsync(new LogUserWeightCommand(userId, req.WeightKg, req.HeightCm, req.Date, req.Notes));
+        if (req.MusclePercent.HasValue && (req.MusclePercent.Value < AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MinPercent || req.MusclePercent.Value > AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MaxPercent))
+        {
+            TempData["Error"] = $"Muscle percentage must be between {AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MinPercent}% and {AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MaxPercent}%.";
+            return RedirectToAction(nameof(Analytics));
+        }
+
+        if (req.BonePercent.HasValue && (req.BonePercent.Value < AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MinPercent || req.BonePercent.Value > AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MaxPercent))
+        {
+            TempData["Error"] = $"Bone percentage must be between {AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MinPercent}% and {AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MaxPercent}%.";
+            return RedirectToAction(nameof(Analytics));
+        }
+
+        if (req.FatPercent.HasValue && (req.FatPercent.Value < AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MinPercent || req.FatPercent.Value > AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MaxPercent))
+        {
+            TempData["Error"] = $"Fat percentage must be between {AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MinPercent}% and {AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MaxPercent}%.";
+            return RedirectToAction(nameof(Analytics));
+        }
+
+        if ((req.MusclePercent ?? 0.0) + (req.BonePercent ?? 0.0) + (req.FatPercent ?? 0.0) > 100.0)
+        {
+            TempData["Error"] = "Total body composition percentage (Muscle + Bone + Fat) cannot exceed 100%.";
+            return RedirectToAction(nameof(Analytics));
+        }
+
+        var res = await _logUserWeight.HandleAsync(new LogUserWeightCommand(
+            userId,
+            req.WeightKg,
+            req.HeightCm,
+            req.Date,
+            req.Notes,
+            req.MusclePercent,
+            req.BonePercent,
+            req.FatPercent));
         if (res.IsSuccess)
         {
-            TempData["Success"] = "Weight entry recorded successfully.";
+            TempData["Success"] = "Weight and body composition entry recorded successfully.";
         }
         else
         {

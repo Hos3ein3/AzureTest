@@ -60,16 +60,16 @@
     }
 
     <!-- KPI Summary Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
         <!-- Current Weight -->
         <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Current Weight</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Weight</span>
                 <div class="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
                     <i class="fa-solid fa-weight-scale"></i>
                 </div>
             </div>
-            <div class="text-3xl font-black text-slate-900 mb-1">
+            <div class="text-2xl font-black text-slate-900 mb-1">
                 @(Model.CurrentWeightKg.HasValue ? $"{Model.CurrentWeightKg.Value:0.#} kg" : "--")
             </div>
             <p class="text-xs text-slate-500">
@@ -79,11 +79,11 @@
                     <span class="font-bold @(isLoss ? "text-emerald-600" : "text-amber-600")">
                         @(isLoss ? "" : "+")@Model.WeightChangeKg.Value.ToString("0.#") kg
                     </span>
-                    <span> from start (@Model.StartingWeightKg?.ToString("0.#") kg)</span>
+                    <span> vs start</span>
                 }
                 else
                 {
-                    <span>No previous baseline</span>
+                    <span>Baseline pending</span>
                 }
             </p>
         </div>
@@ -91,15 +91,15 @@
         <!-- Current BMI -->
         <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Current BMI</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">BMI</span>
                 <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
                     <i class="fa-solid fa-heart-pulse"></i>
                 </div>
             </div>
-            <div class="text-3xl font-black text-purple-600 mb-1">
+            <div class="text-2xl font-black text-purple-600 mb-1">
                 @(Model.CurrentBmi.HasValue ? Model.CurrentBmi.Value.ToString("0.0") : "--")
             </div>
-            <p class="text-xs">
+            <p class="text-xs truncate">
                 @if (!string.IsNullOrEmpty(Model.CurrentBmiCategory))
                 {
                     var catColor = Model.CurrentBmiCategory switch {
@@ -109,7 +109,6 @@
                         _ => "text-rose-600 font-semibold"
                     };
                     <span class="@catColor">@Model.CurrentBmiCategory</span>
-                    <span class="text-slate-400"> (@Model.CurrentHeightCm?.ToString("0.#") cm)</span>
                 }
                 else
                 {
@@ -118,44 +117,92 @@
             </p>
         </div>
 
-        <!-- Total Sessions -->
+        <!-- Muscle % -->
         <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Workouts</span>
-                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Muscle Mass</span>
+                <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                     <i class="fa-solid fa-dumbbell"></i>
                 </div>
             </div>
-            <div class="text-3xl font-black text-slate-900 mb-1">@Model.TotalSessions</div>
-            <p class="text-xs text-slate-500">@Model.TotalExercisesLogged exercise logs</p>
+            <div class="text-2xl font-black text-emerald-600 mb-1">
+                @(Model.CurrentMusclePercent.HasValue ? $"{Model.CurrentMusclePercent.Value:0.0}%" : "--")
+            </div>
+            <p class="text-xs text-slate-500 truncate">
+                @if (Model.MuscleChangePercent.HasValue)
+                {
+                    var mGain = Model.MuscleChangePercent >= 0;
+                    <span class="font-bold @(mGain ? "text-emerald-600" : "text-rose-600")">
+                        @(mGain ? "+" : "")@Model.MuscleChangePercent.Value.ToString("0.0")%
+                    </span>
+                    <span> vs start</span>
+                }
+                else if (Model.MuscleMassKg.HasValue)
+                {
+                    <span>@Model.MuscleMassKg.Value.ToString("0.#") kg mass</span>
+                }
+                else
+                {
+                    <span class="text-slate-400">Track muscle %</span>
+                }
+            </p>
         </div>
 
-        <!-- Total Duration -->
+        <!-- Body Fat % -->
         <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Training Time</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Body Fat</span>
                 <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <i class="fa-solid fa-fire"></i>
+                </div>
+            </div>
+            <div class="text-2xl font-black text-amber-600 mb-1">
+                @(Model.CurrentFatPercent.HasValue ? $"{Model.CurrentFatPercent.Value:0.0}%" : "--")
+            </div>
+            <p class="text-xs text-slate-500 truncate">
+                @if (Model.FatChangePercent.HasValue)
+                {
+                    var fLoss = Model.FatChangePercent < 0;
+                    <span class="font-bold @(fLoss ? "text-emerald-600" : "text-amber-600")">
+                        @(fLoss ? "" : "+")@Model.FatChangePercent.Value.ToString("0.0")%
+                    </span>
+                    <span> vs start</span>
+                }
+                else if (Model.FatMassKg.HasValue)
+                {
+                    <span>@Model.FatMassKg.Value.ToString("0.#") kg mass</span>
+                }
+                else
+                {
+                    <span class="text-slate-400">Track fat %</span>
+                }
+            </p>
+        </div>
+
+        <!-- Total Sessions -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Workouts</span>
+                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
                     <i class="fa-solid fa-stopwatch"></i>
                 </div>
             </div>
-            <div class="text-3xl font-black text-slate-900 mb-1">
-                @(Model.TotalDurationMinutes >= 60 ? $"{Model.TotalDurationMinutes / 60}h {Model.TotalDurationMinutes % 60}m" : $"{Model.TotalDurationMinutes} min")
-            </div>
-            <p class="text-xs text-slate-500">@Model.TotalCaloriesBurned kcal burned</p>
+            <div class="text-2xl font-black text-slate-900 mb-1">@Model.TotalSessions</div>
+            <p class="text-xs text-slate-500">@Model.TotalExercisesLogged logs</p>
         </div>
 
         <!-- Lifted Volume -->
         <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Lifted Volume</span>
-                <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Volume</span>
+                <div class="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
                     <i class="fa-solid fa-trophy"></i>
                 </div>
             </div>
-            <div class="text-3xl font-black text-emerald-600 mb-1">
+            <div class="text-2xl font-black text-sky-600 mb-1">
                 @(Model.TotalVolumeLiftedKg >= 1000 ? $"{(Model.TotalVolumeLiftedKg / 1000.0):0.0} t" : $"{Model.TotalVolumeLiftedKg:0.#} kg")
             </div>
-            <p class="text-xs text-emerald-600 font-medium">Accumulated load</p>
+            <p class="text-xs text-sky-600 font-medium">Accumulated load</p>
         </div>
     </div>
 
@@ -187,6 +234,217 @@
                 <canvas id="workoutFrequencyChart"></canvas>
             </div>
         </div>
+    </div>
+
+    <!-- Body Composition & Donut Chart Section -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 sm:p-8 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-brand-600">Advanced Biometrics</span>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight mt-0.5 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-brand-600"></i> Body Composition Analysis
+                </h3>
+                <p class="text-slate-500 text-xs sm:text-sm mt-1">Breakdown of muscle mass, body fat percentage, bone density, and lean tissue distribution.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="openWeightModal()" class="inline-flex items-center px-3.5 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-semibold rounded-lg transition-colors border border-brand-200/70">
+                    <i class="fa-solid fa-plus mr-1.5"></i> Update Composition
+                </button>
+            </div>
+        </div>
+
+        @if (Model.CurrentMusclePercent.HasValue || Model.CurrentFatPercent.HasValue || Model.CurrentBonePercent.HasValue)
+        {
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                <!-- Donut Chart -->
+                <div class="lg:col-span-4 flex flex-col items-center justify-center p-4 bg-slate-50/70 rounded-2xl border border-slate-100">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Tissue Distribution</h4>
+                    <div class="relative w-56 h-56 flex items-center justify-center">
+                        <canvas id="bodyCompositionDonutChart"></canvas>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span class="text-2xs font-semibold text-slate-400 uppercase tracking-wider">Total</span>
+                            <span class="text-2xl font-black text-slate-800">100%</span>
+                            <span class="text-2xs text-slate-500 font-medium">@(Model.CurrentWeightKg.HasValue ? $"{Model.CurrentWeightKg.Value:0.0} kg" : "--")</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 w-full mt-4 text-xs">
+                        <div class="flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-lg border border-slate-100">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                            <div class="truncate">
+                                <span class="text-slate-500 block text-2xs">Muscle</span>
+                                <span class="font-bold text-slate-800 font-mono">@(Model.CurrentMusclePercent?.ToString("0.0") ?? "--")%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-lg border border-slate-100">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+                            <div class="truncate">
+                                <span class="text-slate-500 block text-2xs">Body Fat</span>
+                                <span class="font-bold text-slate-800 font-mono">@(Model.CurrentFatPercent?.ToString("0.0") ?? "--")%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-lg border border-slate-100">
+                            <span class="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0"></span>
+                            <div class="truncate">
+                                <span class="text-slate-500 block text-2xs">Bone</span>
+                                <span class="font-bold text-slate-800 font-mono">@(Model.CurrentBonePercent?.ToString("0.0") ?? "--")%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-lg border border-slate-100">
+                            <span class="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0"></span>
+                            <div class="truncate">
+                                <span class="text-slate-500 block text-2xs">Water & Other</span>
+                                <span class="font-bold text-slate-800 font-mono">@(Model.CurrentOtherPercent?.ToString("0.0") ?? "--")%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Analysis & Health Zones -->
+                <div class="lg:col-span-4 space-y-4">
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-700 uppercase tracking-wide">Lean vs Fat Mass</span>
+                            <span class="text-xs font-mono font-bold text-slate-500">
+                                @(Model.LeanMassKg.HasValue ? $"{Model.LeanMassKg.Value:0.0} kg lean" : "")
+                            </span>
+                        </div>
+                        <div class="h-3 rounded-full bg-slate-200 overflow-hidden flex">
+                            @{
+                                var leanPct = (Model.CurrentWeightKg > 0 && Model.LeanMassKg.HasValue) ? (Model.LeanMassKg.Value / Model.CurrentWeightKg.Value * 100.0) : 75.0;
+                                var fatPct = (Model.CurrentWeightKg > 0 && Model.FatMassKg.HasValue) ? (Model.FatMassKg.Value / Model.CurrentWeightKg.Value * 100.0) : 25.0;
+                            }
+                            <div class="bg-emerald-500 h-full" style="width: @leanPct%" title="Lean Mass: @Model.LeanMassKg kg"></div>
+                            <div class="bg-amber-500 h-full" style="width: @fatPct%" title="Fat Mass: @Model.FatMassKg kg"></div>
+                        </div>
+                        <div class="flex justify-between items-center text-2xs text-slate-500 mt-2">
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Lean: <strong>@(Model.LeanMassKg?.ToString("0.0") ?? "--") kg</strong></span>
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Fat: <strong>@(Model.FatMassKg?.ToString("0.0") ?? "--") kg</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                            <span class="text-2xs font-bold uppercase text-slate-400">Muscle / Fat Ratio</span>
+                            <div class="text-xl font-black text-slate-900 mt-1 font-mono">
+                                @if (Model.CurrentMusclePercent.HasValue && Model.CurrentFatPercent.HasValue && Model.CurrentFatPercent.Value > 0)
+                                {
+                                    @($"{(Model.CurrentMusclePercent.Value / Model.CurrentFatPercent.Value):0.00}")<span class="text-xs font-normal text-slate-500"> : 1</span>
+                                }
+                                else
+                                {
+                                    <span>--</span>
+                                }
+                            </div>
+                            <p class="text-2xs text-slate-500 mt-0.5">Higher ratio denotes athletic build</p>
+                        </div>
+                        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                            <span class="text-2xs font-bold uppercase text-slate-400">Body Fat Category</span>
+                            <div class="text-sm font-bold text-slate-900 mt-1">
+                                @if (Model.CurrentFatPercent.HasValue)
+                                {
+                                    var f = Model.CurrentFatPercent.Value;
+                                    if (f < 6)
+                                    {
+                                        <span class="text-blue-600 font-bold">Essential Fat</span>
+                                    }
+                                    else if (f < 14)
+                                    {
+                                        <span class="text-emerald-600 font-bold">Athletes</span>
+                                    }
+                                    else if (f < 18)
+                                    {
+                                        <span class="text-emerald-600 font-bold">Fitness</span>
+                                    }
+                                    else if (f < 25)
+                                    {
+                                        <span class="text-amber-600 font-bold">Average</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-rose-600 font-bold">High</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-slate-400">Not set</span>
+                                }
+                            </div>
+                            <p class="text-2xs text-slate-500 mt-0.5">Standard fitness benchmark</p>
+                        </div>
+                    </div>
+
+                    <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-arrows-spin text-brand-600"></i>
+                            <div>
+                                <span class="font-bold text-slate-800">Recomposition:</span>
+                                <span class="text-slate-500 ml-1">
+                                    @if (Model.MuscleChangePercent.HasValue || Model.FatChangePercent.HasValue)
+                                    {
+                                        var mChange = Model.MuscleChangePercent ?? 0;
+                                        var fChange = Model.FatChangePercent ?? 0;
+                                        if (mChange >= 0 && fChange <= 0)
+                                        {
+                                            <span class="text-emerald-600 font-semibold">Gaining muscle, cutting fat</span>
+                                        }
+                                        else if (mChange >= 0)
+                                        {
+                                            <span class="text-brand-600 font-semibold">Muscle building phase</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-slate-700 font-semibold">Fat loss phase</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span>Initial baseline recorded</span>
+                                    }
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trend Chart: Muscle % vs Fat % over time -->
+                <div class="lg:col-span-4 bg-slate-50/70 p-4 rounded-2xl border border-slate-100">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600">Composition Progression</h4>
+                        <span class="text-2xs font-semibold text-slate-400">Muscle vs Fat %</span>
+                    </div>
+                    <div class="h-56">
+                        <canvas id="bodyCompositionTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Empty state with guidance and preview donut -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center p-6 rounded-2xl bg-gradient-to-r from-slate-50 via-slate-50 to-brand-50/20 border border-slate-200/60">
+                <div class="md:col-span-4 flex justify-center">
+                    <div class="relative w-44 h-44 flex items-center justify-center opacity-85">
+                        <canvas id="bodyCompositionPlaceholderChart"></canvas>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                            <i class="fa-solid fa-chart-pie text-brand-600 text-2xl mb-1"></i>
+                            <span class="text-2xs font-bold text-slate-400 uppercase tracking-wider">Preview</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="md:col-span-8">
+                    <h4 class="text-lg font-bold text-slate-900 mb-1">Track Muscle, Fat, & Bone Percentages</h4>
+                    <p class="text-sm text-slate-600 mb-4 leading-relaxed">
+                        Log your body composition percentages from a bioimpedance scale, smart scale, or DEXA scan. Tracking composition alongside body weight unlocks accurate muscle gain, fat loss, and lean body mass metrics.
+                    </p>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button type="button" onclick="openWeightModal()" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors">
+                            <i class="fa-solid fa-plus mr-1.5"></i> Log First Body Composition
+                        </button>
+                        <span class="text-xs text-slate-400">Available whenever you click "Log Weight"</span>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
 
     <!-- Top Exercises Performance & Volume -->
@@ -241,6 +499,9 @@
                         <th class="px-6 py-3.5 text-right">Height (cm)</th>
                         <th class="px-6 py-3.5 text-center">Calculated BMI</th>
                         <th class="px-6 py-3.5 text-center">Category</th>
+                        <th class="px-6 py-3.5 text-center">Muscle %</th>
+                        <th class="px-6 py-3.5 text-center">Fat %</th>
+                        <th class="px-6 py-3.5 text-center">Bone %</th>
                         <th class="px-6 py-3.5 text-left">Notes</th>
                         <th class="px-6 py-3.5 text-right">Actions</th>
                     </tr>
@@ -275,6 +536,42 @@
                                         @w.BmiCategory
                                     </span>
                                 </td>
+                                <td class="px-6 py-4 text-center font-mono text-xs">
+                                    @if (w.MusclePercent.HasValue)
+                                    {
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                                            <i class="fa-solid fa-dumbbell mr-1 text-emerald-500 text-2xs"></i>@w.MusclePercent.Value.ToString("0.0")%
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-slate-300">-</span>
+                                    }
+                                </td>
+                                <td class="px-6 py-4 text-center font-mono text-xs">
+                                    @if (w.FatPercent.HasValue)
+                                    {
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
+                                            <i class="fa-solid fa-fire mr-1 text-amber-500 text-2xs"></i>@w.FatPercent.Value.ToString("0.0")%
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-slate-300">-</span>
+                                    }
+                                </td>
+                                <td class="px-6 py-4 text-center font-mono text-xs">
+                                    @if (w.BonePercent.HasValue)
+                                    {
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200/60">
+                                            <i class="fa-solid fa-bone mr-1 text-sky-500 text-2xs"></i>@w.BonePercent.Value.ToString("0.0")%
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-slate-300">-</span>
+                                    }
+                                </td>
                                 <td class="px-6 py-4 text-slate-500 max-w-xs truncate">
                                     @(string.IsNullOrWhiteSpace(w.Notes) ? "-" : w.Notes)
                                 </td>
@@ -292,7 +589,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-slate-400">
+                            <td colspan="10" class="px-6 py-12 text-center text-slate-400">
                                 <i class="fa-solid fa-weight-scale text-4xl mb-3 block text-slate-300"></i>
                                 <p class="font-medium text-slate-700">No weight records logged yet.</p>
                                 <p class="text-xs text-slate-400 mt-1">Click "Log Weight" above to track your weight progress.</p>
@@ -413,15 +710,16 @@
 
         <form asp-action="LogWeight" method="post">
             @Html.AntiForgeryToken()
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Weight (kg) *</label>
-                    <input type="number" step="0.1" name="WeightKg" required value="@(Model.CurrentWeightKg ?? 80)" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold" placeholder="e.g. 85.0" />
-                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Weight (kg) *</label>
+                        <input type="number" step="0.1" name="WeightKg" required value="@(Model.CurrentWeightKg ?? 80)" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold" placeholder="e.g. 85.0" />
+                    </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Height (cm) *</label>
-                    <input type="number" step="0.5" name="HeightCm" required value="@defaultHeight" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold" placeholder="e.g. 180" />
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Height (cm) *</label>
+                        <input type="number" step="0.5" name="HeightCm" required value="@defaultHeight" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold" placeholder="e.g. 180" />
+                    </div>
                 </div>
 
                 <div>
@@ -429,11 +727,42 @@
                     <input type="date" name="Date" required value="@DateTime.Today.ToString("yyyy-MM-dd")" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
                 </div>
 
+                <!-- Body Composition (Optional) -->
+                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/70 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-chart-pie text-brand-600"></i> Body Composition (Optional)
+                        </span>
+                        <span class="text-2xs text-slate-400">Smart scale / DEXA</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-2xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
+                                <i class="fa-solid fa-dumbbell text-emerald-600"></i> Muscle %
+                            </label>
+                            <input type="number" step="0.1" min="0" max="100" name="MusclePercent" value="@(Model.CurrentMusclePercent?.ToString("0.0"))" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 font-semibold" placeholder="e.g. 42.5" />
+                        </div>
+                        <div>
+                            <label class="block text-2xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
+                                <i class="fa-solid fa-fire text-amber-500"></i> Fat %
+                            </label>
+                            <input type="number" step="0.1" min="0" max="100" name="FatPercent" value="@(Model.CurrentFatPercent?.ToString("0.0"))" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 font-semibold" placeholder="e.g. 18.0" />
+                        </div>
+                        <div>
+                            <label class="block text-2xs font-semibold text-slate-600 mb-1 flex items-center gap-1">
+                                <i class="fa-solid fa-bone text-sky-500"></i> Bone %
+                            </label>
+                            <input type="number" step="0.1" min="0" max="100" name="BonePercent" value="@(Model.CurrentBonePercent?.ToString("0.0"))" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-brand-500 font-semibold" placeholder="e.g. 14.5" />
+                        </div>
+                    </div>
+                    <p class="text-2xs text-slate-400">Sum must be &le; 100%. Remainder accounts for body water & other fluids.</p>
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Notes (Optional)</label>
                     <textarea name="Notes" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="e.g. Morning fasting, post workout..."></textarea>
                 </div>
-            </div>
 
             <div class="mt-6 flex justify-end gap-3 pt-3 border-t border-slate-100">
                 <button type="button" onclick="closeWeightModal()" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
@@ -647,6 +976,183 @@
                         scales: {
                             x: { grid: { display: false } },
                             y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } }
+                        }
+                    }
+                });
+            }
+
+            // Body Composition Charts Data
+            @{
+                var compLogs = Model.WeightLogs
+                    .Where(w => w.MusclePercent.HasValue || w.FatPercent.HasValue || w.BonePercent.HasValue)
+                    .OrderBy(w => w.Date)
+                    .ToList();
+                var compDates = compLogs.Select(w => w.Date.ToString("MMM dd")).ToList();
+                var compMuscle = compLogs.Select(w => w.MusclePercent).ToList();
+                var compFat = compLogs.Select(w => w.FatPercent).ToList();
+                var compBone = compLogs.Select(w => w.BonePercent).ToList();
+            }
+
+            const compDates = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(compDates));
+            const compMuscle = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(compMuscle));
+            const compFat = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(compFat));
+            const compBone = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(compBone));
+
+            // Body Composition Donut Chart
+            const ctxDonut = document.getElementById('bodyCompositionDonutChart')?.getContext('2d');
+            if (ctxDonut) {
+                const muscleVal = @(Model.CurrentMusclePercent ?? 0);
+                const fatVal = @(Model.CurrentFatPercent ?? 0);
+                const boneVal = @(Model.CurrentBonePercent ?? 0);
+                const otherVal = @(Model.CurrentOtherPercent ?? 0);
+
+                new Chart(ctxDonut, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Muscle', 'Body Fat', 'Bone', 'Water & Other'],
+                        datasets: [{
+                            data: [muscleVal, fatVal, boneVal, otherVal],
+                            backgroundColor: ['#10b981', '#f59e0b', '#38bdf8', '#cbd5e1'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff',
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return ' ' + context.label + ': ' + context.raw + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Placeholder Donut Chart when empty
+            const ctxPlaceholder = document.getElementById('bodyCompositionPlaceholderChart')?.getContext('2d');
+            if (ctxPlaceholder) {
+                new Chart(ctxPlaceholder, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Muscle (Sample)', 'Fat (Sample)', 'Bone (Sample)', 'Other (Sample)'],
+                        datasets: [{
+                            data: [42, 18, 14, 26],
+                            backgroundColor: ['#a7f3d0', '#fde68a', '#bae6fd', '#e2e8f0'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false }
+                        }
+                    }
+                });
+            }
+
+            // Body Composition Trend Chart
+            const ctxCompTrend = document.getElementById('bodyCompositionTrendChart')?.getContext('2d');
+            if (ctxCompTrend && compDates.length > 0) {
+                new Chart(ctxCompTrend, {
+                    type: 'line',
+                    data: {
+                        labels: compDates,
+                        datasets: [
+                            {
+                                label: 'Muscle %',
+                                data: compMuscle,
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                fill: false,
+                                tension: 0.3,
+                                pointBackgroundColor: '#10b981',
+                                pointRadius: 4
+                            },
+                            {
+                                label: 'Fat %',
+                                data: compFat,
+                                borderColor: '#f59e0b',
+                                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                fill: false,
+                                tension: 0.3,
+                                pointBackgroundColor: '#f59e0b',
+                                pointRadius: 4
+                            },
+                            {
+                                label: 'Bone %',
+                                data: compBone,
+                                borderColor: '#38bdf8',
+                                backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                                fill: false,
+                                borderDash: [4, 4],
+                                tension: 0.3,
+                                pointBackgroundColor: '#38bdf8',
+                                pointRadius: 3
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }
+                        },
+                        scales: {
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                title: { display: true, text: '%' },
+                                grid: { color: '#f1f5f9' },
+                                suggestedMin: 5,
+                                suggestedMax: 50
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            } else if (ctxCompTrend) {
+                new Chart(ctxCompTrend, {
+                    type: 'line',
+                    data: {
+                        labels: ['Start', 'Target'],
+                        datasets: [
+                            {
+                                label: 'Sample Muscle Trend',
+                                data: [38, 43],
+                                borderColor: '#a7f3d0',
+                                borderDash: [4, 4],
+                                fill: false
+                            },
+                            {
+                                label: 'Sample Fat Trend',
+                                data: [22, 16],
+                                borderColor: '#fde68a',
+                                borderDash: [4, 4],
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+                            title: { display: true, text: 'Log 2+ composition entries to track trend' }
                         }
                     }
                 });

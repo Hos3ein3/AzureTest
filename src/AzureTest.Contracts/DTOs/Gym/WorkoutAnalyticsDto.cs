@@ -11,7 +11,10 @@ public sealed record UserWeightLogDto(
     double Bmi,
     string BmiCategory,
     DateTime Date,
-    string? Notes);
+    string? Notes,
+    double? MusclePercent = null,
+    double? BonePercent = null,
+    double? FatPercent = null);
 
 public sealed class LogWeightRequest
 {
@@ -19,6 +22,9 @@ public sealed class LogWeightRequest
     public double HeightCm { get; set; }
     public DateTime Date { get; set; } = DateTime.Today;
     public string? Notes { get; set; }
+    public double? MusclePercent { get; set; }
+    public double? BonePercent { get; set; }
+    public double? FatPercent { get; set; }
 }
 
 public sealed record ExerciseStatDto(
@@ -49,4 +55,13 @@ public sealed record WorkoutAnalyticsDto(
     string? CurrentBmiCategory,
     IReadOnlyList<UserWeightLogDto> WeightLogs,
     IReadOnlyList<ExerciseStatDto> TopExercises,
-    IReadOnlyList<WorkoutSessionPointDto> SessionTrend);
+    IReadOnlyList<WorkoutSessionPointDto> SessionTrend,
+    double? CurrentMusclePercent = null,
+    double? CurrentBonePercent = null,
+    double? CurrentFatPercent = null,
+    double? CurrentOtherPercent = null,
+    double? LeanMassKg = null,
+    double? FatMassKg = null,
+    double? MuscleMassKg = null,
+    double? MuscleChangePercent = null,
+    double? FatChangePercent = null);

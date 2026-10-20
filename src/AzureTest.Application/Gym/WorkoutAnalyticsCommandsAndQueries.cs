@@ -20,7 +20,10 @@ public record LogUserWeightCommand(
     double WeightKg,
     double HeightCm,
     DateTime Date,
-    string? Notes) : ICommand<Result<Guid>>;
+    string? Notes,
+    double? MusclePercent = null,
+    double? BonePercent = null,
+    double? FatPercent = null) : ICommand<Result<Guid>>;
 
 public class LogUserWeightCommandValidator : AbstractValidator<LogUserWeightCommand>
 {
@@ -37,6 +40,25 @@ public class LogUserWeightCommandValidator : AbstractValidator<LogUserWeightComm
         RuleFor(x => x.Notes)
             .MaximumLength(UserWeightLog.Rules.NotesMaxLength)
             .When(x => !string.IsNullOrEmpty(x.Notes));
+
+        RuleFor(x => x.MusclePercent)
+            .InclusiveBetween(UserWeightLog.Rules.MinPercent, UserWeightLog.Rules.MaxPercent)
+            .When(x => x.MusclePercent.HasValue)
+            .WithMessage($"Muscle percentage must be between {UserWeightLog.Rules.MinPercent}% and {UserWeightLog.Rules.MaxPercent}%.");
+
+        RuleFor(x => x.BonePercent)
+            .InclusiveBetween(UserWeightLog.Rules.MinPercent, UserWeightLog.Rules.MaxPercent)
+            .When(x => x.BonePercent.HasValue)
+            .WithMessage($"Bone percentage must be between {UserWeightLog.Rules.MinPercent}% and {UserWeightLog.Rules.MaxPercent}%.");
+
+        RuleFor(x => x.FatPercent)
+            .InclusiveBetween(UserWeightLog.Rules.MinPercent, UserWeightLog.Rules.MaxPercent)
+            .When(x => x.FatPercent.HasValue)
+            .WithMessage($"Fat percentage must be between {UserWeightLog.Rules.MinPercent}% and {UserWeightLog.Rules.MaxPercent}%.");
+
+        RuleFor(x => x)
+            .Must(x => (x.MusclePercent ?? 0.0) + (x.BonePercent ?? 0.0) + (x.FatPercent ?? 0.0) <= 100.0)
+            .WithMessage("Total body composition percentage (Muscle + Bone + Fat) cannot exceed 100%.");
     }
 }
 
@@ -51,7 +73,15 @@ public class LogUserWeightCommandHandler : ICommandHandler<LogUserWeightCommand,
 
     public async Task<Result<Guid>> HandleAsync(LogUserWeightCommand request, CancellationToken ct = default)
     {
-        var log = UserWeightLog.Create(request.UserId, request.WeightKg, request.HeightCm, request.Date, request.Notes);
+        var log = UserWeightLog.Create(
+            request.UserId,
+            request.WeightKg,
+            request.HeightCm,
+            request.Date,
+            request.Notes,
+            request.MusclePercent,
+            request.BonePercent,
+            request.FatPercent);
         await _uow.UserWeightLogs.AddAsync(log);
         return Result.Success(log.Id);
     }
@@ -152,7 +182,10 @@ public class GetWorkoutAnalyticsQueryHandler : BaseQueryHandler<GetWorkoutAnalyt
                 w.Bmi,
                 w.BmiCategory,
                 w.Date,
-                w.Notes))
+                w.Notes,
+                w.MusclePercent,
+                w.BonePercent,
+                w.FatPercent))
             .ToList();
 
         double? startingWeight = weights.FirstOrDefault()?.WeightKg;
@@ -163,6 +196,33 @@ public class GetWorkoutAnalyticsQueryHandler : BaseQueryHandler<GetWorkoutAnalyt
         double? currentHeight = weights.LastOrDefault()?.HeightCm;
         double? currentBmi = weights.LastOrDefault()?.Bmi;
         string? currentBmiCategory = weights.LastOrDefault()?.BmiCategory;
+
+        // Body Composition Metrics (from latest log that recorded body composition)
+        var latestWithComposition = weights.LastOrDefault(w => w.MusclePercent.HasValue || w.FatPercent.HasValue || w.BonePercent.HasValue);
+        double? currentMuscle = latestWithComposition?.MusclePercent;
+        double? currentBone = latestWithComposition?.BonePercent;
+        double? currentFat = latestWithComposition?.FatPercent;
+        double? currentOther = (currentMuscle.HasValue || currentBone.HasValue || currentFat.HasValue)
+            ? Math.Max(0.0, Math.Round(100.0 - (currentMuscle ?? 0.0) - (currentBone ?? 0.0) - (currentFat ?? 0.0), 1))
+            : null;
+
+        double? fatMassKg = (currentWeight.HasValue && currentFat.HasValue)
+            ? Math.Round(currentWeight.Value * (currentFat.Value / 100.0), 1)
+            : null;
+        double? leanMassKg = (currentWeight.HasValue && fatMassKg.HasValue)
+            ? Math.Round(currentWeight.Value - fatMassKg.Value, 1)
+            : null;
+        double? muscleMassKg = (currentWeight.HasValue && currentMuscle.HasValue)
+            ? Math.Round(currentWeight.Value * (currentMuscle.Value / 100.0), 1)
+            : null;
+
+        var firstWithComposition = weights.FirstOrDefault(w => w.MusclePercent.HasValue || w.FatPercent.HasValue);
+        double? muscleChange = (currentMuscle.HasValue && firstWithComposition?.MusclePercent.HasValue == true && latestWithComposition != firstWithComposition)
+            ? Math.Round(currentMuscle.Value - firstWithComposition.MusclePercent.Value, 1)
+            : null;
+        double? fatChange = (currentFat.HasValue && firstWithComposition?.FatPercent.HasValue == true && latestWithComposition != firstWithComposition)
+            ? Math.Round(currentFat.Value - firstWithComposition.FatPercent.Value, 1)
+            : null;
 
         var dto = new WorkoutAnalyticsDto(
             totalSessions,
@@ -178,7 +238,16 @@ public class GetWorkoutAnalyticsQueryHandler : BaseQueryHandler<GetWorkoutAnalyt
             currentBmiCategory,
             weightDtos,
             topExercises,
-            sessionTrend);
+            sessionTrend,
+            currentMuscle,
+            currentBone,
+            currentFat,
+            currentOther,
+            leanMassKg,
+            fatMassKg,
+            muscleMassKg,
+            muscleChange,
+            fatChange);
 
         return Result.Success(dto);
     }
