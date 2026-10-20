@@ -64,6 +64,7 @@ public class LogMealItemDto
     public double Quantity { get; set; }
     public string Unit { get; set; } = "g";
     public string? Notes { get; set; }
+    public bool DeductFromStock { get; set; } = true;
 }
 
 public class LogWaterDto

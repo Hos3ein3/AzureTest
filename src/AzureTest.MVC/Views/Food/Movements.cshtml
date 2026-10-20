@@ -1,0 +1,152 @@
+@using AzureTest.Contracts.DTOs.Common
+@using AzureTest.Contracts.DTOs.Food
+@using AzureTest.Domain.Documents.Food.Enums
+@model PagedResult<StockMovementDto, StockMovementFilter>
+@{
+    ViewData["Title"] = "Stock Movement Ledger";
+    var filter = ViewBag.Filter as StockMovementFilter ?? new StockMovementFilter();
+}
+
+<div class="space-y-6">
+    <!-- Breadcrumbs & Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="flex items-center gap-2 text-xs text-slate-400 mb-1">
+                <a asp-action="Index" class="hover:text-brand-600 transition-colors">Food & Nutrition</a>
+                <i class="fa-solid fa-chevron-right text-3xs"></i>
+                <a asp-action="Stock" class="hover:text-brand-600 transition-colors">Pantry & Stock</a>
+                <i class="fa-solid fa-chevron-right text-3xs"></i>
+                <span class="text-slate-600 font-semibold">Movement Ledger</span>
+            </nav>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+                <i class="fa-solid fa-receipt text-brand-600"></i>
+                Stock Movement Ledger
+            </h1>
+            <p class="text-xs text-slate-500 mt-0.5">Immutable audit trail of all inventory purchases, meal deductions, waste, and manual adjustments.</p>
+        </div>
+
+        <a asp-action="Stock" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs">
+            <i class="fa-solid fa-arrow-left text-slate-400"></i>
+            Back to Stock
+        </a>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-2xs">
+        <form method="get" asp-action="Movements" class="flex flex-wrap items-center gap-3">
+            <div>
+                <label class="block text-3xs font-bold uppercase tracking-wider text-slate-400 mb-1">Movement Type</label>
+                <select name="MovementType" class="rounded-xl border border-slate-200 px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="">All Types</option>
+                    @foreach (StockMovementType mt in Enum.GetValues(typeof(StockMovementType)))
+                    {
+                        <option value="@mt" selected="@(filter.MovementType == mt)">@mt</option>
+                    }
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-3xs font-bold uppercase tracking-wider text-slate-400 mb-1">From Date</label>
+                <input type="date" name="FromDate" value="@(filter.FromDate?.ToString("yyyy-MM-dd"))" class="rounded-xl border border-slate-200 px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+
+            <div>
+                <label class="block text-3xs font-bold uppercase tracking-wider text-slate-400 mb-1">To Date</label>
+                <input type="date" name="ToDate" value="@(filter.ToDate?.ToString("yyyy-MM-dd"))" class="rounded-xl border border-slate-200 px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+
+            <div class="pt-4">
+                <button type="submit" class="px-4 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-xs font-semibold text-white transition-colors">
+                    Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Movements Table -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase font-bold text-3xs tracking-wider">
+                        <th class="py-3 px-4">Date / Time (UTC)</th>
+                        <th class="py-3 px-4">Ingredient</th>
+                        <th class="py-3 px-4">Movement Type</th>
+                        <th class="py-3 px-4">Delta</th>
+                        <th class="py-3 px-4">Location</th>
+                        <th class="py-3 px-4">Reason / Notes</th>
+                        <th class="py-3 px-4">Correlation</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                    @if (Model != null && Model.Items.Any())
+                    {
+                        foreach (var m in Model.Items)
+                        {
+                            var typeBadge = m.MovementType switch
+                            {
+                                StockMovementType.Purchase => "bg-emerald-50 text-emerald-700 border-emerald-200",
+                                StockMovementType.MealLogConsumption => "bg-indigo-50 text-indigo-700 border-indigo-200",
+                                StockMovementType.RecipeCooking => "bg-blue-50 text-blue-700 border-blue-200",
+                                StockMovementType.Waste => "bg-rose-50 text-rose-700 border-rose-200",
+                                StockMovementType.ManualCorrection => "bg-amber-50 text-amber-700 border-amber-200",
+                                StockMovementType.Transfer => "bg-purple-50 text-purple-700 border-purple-200",
+                                StockMovementType.RestockReturn => "bg-teal-50 text-teal-700 border-teal-200",
+                                StockMovementType.StapleAdjustment => "bg-slate-50 text-slate-700 border-slate-200",
+                                _ => "bg-slate-50 text-slate-600 border-slate-200"
+                            };
+
+                            <tr class="hover:bg-slate-50/70 transition-colors">
+                                <td class="py-3 px-4 font-mono text-slate-500 text-2xs whitespace-nowrap">
+                                    @m.Timestamp.ToString("yyyy-MM-dd HH:mm")
+                                </td>
+
+                                <td class="py-3 px-4 font-bold text-slate-900">
+                                    @m.IngredientName
+                                </td>
+
+                                <td class="py-3 px-4">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-3xs font-bold border @typeBadge">
+                                        @m.MovementType
+                                    </span>
+                                </td>
+
+                                <td class="py-3 px-4 font-mono font-bold @(m.QuantityDelta > 0 ? "text-emerald-600" : m.QuantityDelta < 0 ? "text-rose-600" : "text-slate-500")">
+                                    @(m.QuantityDelta > 0 ? $"+{m.QuantityDelta}" : m.QuantityDelta.ToString()) @m.Unit
+                                </td>
+
+                                <td class="py-3 px-4 text-slate-600">
+                                    @(m.Location?.ToString() ?? "-")
+                                </td>
+
+                                <td class="py-3 px-4 text-slate-600">
+                                    @if (m.WasteReason.HasValue)
+                                    {
+                                        <span class="text-rose-600 font-semibold">[Waste: @m.WasteReason] </span>
+                                    }
+                                    @if (m.Cost.HasValue && m.Cost.Value > 0)
+                                    {
+                                        <span class="text-slate-700 font-mono">($@m.Cost.Value.ToString("N2")) </span>
+                                    }
+                                    @(m.Notes ?? "-")
+                                </td>
+
+                                <td class="py-3 px-4 font-mono text-3xs text-slate-400 whitespace-nowrap">
+                                    @(m.CorrelationId ?? "-")
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-slate-400 text-xs">
+                                No stock movements recorded yet.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

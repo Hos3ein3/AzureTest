@@ -115,3 +115,81 @@ public class UpdateNutritionTargetDtoValidator : AbstractValidator<UpdateNutriti
             .InclusiveBetween(DailyNutritionTargetDocument.Rules.MinWaterMl, DailyNutritionTargetDocument.Rules.MaxWaterMl);
     }
 }
+
+public class CreateStockItemDtoValidator : AbstractValidator<CreateStockItemDto>
+{
+    public CreateStockItemDtoValidator()
+    {
+        RuleFor(x => x.IngredientId).NotEmpty().WithMessage("Ingredient is required.");
+        RuleFor(x => x.Quantity).GreaterThan(0).WithMessage("Quantity must be greater than zero.");
+        RuleFor(x => x.Unit).NotEmpty().WithMessage("Unit is required.");
+        RuleFor(x => x.UnitPrice)
+            .GreaterThanOrEqualTo(0).When(x => x.UnitPrice.HasValue)
+            .WithMessage("Unit price cannot be negative.");
+        RuleFor(x => x.MinimumParLevel)
+            .GreaterThanOrEqualTo(0).When(x => x.MinimumParLevel.HasValue)
+            .WithMessage("Minimum par level cannot be negative.");
+    }
+}
+
+public class AdjustStockDtoValidator : AbstractValidator<AdjustStockDto>
+{
+    public AdjustStockDtoValidator()
+    {
+        RuleFor(x => x.StockItemId).NotEmpty().WithMessage("Stock item ID is required.");
+        RuleFor(x => x.NewQuantity)
+            .InclusiveBetween(PantryStockItemDocument.Rules.MinQuantity, PantryStockItemDocument.Rules.MaxQuantity)
+            .WithMessage("Adjusted quantity out of allowable bounds.");
+    }
+}
+
+public class TransferStockDtoValidator : AbstractValidator<TransferStockDto>
+{
+    public TransferStockDtoValidator()
+    {
+        RuleFor(x => x.StockItemId).NotEmpty().WithMessage("Stock item ID is required.");
+    }
+}
+
+public class LogWasteDtoValidator : AbstractValidator<LogWasteDto>
+{
+    public LogWasteDtoValidator()
+    {
+        RuleFor(x => x.StockItemId).NotEmpty().WithMessage("Stock item ID is required.");
+        RuleFor(x => x.Quantity).GreaterThan(0).WithMessage("Wasted quantity must be greater than zero.");
+        RuleFor(x => x.EstimatedCost)
+            .GreaterThanOrEqualTo(0).When(x => x.EstimatedCost.HasValue)
+            .WithMessage("Wasted cost cannot be negative.");
+    }
+}
+
+public class CreateShoppingItemDtoValidator : AbstractValidator<CreateShoppingItemDto>
+{
+    public CreateShoppingItemDtoValidator()
+    {
+        RuleFor(x => x.Name)
+            .NotEmpty().WithMessage("Item name is required.")
+            .Length(ShoppingListItemDocument.Rules.NameMinLength, ShoppingListItemDocument.Rules.NameMaxLength);
+        RuleFor(x => x.Quantity).GreaterThan(0).WithMessage("Quantity must be greater than zero.");
+        RuleFor(x => x.Unit).NotEmpty().WithMessage("Unit is required.");
+        RuleFor(x => x.EstimatedCost)
+            .GreaterThanOrEqualTo(0).When(x => x.EstimatedCost.HasValue)
+            .WithMessage("Estimated cost cannot be negative.");
+    }
+}
+
+public class UpdateShoppingItemDtoValidator : AbstractValidator<UpdateShoppingItemDto>
+{
+    public UpdateShoppingItemDtoValidator()
+    {
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Item ID is required.");
+        RuleFor(x => x.Name)
+            .NotEmpty().WithMessage("Item name is required.")
+            .Length(ShoppingListItemDocument.Rules.NameMinLength, ShoppingListItemDocument.Rules.NameMaxLength);
+        RuleFor(x => x.Quantity).GreaterThan(0).WithMessage("Quantity must be greater than zero.");
+        RuleFor(x => x.Unit).NotEmpty().WithMessage("Unit is required.");
+        RuleFor(x => x.EstimatedCost)
+            .GreaterThanOrEqualTo(0).When(x => x.EstimatedCost.HasValue)
+            .WithMessage("Estimated cost cannot be negative.");
+    }
+}

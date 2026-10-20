@@ -27,6 +27,14 @@ public record GetAthleteProfileQuery(Guid UserId) : IQuery<Result<AthleteProfile
 public record GetChefScalingQuery(Guid RecipeId, double TargetServings) : IQuery<Result<ChefScalingResultDto>>;
 public record GetPantryMatchRecipesQuery(Guid UserId) : IQuery<Result<List<RecipeDto>>>;
 
+// Stock & Shopping Queries
+public record GetStockInventoryQuery(StockFilter Filter) : IQuery<Result<PagedResult<PantryStockItemDto, StockFilter>>>;
+public record GetStockOverviewQuery(Guid UserId) : IQuery<Result<StockInventoryOverviewDto>>;
+public record GetStockMovementsQuery(StockMovementFilter Filter) : IQuery<Result<PagedResult<StockMovementDto, StockMovementFilter>>>;
+public record GetStockItemByIdQuery(Guid Id, Guid UserId) : IQuery<Result<PantryStockItemDto>>;
+public record GetShoppingListQuery(ShoppingListFilter Filter) : IQuery<Result<ShoppingListGroupedDto>>;
+public record GetMissingRecipeIngredientsQuery(Guid UserId, Guid RecipeId, double Servings) : IQuery<Result<List<GroceryShoppingItemDto>>>;
+
 // ======================== MAPPERS ========================
 
 public static class FoodMappers
@@ -177,6 +185,75 @@ public static class FoodMappers
         doc.ShoppingList?.Select(s => new ShoppingListItemDto(s.Id, s.IngredientId, s.Name, s.Quantity, s.Unit, s.IsPurchased, s.Category, s.Notes)).ToList() ?? new(),
         doc.WeeklyPlan?.Select(w => new WeeklyMealPlanSlotDto(w.Id, w.DayOfWeek, w.MealType, w.RecipeId, w.RecipeName, w.Servings, w.Notes)).ToList() ?? new(),
         doc.UpdatedAt
+    );
+
+    public static PantryStockItemDto MapToDto(PantryStockItemDocument doc)
+    {
+        var now = DateTime.UtcNow;
+        int? daysUntil = doc.ExpiryDate.HasValue ? (int)Math.Ceiling((doc.ExpiryDate.Value.Date - now.Date).TotalDays) : null;
+        return new PantryStockItemDto(
+            doc.Id,
+            doc.UserId,
+            doc.IngredientId,
+            doc.IngredientName,
+            doc.Location,
+            doc.CurrentQuantity,
+            doc.Unit,
+            doc.CurrentNormalizedGrams,
+            doc.ExpiryDate,
+            doc.BatchCode,
+            doc.PurchaseDate,
+            doc.UnitPrice,
+            doc.MinimumParLevel,
+            doc.IsStaple,
+            doc.StapleStatus,
+            doc.IsDepleted,
+            doc.NeedsRestockReconciliation,
+            doc.IsExpired(now),
+            doc.IsExpiringSoon(3, now),
+            doc.IsBelowParLevel(),
+            daysUntil,
+            doc.CreatedAt,
+            doc.UpdatedAt
+        );
+    }
+
+    public static StockMovementDto MapToDto(StockMovementDocument doc) => new(
+        doc.Id,
+        doc.UserId,
+        doc.StockItemId,
+        doc.IngredientId,
+        doc.IngredientName,
+        doc.MovementType,
+        doc.QuantityDelta,
+        doc.Unit,
+        doc.NormalizedGramsDelta,
+        doc.Timestamp,
+        doc.CorrelationId,
+        doc.WasteReason,
+        doc.Cost,
+        doc.Location,
+        doc.Notes
+    );
+
+    public static GroceryShoppingItemDto MapToDto(ShoppingListItemDocument doc) => new(
+        doc.Id,
+        doc.UserId,
+        doc.IngredientId,
+        doc.Name,
+        doc.Quantity,
+        doc.Unit,
+        doc.NormalizedGrams,
+        doc.Status,
+        doc.StoreSection,
+        doc.Source,
+        doc.TargetLocation,
+        doc.EstimatedCost,
+        doc.Notes,
+        doc.CreatedAt,
+        doc.IsShared,
+        doc.CreatedByUserName,
+        doc.LastModifiedByUserName
     );
 }
 
@@ -465,19 +542,282 @@ public class GetPantryMatchRecipesQueryHandler : BaseQueryHandler<GetPantryMatch
 
     protected override async Task<Result<List<RecipeDto>>> ExecuteAsync(GetPantryMatchRecipesQuery request, CancellationToken ct)
     {
-        var targetDoc = (await _uow.NutritionTargets.FindAsync(x => x.UserId == request.UserId)).FirstOrDefault();
-        var pantryNames = targetDoc?.Pantry.Select(p => p.Name.ToLowerInvariant().Trim()).ToHashSet() ?? new();
+        // First check first-class stock items
+        var stockItems = await _uow.PantryStockItems.FindAsync(x => x.UserId == request.UserId && !x.IsDepleted);
+        var stockIngredientIds = stockItems.Select(s => s.IngredientId).ToHashSet();
+        var stockNames = stockItems.Select(s => s.IngredientName.ToLowerInvariant().Trim()).ToHashSet();
+
+        // Fallback to legacy embedded pantry if empty
+        if (!stockIngredientIds.Any())
+        {
+            var targetDoc = (await _uow.NutritionTargets.FindAsync(x => x.UserId == request.UserId)).FirstOrDefault();
+            if (targetDoc?.Pantry != null)
+            {
+                foreach (var p in targetDoc.Pantry)
+                {
+                    stockNames.Add(p.Name.ToLowerInvariant().Trim());
+                    if (p.IngredientId.HasValue) stockIngredientIds.Add(p.IngredientId.Value);
+                }
+            }
+        }
 
         var allRecipes = await _uow.Recipes.GetAllAsync();
 
-        // Sort recipes by how many ingredients match pantry items
+        // Sort recipes by how many ingredients match available stock
         var matched = allRecipes
-            .Where(r => r.Ingredients.Any(i => pantryNames.Contains(i.IngredientName.ToLowerInvariant().Trim())))
-            .OrderByDescending(r => r.Ingredients.Count(i => pantryNames.Contains(i.IngredientName.ToLowerInvariant().Trim())))
+            .Where(r => r.Ingredients.Any(i => stockIngredientIds.Contains(i.IngredientId) || stockNames.Contains(i.IngredientName.ToLowerInvariant().Trim())))
+            .OrderByDescending(r => r.Ingredients.Count(i => stockIngredientIds.Contains(i.IngredientId) || stockNames.Contains(i.IngredientName.ToLowerInvariant().Trim())))
             .Select(FoodMappers.MapToDto)
             .ToList();
 
         return Result.Success(matched);
+    }
+}
+
+public class GetStockInventoryQueryHandler : BaseQueryHandler<GetStockInventoryQuery, Result<PagedResult<PantryStockItemDto, StockFilter>>>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public GetStockInventoryQueryHandler(INoSqlUnitOfWork uow, ILogger<GetStockInventoryQueryHandler> logger) : base(logger) => _uow = uow;
+
+    protected override async Task<Result<PagedResult<PantryStockItemDto, StockFilter>>> ExecuteAsync(GetStockInventoryQuery request, CancellationToken ct)
+    {
+        var filter = request.Filter ?? new StockFilter { UserId = Guid.Empty };
+        var items = await _uow.PantryStockItems.FindAsync(x => x.UserId == filter.UserId);
+
+        if (!filter.IncludeDepleted)
+        {
+            items = items.Where(x => !x.IsDepleted).ToList();
+        }
+
+        if (filter.Location.HasValue)
+        {
+            items = items.Where(x => x.Location == filter.Location.Value).ToList();
+        }
+
+        if (filter.OnlyLowStock)
+        {
+            items = items.Where(x => x.IsBelowParLevel()).ToList();
+        }
+
+        if (filter.OnlyExpiringSoon)
+        {
+            items = items.Where(x => x.IsExpiringSoon(3) || x.IsExpired()).ToList();
+        }
+
+        if (filter.OnlyStaples)
+        {
+            items = items.Where(x => x.IsStaple).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
+        {
+            var search = filter.SearchTerm.Trim().ToLowerInvariant();
+            items = items.Where(x => x.IngredientName.ToLowerInvariant().Contains(search) || (x.BatchCode != null && x.BatchCode.ToLowerInvariant().Contains(search))).ToList();
+        }
+
+        int totalCount = items.Count;
+
+        items = filter.SortBy?.ToLowerInvariant() switch
+        {
+            "expirydate" => filter.SortDescending ? items.OrderByDescending(x => x.ExpiryDate ?? DateTime.MaxValue).ToList() : items.OrderBy(x => x.ExpiryDate ?? DateTime.MaxValue).ToList(),
+            "quantity" => filter.SortDescending ? items.OrderByDescending(x => x.CurrentQuantity).ToList() : items.OrderBy(x => x.CurrentQuantity).ToList(),
+            "location" => filter.SortDescending ? items.OrderByDescending(x => x.Location).ToList() : items.OrderBy(x => x.Location).ToList(),
+            _ => filter.SortDescending ? items.OrderByDescending(x => x.IngredientName).ToList() : items.OrderBy(x => x.IngredientName).ToList()
+        };
+
+        if (filter.PageSize > 0)
+        {
+            items = items.Skip((filter.PageNumber - 1) * filter.PageSize).Take(filter.PageSize).ToList();
+        }
+
+        var dtos = items.Select(FoodMappers.MapToDto).ToList();
+        return Result.Success(new PagedResult<PantryStockItemDto, StockFilter>(dtos, totalCount, filter.PageNumber, filter.PageSize, filter));
+    }
+}
+
+public class GetStockOverviewQueryHandler : BaseQueryHandler<GetStockOverviewQuery, Result<StockInventoryOverviewDto>>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public GetStockOverviewQueryHandler(INoSqlUnitOfWork uow, ILogger<GetStockOverviewQueryHandler> logger) : base(logger) => _uow = uow;
+
+    protected override async Task<Result<StockInventoryOverviewDto>> ExecuteAsync(GetStockOverviewQuery request, CancellationToken ct)
+    {
+        var allItems = await _uow.PantryStockItems.FindAsync(x => x.UserId == request.UserId && !x.IsDepleted);
+        var recentMovements = (await _uow.StockMovements.FindAsync(x => x.UserId == request.UserId))
+            .OrderByDescending(m => m.Timestamp)
+            .Take(15)
+            .Select(FoodMappers.MapToDto)
+            .ToList();
+
+        int total = allItems.Count;
+        int lowStock = allItems.Count(x => x.IsBelowParLevel());
+        int expiringSoon = allItems.Count(x => x.IsExpiringSoon(3));
+        int expired = allItems.Count(x => x.IsExpired());
+        decimal totalValue = allItems.Sum(x => (x.UnitPrice ?? 0m) * (decimal)Math.Max(0, x.CurrentQuantity));
+
+        var dtos = allItems.OrderBy(x => x.ExpiryDate ?? DateTime.MaxValue).Select(FoodMappers.MapToDto).ToList();
+
+        var overview = new StockInventoryOverviewDto(
+            total,
+            lowStock,
+            expiringSoon,
+            expired,
+            Math.Round(totalValue, 2),
+            dtos,
+            recentMovements
+        );
+
+        return Result.Success(overview);
+    }
+}
+
+public class GetStockMovementsQueryHandler : BaseQueryHandler<GetStockMovementsQuery, Result<PagedResult<StockMovementDto, StockMovementFilter>>>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public GetStockMovementsQueryHandler(INoSqlUnitOfWork uow, ILogger<GetStockMovementsQueryHandler> logger) : base(logger) => _uow = uow;
+
+    protected override async Task<Result<PagedResult<StockMovementDto, StockMovementFilter>>> ExecuteAsync(GetStockMovementsQuery request, CancellationToken ct)
+    {
+        var filter = request.Filter ?? new StockMovementFilter { UserId = Guid.Empty };
+        var movements = await _uow.StockMovements.FindAsync(x => x.UserId == filter.UserId);
+
+        if (filter.IngredientId.HasValue)
+        {
+            movements = movements.Where(x => x.IngredientId == filter.IngredientId.Value).ToList();
+        }
+
+        if (filter.MovementType.HasValue)
+        {
+            movements = movements.Where(x => x.MovementType == filter.MovementType.Value).ToList();
+        }
+
+        if (filter.FromDate.HasValue)
+        {
+            movements = movements.Where(x => x.Timestamp >= filter.FromDate.Value).ToList();
+        }
+
+        if (filter.ToDate.HasValue)
+        {
+            movements = movements.Where(x => x.Timestamp <= filter.ToDate.Value).ToList();
+        }
+
+        int total = movements.Count;
+        movements = movements.OrderByDescending(x => x.Timestamp).ToList();
+
+        if (filter.PageSize > 0)
+        {
+            movements = movements.Skip((filter.PageNumber - 1) * filter.PageSize).Take(filter.PageSize).ToList();
+        }
+
+        var dtos = movements.Select(FoodMappers.MapToDto).ToList();
+        return Result.Success(new PagedResult<StockMovementDto, StockMovementFilter>(dtos, total, filter.PageNumber, filter.PageSize, filter));
+    }
+}
+
+public class GetStockItemByIdQueryHandler : BaseQueryHandler<GetStockItemByIdQuery, Result<PantryStockItemDto>>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public GetStockItemByIdQueryHandler(INoSqlUnitOfWork uow, ILogger<GetStockItemByIdQueryHandler> logger) : base(logger) => _uow = uow;
+
+    protected override async Task<Result<PantryStockItemDto>> ExecuteAsync(GetStockItemByIdQuery request, CancellationToken ct)
+    {
+        var item = await _uow.PantryStockItems.GetByIdAsync(request.Id, ct);
+        if (item == null || item.UserId != request.UserId) return Result.Failure<PantryStockItemDto>("Stock item not found.");
+        return Result.Success(FoodMappers.MapToDto(item));
+    }
+}
+
+public class GetShoppingListQueryHandler : BaseQueryHandler<GetShoppingListQuery, Result<ShoppingListGroupedDto>>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public GetShoppingListQueryHandler(INoSqlUnitOfWork uow, ILogger<GetShoppingListQueryHandler> logger) : base(logger) => _uow = uow;
+
+    protected override async Task<Result<ShoppingListGroupedDto>> ExecuteAsync(GetShoppingListQuery request, CancellationToken ct)
+    {
+        var filter = request.Filter ?? new ShoppingListFilter { UserId = Guid.Empty };
+        var items = filter.IncludeShared
+            ? await _uow.ShoppingListItems.FindAsync(x => x.UserId == filter.UserId || x.IsShared == true)
+            : await _uow.ShoppingListItems.FindAsync(x => x.UserId == filter.UserId);
+
+        if (filter.Status.HasValue)
+        {
+            items = items.Where(x => x.Status == filter.Status.Value).ToList();
+        }
+
+        if (filter.StoreSection.HasValue)
+        {
+            items = items.Where(x => x.StoreSection == filter.StoreSection.Value).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
+        {
+            var search = filter.SearchTerm.Trim().ToLowerInvariant();
+            items = items.Where(x => x.Name.ToLowerInvariant().Contains(search) || (x.Notes != null && x.Notes.ToLowerInvariant().Contains(search))).ToList();
+        }
+
+        int total = items.Count;
+        int toBuy = items.Count(x => x.Status == ShoppingItemStatus.ToBuy);
+        int inCart = items.Count(x => x.Status == ShoppingItemStatus.InCart);
+        int bought = items.Count(x => x.Status == ShoppingItemStatus.Bought);
+        decimal estimatedCost = items.Sum(x => x.EstimatedCost ?? 0m);
+
+        var grouped = items
+            .OrderBy(x => x.StoreSection)
+            .ThenBy(x => x.Status)
+            .ThenBy(x => x.Name)
+            .GroupBy(x => x.StoreSection)
+            .ToDictionary(g => g.Key, g => g.Select(FoodMappers.MapToDto).ToList());
+
+        var result = new ShoppingListGroupedDto(total, toBuy, inCart, bought, Math.Round(estimatedCost, 2), grouped);
+        return Result.Success(result);
+    }
+}
+
+public class GetMissingRecipeIngredientsQueryHandler : BaseQueryHandler<GetMissingRecipeIngredientsQuery, Result<List<GroceryShoppingItemDto>>>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public GetMissingRecipeIngredientsQueryHandler(INoSqlUnitOfWork uow, ILogger<GetMissingRecipeIngredientsQueryHandler> logger) : base(logger) => _uow = uow;
+
+    protected override async Task<Result<List<GroceryShoppingItemDto>>> ExecuteAsync(GetMissingRecipeIngredientsQuery request, CancellationToken ct)
+    {
+        var recipe = await _uow.Recipes.GetByIdAsync(request.RecipeId, ct);
+        if (recipe == null) return Result.Failure<List<GroceryShoppingItemDto>>("Recipe not found.");
+
+        double servings = Math.Max(1.0, request.Servings);
+        double scale = servings / Math.Max(1.0, recipe.Servings);
+
+        var activeStock = await _uow.PantryStockItems.FindAsync(x => x.UserId == request.UserId && !x.IsDepleted);
+        var missingList = new List<GroceryShoppingItemDto>();
+
+        foreach (var ing in recipe.Ingredients)
+        {
+            double neededQty = ing.Quantity * scale;
+            var availableLots = activeStock.Where(s => s.IngredientId == ing.IngredientId).ToList();
+            double totalAvailable = availableLots.Sum(s => s.CurrentQuantity);
+
+            if (totalAvailable < neededQty)
+            {
+                double deficit = Math.Round(neededQty - totalAvailable, 2);
+                missingList.Add(new GroceryShoppingItemDto(
+                    Guid.NewGuid(),
+                    request.UserId,
+                    ing.IngredientId,
+                    ing.IngredientName,
+                    deficit,
+                    ing.Unit,
+                    0,
+                    ShoppingItemStatus.ToBuy,
+                    StoreSection.Produce,
+                    ShoppingItemSource.RecipeMissing,
+                    StockLocation.Pantry,
+                    null,
+                    $"Needed for {recipe.Name} ({servings} servings)",
+                    DateTime.UtcNow
+                ));
+            }
+        }
+
+        return Result.Success(missingList);
     }
 }
 
@@ -494,6 +834,13 @@ public interface IFoodQueryUnit
     GetAthleteProfileQueryHandler GetAthleteProfile { get; }
     GetChefScalingQueryHandler GetChefScaling { get; }
     GetPantryMatchRecipesQueryHandler GetPantryMatchRecipes { get; }
+
+    GetStockInventoryQueryHandler GetStockInventory { get; }
+    GetStockOverviewQueryHandler GetStockOverview { get; }
+    GetStockMovementsQueryHandler GetStockMovements { get; }
+    GetStockItemByIdQueryHandler GetStockItemById { get; }
+    GetShoppingListQueryHandler GetShoppingList { get; }
+    GetMissingRecipeIngredientsQueryHandler GetMissingRecipeIngredients { get; }
 }
 
 public class FoodQueryUnit : IFoodQueryUnit
@@ -508,6 +855,13 @@ public class FoodQueryUnit : IFoodQueryUnit
     public GetChefScalingQueryHandler GetChefScaling { get; }
     public GetPantryMatchRecipesQueryHandler GetPantryMatchRecipes { get; }
 
+    public GetStockInventoryQueryHandler GetStockInventory { get; }
+    public GetStockOverviewQueryHandler GetStockOverview { get; }
+    public GetStockMovementsQueryHandler GetStockMovements { get; }
+    public GetStockItemByIdQueryHandler GetStockItemById { get; }
+    public GetShoppingListQueryHandler GetShoppingList { get; }
+    public GetMissingRecipeIngredientsQueryHandler GetMissingRecipeIngredients { get; }
+
     public FoodQueryUnit(
         GetAllIngredientsQueryHandler getAllIngredients,
         GetIngredientByIdQueryHandler getIngredientById,
@@ -517,7 +871,13 @@ public class FoodQueryUnit : IFoodQueryUnit
         GetNutritionTargetQueryHandler getNutritionTarget,
         GetAthleteProfileQueryHandler getAthleteProfile,
         GetChefScalingQueryHandler getChefScaling,
-        GetPantryMatchRecipesQueryHandler getPantryMatchRecipes)
+        GetPantryMatchRecipesQueryHandler getPantryMatchRecipes,
+        GetStockInventoryQueryHandler getStockInventory,
+        GetStockOverviewQueryHandler getStockOverview,
+        GetStockMovementsQueryHandler getStockMovements,
+        GetStockItemByIdQueryHandler getStockItemById,
+        GetShoppingListQueryHandler getShoppingList,
+        GetMissingRecipeIngredientsQueryHandler getMissingRecipeIngredients)
     {
         GetAllIngredients = getAllIngredients;
         GetIngredientById = getIngredientById;
@@ -528,5 +888,12 @@ public class FoodQueryUnit : IFoodQueryUnit
         GetAthleteProfile = getAthleteProfile;
         GetChefScaling = getChefScaling;
         GetPantryMatchRecipes = getPantryMatchRecipes;
+
+        GetStockInventory = getStockInventory;
+        GetStockOverview = getStockOverview;
+        GetStockMovements = getStockMovements;
+        GetStockItemById = getStockItemById;
+        GetShoppingList = getShoppingList;
+        GetMissingRecipeIngredients = getMissingRecipeIngredients;
     }
 }

@@ -173,6 +173,16 @@
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Weekly Planner</span>
                 </a>
 
+                <a asp-area="" asp-controller="Food" asp-action="Stock" data-title="Pantry & Stock" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Food" && (ViewContext.RouteData.Values["action"]?.ToString() == "Stock" || ViewContext.RouteData.Values["action"]?.ToString() == "Movements") ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-boxes-stacked w-6 text-center text-lg transition-colors @(currentController == "Food" && (ViewContext.RouteData.Values["action"]?.ToString() == "Stock" || ViewContext.RouteData.Values["action"]?.ToString() == "Movements") ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Pantry & Stock</span>
+                </a>
+
+                <a asp-area="" asp-controller="Food" asp-action="ShoppingList" data-title="Shopping List" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "ShoppingList" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-cart-shopping w-6 text-center text-lg transition-colors @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "ShoppingList" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Shopping List</span>
+                </a>
+
                 <a asp-area="" asp-controller="Food" asp-action="Ingredients" data-title="Ingredients" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "Ingredients" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
                     <i class="fa-solid fa-carrot w-6 text-center text-lg transition-colors @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "Ingredients" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Ingredients</span>
@@ -298,6 +308,11 @@
                 <a asp-area="" asp-controller="Icon" asp-action="Index" data-title="Icon Gallery" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Icon")">
                     <i class="fa-solid fa-icons w-6 text-center text-lg transition-colors @GetActiveIconClasses("Icon")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Icon Gallery</span>
+                </a>
+
+                <a asp-area="" asp-controller="UiComponents" asp-action="Index" data-title="UI Components" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("UiComponents")">
+                    <i class="fa-solid fa-shapes w-6 text-center text-lg transition-colors @GetActiveIconClasses("UiComponents")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">UI Components</span>
                 </a>
                 
                 @if (_CurrentUser.IsAdmin)

@@ -75,11 +75,17 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     private IRecipeRepository? _recipes;
     private IMealLogRepository? _mealLogs;
     private IDailyNutritionTargetRepository? _nutritionTargets;
+    private IPantryStockItemRepository? _pantryStockItems;
+    private IStockMovementRepository? _stockMovements;
+    private IShoppingListItemRepository? _shoppingListItems;
 
     public IIngredientRepository Ingredients => _ingredients ??= new IngredientRepository(_database);
     public IRecipeRepository Recipes => _recipes ??= new RecipeRepository(_database);
     public IMealLogRepository MealLogs => _mealLogs ??= new MealLogRepository(_database);
     public IDailyNutritionTargetRepository NutritionTargets => _nutritionTargets ??= new DailyNutritionTargetRepository(_database);
+    public IPantryStockItemRepository PantryStockItems => _pantryStockItems ??= new PantryStockItemRepository(_database);
+    public IStockMovementRepository StockMovements => _stockMovements ??= new StockMovementRepository(_database);
+    public IShoppingListItemRepository ShoppingListItems => _shoppingListItems ??= new ShoppingListItemRepository(_database);
 
     public IHouseSearchHistoryRepository HouseSearchHistories => _houseSearchHistories ??= new HouseSearchHistoryRepository(_database);
     public IHouseCrawlerCredentialRepository HouseCrawlerCredentials => _houseCrawlerCredentials ??= new HouseCrawlerCredentialRepository(_database);

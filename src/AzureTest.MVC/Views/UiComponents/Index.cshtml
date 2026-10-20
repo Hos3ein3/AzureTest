@@ -1,0 +1,1297 @@
+@{
+    ViewData["Title"] = "UI Components Catalog";
+}
+
+<!-- Page Header -->
+<div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+        <nav class="flex items-center gap-2 text-xs text-slate-400 mb-1">
+            <a asp-controller="Home" asp-action="Index" class="hover:text-brand-600 transition-colors">Home</a>
+            <i class="fa-solid fa-chevron-right text-3xs"></i>
+            <span class="text-slate-600 font-semibold">Design System</span>
+            <i class="fa-solid fa-chevron-right text-3xs"></i>
+            <span class="text-slate-600 font-semibold">UI Components</span>
+        </nav>
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 text-xl shadow-sm">
+                <i class="fa-solid fa-shapes"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+                    UI Components Catalog
+                    <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-700">Design System</span>
+                </h1>
+                <p class="text-xs text-slate-500 mt-0.5">Comprehensive, copy-paste component library matching the application's Tailwind CSS design standards.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Search Components Bar -->
+    <div class="flex items-center gap-3">
+        <div class="relative w-full sm:w-72">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input id="componentFilterInput" type="text" onkeyup="filterComponents()" placeholder="Filter components (e.g. modal, button, toast)..."
+                   class="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" />
+            <button type="button" onclick="clearComponentFilter()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 text-xs bg-transparent border-0 cursor-pointer hidden" id="clearComponentBtn">
+                <i class="fa-solid fa-circle-xmark"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Category Jump Navigation Pills -->
+<div class="bg-white rounded-2xl border border-slate-100 p-3 shadow-2xs mb-8 overflow-x-auto">
+    <div class="flex items-center gap-1.5 min-w-max text-xs">
+        <span class="text-2xs font-bold uppercase tracking-wider text-slate-400 px-2">Jump to:</span>
+        <a href="#sec-buttons" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Buttons</a>
+        <a href="#sec-inputs" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Form Inputs</a>
+        <a href="#sec-toggles" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Checkboxes & Radios</a>
+        <a href="#sec-textareas" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Textareas</a>
+        <a href="#sec-dropdowns" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Dropdowns</a>
+        <a href="#sec-modals" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Modals</a>
+        <a href="#sec-toasts" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Toasts & Alerts</a>
+        <a href="#sec-loaders" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Loaders & Progress</a>
+        <a href="#sec-badges-tables" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Badges & Tables</a>
+        <a href="#sec-filters-pagination" class="px-3 py-1.5 rounded-xl font-semibold bg-brand-50 text-brand-700 hover:bg-brand-100 transition-colors">Filters & Pagination</a>
+    </div>
+</div>
+
+<div class="space-y-12">
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 1: BUTTONS & ACTIONS -->
+    <!-- ========================================================================= -->
+    <section id="sec-buttons" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-hand-pointer text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">1. Buttons & Actions</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Interaction</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Component Card: Button Variants -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Button Variants primary secondary danger success warning ghost">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Button Color Variants</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Primary, Secondary, Destructive (Danger), Success, Warning, and Ghost.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-btn-variants', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <button type="button" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-xs font-semibold text-white shadow-sm transition-colors">
+                            Primary Action
+                        </button>
+                        <button type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
+                            Secondary
+                        </button>
+                        <button type="button" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-xs font-semibold text-white shadow-sm transition-colors">
+                            <i class="fa-solid fa-trash-can mr-1.5 text-2xs"></i> Danger
+                        </button>
+                        <button type="button" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold text-white shadow-sm transition-colors">
+                            <i class="fa-solid fa-check mr-1.5 text-2xs"></i> Success
+                        </button>
+                        <button type="button" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-xs font-semibold text-white shadow-sm transition-colors">
+                            <i class="fa-solid fa-triangle-exclamation mr-1.5 text-2xs"></i> Warning
+                        </button>
+                        <button type="button" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-colors">
+                            Ghost / Outline
+                        </button>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-btn-variants"><code>&lt;!-- Primary --&gt;
+&lt;button type="button" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-xs font-semibold text-white shadow-sm transition-colors"&gt;
+    Primary Action
+&lt;/button&gt;
+
+&lt;!-- Secondary --&gt;
+&lt;button type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors"&gt;
+    Secondary
+&lt;/button&gt;
+
+&lt;!-- Danger / Destructive --&gt;
+&lt;button type="button" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-xs font-semibold text-white shadow-sm transition-colors"&gt;
+    &lt;i class="fa-solid fa-trash-can mr-1.5 text-2xs"&gt;&lt;/i&gt; Danger
+&lt;/button&gt;
+
+&lt;!-- Success --&gt;
+&lt;button type="button" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold text-white shadow-sm transition-colors"&gt;
+    &lt;i class="fa-solid fa-check mr-1.5 text-2xs"&gt;&lt;/i&gt; Success
+&lt;/button&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Component Card: Button Sizes & Icon States -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Button Sizes Loading Icon Buttons Group">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Sizes, Loading & Icon Buttons</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Small, standard, large, loading spinners, and circular icon controls.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-btn-sizes', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <!-- Sizes -->
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button type="button" class="px-2.5 py-1 rounded-lg bg-brand-600 text-white text-3xs font-semibold">Extra Small</button>
+                        <button type="button" class="px-3.5 py-1.5 rounded-xl bg-brand-600 text-white text-xs font-semibold">Small</button>
+                        <button type="button" class="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-semibold">Default</button>
+                        <button type="button" class="px-5 py-2.5 rounded-2xl bg-brand-600 text-white text-sm font-semibold">Large</button>
+                    </div>
+                    <!-- Loading & Icon Buttons -->
+                    <div class="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-200">
+                        <button type="button" disabled class="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-semibold opacity-75 cursor-not-allowed inline-flex items-center gap-2">
+                            <i class="fa-solid fa-spinner fa-spin text-2xs"></i>
+                            Processing...
+                        </button>
+                        <button type="button" class="w-9 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-600 transition-colors shadow-2xs" title="Favorite">
+                            <i class="fa-regular fa-star text-xs"></i>
+                        </button>
+                        <button type="button" class="w-9 h-9 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center justify-center transition-colors" title="Delete">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                        <!-- Button Group -->
+                        <div class="inline-flex rounded-xl shadow-2xs border border-slate-200 overflow-hidden bg-white">
+                            <button type="button" class="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 border-r border-slate-200">Day</button>
+                            <button type="button" class="px-3 py-1.5 text-xs font-semibold bg-brand-600 text-white">Week</button>
+                            <button type="button" class="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 border-l border-slate-200">Month</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-btn-sizes"><code>&lt;!-- Loading State --&gt;
+&lt;button type="button" disabled class="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-semibold opacity-75 cursor-not-allowed inline-flex items-center gap-2"&gt;
+    &lt;i class="fa-solid fa-spinner fa-spin text-2xs"&gt;&lt;/i&gt;
+    Processing...
+&lt;/button&gt;
+
+&lt;!-- Button Group / Segmented Control --&gt;
+&lt;div class="inline-flex rounded-xl shadow-2xs border border-slate-200 overflow-hidden bg-white"&gt;
+    &lt;button class="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 border-r border-slate-200"&gt;Day&lt;/button&gt;
+    &lt;button class="px-3 py-1.5 text-xs font-semibold bg-brand-600 text-white"&gt;Week&lt;/button&gt;
+    &lt;button class="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 border-l border-slate-200"&gt;Month&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 2: FORM INPUTS -->
+    <!-- ========================================================================= -->
+    <section id="sec-inputs" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-i-cursor text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">2. Text & Form Inputs</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Forms</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Component Card: Text, Email, Password Inputs -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Text Input Email Password input show hide">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Text, Email & Password Toggles</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Input with icons, validation helper, and password show/hide action.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-text-inputs', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <!-- Standard Text Input -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Full Name</label>
+                        <input type="text" placeholder="e.g. Alexander Hamilton" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" />
+                        <span class="text-3xs text-slate-400 mt-1 block">Enter your legal full name for identity records.</span>
+                    </div>
+
+                    <!-- Input with Leading Icon -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Email Address</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input type="email" placeholder="name@company.com" class="w-full pl-9 pr-3.5 py-2 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" />
+                        </div>
+                    </div>
+
+                    <!-- Password Input with Toggle -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Password</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input id="demoPasswordInput" type="password" value="SuperSecret123!" class="w-full pl-9 pr-10 py-2 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" />
+                            <button type="button" onclick="togglePasswordVisibility('demoPasswordInput', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 bg-transparent border-0 cursor-pointer">
+                                <i class="fa-solid fa-eye text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-text-inputs"><code>&lt;!-- Password with Show/Hide Toggle --&gt;
+&lt;div class="relative"&gt;
+    &lt;i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"&gt;&lt;/i&gt;
+    &lt;input id="passwordInput" type="password" class="w-full pl-9 pr-10 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-brand-500" /&gt;
+    &lt;button type="button" onclick="togglePasswordVisibility('passwordInput', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"&gt;
+        &lt;i class="fa-solid fa-eye text-xs"&gt;&lt;/i&gt;
+    &lt;/button&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Component Card: Number, Date, Error States -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Number Stepper Date Picker Time Validation Error">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Number Stepper, Dates & Errors</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Numeric step controls, date inputs, and error validation states.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-number-date', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <!-- Number with Stepper -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Quantity (Stepper)</label>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="stepNumber('demoStepper', -1)" class="w-9 h-9 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 flex items-center justify-center text-slate-600 font-bold transition-colors">
+                                <i class="fa-solid fa-minus text-2xs"></i>
+                            </button>
+                            <input id="demoStepper" type="number" value="1" min="1" max="100" class="w-24 text-center rounded-xl border border-slate-300 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" />
+                            <button type="button" onclick="stepNumber('demoStepper', 1)" class="w-9 h-9 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 flex items-center justify-center text-slate-600 font-bold transition-colors">
+                                <i class="fa-solid fa-plus text-2xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Date & Time Picker -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Date</label>
+                            <input type="date" value="@DateTime.UtcNow.ToString("yyyy-MM-dd")" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Time</label>
+                            <input type="time" value="14:30" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" />
+                        </div>
+                    </div>
+
+                    <!-- Input with Validation Error State -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-rose-700 mb-1">Username (Invalid Example)</label>
+                        <div class="relative">
+                            <input type="text" value="invalid@@user!" class="w-full rounded-xl border border-rose-300 bg-rose-50/40 px-3.5 py-2 text-xs text-rose-900 focus:outline-none focus:ring-2 focus:ring-rose-500" />
+                            <i class="fa-solid fa-circle-exclamation absolute right-3.5 top-1/2 -translate-y-1/2 text-rose-500 text-xs"></i>
+                        </div>
+                        <span class="text-3xs text-rose-600 mt-1 block font-medium">Username can only contain alphanumeric characters.</span>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-number-date"><code>&lt;!-- Input with Validation Error State --&gt;
+&lt;div class="relative"&gt;
+    &lt;input type="text" class="w-full rounded-xl border border-rose-300 bg-rose-50/40 px-3.5 py-2 text-xs text-rose-900 focus:ring-2 focus:ring-rose-500" /&gt;
+    &lt;i class="fa-solid fa-circle-exclamation absolute right-3.5 top-1/2 -translate-y-1/2 text-rose-500 text-xs"&gt;&lt;/i&gt;
+&lt;/div&gt;
+&lt;span class="text-3xs text-rose-600 mt-1 block font-medium"&gt;Validation error message here.&lt;/span&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 3: CHECKBOXES, TOGGLES & RADIOS -->
+    <!-- ========================================================================= -->
+    <section id="sec-toggles" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-toggle-on text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">3. Checkboxes, Toggles & Radios</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Selection</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Component Card: Checkboxes & Switches -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Checkbox Toggle Switch iOS Switch">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Checkboxes & iOS Switches</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Native styled checkboxes and animated toggle switches.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-checkboxes', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <!-- Standard Checkboxes -->
+                    <div class="space-y-2.5">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300" />
+                            <span class="text-xs font-semibold text-slate-800">Email Notifications (Checked)</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300" />
+                            <span class="text-xs font-semibold text-slate-800">Auto-Renew Subscription (Unchecked)</span>
+                        </label>
+                    </div>
+
+                    <!-- Modern Switch Toggle -->
+                    <div class="pt-3 border-t border-slate-200 space-y-3">
+                        <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold text-slate-800 block">Automatic Synchronization</span>
+                                <span class="text-3xs text-slate-500">Sync meal plan changes with pantry stock</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" checked class="sr-only peer" />
+                                <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-checkboxes"><code>&lt;!-- Toggle Switch (iOS Style) --&gt;
+&lt;label class="relative inline-flex items-center cursor-pointer"&gt;
+    &lt;input type="checkbox" value="true" checked class="sr-only peer" /&gt;
+    &lt;div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"&gt;&lt;/div&gt;
+&lt;/label&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Component Card: Radio Buttons & Selection Cards -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Radio Buttons Selection Cards Rich Radio">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Radio Selection Cards</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">High-touch radio option cards with icons and descriptions.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-radio-cards', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-3">
+                    <label class="block cursor-pointer">
+                        <input type="radio" name="demoDietPlan" checked class="peer sr-only" />
+                        <div class="p-3.5 bg-white border border-slate-200 peer-checked:border-brand-600 peer-checked:bg-brand-50/30 rounded-2xl transition-all flex items-center justify-between shadow-2xs">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 peer-checked:bg-brand-100 peer-checked:text-brand-600">
+                                    <i class="fa-solid fa-leaf text-xs"></i>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-900 block">Balanced Nutrition</span>
+                                    <span class="text-3xs text-slate-500">45% Carbs, 30% Protein, 25% Healthy Fats</span>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-circle-check text-brand-600 text-sm hidden peer-checked:block"></i>
+                        </div>
+                    </label>
+
+                    <label class="block cursor-pointer">
+                        <input type="radio" name="demoDietPlan" class="peer sr-only" />
+                        <div class="p-3.5 bg-white border border-slate-200 peer-checked:border-brand-600 peer-checked:bg-brand-50/30 rounded-2xl transition-all flex items-center justify-between shadow-2xs">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 peer-checked:bg-brand-100 peer-checked:text-brand-600">
+                                    <i class="fa-solid fa-dumbbell text-xs"></i>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-900 block">High Protein / Athlete</span>
+                                    <span class="text-3xs text-slate-500">2.2 g protein per kg bodyweight</span>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-circle-check text-brand-600 text-sm hidden peer-checked:block"></i>
+                        </div>
+                    </label>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-radio-cards"><code>&lt;!-- Rich Radio Card --&gt;
+&lt;label class="block cursor-pointer"&gt;
+    &lt;input type="radio" name="plan" class="peer sr-only" /&gt;
+    &lt;div class="p-3.5 bg-white border border-slate-200 peer-checked:border-brand-600 peer-checked:bg-brand-50/30 rounded-2xl flex items-center justify-between"&gt;
+        &lt;span class="text-xs font-bold text-slate-900"&gt;Plan Title&lt;/span&gt;
+        &lt;i class="fa-solid fa-circle-check text-brand-600 text-sm hidden peer-checked:block"&gt;&lt;/i&gt;
+    &lt;/div&gt;
+&lt;/label&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 4: TEXTAREAS -->
+    <!-- ========================================================================= -->
+    <section id="sec-textareas" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-align-left text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">4. Textareas & Long Inputs</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Text</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Component Card: Textarea with Live Character Counter -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Textarea Character Counter Auto Expand">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Textarea with Character Counter</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Auto-expanding textarea with live limit tracking.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-textarea-char', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-700">Preparation Instructions</label>
+                            <span id="charCountDisplay" class="text-3xs font-mono text-slate-400">0 / 300</span>
+                        </div>
+                        <textarea id="demoCounterTextarea" rows="4" maxlength="300" oninput="updateCharCounter(this, 'charCountDisplay', 300)"
+                                  placeholder="Describe the step-by-step cooking steps or notes..."
+                                  class="w-full rounded-xl border border-slate-300 p-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white resize-y"></textarea>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-textarea-char"><code>&lt;!-- Textarea with Character Counter --&gt;
+&lt;div&gt;
+    &lt;div class="flex justify-between mb-1"&gt;
+        &lt;label class="text-xs font-bold uppercase tracking-wider text-slate-700"&gt;Notes&lt;/label&gt;
+        &lt;span id="charCount" class="text-3xs font-mono text-slate-400"&gt;0 / 300&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;textarea maxlength="300" oninput="document.getElementById('charCount').innerText = this.value.length + ' / 300'" class="w-full rounded-xl border border-slate-300 p-3 text-xs focus:ring-2 focus:ring-brand-500 bg-white"&gt;&lt;/textarea&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 5: DROPDOWNS & AUTOCOMPLETE -->
+    <!-- ========================================================================= -->
+    <section id="sec-dropdowns" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-list-check text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">5. Dropdowns & Selection</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Dropdowns</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Component Card: Searchable Dropdown -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Searchable Dropdown Filter Select">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Searchable Dropdown</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Type to filter options in real time with keyboard and click support.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-searchable-dropdown', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <div class="relative">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Pick an Ingredient</label>
+                        <button type="button" id="searchableDropdownBtn" onclick="toggleSearchableMenu()" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs text-slate-800 shadow-2xs focus:ring-2 focus:ring-brand-500">
+                            <span id="searchableSelectedLabel" class="text-slate-600">Select an ingredient...</span>
+                            <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
+                        </button>
+
+                        <!-- Searchable Dropdown Popup Menu -->
+                        <div id="searchableDropdownMenu" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-2 space-y-1.5">
+                            <div class="relative">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-3xs"></i>
+                                <input type="text" id="searchableFilterInput" onkeyup="filterSearchableOptions(this.value)" placeholder="Type to filter..." class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                            </div>
+                            <ul id="searchableOptionsList" class="max-h-40 overflow-y-auto divide-y divide-slate-100 list-none p-0 m-0">
+                                <li onclick="selectSearchableOption('Fresh Chicken Breast', 'Meat & Seafood')" class="searchable-option p-2 hover:bg-brand-50 rounded-lg cursor-pointer flex items-center justify-between text-xs text-slate-800">
+                                    <span>Fresh Chicken Breast</span>
+                                    <span class="text-3xs text-slate-400">Meat</span>
+                                </li>
+                                <li onclick="selectSearchableOption('Extra Virgin Olive Oil', 'Oils & Spices')" class="searchable-option p-2 hover:bg-brand-50 rounded-lg cursor-pointer flex items-center justify-between text-xs text-slate-800">
+                                    <span>Extra Virgin Olive Oil</span>
+                                    <span class="text-3xs text-slate-400">Oils</span>
+                                </li>
+                                <li onclick="selectSearchableOption('Greek Whole Yogurt', 'Dairy & Eggs')" class="searchable-option p-2 hover:bg-brand-50 rounded-lg cursor-pointer flex items-center justify-between text-xs text-slate-800">
+                                    <span>Greek Whole Yogurt</span>
+                                    <span class="text-3xs text-slate-400">Dairy</span>
+                                </li>
+                                <li onclick="selectSearchableOption('Rolled Oats', 'Pantry & Grains')" class="searchable-option p-2 hover:bg-brand-50 rounded-lg cursor-pointer flex items-center justify-between text-xs text-slate-800">
+                                    <span>Rolled Oats</span>
+                                    <span class="text-3xs text-slate-400">Grains</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-searchable-dropdown"><code>&lt;!-- Searchable Dropdown Markup & JavaScript logic --&gt;
+&lt;div class="relative"&gt;
+    &lt;button type="button" onclick="toggleDropdown()" class="w-full flex justify-between px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs"&gt;
+        &lt;span id="selectedLabel"&gt;Select option...&lt;/span&gt;
+        &lt;i class="fa-solid fa-chevron-down"&gt;&lt;/i&gt;
+    &lt;/button&gt;
+    &lt;div id="dropdownMenu" class="hidden absolute top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-2"&gt;
+        &lt;input type="text" onkeyup="filterOptions(this.value)" placeholder="Search..." class="w-full px-3 py-1.5 rounded-xl border text-xs" /&gt;
+        &lt;ul class="max-h-40 overflow-y-auto"&gt;
+            &lt;li onclick="selectOption('Option 1')" class="p-2 hover:bg-brand-50 rounded cursor-pointer text-xs"&gt;Option 1&lt;/li&gt;
+        &lt;/ul&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Component Card: Multi-Select with Tag Chips & Datalist -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Multi-Select Tag Chips Datalist Autocomplete">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Multi-Select Chips & Datalist</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Select multiple tags with removable pills and native HTML5 datalist.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-multiselect', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <!-- Multi-Select with Chips -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Dietary Tags (Multi-Select)</label>
+                        <div id="multiSelectContainer" class="p-2 rounded-xl border border-slate-300 bg-white flex flex-wrap items-center gap-1.5 min-h-[42px]">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-50 text-brand-700 text-2xs font-semibold border border-brand-200">
+                                High-Protein
+                                <button type="button" onclick="this.parentElement.remove()" class="text-brand-400 hover:text-brand-600 bg-transparent border-0 cursor-pointer ml-1"><i class="fa-solid fa-xmark text-3xs"></i></button>
+                            </span>
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-2xs font-semibold border border-emerald-200">
+                                Gluten-Free
+                                <button type="button" onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-emerald-600 bg-transparent border-0 cursor-pointer ml-1"><i class="fa-solid fa-xmark text-3xs"></i></button>
+                            </span>
+                            <input type="text" id="multiSelectInput" onkeydown="handleMultiSelectKey(event)" placeholder="Type tag & press Enter..." class="flex-1 outline-none text-xs border-0 p-1 min-w-[120px]" />
+                        </div>
+                        <span class="text-3xs text-slate-400 mt-1 block">Type and press enter, or choose from suggestions.</span>
+                    </div>
+
+                    <!-- Native Datalist -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Unit of Measurement (Datalist)</label>
+                        <input list="unitsDatalist" placeholder="Choose or type custom unit..." class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" />
+                        <datalist id="unitsDatalist">
+                            <option value="g (grams)" />
+                            <option value="ml (milliliters)" />
+                            <option value="piece / count" />
+                            <option value="tbsp (tablespoon)" />
+                            <option value="tsp (teaspoon)" />
+                            <option value="cup" />
+                            <option value="can (400g)" />
+                        </datalist>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-multiselect"><code>&lt;!-- Native HTML5 Datalist --&gt;
+&lt;input list="unitsList" placeholder="Choose unit..." class="w-full rounded-xl border px-3.5 py-2 text-xs" /&gt;
+&lt;datalist id="unitsList"&gt;
+    &lt;option value="grams" /&gt;
+    &lt;option value="milliliters" /&gt;
+    &lt;option value="pieces" /&gt;
+&lt;/datalist&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 6: MODALS & DIALOGS -->
+    <!-- ========================================================================= -->
+    <section id="sec-modals" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-window-restore text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">6. Modals & Drawers</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Overlays</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Component Card: Modal Triggers -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Confirmation Modal Form Modal Slide-Over Drawer">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Interactive Modal Triggers</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Click buttons below to preview live animated dialogs and drawer.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-modals', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button type="button" onclick="openDemoModal('demoConfirmModal')" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-xs font-semibold text-white shadow-sm transition-colors">
+                            <i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Open Confirm Modal
+                        </button>
+                        <button type="button" onclick="openDemoModal('demoFormModal')" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-xs font-semibold text-white shadow-sm transition-colors">
+                            <i class="fa-solid fa-pen-to-square mr-1.5"></i> Open Form Dialog
+                        </button>
+                        <button type="button" onclick="openDemoDrawer()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-xs font-semibold text-white shadow-sm transition-colors">
+                            <i class="fa-solid fa-bars-staggered mr-1.5"></i> Slide-Over Drawer
+                        </button>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-modals"><code>&lt;!-- Confirmation Modal Markup --&gt;
+&lt;div id="confirmModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4"&gt;
+    &lt;div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4"&gt;
+        &lt;div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl"&gt;
+            &lt;i class="fa-solid fa-trash-can"&gt;&lt;/i&gt;
+        &lt;/div&gt;
+        &lt;h3 class="text-base font-bold text-slate-900"&gt;Are you sure?&lt;/h3&gt;
+        &lt;p class="text-xs text-slate-500"&gt;This action cannot be undone.&lt;/p&gt;
+        &lt;div class="flex justify-end gap-2"&gt;
+            &lt;button class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold"&gt;Cancel&lt;/button&gt;
+            &lt;button class="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-semibold"&gt;Confirm&lt;/button&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 7: TOASTS & ALERTS -->
+    <!-- ========================================================================= -->
+    <section id="sec-toasts" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-bell text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">7. Toasts, Alerts & Feedback</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Feedback</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Component Card: Live Toast Notifications -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Toast Notification Alerts Success Error Warning Info">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Live Toast Notifications</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Click below to spawn floating, auto-dismissing toast notifications.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-toasts', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <button type="button" onclick="triggerCatalogToast('Success', 'Profile updated successfully!', 'emerald')" class="px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-semibold shadow-2xs">
+                            <i class="fa-solid fa-circle-check mr-1 text-2xs"></i> Trigger Success Toast
+                        </button>
+                        <button type="button" onclick="triggerCatalogToast('Error', 'Unable to connect to database.', 'rose')" class="px-3.5 py-2 rounded-xl bg-rose-600 text-white text-xs font-semibold shadow-2xs">
+                            <i class="fa-solid fa-circle-xmark mr-1 text-2xs"></i> Trigger Error Toast
+                        </button>
+                        <button type="button" onclick="triggerCatalogToast('Warning', 'Stock level is below reorder par level.', 'amber')" class="px-3.5 py-2 rounded-xl bg-amber-500 text-white text-xs font-semibold shadow-2xs">
+                            <i class="fa-solid fa-triangle-exclamation mr-1 text-2xs"></i> Warning Toast
+                        </button>
+                        <button type="button" onclick="triggerCatalogToast('Information', 'New meal plan generated for next week.', 'brand')" class="px-3.5 py-2 rounded-xl bg-brand-600 text-white text-xs font-semibold shadow-2xs">
+                            <i class="fa-solid fa-circle-info mr-1 text-2xs"></i> Info Toast
+                        </button>
+                    </div>
+
+                    <!-- Inline Alert Banners -->
+                    <div class="mt-6 space-y-3">
+                        <div class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-800">
+                            <div class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                                <span class="font-medium">Changes saved successfully. All background workers updated.</span>
+                            </div>
+                            <button type="button" onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700 bg-transparent border-0 cursor-pointer"><i class="fa-solid fa-xmark text-2xs"></i></button>
+                        </div>
+                        <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-xs text-rose-800">
+                            <div class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
+                                <span class="font-medium">Session expired. Please re-authenticate to continue.</span>
+                            </div>
+                            <button type="button" onclick="this.parentElement.remove()" class="text-rose-500 hover:text-rose-700 bg-transparent border-0 cursor-pointer"><i class="fa-solid fa-xmark text-2xs"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-toasts"><code>&lt;!-- Inline Alert Banner --&gt;
+&lt;div class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-800"&gt;
+    &lt;div class="flex items-center gap-2.5"&gt;
+        &lt;i class="fa-solid fa-circle-check text-emerald-600"&gt;&lt;/i&gt;
+        &lt;span class="font-medium"&gt;Changes saved successfully.&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;button type="button" onclick="this.parentElement.remove()" class="text-emerald-500"&gt;&lt;i class="fa-solid fa-xmark"&gt;&lt;/i&gt;&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 8: LOADERS & PROGRESS -->
+    <!-- ========================================================================= -->
+    <section id="sec-loaders" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-spinner text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">8. Loaders, Spinners & Progress</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">States</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Component Card: Spinners & Skeletons -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Spinners Skeleton Loader Progress Bar Empty State">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Spinners & Skeleton Loaders</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Circular spinners, pulsing placeholders, and progress indicators.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-loaders', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-5">
+                    <!-- Spinners -->
+                    <div class="flex items-center gap-6">
+                        <div class="flex items-center gap-2 text-xs text-slate-600 font-semibold">
+                            <i class="fa-solid fa-circle-notch fa-spin text-brand-600 text-lg"></i> Brand Notch
+                        </div>
+                        <div class="flex items-center gap-2 text-xs text-slate-600 font-semibold">
+                            <i class="fa-solid fa-spinner fa-spin text-emerald-600 text-lg"></i> Spinner
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-brand-500 animate-bounce"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-brand-500 animate-bounce [animation-delay:0.2s]"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-brand-500 animate-bounce [animation-delay:0.4s]"></span>
+                        </div>
+                    </div>
+
+                    <!-- Determinate Progress Bar -->
+                    <div>
+                        <div class="flex items-center justify-between text-2xs font-bold text-slate-700 mb-1">
+                            <span>Daily Calorie Target</span>
+                            <span>75% (1,875 / 2,500 kcal)</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                            <div class="bg-brand-600 h-2.5 rounded-full transition-all duration-500" style="width: 75%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Skeleton Card Loader -->
+                    <div class="p-4 bg-white rounded-2xl border border-slate-200 space-y-3 animate-pulse">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-slate-200"></div>
+                            <div class="flex-1 space-y-1.5">
+                                <div class="h-3.5 bg-slate-200 rounded-md w-1/3"></div>
+                                <div class="h-2.5 bg-slate-200 rounded-md w-1/2"></div>
+                            </div>
+                        </div>
+                        <div class="h-2 bg-slate-200 rounded-md w-full"></div>
+                        <div class="h-2 bg-slate-200 rounded-md w-4/5"></div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-loaders"><code>&lt;!-- Skeleton Card Loader --&gt;
+&lt;div class="p-4 bg-white rounded-2xl border border-slate-200 space-y-3 animate-pulse"&gt;
+    &lt;div class="flex items-center gap-3"&gt;
+        &lt;div class="w-10 h-10 rounded-xl bg-slate-200"&gt;&lt;/div&gt;
+        &lt;div class="flex-1 space-y-1.5"&gt;
+            &lt;div class="h-3.5 bg-slate-200 rounded-md w-1/3"&gt;&lt;/div&gt;
+            &lt;div class="h-2.5 bg-slate-200 rounded-md w-1/2"&gt;&lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="h-2 bg-slate-200 rounded-md w-full"&gt;&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 9: BADGES, STAT CARDS & DATA TABLES -->
+    <!-- ========================================================================= -->
+    <section id="sec-badges-tables" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-table-list text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">9. Badges, KPI Cards & Tables</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Data</span>
+        </div>
+
+        <div class="space-y-6">
+            <!-- Metric KPI Stat Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-2xs">
+                    <div class="flex items-center justify-between text-slate-400 mb-1">
+                        <span class="text-2xs font-bold uppercase tracking-wider">Total Inventory</span>
+                        <i class="fa-solid fa-boxes-stacked text-slate-300"></i>
+                    </div>
+                    <div class="text-2xl font-black text-slate-900">42</div>
+                    <span class="text-3xs text-emerald-600 font-semibold"><i class="fa-solid fa-arrow-trend-up"></i> +12% this week</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-2xs">
+                    <div class="flex items-center justify-between text-brand-500 mb-1">
+                        <span class="text-2xs font-bold uppercase tracking-wider">To Buy</span>
+                        <i class="fa-solid fa-cart-shopping"></i>
+                    </div>
+                    <div class="text-2xl font-black text-brand-600">8</div>
+                    <span class="text-3xs text-slate-400">Grocery trip needed</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-2xs">
+                    <div class="flex items-center justify-between text-amber-500 mb-1">
+                        <span class="text-2xs font-bold uppercase tracking-wider">Low Stock</span>
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="text-2xl font-black text-amber-600">3</div>
+                    <span class="text-3xs text-amber-600 font-semibold">Below par level</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-2xs">
+                    <div class="flex items-center justify-between text-emerald-500 mb-1">
+                        <span class="text-2xs font-bold uppercase tracking-wider">Est. Value</span>
+                        <i class="fa-solid fa-dollar-sign"></i>
+                    </div>
+                    <div class="text-2xl font-black text-emerald-600">$184.50</div>
+                    <span class="text-3xs text-slate-400">Current stock value</span>
+                </div>
+            </div>
+
+            <!-- Modern Data Table -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden">
+                <div class="p-4 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Sample Responsive Data Table</h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">3 Records</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-700">
+                        <thead class="bg-slate-50 text-2xs uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                            <tr>
+                                <th class="px-5 py-3">Item Name</th>
+                                <th class="px-5 py-3">Category</th>
+                                <th class="px-5 py-3">Quantity</th>
+                                <th class="px-5 py-3">Status</th>
+                                <th class="px-5 py-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-5 py-3.5 font-bold text-slate-900 flex items-center gap-2.5">
+                                    <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                                        <i class="fa-solid fa-carrot"></i>
+                                    </div>
+                                    Organic Carrots
+                                </td>
+                                <td class="px-5 py-3.5 text-slate-500">Produce</td>
+                                <td class="px-5 py-3.5 font-mono font-semibold">500 g</td>
+                                <td class="px-5 py-3.5">
+                                    <span class="px-2 py-0.5 rounded-md text-3xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Optimal</span>
+                                </td>
+                                <td class="px-5 py-3.5 text-right space-x-1">
+                                    <button class="p-1.5 text-slate-400 hover:text-brand-600 rounded-lg hover:bg-brand-50 bg-transparent border-0 cursor-pointer"><i class="fa-solid fa-pen-to-square text-2xs"></i></button>
+                                    <button class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 bg-transparent border-0 cursor-pointer"><i class="fa-solid fa-trash-can text-2xs"></i></button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-5 py-3.5 font-bold text-slate-900 flex items-center gap-2.5">
+                                    <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs">
+                                        <i class="fa-solid fa-egg"></i>
+                                    </div>
+                                    Whole Farm Eggs
+                                </td>
+                                <td class="px-5 py-3.5 text-slate-500">Dairy & Eggs</td>
+                                <td class="px-5 py-3.5 font-mono font-semibold">2 pieces</td>
+                                <td class="px-5 py-3.5">
+                                    <span class="px-2 py-0.5 rounded-md text-3xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">Low Stock</span>
+                                </td>
+                                <td class="px-5 py-3.5 text-right space-x-1">
+                                    <button class="p-1.5 text-slate-400 hover:text-brand-600 rounded-lg hover:bg-brand-50 bg-transparent border-0 cursor-pointer"><i class="fa-solid fa-pen-to-square text-2xs"></i></button>
+                                    <button class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 bg-transparent border-0 cursor-pointer"><i class="fa-solid fa-trash-can text-2xs"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 10: FILTERS & PAGINATION -->
+    <!-- ========================================================================= -->
+    <section id="sec-filters-pagination" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-filter text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">10. Paged Filter Bar & Pagination</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Navigation</span>
+        </div>
+
+        <div class="space-y-6">
+            <!-- Paged Filter Bar Component -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Filter Bar Search Category Date Range Reset">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Standard Paged Filter Bar</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Reusable filter controls with search, dropdowns, date bounds, and reset.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-filters-bar', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-5 bg-slate-50/50">
+                    <form method="get" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
+                        <div>
+                            <label class="block text-3xs font-bold uppercase tracking-wider text-slate-500 mb-1">Search Keywords</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-2xs"></i>
+                                <input type="text" placeholder="Search..." class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-3xs font-bold uppercase tracking-wider text-slate-500 mb-1">Category</label>
+                            <select class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <option value="">All Categories</option>
+                                <option value="Dairy">Dairy & Eggs</option>
+                                <option value="Produce">Produce</option>
+                                <option value="Meat">Meat & Poultry</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-3xs font-bold uppercase tracking-wider text-slate-500 mb-1">Date Range</label>
+                            <input type="date" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="flex-1 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                                <i class="fa-solid fa-filter mr-1.5 text-2xs"></i> Apply
+                            </button>
+                            <button type="button" class="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold transition-colors" title="Reset">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-filters-bar"><code>&lt;!-- Paged Filter Bar --&gt;
+&lt;form method="get" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end"&gt;
+    &lt;div class="relative"&gt;
+        &lt;i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-2xs"&gt;&lt;/i&gt;
+        &lt;input type="text" name="SearchTerm" placeholder="Search..." class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 text-xs" /&gt;
+    &lt;/div&gt;
+    &lt;select name="Category" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"&gt;
+        &lt;option value=""&gt;All Categories&lt;/option&gt;
+    &lt;/select&gt;
+    &lt;button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-semibold"&gt;Apply&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Pagination Bar Component -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Pagination Pager Pages Navigation">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Interactive Pagination Component</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Numbered buttons, previous/next links, and page size dropdown.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-pagination', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-5 bg-slate-50/50">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div class="text-xs text-slate-500">
+                            Showing <span class="font-bold text-slate-800">11</span> to <span class="font-bold text-slate-800">20</span> of <span class="font-bold text-slate-800">84</span> items
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            <!-- Previous -->
+                            <button type="button" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold transition-colors">
+                                <i class="fa-solid fa-chevron-left text-3xs mr-1"></i> Prev
+                            </button>
+
+                            <!-- Pages -->
+                            <button type="button" class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-colors">1</button>
+                            <button type="button" class="w-8 h-8 rounded-xl bg-brand-600 text-white text-xs font-semibold shadow-2xs">2</button>
+                            <button type="button" class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-colors">3</button>
+                            <span class="px-1 text-slate-400 text-xs">...</span>
+                            <button type="button" class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-colors">9</button>
+
+                            <!-- Next -->
+                            <button type="button" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold transition-colors">
+                                Next <i class="fa-solid fa-chevron-right text-3xs ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-pagination"><code>&lt;!-- Pagination Bar --&gt;
+&lt;div class="flex items-center justify-between"&gt;
+    &lt;span class="text-xs text-slate-500"&gt;Showing 1 to 10 of 50&lt;/span&gt;
+    &lt;div class="flex items-center gap-1.5"&gt;
+        &lt;a class="px-3 py-1.5 rounded-xl border text-xs"&gt;Prev&lt;/a&gt;
+        &lt;span class="w-8 h-8 rounded-xl bg-brand-600 text-white text-xs flex items-center justify-center font-bold"&gt;1&lt;/span&gt;
+        &lt;a class="w-8 h-8 rounded-xl border text-xs flex items-center justify-center"&gt;2&lt;/a&gt;
+        &lt;a class="px-3 py-1.5 rounded-xl border text-xs"&gt;Next&lt;/a&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- ========================================================================= -->
+<!-- LIVE DEMO MODALS IN DOM -->
+<!-- ========================================================================= -->
+
+<!-- Confirmation Modal Demo -->
+<div id="demoConfirmModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+        <div class="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+            <h3 class="text-base font-black text-slate-900">Confirm Deletion</h3>
+            <p class="text-xs text-slate-500 mt-1">Are you sure you want to delete this record? This action will permanently remove it from the ledger.</p>
+        </div>
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+            <button type="button" onclick="closeDemoModal('demoConfirmModal')" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+            <button type="button" onclick="closeDemoModal('demoConfirmModal'); triggerCatalogToast('Confirmed', 'Record deleted successfully.', 'rose')" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-xs font-semibold text-white">Delete Item</button>
+        </div>
+    </div>
+</div>
+
+<!-- Form Modal Demo -->
+<div id="demoFormModal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square text-brand-600"></i> Edit Component Settings
+            </h3>
+            <button type="button" onclick="closeDemoModal('demoFormModal')" class="text-slate-400 hover:text-slate-600 bg-transparent border-0 cursor-pointer">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Component Title</label>
+                <input type="text" value="Daily Calorie Tracker Widget" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Category</label>
+                <select class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option>Productivity</option>
+                    <option>Nutrition</option>
+                    <option>Finance</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+            <button type="button" onclick="closeDemoModal('demoFormModal')" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+            <button type="button" onclick="closeDemoModal('demoFormModal'); triggerCatalogToast('Updated', 'Settings saved successfully.', 'emerald')" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-xs font-semibold text-white">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Slide-Over Drawer Demo -->
+<div id="demoSlideDrawer" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex justify-end">
+    <div class="bg-white w-full max-w-sm h-full shadow-2xl p-6 flex flex-col justify-between transform transition-transform duration-300">
+        <div>
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-brand-600"></i> Filter Drawer
+                </h3>
+                <button type="button" onclick="closeDemoDrawer()" class="text-slate-400 hover:text-slate-600 bg-transparent border-0 cursor-pointer">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+            <div class="py-6 space-y-4">
+                <p class="text-xs text-slate-500">Slide-over drawer is ideal for rich contextual filters, details sidebars, or shopping carts.</p>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Sort Option</label>
+                    <select class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs">
+                        <option>Date Created (Newest First)</option>
+                        <option>Price (Low to High)</option>
+                        <option>Alphabetical (A - Z)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+            <button type="button" onclick="closeDemoDrawer()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700">Close</button>
+            <button type="button" onclick="closeDemoDrawer(); triggerCatalogToast('Filters Applied', 'Filtered 24 results.', 'brand')" class="px-5 py-2 rounded-xl bg-brand-600 text-xs font-semibold text-white">Apply</button>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Toast Notification Anchor for Catalog -->
+<div id="catalogToastAnchor" class="fixed top-20 right-6 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
+
+@section Scripts {
+<script>
+    function copySnippet(elementId, btn) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const codeText = el.innerText;
+        navigator.clipboard.writeText(codeText).then(() => {
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check text-emerald-600 text-3xs"></i> <span class="text-emerald-700 font-bold">Copied!</span>';
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+            }, 2000);
+        });
+    }
+
+    function togglePasswordVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (icon) { icon.className = 'fa-solid fa-eye-slash text-xs'; }
+        } else {
+            input.type = 'password';
+            if (icon) { icon.className = 'fa-solid fa-eye text-xs'; }
+        }
+    }
+
+    function stepNumber(inputId, delta) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        let val = parseFloat(input.value) || 0;
+        val += delta;
+        if (input.min && val < parseFloat(input.min)) val = parseFloat(input.min);
+        if (input.max && val > parseFloat(input.max)) val = parseFloat(input.max);
+        input.value = val;
+    }
+
+    function updateCharCounter(textarea, counterId, max) {
+        const counter = document.getElementById(counterId);
+        if (counter) {
+            counter.innerText = textarea.value.length + ' / ' + max;
+        }
+    }
+
+    function toggleSearchableMenu() {
+        const menu = document.getElementById('searchableDropdownMenu');
+        if (menu) {
+            menu.classList.toggle('hidden');
+            const searchInput = document.getElementById('searchableFilterInput');
+            if (!menu.classList.contains('hidden') && searchInput) {
+                searchInput.focus();
+            }
+        }
+    }
+
+    function filterSearchableOptions(term) {
+        const filter = (term || '').toLowerCase();
+        const items = document.querySelectorAll('#searchableOptionsList li');
+        items.forEach(item => {
+            const text = item.innerText.toLowerCase();
+            item.style.display = text.includes(filter) ? '' : 'none';
+        });
+    }
+
+    function selectSearchableOption(name, category) {
+        const label = document.getElementById('searchableSelectedLabel');
+        if (label) {
+            label.innerText = name + ' (' + category + ')';
+            label.classList.remove('text-slate-600');
+            label.classList.add('text-slate-900', 'font-bold');
+        }
+        toggleSearchableMenu();
+    }
+
+    function handleMultiSelectKey(e) {
+        if (e.key === 'Enter' && e.target.value.trim() !== '') {
+            e.preventDefault();
+            const val = e.target.value.trim();
+            const container = document.getElementById('multiSelectContainer');
+            const span = document.createElement('span');
+            span.className = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-50 text-brand-700 text-2xs font-semibold border border-brand-200';
+            span.innerHTML = `${val} <button type="button" onclick="this.parentElement.remove()" class="text-brand-400 hover:text-brand-600 bg-transparent border-0 cursor-pointer ml-1"><i class="fa-solid fa-xmark text-3xs"></i></button>`;
+            container.insertBefore(span, e.target);
+            e.target.value = '';
+        }
+    }
+
+    function openDemoModal(id) {
+        document.getElementById(id)?.classList.remove('hidden');
+    }
+    function closeDemoModal(id) {
+        document.getElementById(id)?.classList.add('hidden');
+    }
+
+    function openDemoDrawer() {
+        document.getElementById('demoSlideDrawer')?.classList.remove('hidden');
+    }
+    function closeDemoDrawer() {
+        document.getElementById('demoSlideDrawer')?.classList.add('hidden');
+    }
+
+    function triggerCatalogToast(title, message, color) {
+        const anchor = document.getElementById('catalogToastAnchor');
+        if (!anchor) return;
+
+        let icon = 'fa-circle-check text-emerald-600';
+        let border = 'border-emerald-200';
+        if (color === 'rose') { icon = 'fa-circle-xmark text-rose-600'; border = 'border-rose-200'; }
+        else if (color === 'amber') { icon = 'fa-triangle-exclamation text-amber-500'; border = 'border-amber-200'; }
+        else if (color === 'brand') { icon = 'fa-circle-info text-brand-600'; border = 'border-brand-200'; }
+
+        const toast = document.createElement('div');
+        toast.className = `pointer-events-auto bg-white/95 backdrop-blur-sm border ${border} shadow-lg rounded-2xl p-3.5 flex items-start gap-3 transition-all duration-300 transform translate-y-2 opacity-0 text-xs`;
+        toast.innerHTML = `
+            <div class="mt-0.5"><i class="fa-solid ${icon} text-sm"></i></div>
+            <div class="flex-1 min-w-0">
+                <p class="font-bold text-slate-800">${title}</p>
+                <p class="text-slate-500 text-2xs mt-0.5">${message}</p>
+            </div>
+            <button type="button" class="text-slate-400 hover:text-slate-600 ml-1 p-0.5 bg-transparent border-0 cursor-pointer" onclick="this.parentElement.remove()">
+                <i class="fa-solid fa-xmark text-2xs"></i>
+            </button>
+        `;
+
+        anchor.appendChild(toast);
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-y-2', 'opacity-0');
+        });
+
+        setTimeout(() => {
+            toast.classList.add('opacity-0', '-translate-y-2');
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    function filterComponents() {
+        const input = document.getElementById('componentFilterInput');
+        const clearBtn = document.getElementById('clearComponentBtn');
+        const term = (input?.value || '').toLowerCase().trim();
+
+        if (clearBtn) {
+            clearBtn.classList.toggle('hidden', term === '');
+        }
+
+        const cards = document.querySelectorAll('.component-card');
+        const sections = document.querySelectorAll('.component-section');
+
+        cards.forEach(card => {
+            const dataName = (card.getAttribute('data-name') || '').toLowerCase();
+            const text = card.innerText.toLowerCase();
+            const matches = dataName.includes(term) || text.includes(term);
+            card.style.display = matches ? '' : 'none';
+        });
+
+        sections.forEach(sec => {
+            const visibleCards = sec.querySelectorAll('.component-card:not([style*="display: none"])');
+            sec.style.display = visibleCards.length > 0 || term === '' ? '' : 'none';
+        });
+    }
+
+    function clearComponentFilter() {
+        const input = document.getElementById('componentFilterInput');
+        if (input) {
+            input.value = '';
+            filterComponents();
+        }
+    }
+</script>
+}

@@ -28,6 +28,6 @@ public class IconController : Controller
             SearchTerm = search
         };
 
-        return View(vm);
+        return View("~/Views/Icon/Index.cshtml", vm);
     }
 }

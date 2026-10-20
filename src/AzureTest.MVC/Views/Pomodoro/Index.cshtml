@@ -262,20 +262,24 @@
 
         <!-- Task & Tag Input -->
         <div class="w-full max-w-md mt-6 space-y-3">
-            @if (Model.ActiveTasks != null && Model.ActiveTasks.Any())
-            {
-                <div class="relative">
-                    <select id="select-linked-task" onchange="onTaskSelectChanged(this)"
-                            class="w-full bg-slate-800/90 border border-slate-700 rounded-2xl py-2.5 px-3.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all">
-                        <option value="">Link to an active task (optional)</option>
+            <div class="relative">
+                <select id="select-linked-task" onchange="onTaskSelectChanged(this)"
+                        class="w-full bg-slate-800/90 border border-slate-700 rounded-2xl py-2.5 px-3.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all">
+                    <option value="">Link to an active task (optional)</option>
+                    @if (Model.ActiveTasks != null && Model.ActiveTasks.Any())
+                    {
                         @foreach (var task in Model.ActiveTasks)
                         {
                             var isPreSelected = ViewBag.SelectedTaskId != null && (Guid)ViewBag.SelectedTaskId == task.Id;
                             <option value="@task.Id" data-title="@task.Title" selected="@(isPreSelected ? "selected" : null)">@task.Title</option>
                         }
-                    </select>
-                </div>
-            }
+                    }
+                    else
+                    {
+                        <option value="" disabled>No active tasks found (go to /Tasks to create one)</option>
+                    }
+                </select>
+            </div>
 
             <div class="relative">
                 <input id="input-task-title" type="text" placeholder="What are you focusing on?"

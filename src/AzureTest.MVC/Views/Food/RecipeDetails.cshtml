@@ -50,7 +50,16 @@
             <input type="hidden" name="recipeId" value="@Model.Id" />
             <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
             <button type="submit" class="inline-flex items-center px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors">
-                <i class="fa-solid fa-cart-plus mr-1.5 text-slate-400"></i> Add to Shopping List
+                <i class="fa-solid fa-cart-plus mr-1.5 text-slate-400"></i> All Ingredients to List
+            </button>
+        </form>
+
+        <form asp-action="AddMissingRecipeIngredients" method="post" class="inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="recipeId" value="@Model.Id" />
+            <input type="hidden" name="servings" value="@Model.Servings" />
+            <button type="submit" class="inline-flex items-center px-3.5 py-2.5 rounded-xl border border-brand-200 bg-brand-50 hover:bg-brand-100 text-xs font-semibold text-brand-700 shadow-2xs transition-colors" title="Check pantry stock and add only missing ingredients">
+                <i class="fa-solid fa-cart-shopping mr-1.5 text-brand-600"></i> Add Missing Only
             </button>
         </form>
 

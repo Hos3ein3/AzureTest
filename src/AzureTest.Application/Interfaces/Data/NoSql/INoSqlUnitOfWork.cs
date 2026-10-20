@@ -39,6 +39,9 @@ public interface INoSqlUnitOfWork : IDisposable
     IRecipeRepository Recipes { get; }
     IMealLogRepository MealLogs { get; }
     IDailyNutritionTargetRepository NutritionTargets { get; }
+    IPantryStockItemRepository PantryStockItems { get; }
+    IStockMovementRepository StockMovements { get; }
+    IShoppingListItemRepository ShoppingListItems { get; }
 
     IIdentitySettingRepository IdentitySettings { get; }
     Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default);

@@ -41,6 +41,23 @@ public record UpsertWeeklyMealPlanSlotCommand(Guid UserId, UpsertWeeklyMealPlanS
 public record DeleteWeeklyMealPlanSlotCommand(Guid UserId, Guid SlotId) : ICommand<Result>;
 public record SeedDefaultIngredientsCommand() : ICommand<Result>;
 
+// Stock Management Commands
+public record CreateStockItemCommand(Guid UserId, CreateStockItemDto Dto) : ICommand<Result<Guid>>;
+public record AdjustStockCommand(Guid UserId, AdjustStockDto Dto) : ICommand<Result>;
+public record TransferStockCommand(Guid UserId, TransferStockDto Dto) : ICommand<Result>;
+public record LogWasteCommand(Guid UserId, LogWasteDto Dto) : ICommand<Result>;
+public record UpdateStapleStatusCommand(Guid UserId, UpdateStapleStatusDto Dto) : ICommand<Result>;
+public record DeleteStockItemCommand(Guid UserId, Guid StockItemId) : ICommand<Result>;
+
+// Shopping List Commands
+public record CreateShoppingItemCommand(Guid UserId, CreateShoppingItemDto Dto, string? UserName = null) : ICommand<Result<Guid>>;
+public record UpdateShoppingItemCommand(Guid UserId, UpdateShoppingItemDto Dto, string? UserName = null) : ICommand<Result>;
+public record SetShoppingItemStatusCommand(Guid UserId, SetShoppingItemStatusDto Dto, string? UserName = null) : ICommand<Result>;
+public record DeleteShoppingItemCommand(Guid UserId, Guid Id, string? UserName = null) : ICommand<Result>;
+public record AutoGenerateShoppingListCommand(Guid UserId, AutoGenerateShoppingListDto Dto) : ICommand<Result<int>>;
+public record FinishShoppingCommand(Guid UserId, FinishShoppingDto Dto) : ICommand<Result<int>>;
+public record AddMissingRecipeIngredientsToShoppingListCommand(Guid UserId, Guid RecipeId, double Servings) : ICommand<Result<int>>;
+
 // ======================== HANDLERS ========================
 
 public class CreateIngredientCommandHandler : ICommandHandler<CreateIngredientCommand, Result<Guid>>
@@ -392,7 +409,182 @@ public class LogMealItemCommandHandler : ICommandHandler<LogMealItemCommand, Res
             await _uow.MealLogs.AddAsync(mealLog, ct);
         }
 
+        // Auto-deduct from stock if requested
+        if (request.Dto.DeductFromStock)
+        {
+            if (request.Dto.IsRecipe)
+            {
+                var recipe = await _uow.Recipes.GetByIdAsync(request.Dto.ReferenceId, ct);
+                if (recipe != null)
+                {
+                    double scale = request.Dto.Quantity / Math.Max(1.0, recipe.Servings);
+                    foreach (var ing in recipe.Ingredients)
+                    {
+                        var ingDoc = await _uow.Ingredients.GetByIdAsync(ing.IngredientId, ct);
+                        double qty = ing.Quantity * scale;
+                        await DeductIngredientFromStockAsync(request.UserId, mealLog.Id, item.ItemId, ing.IngredientId, ing.IngredientName, qty, ing.Unit, ingDoc, ct);
+                    }
+                }
+            }
+            else
+            {
+                var ingDoc = await _uow.Ingredients.GetByIdAsync(request.Dto.ReferenceId, ct);
+                await DeductIngredientFromStockAsync(request.UserId, mealLog.Id, item.ItemId, request.Dto.ReferenceId, item.Name, request.Dto.Quantity, request.Dto.Unit, ingDoc, ct);
+            }
+        }
+
         return Result.Success(item.ItemId);
+    }
+
+    private async Task DeductIngredientFromStockAsync(
+        Guid userId,
+        Guid mealLogId,
+        Guid mealItemId,
+        Guid ingredientId,
+        string ingredientName,
+        double quantity,
+        string unit,
+        IngredientDocument? ingredientDoc,
+        CancellationToken ct)
+    {
+        double normalizedGrams = ingredientDoc != null ? ingredientDoc.CalculateGrams(quantity, unit) : quantity;
+
+        // FEFO (First-Expired, First-Out)
+        var lots = (await _uow.PantryStockItems.FindAsync(x => x.UserId == userId && x.IngredientId == ingredientId && !x.IsDepleted))
+            .OrderBy(x => x.ExpiryDate.HasValue ? x.ExpiryDate.Value : DateTime.MaxValue)
+            .ThenBy(x => x.CreatedAt)
+            .ToList();
+
+        double remainingToDeduct = quantity;
+        double remainingGramsToDeduct = normalizedGrams;
+        string correlationId = $"MealLog:{mealLogId}:{mealItemId}";
+
+        foreach (var lot in lots)
+        {
+            if (remainingToDeduct <= 0) break;
+
+            if (lot.CurrentQuantity >= remainingToDeduct)
+            {
+                double deductedQty = remainingToDeduct;
+                double deductedGrams = remainingGramsToDeduct;
+
+                lot.CurrentQuantity = Math.Round(lot.CurrentQuantity - deductedQty, 2);
+                lot.CurrentNormalizedGrams = Math.Max(0, Math.Round(lot.CurrentNormalizedGrams - deductedGrams, 2));
+                if (lot.CurrentQuantity <= 0 && !lot.IsStaple) lot.IsDepleted = true;
+                lot.UpdatedAt = DateTime.UtcNow;
+
+                await _uow.PantryStockItems.UpdateAsync(lot.Id, lot, ct);
+
+                var movement = StockMovementDocument.Create(
+                    userId,
+                    lot.Id,
+                    ingredientId,
+                    ingredientName,
+                    StockMovementType.MealLogConsumption,
+                    -deductedQty,
+                    unit,
+                    -deductedGrams,
+                    correlationId: correlationId,
+                    location: lot.Location,
+                    notes: "Consumed in meal log item"
+                );
+                await _uow.StockMovements.AddAsync(movement, ct);
+
+                remainingToDeduct = 0;
+                remainingGramsToDeduct = 0;
+                break;
+            }
+            else
+            {
+                double deductedQty = lot.CurrentQuantity;
+                double deductedGrams = lot.CurrentNormalizedGrams;
+
+                lot.CurrentQuantity = 0;
+                lot.CurrentNormalizedGrams = 0;
+                if (!lot.IsStaple) lot.IsDepleted = true;
+                lot.UpdatedAt = DateTime.UtcNow;
+
+                await _uow.PantryStockItems.UpdateAsync(lot.Id, lot, ct);
+
+                var movement = StockMovementDocument.Create(
+                    userId,
+                    lot.Id,
+                    ingredientId,
+                    ingredientName,
+                    StockMovementType.MealLogConsumption,
+                    -deductedQty,
+                    unit,
+                    -deductedGrams,
+                    correlationId: correlationId,
+                    location: lot.Location,
+                    notes: "Consumed in meal log item (batch depleted)"
+                );
+                await _uow.StockMovements.AddAsync(movement, ct);
+
+                remainingToDeduct -= deductedQty;
+                remainingGramsToDeduct -= deductedGrams;
+            }
+        }
+
+        // If consumed beyond recorded stock, create negative unstocked balance with flag NeedsRestockReconciliation
+        if (remainingToDeduct > 0)
+        {
+            var existingLot = lots.LastOrDefault() ?? (await _uow.PantryStockItems.FindAsync(x => x.UserId == userId && x.IngredientId == ingredientId)).FirstOrDefault();
+            if (existingLot != null)
+            {
+                existingLot.CurrentQuantity = Math.Round(existingLot.CurrentQuantity - remainingToDeduct, 2);
+                existingLot.CurrentNormalizedGrams = Math.Round(existingLot.CurrentNormalizedGrams - remainingGramsToDeduct, 2);
+                existingLot.NeedsRestockReconciliation = true;
+                existingLot.IsDepleted = false;
+                existingLot.UpdatedAt = DateTime.UtcNow;
+                await _uow.PantryStockItems.UpdateAsync(existingLot.Id, existingLot, ct);
+
+                var movement = StockMovementDocument.Create(
+                    userId,
+                    existingLot.Id,
+                    ingredientId,
+                    ingredientName,
+                    StockMovementType.MealLogConsumption,
+                    -remainingToDeduct,
+                    unit,
+                    -remainingGramsToDeduct,
+                    correlationId: correlationId,
+                    location: existingLot.Location,
+                    notes: "Unstocked meal consumption (negative inventory reconciliation)"
+                );
+                await _uow.StockMovements.AddAsync(movement, ct);
+            }
+            else
+            {
+                var unstockedLot = PantryStockItemDocument.Create(
+                    userId,
+                    ingredientId,
+                    ingredientName,
+                    StockLocation.Pantry,
+                    -remainingToDeduct,
+                    unit,
+                    -remainingGramsToDeduct
+                );
+                unstockedLot.NeedsRestockReconciliation = true;
+                unstockedLot.IsDepleted = false;
+                await _uow.PantryStockItems.AddAsync(unstockedLot, ct);
+
+                var movement = StockMovementDocument.Create(
+                    userId,
+                    unstockedLot.Id,
+                    ingredientId,
+                    ingredientName,
+                    StockMovementType.MealLogConsumption,
+                    -remainingToDeduct,
+                    unit,
+                    -remainingGramsToDeduct,
+                    correlationId: correlationId,
+                    location: unstockedLot.Location,
+                    notes: "Unstocked meal consumption (auto-created reconciliation lot)"
+                );
+                await _uow.StockMovements.AddAsync(movement, ct);
+            }
+        }
     }
 }
 
@@ -416,6 +608,47 @@ public class RemoveMealItemCommandHandler : ICommandHandler<RemoveMealItemComman
         else
         {
             await _uow.MealLogs.UpdateAsync(mealLog.Id, mealLog, ct);
+        }
+
+        // Revert associated stock movements
+        string correlationId = $"MealLog:{request.MealLogId}:{request.ItemId}";
+        var relatedMovements = await _uow.StockMovements.FindAsync(x => x.CorrelationId == correlationId);
+        foreach (var movement in relatedMovements)
+        {
+            if (movement.QuantityDelta < 0)
+            {
+                double restoreQty = Math.Abs(movement.QuantityDelta);
+                double restoreGrams = Math.Abs(movement.NormalizedGramsDelta);
+
+                if (movement.StockItemId.HasValue)
+                {
+                    var lot = await _uow.PantryStockItems.GetByIdAsync(movement.StockItemId.Value, ct);
+                    if (lot != null)
+                    {
+                        lot.CurrentQuantity = Math.Round(lot.CurrentQuantity + restoreQty, 2);
+                        lot.CurrentNormalizedGrams = Math.Round(lot.CurrentNormalizedGrams + restoreGrams, 2);
+                        if (lot.CurrentQuantity > 0) lot.IsDepleted = false;
+                        if (lot.CurrentQuantity >= 0) lot.NeedsRestockReconciliation = false;
+                        lot.UpdatedAt = DateTime.UtcNow;
+                        await _uow.PantryStockItems.UpdateAsync(lot.Id, lot, ct);
+                    }
+                }
+
+                var reversal = StockMovementDocument.Create(
+                    request.UserId,
+                    movement.StockItemId,
+                    movement.IngredientId,
+                    movement.IngredientName,
+                    StockMovementType.RestockReturn,
+                    restoreQty,
+                    movement.Unit,
+                    restoreGrams,
+                    correlationId: $"Reversal:{request.MealLogId}:{request.ItemId}",
+                    location: movement.Location,
+                    notes: $"Reversal for removed meal log item {request.ItemId}"
+                );
+                await _uow.StockMovements.AddAsync(reversal, ct);
+            }
         }
 
         return Result.Success();
@@ -778,6 +1011,653 @@ public class SeedDefaultIngredientsCommandHandler : ICommandHandler<SeedDefaultI
     }
 }
 
+// ======================== STOCK & SHOPPING COMMAND HANDLERS ========================
+
+public class CreateStockItemCommandHandler : ICommandHandler<CreateStockItemCommand, Result<Guid>>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public CreateStockItemCommandHandler(INoSqlUnitOfWork uow) => _uow = uow;
+
+    public async Task<Result<Guid>> HandleAsync(CreateStockItemCommand request, CancellationToken ct = default)
+    {
+        var ing = await _uow.Ingredients.GetByIdAsync(request.Dto.IngredientId, ct);
+        if (ing == null) return Result.Failure<Guid>("Ingredient not found.");
+
+        double normalizedGrams = ing.CalculateGrams(request.Dto.Quantity, request.Dto.Unit);
+
+        var doc = PantryStockItemDocument.Create(
+            request.UserId,
+            ing.Id,
+            ing.Name,
+            request.Dto.Location,
+            request.Dto.Quantity,
+            request.Dto.Unit,
+            normalizedGrams,
+            request.Dto.ExpiryDate,
+            request.Dto.UnitPrice,
+            request.Dto.MinimumParLevel,
+            request.Dto.IsStaple,
+            request.Dto.BatchCode
+        );
+
+        if (request.Dto.IsStaple)
+        {
+            doc.StapleStatus = request.Dto.StapleStatus;
+        }
+
+        await _uow.PantryStockItems.AddAsync(doc, ct);
+
+        // Record Initial / Purchase Ledger Movement
+        var movement = StockMovementDocument.Create(
+            request.UserId,
+            doc.Id,
+            ing.Id,
+            ing.Name,
+            StockMovementType.Purchase,
+            doc.CurrentQuantity,
+            doc.Unit,
+            doc.CurrentNormalizedGrams,
+            cost: request.Dto.UnitPrice * (decimal)request.Dto.Quantity,
+            location: doc.Location,
+            notes: string.IsNullOrWhiteSpace(request.Dto.Notes) ? "Initial stock entry / purchase" : request.Dto.Notes
+        );
+        await _uow.StockMovements.AddAsync(movement, ct);
+
+        return Result.Success(doc.Id);
+    }
+}
+
+public class AdjustStockCommandHandler : ICommandHandler<AdjustStockCommand, Result>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public AdjustStockCommandHandler(INoSqlUnitOfWork uow) => _uow = uow;
+
+    public async Task<Result> HandleAsync(AdjustStockCommand request, CancellationToken ct = default)
+    {
+        var lot = await _uow.PantryStockItems.GetByIdAsync(request.Dto.StockItemId, ct);
+        if (lot == null || lot.UserId != request.UserId) return Result.Failure("Stock item not found.");
+
+        double oldQty = lot.CurrentQuantity;
+        double newQty = Math.Round(request.Dto.NewQuantity, 2);
+        double delta = Math.Round(newQty - oldQty, 2);
+
+        var ing = await _uow.Ingredients.GetByIdAsync(lot.IngredientId, ct);
+        double deltaGrams = ing != null ? ing.CalculateGrams(delta, lot.Unit) : delta;
+
+        lot.CurrentQuantity = newQty;
+        lot.CurrentNormalizedGrams = ing != null ? ing.CalculateGrams(newQty, lot.Unit) : newQty;
+        lot.IsDepleted = newQty <= 0 && !lot.IsStaple;
+        if (newQty >= 0) lot.NeedsRestockReconciliation = false;
+        lot.UpdatedAt = DateTime.UtcNow;
+
+        await _uow.PantryStockItems.UpdateAsync(lot.Id, lot, ct);
+
+        var movement = StockMovementDocument.Create(
+            request.UserId,
+            lot.Id,
+            lot.IngredientId,
+            lot.IngredientName,
+            StockMovementType.ManualCorrection,
+            delta,
+            lot.Unit,
+            deltaGrams,
+            location: lot.Location,
+            notes: string.IsNullOrWhiteSpace(request.Dto.Reason) ? "Manual stock adjustment" : request.Dto.Reason
+        );
+        await _uow.StockMovements.AddAsync(movement, ct);
+
+        return Result.Success();
+    }
+}
+
+public class TransferStockCommandHandler : ICommandHandler<TransferStockCommand, Result>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public TransferStockCommandHandler(INoSqlUnitOfWork uow) => _uow = uow;
+
+    public async Task<Result> HandleAsync(TransferStockCommand request, CancellationToken ct = default)
+    {
+        var lot = await _uow.PantryStockItems.GetByIdAsync(request.Dto.StockItemId, ct);
+        if (lot == null || lot.UserId != request.UserId) return Result.Failure("Stock item not found.");
+
+        var oldLoc = lot.Location;
+        lot.Location = request.Dto.NewLocation;
+        lot.UpdatedAt = DateTime.UtcNow;
+
+        await _uow.PantryStockItems.UpdateAsync(lot.Id, lot, ct);
+
+        var movement = StockMovementDocument.Create(
+            request.UserId,
+            lot.Id,
+            lot.IngredientId,
+            lot.IngredientName,
+            StockMovementType.Transfer,
+            0,
+            lot.Unit,
+            0,
+            location: lot.Location,
+            notes: $"Transferred from {oldLoc} to {request.Dto.NewLocation}"
+        );
+        await _uow.StockMovements.AddAsync(movement, ct);
+
+        return Result.Success();
+    }
+}
+
+public class LogWasteCommandHandler : ICommandHandler<LogWasteCommand, Result>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public LogWasteCommandHandler(INoSqlUnitOfWork uow) => _uow = uow;
+
+    public async Task<Result> HandleAsync(LogWasteCommand request, CancellationToken ct = default)
+    {
+        var lot = await _uow.PantryStockItems.GetByIdAsync(request.Dto.StockItemId, ct);
+        if (lot == null || lot.UserId != request.UserId) return Result.Failure("Stock item not found.");
+
+        double wasteQty = Math.Min(lot.CurrentQuantity, Math.Round(request.Dto.Quantity, 2));
+        var ing = await _uow.Ingredients.GetByIdAsync(lot.IngredientId, ct);
+        double wasteGrams = ing != null ? ing.CalculateGrams(wasteQty, lot.Unit) : wasteQty;
+
+        lot.CurrentQuantity = Math.Round(lot.CurrentQuantity - wasteQty, 2);
+        lot.CurrentNormalizedGrams = Math.Max(0, Math.Round(lot.CurrentNormalizedGrams - wasteGrams, 2));
+        if (lot.CurrentQuantity <= 0 && !lot.IsStaple) lot.IsDepleted = true;
+        lot.UpdatedAt = DateTime.UtcNow;
+
+        await _uow.PantryStockItems.UpdateAsync(lot.Id, lot, ct);
+
+        decimal? cost = request.Dto.EstimatedCost;
+        if (!cost.HasValue && lot.UnitPrice.HasValue)
+        {
+            cost = Math.Round(lot.UnitPrice.Value * (decimal)wasteQty, 2);
+        }
+
+        var movement = StockMovementDocument.Create(
+            request.UserId,
+            lot.Id,
+            lot.IngredientId,
+            lot.IngredientName,
+            StockMovementType.Waste,
+            -wasteQty,
+            lot.Unit,
+            -wasteGrams,
+            wasteReason: request.Dto.Reason,
+            cost: cost,
+            location: lot.Location,
+            notes: string.IsNullOrWhiteSpace(request.Dto.Notes) ? $"Food waste logged ({request.Dto.Reason})" : request.Dto.Notes
+        );
+        await _uow.StockMovements.AddAsync(movement, ct);
+
+        return Result.Success();
+    }
+}
+
+public class UpdateStapleStatusCommandHandler : ICommandHandler<UpdateStapleStatusCommand, Result>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public UpdateStapleStatusCommandHandler(INoSqlUnitOfWork uow) => _uow = uow;
+
+    public async Task<Result> HandleAsync(UpdateStapleStatusCommand request, CancellationToken ct = default)
+    {
+        var lot = await _uow.PantryStockItems.GetByIdAsync(request.Dto.StockItemId, ct);
+        if (lot == null || lot.UserId != request.UserId) return Result.Failure("Stock item not found.");
+
+        var oldStatus = lot.StapleStatus;
+        lot.IsStaple = true;
+        lot.StapleStatus = request.Dto.Status;
+        lot.IsDepleted = request.Dto.Status == StapleStatus.OutOfStock;
+        lot.UpdatedAt = DateTime.UtcNow;
+
+        await _uow.PantryStockItems.UpdateAsync(lot.Id, lot, ct);
+
+        var movement = StockMovementDocument.Create(
+            request.UserId,
+            lot.Id,
+            lot.IngredientId,
+            lot.IngredientName,
+            StockMovementType.StapleAdjustment,
+            0,
+            lot.Unit,
+            0,
+            location: lot.Location,
+            notes: $"Staple status changed from {oldStatus} to {request.Dto.Status}"
+        );
+        await _uow.StockMovements.AddAsync(movement, ct);
+
+        return Result.Success();
+    }
+}
+
+public class DeleteStockItemCommandHandler : ICommandHandler<DeleteStockItemCommand, Result>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public DeleteStockItemCommandHandler(INoSqlUnitOfWork uow) => _uow = uow;
+
+    public async Task<Result> HandleAsync(DeleteStockItemCommand request, CancellationToken ct = default)
+    {
+        var lot = await _uow.PantryStockItems.GetByIdAsync(request.StockItemId, ct);
+        if (lot == null || lot.UserId != request.UserId) return Result.Failure("Stock item not found.");
+
+        await _uow.PantryStockItems.RemoveAsync(lot.Id, ct);
+        return Result.Success();
+    }
+}
+
+public class CreateShoppingItemCommandHandler : ICommandHandler<CreateShoppingItemCommand, Result<Guid>>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public CreateShoppingItemCommandHandler(INoSqlUnitOfWork uow) => _uow = uow;
+
+    public async Task<Result<Guid>> HandleAsync(CreateShoppingItemCommand request, CancellationToken ct = default)
+    {
+        double normalizedGrams = 0;
+        string name = request.Dto.Name.Trim();
+
+        if (request.Dto.IngredientId.HasValue)
+        {
+            var ing = await _uow.Ingredients.GetByIdAsync(request.Dto.IngredientId.Value, ct);
+            if (ing != null)
+            {
+                name = ing.Name;
+                normalizedGrams = ing.CalculateGrams(request.Dto.Quantity, request.Dto.Unit);
+            }
+        }
+
+        var doc = ShoppingListItemDocument.Create(
+            request.UserId,
+            name,
+            request.Dto.Quantity,
+            request.Dto.Unit,
+            request.Dto.StoreSection,
+            ShoppingItemSource.Manual,
+            request.Dto.IngredientId,
+            request.Dto.TargetLocation,
+            request.Dto.EstimatedCost,
+            request.Dto.Notes,
+            normalizedGrams,
+            request.Dto.IsShared,
+            request.UserName
+        );
+
+        await _uow.ShoppingListItems.AddAsync(doc, ct);
+        return Result.Success(doc.Id);
+    }
+}
+
+public class UpdateShoppingItemCommandHandler : ICommandHandler<UpdateShoppingItemCommand, Result>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public UpdateShoppingItemCommandHandler(INoSqlUnitOfWork uow) => _uow = uow;
+
+    public async Task<Result> HandleAsync(UpdateShoppingItemCommand request, CancellationToken ct = default)
+    {
+        var item = await _uow.ShoppingListItems.GetByIdAsync(request.Dto.Id, ct);
+        if (item == null) return Result.Failure("Shopping item not found.");
+        if (!item.IsShared && item.UserId != request.UserId) return Result.Failure("Not authorized to modify this item.");
+
+        item.Name = request.Dto.Name.Trim();
+        item.Quantity = Math.Max(0.01, request.Dto.Quantity);
+        item.Unit = string.IsNullOrWhiteSpace(request.Dto.Unit) ? "piece" : request.Dto.Unit.Trim();
+        item.StoreSection = request.Dto.StoreSection;
+        item.TargetLocation = request.Dto.TargetLocation;
+        item.EstimatedCost = request.Dto.EstimatedCost;
+        item.Notes = request.Dto.Notes?.Trim();
+        if (!string.IsNullOrWhiteSpace(request.UserName)) item.LastModifiedByUserName = request.UserName;
+        item.UpdatedAt = DateTime.UtcNow;
+
+        await _uow.ShoppingListItems.UpdateAsync(item.Id, item, ct);
+        return Result.Success();
+    }
+}
+
+public class SetShoppingItemStatusCommandHandler : ICommandHandler<SetShoppingItemStatusCommand, Result>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public SetShoppingItemStatusCommandHandler(INoSqlUnitOfWork uow) => _uow = uow;
+
+    public async Task<Result> HandleAsync(SetShoppingItemStatusCommand request, CancellationToken ct = default)
+    {
+        var item = await _uow.ShoppingListItems.GetByIdAsync(request.Dto.Id, ct);
+        if (item == null) return Result.Failure("Shopping item not found.");
+        if (!item.IsShared && item.UserId != request.UserId) return Result.Failure("Not authorized to modify this item.");
+
+        item.Status = request.Dto.Status;
+        if (!string.IsNullOrWhiteSpace(request.UserName)) item.LastModifiedByUserName = request.UserName;
+        item.UpdatedAt = DateTime.UtcNow;
+
+        await _uow.ShoppingListItems.UpdateAsync(item.Id, item, ct);
+        return Result.Success();
+    }
+}
+
+public class DeleteShoppingItemCommandHandler : ICommandHandler<DeleteShoppingItemCommand, Result>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public DeleteShoppingItemCommandHandler(INoSqlUnitOfWork uow) => _uow = uow;
+
+    public async Task<Result> HandleAsync(DeleteShoppingItemCommand request, CancellationToken ct = default)
+    {
+        var item = await _uow.ShoppingListItems.GetByIdAsync(request.Id, ct);
+        if (item == null) return Result.Failure("Shopping item not found.");
+        if (!item.IsShared && item.UserId != request.UserId) return Result.Failure("Not authorized to delete this item.");
+
+        await _uow.ShoppingListItems.RemoveAsync(item.Id, ct);
+        return Result.Success();
+    }
+}
+
+public class AutoGenerateShoppingListCommandHandler : ICommandHandler<AutoGenerateShoppingListCommand, Result<int>>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public AutoGenerateShoppingListCommandHandler(INoSqlUnitOfWork uow) => _uow = uow;
+
+    public async Task<Result<int>> HandleAsync(AutoGenerateShoppingListCommand request, CancellationToken ct = default)
+    {
+        int generatedCount = 0;
+        var existingList = (await _uow.ShoppingListItems.FindAsync(x => x.UserId == request.UserId && x.Status != ShoppingItemStatus.Bought)).ToList();
+        var activeStock = await _uow.PantryStockItems.FindAsync(x => x.UserId == request.UserId && !x.IsDepleted);
+
+        // 1. Evaluate Low Stock and Out of Stock Staples
+        if (request.Dto.IncludeLowStock)
+        {
+            var lowStockItems = activeStock.Where(x => x.IsBelowParLevel()).ToList();
+            // Also check items with par levels that might be completely depleted
+            var allStock = await _uow.PantryStockItems.FindAsync(x => x.UserId == request.UserId);
+            var depletedParItems = allStock.Where(x => x.IsDepleted && x.MinimumParLevel.HasValue && x.MinimumParLevel.Value > 0).ToList();
+
+            var candidates = lowStockItems.Concat(depletedParItems).DistinctBy(x => x.Id).ToList();
+
+            foreach (var stockItem in candidates)
+            {
+                double neededQty = 1.0;
+                if (stockItem.MinimumParLevel.HasValue && stockItem.MinimumParLevel.Value > stockItem.CurrentQuantity)
+                {
+                    neededQty = Math.Round(stockItem.MinimumParLevel.Value - Math.Max(0, stockItem.CurrentQuantity), 2);
+                }
+
+                // Check if already on shopping list
+                var existing = existingList.FirstOrDefault(x =>
+                    (x.IngredientId.HasValue && x.IngredientId == stockItem.IngredientId) ||
+                    x.Name.Equals(stockItem.IngredientName, StringComparison.OrdinalIgnoreCase));
+
+                if (existing != null)
+                {
+                    existing.Quantity = Math.Round(existing.Quantity + neededQty, 2);
+                    existing.UpdatedAt = DateTime.UtcNow;
+                    await _uow.ShoppingListItems.UpdateAsync(existing.Id, existing, ct);
+                    generatedCount++;
+                }
+                else
+                {
+                    var newItem = ShoppingListItemDocument.Create(
+                        request.UserId,
+                        stockItem.IngredientName,
+                        neededQty,
+                        stockItem.Unit,
+                        StoreSection.PantryAndDryGoods,
+                        ShoppingItemSource.LowStockParLevel,
+                        stockItem.IngredientId,
+                        stockItem.Location,
+                        stockItem.UnitPrice.HasValue ? Math.Round(stockItem.UnitPrice.Value * (decimal)neededQty, 2) : null,
+                        "Auto-generated from low stock par level"
+                    );
+                    await _uow.ShoppingListItems.AddAsync(newItem, ct);
+                    existingList.Add(newItem);
+                    generatedCount++;
+                }
+            }
+        }
+
+        // 2. Evaluate Meal Plan Requirements
+        if (request.Dto.IncludeMealPlan)
+        {
+            var targetDoc = (await _uow.NutritionTargets.FindAsync(x => x.UserId == request.UserId)).FirstOrDefault();
+            if (targetDoc?.WeeklyPlan != null && targetDoc.WeeklyPlan.Any())
+            {
+                // Aggregate required ingredients from weekly plan
+                var planNeeds = new Dictionary<Guid, (string Name, double NeededQty, string Unit)>();
+
+                foreach (var slot in targetDoc.WeeklyPlan)
+                {
+                    if (!slot.RecipeId.HasValue) continue;
+                    var recipe = await _uow.Recipes.GetByIdAsync(slot.RecipeId.Value, ct);
+                    if (recipe == null) continue;
+
+                    double scale = (double)slot.Servings / Math.Max(1.0, recipe.Servings);
+                    foreach (var ing in recipe.Ingredients)
+                    {
+                        if (planNeeds.ContainsKey(ing.IngredientId))
+                        {
+                            var current = planNeeds[ing.IngredientId];
+                            planNeeds[ing.IngredientId] = (current.Name, current.NeededQty + (ing.Quantity * scale), current.Unit);
+                        }
+                        else
+                        {
+                            planNeeds[ing.IngredientId] = (ing.IngredientName, ing.Quantity * scale, ing.Unit);
+                        }
+                    }
+                }
+
+                // Compare with available stock
+                foreach (var kvp in planNeeds)
+                {
+                    var ingId = kvp.Key;
+                    var (ingName, neededTotal, unit) = kvp.Value;
+
+                    double totalStockAvailable = activeStock
+                        .Where(s => s.IngredientId == ingId)
+                        .Sum(s => s.CurrentQuantity);
+
+                    if (totalStockAvailable < neededTotal)
+                    {
+                        double deficit = Math.Round(neededTotal - totalStockAvailable, 2);
+
+                        var existing = existingList.FirstOrDefault(x =>
+                            (x.IngredientId.HasValue && x.IngredientId == ingId) ||
+                            x.Name.Equals(ingName, StringComparison.OrdinalIgnoreCase));
+
+                        if (existing != null)
+                        {
+                            existing.Quantity = Math.Round(existing.Quantity + deficit, 2);
+                            existing.UpdatedAt = DateTime.UtcNow;
+                            await _uow.ShoppingListItems.UpdateAsync(existing.Id, existing, ct);
+                            generatedCount++;
+                        }
+                        else
+                        {
+                            var newItem = ShoppingListItemDocument.Create(
+                                request.UserId,
+                                ingName,
+                                deficit,
+                                unit,
+                                StoreSection.Produce,
+                                ShoppingItemSource.MealPlan,
+                                ingId,
+                                StockLocation.Fridge,
+                                null,
+                                "Auto-generated from weekly meal plan"
+                            );
+                            await _uow.ShoppingListItems.AddAsync(newItem, ct);
+                            existingList.Add(newItem);
+                            generatedCount++;
+                        }
+                    }
+                }
+            }
+        }
+
+        return Result.Success(generatedCount);
+    }
+}
+
+public class FinishShoppingCommandHandler : ICommandHandler<FinishShoppingCommand, Result<int>>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public FinishShoppingCommandHandler(INoSqlUnitOfWork uow) => _uow = uow;
+
+    public async Task<Result<int>> HandleAsync(FinishShoppingCommand request, CancellationToken ct = default)
+    {
+        var allItems = await _uow.ShoppingListItems.FindAsync(x => x.UserId == request.UserId || x.IsShared == true);
+        var targetItems = allItems.Where(x =>
+            x.Status == ShoppingItemStatus.Bought ||
+            (request.Dto.IncludeInCartItems && x.Status == ShoppingItemStatus.InCart)
+        ).ToList();
+
+        if (!targetItems.Any()) return Result.Success(0);
+
+        string batchCode = string.IsNullOrWhiteSpace(request.Dto.CustomBatchCode)
+            ? $"SHOP-{DateTime.UtcNow:yyyyMMdd-HHmm}"
+            : request.Dto.CustomBatchCode.Trim();
+
+        int processedCount = 0;
+
+        foreach (var item in targetItems)
+        {
+            // Find existing lot or create new lot
+            PantryStockItemDocument? targetLot = null;
+
+            if (item.IngredientId.HasValue)
+            {
+                var existingLots = await _uow.PantryStockItems.FindAsync(x =>
+                    x.UserId == request.UserId &&
+                    x.IngredientId == item.IngredientId.Value &&
+                    x.Location == item.TargetLocation &&
+                    !x.IsDepleted);
+
+                targetLot = existingLots.FirstOrDefault();
+            }
+
+            if (targetLot != null)
+            {
+                targetLot.CurrentQuantity = Math.Round(targetLot.CurrentQuantity + item.Quantity, 2);
+                targetLot.IsDepleted = false;
+                targetLot.NeedsRestockReconciliation = false;
+                targetLot.UpdatedAt = DateTime.UtcNow;
+
+                await _uow.PantryStockItems.UpdateAsync(targetLot.Id, targetLot, ct);
+
+                var movement = StockMovementDocument.Create(
+                    request.UserId,
+                    targetLot.Id,
+                    targetLot.IngredientId,
+                    targetLot.IngredientName,
+                    StockMovementType.Purchase,
+                    item.Quantity,
+                    item.Unit,
+                    item.NormalizedGrams,
+                    correlationId: $"ShoppingFinish:{batchCode}",
+                    cost: item.EstimatedCost,
+                    location: targetLot.Location,
+                    notes: $"Purchased via Shopping List ({batchCode})"
+                );
+                await _uow.StockMovements.AddAsync(movement, ct);
+            }
+            else
+            {
+                // Create new stock lot
+                Guid ingId = item.IngredientId ?? Guid.CreateVersion7();
+                var newLot = PantryStockItemDocument.Create(
+                    request.UserId,
+                    ingId,
+                    item.Name,
+                    item.TargetLocation,
+                    item.Quantity,
+                    item.Unit,
+                    item.NormalizedGrams,
+                    expiryDate: null,
+                    unitPrice: item.EstimatedCost.HasValue && item.Quantity > 0 ? item.EstimatedCost.Value / (decimal)item.Quantity : null,
+                    batchCode: batchCode
+                );
+
+                await _uow.PantryStockItems.AddAsync(newLot, ct);
+
+                var movement = StockMovementDocument.Create(
+                    request.UserId,
+                    newLot.Id,
+                    ingId,
+                    item.Name,
+                    StockMovementType.Purchase,
+                    item.Quantity,
+                    item.Unit,
+                    item.NormalizedGrams,
+                    correlationId: $"ShoppingFinish:{batchCode}",
+                    cost: item.EstimatedCost,
+                    location: newLot.Location,
+                    notes: $"Purchased via Shopping List ({batchCode})"
+                );
+                await _uow.StockMovements.AddAsync(movement, ct);
+            }
+
+            // Remove the bought item from shopping list
+            await _uow.ShoppingListItems.RemoveAsync(item.Id, ct);
+            processedCount++;
+        }
+
+        return Result.Success(processedCount);
+    }
+}
+
+public class AddMissingRecipeIngredientsToShoppingListCommandHandler : ICommandHandler<AddMissingRecipeIngredientsToShoppingListCommand, Result<int>>
+{
+    private readonly INoSqlUnitOfWork _uow;
+    public AddMissingRecipeIngredientsToShoppingListCommandHandler(INoSqlUnitOfWork uow) => _uow = uow;
+
+    public async Task<Result<int>> HandleAsync(AddMissingRecipeIngredientsToShoppingListCommand request, CancellationToken ct = default)
+    {
+        var recipe = await _uow.Recipes.GetByIdAsync(request.RecipeId, ct);
+        if (recipe == null) return Result.Failure<int>("Recipe not found.");
+
+        double servings = Math.Max(1.0, request.Servings);
+        double scale = servings / Math.Max(1.0, recipe.Servings);
+
+        var activeStock = await _uow.PantryStockItems.FindAsync(x => x.UserId == request.UserId && !x.IsDepleted);
+        var existingShopping = (await _uow.ShoppingListItems.FindAsync(x => x.UserId == request.UserId && x.Status != ShoppingItemStatus.Bought)).ToList();
+        int addedCount = 0;
+
+        foreach (var ing in recipe.Ingredients)
+        {
+            double neededQty = ing.Quantity * scale;
+            double available = activeStock.Where(s => s.IngredientId == ing.IngredientId).Sum(s => s.CurrentQuantity);
+
+            if (available < neededQty)
+            {
+                double deficit = Math.Round(neededQty - available, 2);
+
+                var existing = existingShopping.FirstOrDefault(x =>
+                    (x.IngredientId.HasValue && x.IngredientId == ing.IngredientId) ||
+                    x.Name.Equals(ing.IngredientName, StringComparison.OrdinalIgnoreCase));
+
+                if (existing != null)
+                {
+                    existing.Quantity = Math.Round(existing.Quantity + deficit, 2);
+                    existing.UpdatedAt = DateTime.UtcNow;
+                    await _uow.ShoppingListItems.UpdateAsync(existing.Id, existing, ct);
+                    addedCount++;
+                }
+                else
+                {
+                    var newItem = ShoppingListItemDocument.Create(
+                        request.UserId,
+                        ing.IngredientName,
+                        deficit,
+                        ing.Unit,
+                        StoreSection.Produce,
+                        ShoppingItemSource.RecipeMissing,
+                        ing.IngredientId,
+                        StockLocation.Pantry,
+                        null,
+                        $"Missing for {recipe.Name} ({servings} servings)"
+                    );
+                    await _uow.ShoppingListItems.AddAsync(newItem, ct);
+                    existingShopping.Add(newItem);
+                    addedCount++;
+                }
+            }
+        }
+
+        return Result.Success(addedCount);
+    }
+}
+
 // ======================== UNIT INTERFACE ========================
 
 public interface IFoodCommandUnit
@@ -807,6 +1687,23 @@ public interface IFoodCommandUnit
     UpsertWeeklyMealPlanSlotCommandHandler UpsertWeeklyMealPlanSlot { get; }
     DeleteWeeklyMealPlanSlotCommandHandler DeleteWeeklyMealPlanSlot { get; }
     SeedDefaultIngredientsCommandHandler SeedDefaultIngredients { get; }
+
+    // Stock Management
+    CreateStockItemCommandHandler CreateStockItem { get; }
+    AdjustStockCommandHandler AdjustStock { get; }
+    TransferStockCommandHandler TransferStock { get; }
+    LogWasteCommandHandler LogWaste { get; }
+    UpdateStapleStatusCommandHandler UpdateStapleStatus { get; }
+    DeleteStockItemCommandHandler DeleteStockItem { get; }
+
+    // Shopping List Management
+    CreateShoppingItemCommandHandler CreateShoppingItem { get; }
+    UpdateShoppingItemCommandHandler UpdateShoppingItem { get; }
+    SetShoppingItemStatusCommandHandler SetShoppingItemStatus { get; }
+    DeleteShoppingItemCommandHandler DeleteShoppingItem { get; }
+    AutoGenerateShoppingListCommandHandler AutoGenerateShoppingList { get; }
+    FinishShoppingCommandHandler FinishShopping { get; }
+    AddMissingRecipeIngredientsToShoppingListCommandHandler AddMissingRecipeIngredientsToShoppingList { get; }
 }
 
 public class FoodCommandUnit : IFoodCommandUnit
@@ -837,6 +1734,23 @@ public class FoodCommandUnit : IFoodCommandUnit
     public DeleteWeeklyMealPlanSlotCommandHandler DeleteWeeklyMealPlanSlot { get; }
     public SeedDefaultIngredientsCommandHandler SeedDefaultIngredients { get; }
 
+    // Stock Management
+    public CreateStockItemCommandHandler CreateStockItem { get; }
+    public AdjustStockCommandHandler AdjustStock { get; }
+    public TransferStockCommandHandler TransferStock { get; }
+    public LogWasteCommandHandler LogWaste { get; }
+    public UpdateStapleStatusCommandHandler UpdateStapleStatus { get; }
+    public DeleteStockItemCommandHandler DeleteStockItem { get; }
+
+    // Shopping List Management
+    public CreateShoppingItemCommandHandler CreateShoppingItem { get; }
+    public UpdateShoppingItemCommandHandler UpdateShoppingItem { get; }
+    public SetShoppingItemStatusCommandHandler SetShoppingItemStatus { get; }
+    public DeleteShoppingItemCommandHandler DeleteShoppingItem { get; }
+    public AutoGenerateShoppingListCommandHandler AutoGenerateShoppingList { get; }
+    public FinishShoppingCommandHandler FinishShopping { get; }
+    public AddMissingRecipeIngredientsToShoppingListCommandHandler AddMissingRecipeIngredientsToShoppingList { get; }
+
     public FoodCommandUnit(
         CreateIngredientCommandHandler createIngredient,
         UpdateIngredientCommandHandler updateIngredient,
@@ -857,7 +1771,20 @@ public class FoodCommandUnit : IFoodCommandUnit
         AddRecipeToShoppingListCommandHandler addRecipeToShoppingList,
         UpsertWeeklyMealPlanSlotCommandHandler upsertWeeklyMealPlanSlot,
         DeleteWeeklyMealPlanSlotCommandHandler deleteWeeklyMealPlanSlot,
-        SeedDefaultIngredientsCommandHandler seedDefaultIngredients)
+        SeedDefaultIngredientsCommandHandler seedDefaultIngredients,
+        CreateStockItemCommandHandler createStockItem,
+        AdjustStockCommandHandler adjustStock,
+        TransferStockCommandHandler transferStock,
+        LogWasteCommandHandler logWaste,
+        UpdateStapleStatusCommandHandler updateStapleStatus,
+        DeleteStockItemCommandHandler deleteStockItem,
+        CreateShoppingItemCommandHandler createShoppingItem,
+        UpdateShoppingItemCommandHandler updateShoppingItem,
+        SetShoppingItemStatusCommandHandler setShoppingItemStatus,
+        DeleteShoppingItemCommandHandler deleteShoppingItem,
+        AutoGenerateShoppingListCommandHandler autoGenerateShoppingList,
+        FinishShoppingCommandHandler finishShopping,
+        AddMissingRecipeIngredientsToShoppingListCommandHandler addMissingRecipeIngredientsToShoppingList)
     {
         CreateIngredient = createIngredient;
         UpdateIngredient = updateIngredient;
@@ -879,5 +1806,20 @@ public class FoodCommandUnit : IFoodCommandUnit
         UpsertWeeklyMealPlanSlot = upsertWeeklyMealPlanSlot;
         DeleteWeeklyMealPlanSlot = deleteWeeklyMealPlanSlot;
         SeedDefaultIngredients = seedDefaultIngredients;
+
+        CreateStockItem = createStockItem;
+        AdjustStock = adjustStock;
+        TransferStock = transferStock;
+        LogWaste = logWaste;
+        UpdateStapleStatus = updateStapleStatus;
+        DeleteStockItem = deleteStockItem;
+
+        CreateShoppingItem = createShoppingItem;
+        UpdateShoppingItem = updateShoppingItem;
+        SetShoppingItemStatus = setShoppingItemStatus;
+        DeleteShoppingItem = deleteShoppingItem;
+        AutoGenerateShoppingList = autoGenerateShoppingList;
+        FinishShopping = finishShopping;
+        AddMissingRecipeIngredientsToShoppingList = addMissingRecipeIngredientsToShoppingList;
     }
 }
