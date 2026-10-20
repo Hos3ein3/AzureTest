@@ -30,11 +30,18 @@ public sealed class GetMediaDetailsQueryHandler : IQueryHandler<GetMediaDetailsQ
 
         if (request.Type == MediaType.Movie)
         {
-            details = await _tmdbService.GetMovieDetailsAsync(request.TmdbId, ct);
+            details = await _tmdbService.GetMovieDetailsAsync(request.TmdbId, ct)
+                      ?? await _tmdbService.GetTvShowDetailsAsync(request.TmdbId, ct);
+        }
+        else if (request.Type == MediaType.TvSeries || request.Type == MediaType.Anime)
+        {
+            details = await _tmdbService.GetTvShowDetailsAsync(request.TmdbId, ct)
+                      ?? await _tmdbService.GetMovieDetailsAsync(request.TmdbId, ct);
         }
         else
         {
-            details = await _tmdbService.GetTvShowDetailsAsync(request.TmdbId, ct);
+            details = await _tmdbService.GetTvShowDetailsAsync(request.TmdbId, ct)
+                      ?? await _tmdbService.GetMovieDetailsAsync(request.TmdbId, ct);
         }
 
         if (details == null)
@@ -42,12 +49,19 @@ public sealed class GetMediaDetailsQueryHandler : IQueryHandler<GetMediaDetailsQ
             return Result.Failure<TmdbTitleDetailsDto>("Title not found on TMDb.");
         }
 
+        var effectiveType = details.Type;
+
         // Check if user has this in their watchlist
-        var userItem = await _uow.WatchItems.GetByUserAndTmdbAsync(request.UserId, request.TmdbId, request.Type, ct);
-        if (userItem == null && request.Type == MediaType.Anime)
+        var userItem = await _uow.WatchItems.GetByUserAndTmdbAsync(request.UserId, request.TmdbId, effectiveType, ct);
+        if (userItem == null && effectiveType == MediaType.Anime)
         {
             // Also check under TvSeries in case user saved as TvSeries
             userItem = await _uow.WatchItems.GetByUserAndTmdbAsync(request.UserId, request.TmdbId, MediaType.TvSeries, ct);
+        }
+        else if (userItem == null && effectiveType == MediaType.TvSeries)
+        {
+            // Also check under Anime in case user saved as Anime
+            userItem = await _uow.WatchItems.GetByUserAndTmdbAsync(request.UserId, request.TmdbId, MediaType.Anime, ct);
         }
 
         WatchItemDto? userDto = userItem != null ? GetWatchListQuery.Mapping.ToDto(userItem) : null;

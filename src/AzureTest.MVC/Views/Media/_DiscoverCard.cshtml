@@ -1,10 +1,10 @@
 @using AzureTest.Contracts.DTOs.Media
 @using AzureTest.Domain.Media.Enums
-@model (TmdbSearchResultDto Item, string ReturnUrl)
+@model TmdbSearchResultDto
 
 @{
-    var item = Model.Item;
-    var returnUrl = Model.ReturnUrl;
+    var item = Model;
+
     string PosterUrl(string? path) => string.IsNullOrWhiteSpace(path)
         ? "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=400&q=80"
         : $"https://image.tmdb.org/t/p/w500{path}";

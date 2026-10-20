@@ -61,7 +61,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             @foreach (var item in Model.TrendingToday.Take(12))
             {
-                @await Html.PartialAsync("_DiscoverCard", (item, Context.Request.Path + Context.Request.QueryString))
+                @await Html.PartialAsync("_DiscoverCard", item)
             }
         </div>
     </section>
@@ -86,7 +86,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             @foreach (var item in Model.AnimeHighlights.Take(12))
             {
-                @await Html.PartialAsync("_DiscoverCard", (item, Context.Request.Path + Context.Request.QueryString))
+                @await Html.PartialAsync("_DiscoverCard", item)
             }
         </div>
     </section>
@@ -111,7 +111,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             @foreach (var item in Model.PopularMovies.Take(12))
             {
-                @await Html.PartialAsync("_DiscoverCard", (item, Context.Request.Path + Context.Request.QueryString))
+                @await Html.PartialAsync("_DiscoverCard", item)
             }
         </div>
     </section>
@@ -136,7 +136,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             @foreach (var item in Model.PopularTv.Take(12))
             {
-                @await Html.PartialAsync("_DiscoverCard", (item, Context.Request.Path + Context.Request.QueryString))
+                @await Html.PartialAsync("_DiscoverCard", item)
             }
         </div>
     </section>
@@ -161,7 +161,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             @foreach (var item in Model.UpcomingMovies.Take(12))
             {
-                @await Html.PartialAsync("_DiscoverCard", (item, Context.Request.Path + Context.Request.QueryString))
+                @await Html.PartialAsync("_DiscoverCard", item)
             }
         </div>
     </section>
@@ -183,7 +183,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             @foreach (var item in Model.TopRatedMovies.Take(12))
             {
-                @await Html.PartialAsync("_DiscoverCard", (item, Context.Request.Path + Context.Request.QueryString))
+                @await Html.PartialAsync("_DiscoverCard", item)
             }
         </div>
     </section>

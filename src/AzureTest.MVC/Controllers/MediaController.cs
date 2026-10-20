@@ -89,6 +89,13 @@ public class MediaController : Controller
     {
         ViewBag.SearchQuery = q ?? string.Empty;
         ViewBag.SearchType = searchType;
+
+        var followedResult = await _queries.GetFollowedPeopleAsync(new GetFollowedPeopleQuery(_currentUser.Id), ct);
+        var followedPersonIds = followedResult.IsSuccess && followedResult.Value != null
+            ? new System.Collections.Generic.HashSet<int>(System.Linq.Enumerable.Select(followedResult.Value, f => f.TmdbPersonId))
+            : new System.Collections.Generic.HashSet<int>();
+        ViewBag.FollowedPersonIds = followedPersonIds;
+
         var result = await _queries.SearchMediaAsync(new SearchMediaQuery(q ?? string.Empty, searchType), ct);
         return result.ToView(this);
     }
