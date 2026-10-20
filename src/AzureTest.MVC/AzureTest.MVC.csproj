@@ -35,4 +35,8 @@
       <Content Remove="Views_backup*/**" />
       <None Remove="Views_backup*/**" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="Views\**\*.cshtml" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
 </Project>

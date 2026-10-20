@@ -135,7 +135,20 @@ builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new Microsoft.AspNetCore.Mvc.Authorization.AuthorizeFilter(policy));
     options.Filters.Add(typeof(AzureTest.MVC.Filters.DynamicAuthorizationFilter));
 })
-    .AddRazorRuntimeCompilation();
+    .AddRazorRuntimeCompilation(options =>
+    {
+        var mvcDir = Path.Combine(builder.Environment.ContentRootPath, "src", "AzureTest.MVC");
+        if (Directory.Exists(mvcDir))
+        {
+            options.FileProviders.Add(new Microsoft.Extensions.FileProviders.PhysicalFileProvider(mvcDir));
+        }
+
+        var binViewsDir = Path.Combine(AppContext.BaseDirectory, "Views");
+        if (Directory.Exists(binViewsDir))
+        {
+            options.FileProviders.Add(new Microsoft.Extensions.FileProviders.PhysicalFileProvider(AppContext.BaseDirectory));
+        }
+    });
 
 
 builder.Services.AddScoped<AzureTest.MVC.Services.IDashboardDataLoader, AzureTest.MVC.Services.DashboardDataLoader>();
