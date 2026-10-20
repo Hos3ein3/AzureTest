@@ -1,22 +1,25 @@
 @model List<AzureTest.Contracts.DTOs.Pages.PageDto>
 
-<div x-data="{ expanded: false }">
-    <button @@click="expanded = !expanded" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-slate-400 hover:text-white hover:bg-brand-500/10 group">
+<div x-data="{ expanded: false }" class="pages-menu-container">
+    <button @@click="expanded = !expanded" type="button" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-slate-600 hover:bg-slate-50 hover:text-slate-900 group" data-title="Published Pages">
         <div class="flex items-center">
-            <i class="fa-solid fa-file-lines w-6 text-center text-slate-500 group-hover:text-brand-400 transition-colors"></i>
-            <span class="ml-2 font-medium">Pages</span>
+            <i class="fa-solid fa-file-lines w-6 text-center text-lg text-slate-400 group-hover:text-brand-600 transition-colors"></i>
+            <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Published Pages</span>
         </div>
-        <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200" :class="{'rotate-180': expanded}"></i>
+        <i class="fa-solid fa-chevron-down text-2xs text-slate-400 transition-transform duration-200" :class="{'rotate-180': expanded}"></i>
     </button>
-    <div x-show="expanded" x-collapse>
-        <ul class="mt-1 space-y-1 pl-9 pr-3">
-            @if(Model.Any())
+    <div x-show="expanded" x-collapse style="display: none;" class="pages-dropdown-list">
+        <ul class="mt-1 space-y-1 pl-8 pr-2">
+            @if(Model != null && Model.Any())
             {
                 foreach(var pageItem in Model)
                 {
                     <li>
-                        <a href="@Url.Action("Read", "Pages", new { slug = pageItem.Slug })" class="block px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-brand-500/10 transition-colors">
-                            @pageItem.Title
+                        <a href="@Url.Action("Read", "Pages", new { slug = pageItem.Slug })"
+                           data-title="@pageItem.Title"
+                           class="nav-item-link block px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors truncate"
+                           title="@pageItem.Title">
+                            <i class="fa-regular fa-file-lines mr-1.5 text-2xs text-slate-400"></i>@pageItem.Title
                         </a>
                     </li>
                 }
@@ -24,7 +27,7 @@
             else
             {
                 <li>
-                    <span class="block px-3 py-2 text-sm text-slate-500 italic">No published pages</span>
+                    <span class="block px-2.5 py-1.5 text-xs text-slate-400 italic">No published pages</span>
                 </li>
             }
         </ul>

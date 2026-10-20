@@ -399,6 +399,9 @@ html.dark .modal-content {
 #sidebar.collapsed .logo-brand {
     display: none !important;
 }
+#sidebar.collapsed #sidebarSearchWrapper {
+    display: none !important;
+}
 #sidebar.collapsed .logo-container {
     justify-content: center !important;
     padding: 0 !important;

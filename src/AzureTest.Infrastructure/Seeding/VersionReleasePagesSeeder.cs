@@ -32,7 +32,7 @@ public static class VersionReleasePagesSeeder
             if (anyAdded)
             {
                 await noSqlUnitOfWork.SaveChangesAsync();
-                logger.LogInformation("Version release documentation pages (v1.0 to v2.1) seeded successfully.");
+                logger.LogInformation("Version release documentation pages (v1.0 to v2.3) seeded successfully.");
             }
         }
         catch (Exception ex)
@@ -620,6 +620,171 @@ public static class VersionReleasePagesSeeder
                         <li><strong>Navigation Elements:</strong> Breadcrumb trails, multi-level tabs, tab groups, and collapsible accordions.</li>
                         <li><strong>Data Display:</strong> Sortable header tables, pagination controls, interactive modals, toasts, and loading skeletons.</li>
                         <li><strong>Icon Showcase:</strong> Centralized icon gallery and utility tools at <a href="/Icon" class="text-indigo-600 font-semibold hover:underline">/Icon</a>.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                """
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "Version 2.2 — Modern UI Component Architecture & Design System",
+                Slug = "new-ui-architecture",
+                Status = PageStatus.Published,
+                CreatedAt = new DateTime(2026, 10, 20, 20, 0, 0, DateTimeKind.Utc),
+                Content = """
+                <div class="py-6 px-4 max-w-4xl mx-auto font-sans leading-relaxed text-slate-800">
+                  <div class="border-b border-slate-200 pb-6 mb-8">
+                    <div class="flex items-center gap-2 mb-3">
+                      <span class="px-3 py-1 bg-purple-50 text-purple-700 font-bold text-xs rounded-full border border-purple-200">Release v2.2</span>
+                      <span class="text-xs text-slate-500"><i class="fa-regular fa-calendar mr-1"></i> October 2026</span>
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">Modern UI Component Architecture & Standardized Design System</h1>
+                    <p class="text-base text-slate-600 mt-2">Comprehensive UI unification replacing raw controls across all application views with modular, responsive components from the /UiComponents and /Icon design system.</p>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Component Kit</div>
+                      <div class="text-lg font-bold text-slate-900 mt-1"><i class="fa-solid fa-cubes text-purple-600 mr-2"></i>20+ Partials</div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Icon Standard</div>
+                      <div class="text-lg font-bold text-slate-900 mt-1"><i class="fa-solid fa-icons text-indigo-600 mr-2"></i>FontAwesome 6</div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Design Philosophy</div>
+                      <div class="text-lg font-bold text-slate-900 mt-1"><i class="fa-solid fa-palette text-emerald-600 mr-2"></i>Clean & Accessible</div>
+                    </div>
+                  </div>
+
+                  <div class="space-y-8 text-sm">
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-sliders text-purple-600"></i> Standardized Inputs, Selectors & Form Controls
+                      </h3>
+                      <p class="text-slate-600 mb-3">Re-engineered all input controls across Razor views with consistent focus states, validation styling, and assistive icons.</p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Input Fields:</strong> Text, email, password, and number inputs styled with <code>rounded-xl border-slate-200 focus:ring-2 focus:ring-brand-500/20</code>.</li>
+                        <li><strong>Instant Clear Action:</strong> Search and filter boxes feature built-in clear buttons for rapid form resetting.</li>
+                        <li><strong>Custom Date & Time Pickers:</strong> Native-friendly and TomSelect dropdowns offering high precision without clunky legacy controls.</li>
+                        <li><strong>Zero-Emoji Rule:</strong> Strict replacement of all Unicode emoji icons with sharp, professional FontAwesome 6 vector glyphs.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-table text-indigo-600"></i> Responsive Data Tables, Filters & Pagination
+                      </h3>
+                      <p class="text-slate-600 mb-3">Uniform table presentation ensures large datasets across Gym, Food, Expenses, Debts, and Tenants render smoothly on mobile and desktop viewports.</p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Table Shells:</strong> Rounded container cards with subtle borders, sticky column headers, and alternating hover rows.</li>
+                        <li><strong>Pagination Controls:</strong> Dynamic page-size selectors, current window indicators, and accessible next/previous pagination buttons.</li>
+                        <li><strong>Filter Bars:</strong> Clean pill filters and expandable filter drawers with active filter count badges.</li>
+                        <li><strong>Empty States:</strong> Informative illustrated fallback placeholders with direct action buttons when query results are empty.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-window-restore text-blue-600"></i> Breadcrumbs, Modals & Side Panel Quick Navigation
+                      </h3>
+                      <p class="text-slate-600 mb-3">Structural layout enhancements providing fluid navigation and focused contextual workflows.</p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Breadcrumb Trails:</strong> Reusable <code>UiComponents/_Breadcrumb</code> providing hierarchical navigation links across all pages.</li>
+                        <li><strong>Modal Dialogs:</strong> Accessible modal system with <code>backdrop-blur-xs</code> overlays, focus traps, and ESC key dismissal.</li>
+                        <li><strong>Side Panel Search:</strong> Real-time interactive search in the sidebar menu for instantaneous section and controller filtering.</li>
+                        <li><strong>Pages Relocation:</strong> Reorganized side panel layout placing published documentation and page management at the end of the menu.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                """
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "Version 2.3 — Media Hub & Entertainment Platform (TMDb Integration)",
+                Slug = "media-controller-features",
+                Status = PageStatus.Published,
+                CreatedAt = new DateTime(2026, 10, 20, 22, 0, 0, DateTimeKind.Utc),
+                Content = """
+                <div class="py-6 px-4 max-w-4xl mx-auto font-sans leading-relaxed text-slate-800">
+                  <div class="border-b border-slate-200 pb-6 mb-8">
+                    <div class="flex items-center gap-2 mb-3">
+                      <span class="px-3 py-1 bg-amber-50 text-amber-700 font-bold text-xs rounded-full border border-amber-200">Release v2.3</span>
+                      <span class="text-xs text-slate-500"><i class="fa-regular fa-calendar mr-1"></i> October 2026</span>
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">Media Hub & Entertainment Platform (TMDb Integration)</h1>
+                    <p class="text-base text-slate-600 mt-2">A personal tracking and discovery hub for movies, series, and anime powered by The Movie Database (TMDb) API, featuring watchlists, actor following, release calendars, and watch analytics.</p>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Provider</div>
+                      <div class="text-lg font-bold text-slate-900 mt-1"><i class="fa-solid fa-film text-amber-600 mr-2"></i>TMDb API v3</div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Media Scope</div>
+                      <div class="text-lg font-bold text-slate-900 mt-1"><i class="fa-solid fa-tv text-blue-600 mr-2"></i>Movies, Series & Anime</div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Storage</div>
+                      <div class="text-lg font-bold text-slate-900 mt-1"><i class="fa-solid fa-database text-emerald-600 mr-2"></i>NoSQL MongoDB</div>
+                    </div>
+                  </div>
+
+                  <div class="space-y-8 text-sm">
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-list-check text-amber-600"></i> Track What You Watch
+                      </h3>
+                      <p class="text-slate-600 mb-3">Manage movies, series, and anime with status workflows and progress counters.</p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Watch Statuses:</strong> Categorize titles under <em>Want to Watch (Wishlist)</em>, <em>Currently Watching</em>, <em>Finished</em>, or <em>Stopped (Dropped)</em>.</li>
+                        <li><strong>Episode Progress:</strong> Save the exact season and episode where you stopped watching series or anime.</li>
+                        <li><strong>Next Episode Guide:</strong> Computes and prominently displays "Next episode to watch" with a single-click increment button.</li>
+                        <li><strong>Ratings & Reviews:</strong> Personal 1 to 10 score rating, written short review notes, and watched date logging at <a href="/Media" class="text-amber-600 font-semibold hover:underline">/Media</a>.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-compass text-blue-600"></i> Find Movies, Series & Anime
+                      </h3>
+                      <p class="text-slate-600 mb-3">Explore millions of titles with real-time TMDb data, trailers, and streaming provider intelligence.</p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Live Search:</strong> Unified multi-entity search supporting Movies, TV Shows, Anime, and Actors/Directors at <a href="/Media/Search" class="text-amber-600 font-semibold hover:underline">/Media/Search</a>.</li>
+                        <li><strong>Comprehensive Details:</strong> Story synopsis, cast members, directing crew, genre pills, and embedded YouTube trailers at <a href="/Media/Details" class="text-amber-600 font-semibold hover:underline">/Media/Details</a>.</li>
+                        <li><strong>Curated Discovery:</strong> Explore Trending Today, Popular Titles, Top Rated Masterpieces, and Coming Soon releases at <a href="/Media/Discover" class="text-amber-600 font-semibold hover:underline">/Media/Discover</a>.</li>
+                        <li><strong>Streaming Availability:</strong> Real-time "Where to Watch" integration displaying provider badges (Netflix, Disney+, Apple TV+, Prime Video).</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-users text-purple-600"></i> Follow Actors & Directors
+                      </h3>
+                      <p class="text-slate-600 mb-3">Never miss a new release from your favorite creators and cast members.</p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Follow Roster:</strong> Follow actors and directors with personal notes at <a href="/Media/People" class="text-amber-600 font-semibold hover:underline">/Media/People</a>.</li>
+                        <li><strong>Filmography Tracker:</strong> Full credit lists showing how many titles you have already watched (e.g. "5 of 20 watched").</li>
+                        <li><strong>Upcoming Project Alerts:</strong> Highlighting announced or in-production projects with premiere dates.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-calendar-days text-emerald-600"></i> Calendar, Industry News & Analytics
+                      </h3>
+                      <p class="text-slate-600 mb-3">Stay up to date with releases, industry updates, custom playlists, and watch statistics.</p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Release Calendar:</strong> Visual monthly calendar for upcoming wishlist releases and season returns at <a href="/Media/Calendar" class="text-amber-600 font-semibold hover:underline">/Media/Calendar</a>.</li>
+                        <li><strong>Entertainment News:</strong> Fresh news articles curated from trusted entertainment industry sources at <a href="/Media/News" class="text-amber-600 font-semibold hover:underline">/Media/News</a>.</li>
+                        <li><strong>Custom Playlists:</strong> Curate custom collections (e.g., "Friday Night Movies", "Anime Marathon") at <a href="/Media/Lists" class="text-amber-600 font-semibold hover:underline">/Media/Lists</a>.</li>
+                        <li><strong>Watch Statistics:</strong> Visual breakdown of hours watched, top genres, favorite actors, and rating score distribution at <a href="/Media/Stats" class="text-amber-600 font-semibold hover:underline">/Media/Stats</a>.</li>
+                        <li><strong>Data Portability:</strong> 1-click JSON export and import for seamless personal data backups.</li>
                       </ul>
                     </div>
                   </div>
