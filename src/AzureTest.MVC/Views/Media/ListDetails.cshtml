@@ -1,0 +1,195 @@
+@using AzureTest.Contracts.DTOs.Media
+@using AzureTest.Domain.Media.Enums
+@using AzureTest.MVC.Models
+@model CustomMediaListDto
+
+@{
+    ViewData["Title"] = Model.Title;
+
+    var headerModel = new PageHeaderModel(
+        Title: Model.Title,
+        Subtitle: Model.Description ?? "Custom curated media playlist.",
+        Icon: "fa-solid fa-list-ul",
+        Badge: $"{Model.Items?.Count ?? 0} Titles",
+        ActionText: "Find Titles to Add",
+        ActionUrl: Url.Action("Discover", "Media"),
+        ActionIcon: "fa-solid fa-plus"
+    );
+
+    string PosterUrl(string? path) => string.IsNullOrWhiteSpace(path)
+        ? "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=400&q=80"
+        : $"https://image.tmdb.org/t/p/w500{path}";
+
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new("Media", Url.Action("Index", "Media")),
+        new("Playlists", Url.Action("Lists", "Media")),
+        new(Model.Title, null, IsActive: true)
+    };
+}
+
+<div class="space-y-6">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
+
+    <!-- Action Toolbar -->
+    <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+        <div class="flex items-center gap-3 text-xs text-slate-500">
+            <span>
+                <i class="fa-regular fa-calendar mr-1"></i> Created on @Model.CreatedAt.ToString("MMM dd, yyyy")
+            </span>
+            @if (Model.UpdatedAt.HasValue)
+            {
+                <span>• Updated @Model.UpdatedAt.Value.ToString("MMM dd, yyyy")</span>
+            }
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="openAddModal()" class="px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs">
+                <i class="fa-solid fa-plus text-2xs"></i> Add Title by ID
+            </button>
+            <form asp-action="DeleteList" asp-controller="Media" method="post" onsubmit="return confirm('Delete this playlist permanently?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ListId" value="@Model.Id" />
+                <button type="submit" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold transition-colors">
+                    <i class="fa-solid fa-trash-can mr-1 text-2xs"></i> Delete
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Items Grid -->
+    @if (Model.Items == null || !Model.Items.Any())
+    {
+        var emptyModel = new EmptyStateModel(
+            Title: "This Playlist is Empty",
+            Description: "Start adding your favorite movies, series, or anime to build this playlist.",
+            Icon: "fa-solid fa-film",
+            ActionText: "Discover Titles",
+            ActionUrl: Url.Action("Discover", "Media")
+        );
+        <partial name="UiComponents/_EmptyState" model="emptyModel" />
+    }
+    else
+    {
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            @foreach (var item in Model.Items)
+            {
+                <div class="group relative bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between">
+                    <div class="relative aspect-2/3 bg-slate-900 overflow-hidden">
+                        <img src="@PosterUrl(item.PosterPath)" alt="@item.Title"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                             loading="lazy" />
+
+                        <div class="absolute top-2 left-2">
+                            <span class="px-2 py-0.5 rounded-lg text-3xs font-bold uppercase bg-slate-900/80 backdrop-blur-xs text-white">
+                                @item.Type
+                            </span>
+                        </div>
+
+                        <!-- Hover Overlay -->
+                        <div class="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2.5 gap-1.5">
+                            <a asp-action="Details" asp-route-id="@item.TmdbId" asp-route-type="@item.Type"
+                               class="w-full py-1.5 rounded-xl bg-white text-slate-900 text-3xs font-bold text-center hover:bg-slate-100 transition-colors">
+                                <i class="fa-solid fa-circle-info mr-1"></i> Details
+                            </a>
+
+                            <form asp-action="RemoveFromList" asp-controller="Media" method="post" class="w-full" onsubmit="return confirm('Remove @item.Title from this list?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="ListId" value="@Model.Id" />
+                                <input type="hidden" name="TmdbId" value="@item.TmdbId" />
+                                <input type="hidden" name="Type" value="@item.Type" />
+                                <button type="submit" class="w-full py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-3xs font-bold transition-colors">
+                                    <i class="fa-solid fa-trash-can mr-1"></i> Remove
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="p-2.5 flex-1 flex flex-col justify-between">
+                        <a asp-action="Details" asp-route-id="@item.TmdbId" asp-route-type="@item.Type"
+                           class="text-xs font-bold text-slate-900 hover:text-brand-600 line-clamp-1 transition-colors" title="@item.Title">
+                            @item.Title
+                        </a>
+                        <div class="flex items-center justify-between text-3xs text-slate-400 mt-1">
+                            <span>@(item.Year.HasValue ? item.Year.Value.ToString() : "TBA")</span>
+                            <span class="text-3xs text-slate-400">@item.AddedAt.ToString("MMM dd")</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Add Item Modal -->
+<div id="addItemModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeAddModal()"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 space-y-4 border border-slate-100">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-plus"></i>
+                    </span>
+                    <h3 class="text-sm font-bold text-slate-900">Add Title to Playlist</h3>
+                </div>
+                <button type="button" onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <form asp-action="AddToList" asp-controller="Media" method="post" class="space-y-3.5">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ListId" value="@Model.Id" />
+                <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-slate-700">TMDb ID</label>
+                    <input type="number" name="TmdbId" required placeholder="e.g. 550"
+                           class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-slate-700">Title</label>
+                    <input type="text" name="Title" required placeholder="Title name"
+                           class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-slate-700">Type</label>
+                        <select name="Type" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                            <option value="@MediaType.Movie">Movie</option>
+                            <option value="@MediaType.TvSeries">TV Series</option>
+                            <option value="@MediaType.Anime">Anime</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-slate-700">Year (Optional)</label>
+                        <input type="number" name="Year" placeholder="2026"
+                               class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-2xs">
+                        Add to Playlist
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openAddModal() {
+        document.getElementById('addItemModal').classList.remove('hidden');
+    }
+    function closeAddModal() {
+        document.getElementById('addItemModal').classList.add('hidden');
+    }
+</script>

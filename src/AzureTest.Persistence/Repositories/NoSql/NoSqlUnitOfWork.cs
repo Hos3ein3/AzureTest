@@ -113,6 +113,15 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     private IAuditLogRepository? _auditLogs;
     public IAuditLogRepository AuditLogs => _auditLogs ??= new AuditLogRepository(_database);
 
+    private IWatchItemRepository? _watchItems;
+    public IWatchItemRepository WatchItems => _watchItems ??= new WatchItemRepository(_database);
+
+    private IFollowedPersonRepository? _followedPeople;
+    public IFollowedPersonRepository FollowedPeople => _followedPeople ??= new FollowedPersonRepository(_database);
+
+    private ICustomMediaListRepository? _customMediaLists;
+    public ICustomMediaListRepository CustomMediaLists => _customMediaLists ??= new CustomMediaListRepository(_database);
+
     public void Dispose()
     {
         _session?.Dispose();

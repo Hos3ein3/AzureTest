@@ -4,6 +4,7 @@ using AzureTest.Application.Companies;
 using AzureTest.Application.Debts;
 using AzureTest.Application.Debts.Interfaces;
 using AzureTest.Application.Expenses.Units;
+using AzureTest.Application.Media;
 using AzureTest.Application.Resumes;
 using AzureTest.Application.SampleNotes;
 using AzureTest.Application.Users;
@@ -85,6 +86,9 @@ public static class DependencyInjection
         // Food & Cooking
         services.AddScoped<AzureTest.Application.Food.IFoodQueryUnit, AzureTest.Application.Food.FoodQueryUnit>();
         services.AddScoped<AzureTest.Application.Food.IFoodCommandUnit, AzureTest.Application.Food.FoodCommandUnit>();
+
+        // Media (TMDb Movies, Series, Anime, Actors)
+        services.AddMediaModule();
 
         return services;
     }

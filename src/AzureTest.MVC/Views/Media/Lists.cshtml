@@ -1,0 +1,165 @@
+@using AzureTest.Contracts.DTOs.Media
+@using AzureTest.MVC.Models
+@model IReadOnlyList<CustomMediaListDto>
+
+@{
+    ViewData["Title"] = "Playlists";
+
+    var headerModel = new PageHeaderModel(
+        Title: "Custom Playlists",
+        Subtitle: "Create custom collections for movie nights, anime marathons, and favorite sagas.",
+        Icon: "fa-solid fa-list-ul",
+        Badge: $"{Model.Count} Playlists",
+        ActionText: "New Playlist",
+        ActionUrl: "javascript:openCreateListModal()",
+        ActionIcon: "fa-solid fa-plus"
+    );
+
+    string PosterUrl(string? path) => string.IsNullOrWhiteSpace(path)
+        ? "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=400&q=80"
+        : $"https://image.tmdb.org/t/p/w500{path}";
+}
+
+<div class="space-y-6">
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
+
+    @if (!Model.Any())
+    {
+        var emptyModel = new EmptyStateModel(
+            Title: "No Playlists Yet",
+            Description: "Create your first playlist (e.g. 'Friday Night Movies' or 'Ghibli Marathon') to organize your titles.",
+            Icon: "fa-solid fa-layer-group",
+            ActionText: "Create a Playlist",
+            ActionUrl: "javascript:openCreateListModal()"
+        );
+        <partial name="UiComponents/_EmptyState" model="emptyModel" />
+    }
+    else
+    {
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            @foreach (var list in Model)
+            {
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <!-- Poster Stack Preview -->
+                        <div class="h-32 bg-slate-900 rounded-xl overflow-hidden relative flex items-center p-3 shadow-inner">
+                            @if (list.Items != null && list.Items.Any())
+                            {
+                                var previewItems = list.Items.Take(4).ToList();
+                                for (int i = 0; i < previewItems.Count; i++)
+                                {
+                                    var item = previewItems[i];
+                                    <div class="w-16 h-24 rounded-lg overflow-hidden shadow-md border border-white/20 absolute transition-transform"
+                                         style="left: @(12 + i * 44)px; z-index: @(i + 1);">
+                                        <img src="@PosterUrl(item.PosterPath)" alt="@item.Title" class="w-full h-full object-cover" />
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="w-full text-center text-slate-500 text-xs">
+                                    <i class="fa-solid fa-film mb-1 text-base block"></i>
+                                    <span>Empty Playlist</span>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Info -->
+                        <div>
+                            <div class="flex items-center justify-between gap-2">
+                                <a asp-action="ListDetails" asp-route-id="@list.Id"
+                                   class="text-sm font-bold text-slate-900 hover:text-brand-600 truncate transition-colors">
+                                    @list.Title
+                                </a>
+                                <span class="px-2.5 py-0.5 rounded-lg text-3xs font-bold bg-brand-50 text-brand-700 border border-brand-200 flex-shrink-0">
+                                    @list.Items?.Count titles
+                                </span>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(list.Description))
+                            {
+                                <p class="text-xs text-slate-500 mt-1 line-clamp-2">
+                                    @list.Description
+                                </p>
+                            }
+                            else
+                            {
+                                <p class="text-xs text-slate-400 italic mt-1">No description.</p>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-2 pt-3 border-t border-slate-100">
+                        <a asp-action="ListDetails" asp-route-id="@list.Id"
+                           class="flex-1 py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold text-center transition-colors">
+                            <i class="fa-solid fa-folder-open mr-1 text-2xs"></i> Open
+                        </a>
+
+                        <form asp-action="DeleteList" asp-controller="Media" method="post" onsubmit="return confirm('Delete playlist \'@list.Title\'?');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ListId" value="@list.Id" />
+                            <button type="submit" class="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs transition-colors" title="Delete Playlist">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Create Playlist Modal -->
+<div id="createListModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeCreateListModal()"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 space-y-4 border border-slate-100">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-folder-plus"></i>
+                    </span>
+                    <h3 class="text-sm font-bold text-slate-900">Create New Playlist</h3>
+                </div>
+                <button type="button" onclick="closeCreateListModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <form asp-action="CreateList" asp-controller="Media" method="post" class="space-y-4">
+                @Html.AntiForgeryToken()
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-slate-700">Playlist Title</label>
+                    <input type="text" name="Title" required placeholder="e.g. Friday Night Movies, Ghibli Faves..."
+                           class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-slate-700">Description (Optional)</label>
+                    <textarea name="Description" rows="2" placeholder="What is this collection about?"
+                              class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"></textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeCreateListModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-2xs">
+                        Create Playlist
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openCreateListModal() {
+        document.getElementById('createListModal').classList.remove('hidden');
+    }
+    function closeCreateListModal() {
+        document.getElementById('createListModal').classList.add('hidden');
+    }
+</script>

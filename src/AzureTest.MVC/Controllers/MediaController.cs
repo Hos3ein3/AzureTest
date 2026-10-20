@@ -1,0 +1,434 @@
+using System;
+using System.ComponentModel;
+using System.IO;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using AzureTest.Application.Interfaces.Services;
+using AzureTest.Application.Media;
+using AzureTest.Application.Media.Commands.AddItemToCustomList;
+using AzureTest.Application.Media.Commands.AddWatchItem;
+using AzureTest.Application.Media.Commands.ChangeWatchStatus;
+using AzureTest.Application.Media.Commands.CreateCustomList;
+using AzureTest.Application.Media.Commands.DeleteCustomList;
+using AzureTest.Application.Media.Commands.DeleteWatchItem;
+using AzureTest.Application.Media.Commands.FollowPerson;
+using AzureTest.Application.Media.Commands.ImportMediaData;
+using AzureTest.Application.Media.Commands.RateWatchItem;
+using AzureTest.Application.Media.Commands.RemoveItemFromCustomList;
+using AzureTest.Application.Media.Commands.UnfollowPerson;
+using AzureTest.Application.Media.Commands.UpdateFollowedPersonNotes;
+using AzureTest.Application.Media.Commands.UpdateWatchProgress;
+using AzureTest.Application.Media.Queries.ExportMediaData;
+using AzureTest.Application.Media.Queries.GetCustomListById;
+using AzureTest.Application.Media.Queries.GetCustomLists;
+using AzureTest.Application.Media.Queries.GetDiscoverMedia;
+using AzureTest.Application.Media.Queries.GetFollowedPeople;
+using AzureTest.Application.Media.Queries.GetMediaCalendar;
+using AzureTest.Application.Media.Queries.GetMediaDetails;
+using AzureTest.Application.Media.Queries.GetMediaStats;
+using AzureTest.Application.Media.Queries.GetMovieNews;
+using AzureTest.Application.Media.Queries.GetPersonDetails;
+using AzureTest.Application.Media.Queries.GetWatchItemById;
+using AzureTest.Application.Media.Queries.GetWatchList;
+using AzureTest.Application.Media.Queries.SearchMedia;
+using AzureTest.Contracts.DTOs.Media;
+using AzureTest.Domain.Media.Enums;
+using AzureTest.MVC.Extensions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace AzureTest.MVC.Controllers;
+
+[Authorize]
+[DisplayName("Media Hub")]
+[Description("Manage personal media watchlists, discovery, actors, news, and statistics.")]
+public class MediaController : Controller
+{
+    private readonly IValidationService _validator;
+    private readonly IMediaCommandUnit _commands;
+    private readonly IMediaQueryUnit _queries;
+    private readonly ICurrentUser _currentUser;
+
+    public MediaController(
+        IValidationService validator,
+        IMediaCommandUnit commands,
+        IMediaQueryUnit queries,
+        ICurrentUser currentUser)
+    {
+        _validator = validator;
+        _commands = commands;
+        _queries = queries;
+        _currentUser = currentUser;
+    }
+
+    [HttpGet]
+    [DisplayName("Watchlist Hub")]
+    [Description("View and filter your personal watch list for movies, series, and anime.")]
+    public async Task<IActionResult> Index([FromQuery] WatchListFilter filter, CancellationToken ct)
+    {
+        var result = await _queries.GetWatchListAsync(new GetWatchListQuery(_currentUser.Id, filter), ct);
+        return result.ToView(this);
+    }
+
+    [HttpGet]
+    [DisplayName("Discover Media")]
+    [Description("Explore trending, popular, top rated, upcoming titles and anime highlights.")]
+    public async Task<IActionResult> Discover(CancellationToken ct)
+    {
+        var result = await _queries.GetDiscoverMediaAsync(new GetDiscoverMediaQuery(_currentUser.Id), ct);
+        return result.ToView(this);
+    }
+
+    [HttpGet]
+    [DisplayName("Search TMDb")]
+    [Description("Search for movies, TV series, anime, and actors on TMDb.")]
+    public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] string searchType = "all", CancellationToken ct = default)
+    {
+        ViewBag.SearchQuery = q ?? string.Empty;
+        ViewBag.SearchType = searchType;
+        var result = await _queries.SearchMediaAsync(new SearchMediaQuery(q ?? string.Empty, searchType), ct);
+        return result.ToView(this);
+    }
+
+    [HttpGet]
+    [DisplayName("Title Details")]
+    [Description("View synopsis, cast, trailers, streaming providers, and update your watch status.")]
+    public async Task<IActionResult> Details(int id, MediaType type, CancellationToken ct)
+    {
+        var result = await _queries.GetMediaDetailsAsync(new GetMediaDetailsQuery(id, type, _currentUser.Id), ct);
+        return result.ToView(this);
+    }
+
+    [HttpGet]
+    [DisplayName("Followed People")]
+    [Description("Follow actors and directors, track filmography progress, and see upcoming projects.")]
+    public async Task<IActionResult> People(CancellationToken ct)
+    {
+        var result = await _queries.GetFollowedPeopleAsync(new GetFollowedPeopleQuery(_currentUser.Id), ct);
+        return result.ToView(this);
+    }
+
+    [HttpGet]
+    [DisplayName("Person Filmography")]
+    [Description("View full filmography for an actor or director with watch progress indicators.")]
+    public async Task<IActionResult> PersonDetails(int id, CancellationToken ct)
+    {
+        var result = await _queries.GetPersonDetailsAsync(new GetPersonDetailsQuery(id, _currentUser.Id), ct);
+        return result.ToView(this);
+    }
+
+    [HttpGet]
+    [DisplayName("Release Calendar")]
+    [Description("View release dates for your wishlist and renewal updates for followed series.")]
+    public async Task<IActionResult> Calendar([FromQuery] int? year, [FromQuery] int? month, CancellationToken ct = default)
+    {
+        var result = await _queries.GetMediaCalendarAsync(new GetMediaCalendarQuery(_currentUser.Id, year, month), ct);
+        return result.ToView(this);
+    }
+
+    [HttpGet]
+    [DisplayName("Entertainment News")]
+    [Description("Read the latest movie, series, and entertainment industry news.")]
+    public async Task<IActionResult> News(CancellationToken ct)
+    {
+        var result = await _queries.GetMovieNewsAsync(new GetMovieNewsQuery(24), ct);
+        return result.ToView(this);
+    }
+
+    [HttpGet]
+    [DisplayName("Custom Playlists")]
+    [Description("Manage your custom movie and series collections.")]
+    public async Task<IActionResult> Lists(CancellationToken ct)
+    {
+        var result = await _queries.GetCustomListsAsync(new GetCustomListsQuery(_currentUser.Id), ct);
+        return result.ToView(this);
+    }
+
+    [HttpGet]
+    [DisplayName("Playlist Details")]
+    [Description("View and manage titles in a custom playlist.")]
+    public async Task<IActionResult> ListDetails(Guid id, CancellationToken ct)
+    {
+        var result = await _queries.GetCustomListByIdAsync(new GetCustomListByIdQuery(_currentUser.Id, id), ct);
+        return result.ToView(this);
+    }
+
+    [HttpGet]
+    [DisplayName("Watch Statistics")]
+    [Description("Analyze your watch time, favorite genres, top actors, and ratings.")]
+    public async Task<IActionResult> Stats(CancellationToken ct)
+    {
+        var result = await _queries.GetMediaStatsAsync(new GetMediaStatsQuery(_currentUser.Id), ct);
+        return result.ToView(this);
+    }
+
+    // ── Form POST Actions ──────────────────────────────────────────────────────
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Add to Watchlist")]
+    [Description("Add a title to your personal watchlist with selected status.")]
+    public async Task<IActionResult> Add(AddWatchItemCommand command, string? returnUrl, CancellationToken ct)
+    {
+        var cmd = command with { UserId = _currentUser.Id, TenantId = _currentUser.TenantId };
+        var validation = await _validator.ValidateAsync(cmd, ct);
+        if (validation.IsFailure)
+            return validation.ToForm(this, nameof(Index));
+
+        var result = await _commands.AddWatchItemAsync(cmd, ct);
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+        return result.ToForm(this, nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Update Progress")]
+    [Description("Update season and episode where you stopped watching.")]
+    public async Task<IActionResult> UpdateProgress(UpdateWatchProgressCommand command, string? returnUrl, CancellationToken ct)
+    {
+        var cmd = command with { UserId = _currentUser.Id };
+        var validation = await _validator.ValidateAsync(cmd, ct);
+        if (validation.IsFailure)
+            return validation.ToForm(this, nameof(Index));
+
+        var result = await _commands.UpdateWatchProgressAsync(cmd, ct);
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+        return result.ToForm(this, nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Change Status")]
+    [Description("Change watch status of a title in your watchlist.")]
+    public async Task<IActionResult> ChangeStatus(ChangeWatchStatusCommand command, string? returnUrl, CancellationToken ct)
+    {
+        var cmd = command with { UserId = _currentUser.Id };
+        var validation = await _validator.ValidateAsync(cmd, ct);
+        if (validation.IsFailure)
+            return validation.ToForm(this, nameof(Index));
+
+        var result = await _commands.ChangeWatchStatusAsync(cmd, ct);
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+        return result.ToForm(this, nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Rate and Review")]
+    [Description("Save rating, review, and watched date for a title.")]
+    public async Task<IActionResult> Rate(RateWatchItemCommand command, string? returnUrl, CancellationToken ct)
+    {
+        var cmd = command with { UserId = _currentUser.Id };
+        var validation = await _validator.ValidateAsync(cmd, ct);
+        if (validation.IsFailure)
+            return validation.ToForm(this, nameof(Index));
+
+        var result = await _commands.RateWatchItemAsync(cmd, ct);
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+        return result.ToForm(this, nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Remove from Watchlist")]
+    [Description("Remove a title from your personal watchlist.")]
+    public async Task<IActionResult> Delete(DeleteWatchItemCommand command, string? returnUrl, CancellationToken ct)
+    {
+        var cmd = command with { UserId = _currentUser.Id };
+        var validation = await _validator.ValidateAsync(cmd, ct);
+        if (validation.IsFailure)
+            return validation.ToForm(this, nameof(Index));
+
+        var result = await _commands.DeleteWatchItemAsync(cmd, ct);
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+        return result.ToForm(this, nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Follow Person")]
+    [Description("Follow an actor or director to track their filmography.")]
+    public async Task<IActionResult> FollowPerson(FollowPersonCommand command, string? returnUrl, CancellationToken ct)
+    {
+        var cmd = command with { UserId = _currentUser.Id, TenantId = _currentUser.TenantId };
+        var validation = await _validator.ValidateAsync(cmd, ct);
+        if (validation.IsFailure)
+            return validation.ToForm(this, nameof(People));
+
+        var result = await _commands.FollowPersonAsync(cmd, ct);
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+        return result.ToForm(this, nameof(People));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Unfollow Person")]
+    [Description("Stop following an actor or director.")]
+    public async Task<IActionResult> UnfollowPerson(UnfollowPersonCommand command, string? returnUrl, CancellationToken ct)
+    {
+        var cmd = command with { UserId = _currentUser.Id };
+        var validation = await _validator.ValidateAsync(cmd, ct);
+        if (validation.IsFailure)
+            return validation.ToForm(this, nameof(People));
+
+        var result = await _commands.UnfollowPersonAsync(cmd, ct);
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+        return result.ToForm(this, nameof(People));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Update Person Notes")]
+    [Description("Update personal notes for a followed actor or director.")]
+    public async Task<IActionResult> UpdatePersonNotes(UpdateFollowedPersonNotesCommand command, string? returnUrl, CancellationToken ct)
+    {
+        var cmd = command with { UserId = _currentUser.Id };
+        var validation = await _validator.ValidateAsync(cmd, ct);
+        if (validation.IsFailure)
+            return validation.ToForm(this, nameof(People));
+
+        var result = await _commands.UpdateFollowedPersonNotesAsync(cmd, ct);
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+        return result.ToForm(this, nameof(People));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Create Custom List")]
+    [Description("Create a new custom movie or series playlist.")]
+    public async Task<IActionResult> CreateList(CreateCustomListCommand command, CancellationToken ct)
+    {
+        var cmd = command with { UserId = _currentUser.Id, TenantId = _currentUser.TenantId };
+        var validation = await _validator.ValidateAsync(cmd, ct);
+        if (validation.IsFailure)
+            return validation.ToForm(this, nameof(Lists));
+
+        var result = await _commands.CreateCustomListAsync(cmd, ct);
+        return result.ToForm(this, nameof(Lists));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Add to List")]
+    [Description("Add a title to one of your custom playlists.")]
+    public async Task<IActionResult> AddToList(AddItemToCustomListCommand command, string? returnUrl, CancellationToken ct)
+    {
+        var cmd = command with { UserId = _currentUser.Id };
+        var validation = await _validator.ValidateAsync(cmd, ct);
+        if (validation.IsFailure)
+            return validation.ToForm(this, nameof(Lists));
+
+        var result = await _commands.AddItemToCustomListAsync(cmd, ct);
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+        return result.ToForm(this, nameof(Lists));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Remove from List")]
+    [Description("Remove a title from a custom playlist.")]
+    public async Task<IActionResult> RemoveFromList(RemoveItemFromCustomListCommand command, CancellationToken ct)
+    {
+        var cmd = command with { UserId = _currentUser.Id };
+        var validation = await _validator.ValidateAsync(cmd, ct);
+        if (validation.IsFailure)
+            return validation.ToForm(this, nameof(Lists));
+
+        var result = await _commands.RemoveItemFromCustomListAsync(cmd, ct);
+        return RedirectToAction(nameof(ListDetails), new { id = command.ListId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Delete Custom List")]
+    [Description("Delete an entire custom playlist.")]
+    public async Task<IActionResult> DeleteList(DeleteCustomListCommand command, CancellationToken ct)
+    {
+        var cmd = command with { UserId = _currentUser.Id };
+        var validation = await _validator.ValidateAsync(cmd, ct);
+        if (validation.IsFailure)
+            return validation.ToForm(this, nameof(Lists));
+
+        var result = await _commands.DeleteCustomListAsync(cmd, ct);
+        return result.ToForm(this, nameof(Lists));
+    }
+
+    [HttpGet]
+    [DisplayName("Export Media Data")]
+    [Description("Download complete watch history and lists in JSON format.")]
+    public async Task<IActionResult> Export(CancellationToken ct)
+    {
+        var result = await _queries.ExportMediaDataAsync(new ExportMediaDataQuery(_currentUser.Id), ct);
+        if (!result.IsSuccess || result.Value == null)
+        {
+            return BadRequest("Could not export data.");
+        }
+
+        var json = JsonSerializer.Serialize(result.Value, new JsonSerializerOptions { WriteIndented = true });
+        var bytes = Encoding.UTF8.GetBytes(json);
+        return File(bytes, "application/json", $"media-backup-{DateTime.UtcNow:yyyyMMdd-HHmm}.json");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Import Media Data")]
+    [Description("Upload and restore watch history and playlists from a JSON file.")]
+    public async Task<IActionResult> Import(IFormFile? file, CancellationToken ct)
+    {
+        if (file == null || file.Length == 0)
+        {
+            TempData["ErrorMessage"] = "Please select a valid JSON backup file.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        using var reader = new StreamReader(file.OpenReadStream());
+        var json = await reader.ReadToEndAsync(ct);
+
+        var cmd = new ImportMediaDataCommand(_currentUser.Id, _currentUser.TenantId, json);
+        var validation = await _validator.ValidateAsync(cmd, ct);
+        if (validation.IsFailure)
+            return validation.ToForm(this, nameof(Index));
+
+        var result = await _commands.ImportMediaDataAsync(cmd, ct);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = $"Import successful: {result.Value.WatchItemsImported} items, {result.Value.FollowedPeopleImported} people, {result.Value.CustomListsImported} lists.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to import media data.";
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+}

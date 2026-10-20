@@ -30,8 +30,8 @@
         <PackageReference Include="OpenTelemetry.Instrumentation.Process" />
         <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" />
       <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
-      <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol"  />
-      <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient"  />
+      <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+      <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" />
         <PackageReference Include="Serilog.AspNetCore" />
         <PackageReference Include="Serilog.Enrichers.Span" />
         <PackageReference Include="Serilog.Sinks.Console" />
@@ -42,12 +42,13 @@
         <PackageReference Include="Hangfire.PostgreSql" />
         <PackageReference Include="Quartz.Extensions.Hosting" />
         <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
-        <PackageReference Include="HtmlAgilityPack"  />
-        <PackageReference Include="ClosedXML"  />
-        <PackageReference Include="MassTransit.RabbitMQ"  />
-        <PackageReference Include="Microsoft.Extensions.Http.Resilience"  />
-        <PackageReference Include="Microsoft.Extensions.Resilience"  />
+        <PackageReference Include="HtmlAgilityPack" />
+        <PackageReference Include="ClosedXML" />
+        <PackageReference Include="MassTransit.RabbitMQ" />
+        <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+        <PackageReference Include="Microsoft.Extensions.Resilience" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+        <PackageReference Include="TMDbLib" />
     </ItemGroup>
 
 </Project>

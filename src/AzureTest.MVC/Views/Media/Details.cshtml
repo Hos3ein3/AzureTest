@@ -1,0 +1,540 @@
+@using AzureTest.Contracts.DTOs.Media
+@using AzureTest.Domain.Media.Enums
+@using AzureTest.MVC.Models
+@model TmdbTitleDetailsDto
+
+@{
+    ViewData["Title"] = Model.Title;
+
+    var isTracked = Model.UserWatchItem != null;
+    var userItem = Model.UserWatchItem;
+
+    string PosterUrl(string? path) => string.IsNullOrWhiteSpace(path)
+        ? "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=500&q=80"
+        : $"https://image.tmdb.org/t/p/w500{path}";
+
+    string BackdropUrl(string? path) => string.IsNullOrWhiteSpace(path)
+        ? "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=1400&q=80"
+        : $"https://image.tmdb.org/t/p/w1280{path}";
+
+    string ProviderLogoUrl(string? path) => string.IsNullOrWhiteSpace(path)
+        ? ""
+        : $"https://image.tmdb.org/t/p/w92{path}";
+
+    string StatusBadgeClass(WatchStatus status) => status switch
+    {
+        WatchStatus.Watching => "bg-blue-600 text-white",
+        WatchStatus.PlanToWatch => "bg-amber-600 text-white",
+        WatchStatus.Completed => "bg-emerald-600 text-white",
+        WatchStatus.Dropped => "bg-rose-600 text-white",
+        _ => "bg-slate-600 text-white"
+    };
+
+    string StatusName(WatchStatus status) => status switch
+    {
+        WatchStatus.Watching => "Currently Watching",
+        WatchStatus.PlanToWatch => "Want to Watch (Wishlist)",
+        WatchStatus.Completed => "Finished",
+        WatchStatus.Dropped => "Stopped",
+        _ => status.ToString()
+    };
+
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new("Media", Url.Action("Index", "Media")),
+        new("Discover", Url.Action("Discover", "Media")),
+        new(Model.Title, null, IsActive: true)
+    };
+}
+
+<div class="space-y-8">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+
+    <!-- Hero Backdrop & Overview Card -->
+    <div class="relative bg-slate-900 rounded-3xl overflow-hidden shadow-xl text-white">
+        <!-- Backdrop Image with Gradient Overlay -->
+        <div class="absolute inset-0 z-0">
+            <img src="@BackdropUrl(Model.BackdropPath)" alt="@Model.Title" class="w-full h-full object-cover opacity-25" />
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/30"></div>
+        </div>
+
+        <div class="relative z-10 p-6 md:p-10 flex flex-col md:flex-row gap-8 items-start">
+            <!-- Poster -->
+            <div class="w-48 md:w-60 flex-shrink-0 mx-auto md:mx-0">
+                <img src="@PosterUrl(Model.PosterPath)" alt="@Model.Title"
+                     class="w-full rounded-2xl shadow-2xl border-2 border-white/10 aspect-2/3 object-cover" />
+            </div>
+
+            <!-- Header Content -->
+            <div class="flex-1 space-y-4">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-3 py-1 rounded-xl text-xs font-bold uppercase tracking-wider bg-brand-600 text-white shadow-2xs">
+                        @Model.Type
+                    </span>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.Status))
+                    {
+                        var statusColor = Model.Status.Contains("Canceled", StringComparison.OrdinalIgnoreCase) ? "bg-rose-500/20 text-rose-300 border border-rose-500/30" :
+                                          Model.Status.Contains("Ended", StringComparison.OrdinalIgnoreCase) ? "bg-slate-500/20 text-slate-300 border border-slate-500/30" :
+                                          "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+                        <span class="px-3 py-1 rounded-xl text-xs font-bold @statusColor">
+                            @Model.Status
+                        </span>
+                    }
+
+                    @if (Model.ReleaseDate.HasValue)
+                    {
+                        <span class="text-xs text-slate-300 font-medium">
+                            <i class="fa-regular fa-calendar mr-1"></i> @Model.ReleaseDate.Value.ToString("MMM yyyy")
+                        </span>
+                    }
+
+                    @if (Model.RuntimeMinutes.HasValue && Model.RuntimeMinutes > 0)
+                    {
+                        <span class="text-xs text-slate-300 font-medium">
+                            <i class="fa-regular fa-clock mr-1"></i> @Model.RuntimeMinutes mins
+                        </span>
+                    }
+                </div>
+
+                <div>
+                    <h1 class="text-2xl md:text-4xl font-black text-white tracking-tight">@Model.Title</h1>
+                    @if (!string.IsNullOrWhiteSpace(Model.OriginalTitle) && Model.OriginalTitle != Model.Title)
+                    {
+                        <p class="text-sm text-slate-400 italic">Original: @Model.OriginalTitle</p>
+                    }
+                </div>
+
+                <!-- Rating & Genres -->
+                <div class="flex flex-wrap items-center gap-4 text-xs">
+                    @if (Model.VoteAverage.HasValue && Model.VoteAverage > 0)
+                    {
+                        <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold">
+                            <i class="fa-solid fa-star text-amber-400"></i>
+                            <span>@Model.VoteAverage.Value.ToString("0.0")</span>
+                            <span class="text-amber-400/60 font-normal">(@Model.VoteCount votes)</span>
+                        </div>
+                    }
+
+                    <div class="flex flex-wrap gap-1.5">
+                        @foreach (var genre in Model.Genres)
+                        {
+                            <span class="px-2.5 py-1 rounded-lg bg-white/10 text-slate-300 text-xs font-medium">
+                                @genre
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <!-- Synopsis -->
+                @if (!string.IsNullOrWhiteSpace(Model.Overview))
+                {
+                    <p class="text-slate-300 text-xs md:text-sm leading-relaxed max-w-3xl">
+                        @Model.Overview
+                    </p>
+                }
+
+                <!-- Track Status & Action Section -->
+                <div class="pt-4 border-t border-white/10">
+                    @if (isTracked && userItem != null)
+                    {
+                        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 space-y-3">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <span class="px-3 py-1.5 rounded-xl text-xs font-bold @StatusBadgeClass(userItem.Status)">
+                                        <i class="fa-solid fa-check-circle mr-1"></i> @StatusName(userItem.Status)
+                                    </span>
+
+                                    @if (Model.Type != MediaType.Movie)
+                                    {
+                                        <span class="text-xs text-white font-medium">
+                                            Season @userItem.CurrentSeason • Episode @userItem.CurrentEpisode
+                                        </span>
+                                        <span class="px-2.5 py-1 rounded-lg bg-brand-500/20 text-brand-300 border border-brand-500/30 text-3xs font-semibold">
+                                            Next: @userItem.NextEpisodeLabel
+                                        </span>
+                                    }
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    @if (userItem.UserRating.HasValue)
+                                    {
+                                        <span class="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 font-bold text-xs flex items-center gap-1">
+                                            <i class="fa-solid fa-star text-amber-400 text-2xs"></i> My Score: @userItem.UserRating/10
+                                        </span>
+                                    }
+                                    <button type="button" onclick="openRateModal()" class="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition-colors">
+                                        <i class="fa-solid fa-pen mr-1"></i> Rate & Review
+                                    </button>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(userItem.UserReview))
+                            {
+                                <div class="p-3 bg-black/20 rounded-xl text-xs text-slate-200 italic border-l-2 border-brand-500">
+                                    "@userItem.UserReview"
+                                </div>
+                            }
+
+                            <!-- Progress & Status Management -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-white/10">
+                                @if (Model.Type != MediaType.Movie)
+                                {
+                                    <!-- Progress Update Form -->
+                                    <form asp-action="UpdateProgress" asp-controller="Media" method="post" class="flex items-center gap-2">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="WatchItemId" value="@userItem.Id" />
+                                        <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+
+                                        <div class="flex items-center gap-1.5 text-xs text-slate-300">
+                                            <span>S:</span>
+                                            <input type="number" name="Season" value="@userItem.CurrentSeason" min="0" max="99" class="w-14 px-2 py-1 rounded-lg bg-white/10 border border-white/20 text-white text-xs focus:outline-none" />
+                                            <span>E:</span>
+                                            <input type="number" name="Episode" value="@userItem.CurrentEpisode" min="0" max="999" class="w-16 px-2 py-1 rounded-lg bg-white/10 border border-white/20 text-white text-xs focus:outline-none" />
+                                        </div>
+                                        <button type="submit" class="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-semibold transition-colors">
+                                            Save Ep
+                                        </button>
+                                    </form>
+                                }
+
+                                <!-- Change Status Form -->
+                                <form asp-action="ChangeStatus" asp-controller="Media" method="post" class="flex items-center justify-end gap-2">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="WatchItemId" value="@userItem.Id" />
+                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+
+                                    <select name="NewStatus" onchange="this.form.submit()" class="px-3 py-1 rounded-lg bg-slate-800 border border-white/20 text-white text-xs focus:outline-none">
+                                        <option value="@WatchStatus.PlanToWatch" selected="@(userItem.Status == WatchStatus.PlanToWatch)">Wishlist</option>
+                                        <option value="@WatchStatus.Watching" selected="@(userItem.Status == WatchStatus.Watching)">Watching</option>
+                                        <option value="@WatchStatus.Completed" selected="@(userItem.Status == WatchStatus.Completed)">Finished</option>
+                                        <option value="@WatchStatus.Dropped" selected="@(userItem.Status == WatchStatus.Dropped)">Stopped</option>
+                                    </select>
+
+                                    <!-- Delete from watchlist button -->
+                                    <button type="submit" asp-action="Delete" asp-controller="Media" onclick="return confirm('Remove this title from your watchlist?')" class="p-1.5 text-slate-400 hover:text-rose-400 transition-colors" title="Remove from Watchlist">
+                                        <i class="fa-solid fa-trash-can text-xs"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Quick Add Buttons -->
+                        <div class="flex flex-wrap items-center gap-2">
+                            <form asp-action="Add" asp-controller="Media" method="post" class="inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="TmdbId" value="@Model.Id" />
+                                <input type="hidden" name="Type" value="@Model.Type" />
+                                <input type="hidden" name="InitialStatus" value="@WatchStatus.PlanToWatch" />
+                                <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                                <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
+                                    <i class="fa-solid fa-bookmark text-2xs"></i> Add to Wishlist
+                                </button>
+                            </form>
+
+                            <form asp-action="Add" asp-controller="Media" method="post" class="inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="TmdbId" value="@Model.Id" />
+                                <input type="hidden" name="Type" value="@Model.Type" />
+                                <input type="hidden" name="InitialStatus" value="@WatchStatus.Watching" />
+                                <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
+                                    <i class="fa-solid fa-play text-2xs"></i> Start Watching
+                                </button>
+                            </form>
+
+                            <form asp-action="Add" asp-controller="Media" method="post" class="inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="TmdbId" value="@Model.Id" />
+                                <input type="hidden" name="Type" value="@Model.Type" />
+                                <input type="hidden" name="InitialStatus" value="@WatchStatus.Completed" />
+                                <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                                <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
+                                    <i class="fa-solid fa-check text-2xs"></i> Mark Finished
+                                </button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Where to Watch Streaming Providers -->
+    @if (Model.WatchProviders != null && (Model.WatchProviders.Flatrate.Any() || Model.WatchProviders.Rent.Any() || Model.WatchProviders.Buy.Any()))
+    {
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-tv"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">Where to Watch</h3>
+                        <p class="text-xs text-slate-500">Streaming availability powered by JustWatch via TMDb.</p>
+                    </div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(Model.WatchProviders.Link))
+                {
+                    <a href="@Model.WatchProviders.Link" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-brand-600 hover:underline flex items-center gap-1">
+                        View on JustWatch <i class="fa-solid fa-arrow-up-right-from-square text-2xs"></i>
+                    </a>
+                }
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                @if (Model.WatchProviders.Flatrate.Any())
+                {
+                    <div class="space-y-2">
+                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-play text-blue-500 text-2xs"></i> Stream / Subscription
+                        </span>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach (var p in Model.WatchProviders.Flatrate)
+                            {
+                                <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200" title="@p.ProviderName">
+                                    @if (!string.IsNullOrWhiteSpace(p.LogoPath))
+                                    {
+                                        <img src="@ProviderLogoUrl(p.LogoPath)" alt="@p.ProviderName" class="w-6 h-6 rounded-md object-cover" />
+                                    }
+                                    <span class="text-xs font-semibold text-slate-800">@p.ProviderName</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (Model.WatchProviders.Rent.Any())
+                {
+                    <div class="space-y-2">
+                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-tag text-amber-500 text-2xs"></i> Rent
+                        </span>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach (var p in Model.WatchProviders.Rent)
+                            {
+                                <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200" title="@p.ProviderName">
+                                    @if (!string.IsNullOrWhiteSpace(p.LogoPath))
+                                    {
+                                        <img src="@ProviderLogoUrl(p.LogoPath)" alt="@p.ProviderName" class="w-6 h-6 rounded-md object-cover" />
+                                    }
+                                    <span class="text-xs font-semibold text-slate-800">@p.ProviderName</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (Model.WatchProviders.Buy.Any())
+                {
+                    <div class="space-y-2">
+                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-cart-shopping text-emerald-500 text-2xs"></i> Buy
+                        </span>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach (var p in Model.WatchProviders.Buy)
+                            {
+                                <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200" title="@p.ProviderName">
+                                    @if (!string.IsNullOrWhiteSpace(p.LogoPath))
+                                    {
+                                        <img src="@ProviderLogoUrl(p.LogoPath)" alt="@p.ProviderName" class="w-6 h-6 rounded-md object-cover" />
+                                    }
+                                    <span class="text-xs font-semibold text-slate-800">@p.ProviderName</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Trailer Embed -->
+    @if (!string.IsNullOrWhiteSpace(Model.TrailerYouTubeKey))
+    {
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-sm">
+                    <i class="fa-brands fa-youtube"></i>
+                </span>
+                <h3 class="text-sm font-bold text-slate-900">Official Trailer</h3>
+            </div>
+            <div class="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-inner">
+                <iframe src="https://www.youtube.com/embed/@Model.TrailerYouTubeKey"
+                        title="@Model.Title Trailer"
+                        class="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen></iframe>
+            </div>
+        </div>
+    }
+
+    <!-- TV Seasons List (If TV or Anime) -->
+    @if (Model.Seasons.Any())
+    {
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">Seasons & Episodes</h3>
+                        <p class="text-xs text-slate-500">@Model.Seasons.Count seasons total.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                @foreach (var season in Model.Seasons.Where(s => s.SeasonNumber > 0))
+                {
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-3">
+                        <div class="w-12 h-16 rounded-lg bg-slate-200 overflow-hidden flex-shrink-0">
+                            <img src="@PosterUrl(season.PosterPath)" alt="@season.Name" class="w-full h-full object-cover" />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-xs font-bold text-slate-900 truncate">@season.Name</h4>
+                            <p class="text-3xs text-slate-500">@season.EpisodeCount episodes</p>
+                            @if (season.AirDate.HasValue)
+                            {
+                                <p class="text-3xs text-slate-400">@season.AirDate.Value.ToString("yyyy")</p>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Cast Members Grid -->
+    @if (Model.Cast.Any())
+    {
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-users"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">Top Cast</h3>
+                        <p class="text-xs text-slate-500">Click any actor to view their full filmography.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                @foreach (var actor in Model.Cast.Take(12))
+                {
+                    <a asp-action="PersonDetails" asp-route-id="@actor.PersonId"
+                       class="group p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center transition-all flex flex-col items-center">
+                        <img src="@PosterUrl(actor.ProfilePath)" alt="@actor.Name"
+                             class="w-16 h-16 rounded-full object-cover mb-2 border border-slate-200 group-hover:scale-105 transition-transform" />
+                        <h4 class="text-xs font-bold text-slate-900 group-hover:text-brand-600 line-clamp-1 transition-colors">@actor.Name</h4>
+                        <p class="text-3xs text-slate-400 line-clamp-1">@actor.Character</p>
+                    </a>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Similar Titles Suggestions -->
+    @if (Model.SimilarTitles.Any())
+    {
+        <div class="space-y-4">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-sparkles"></i>
+                </span>
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Titles Similar to This</h3>
+                    <p class="text-xs text-slate-500">Recommended based on genres, cast, and audience tastes.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                @foreach (var item in Model.SimilarTitles.Take(6))
+                {
+                    @await Html.PartialAsync("_DiscoverCard", (item, Context.Request.Path))
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Rate and Review Modal -->
+@if (isTracked && userItem != null)
+{
+    <div id="rateModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeRateModal()"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 space-y-5 border border-slate-100">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                            <i class="fa-solid fa-star text-base"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900">Rate & Review</h3>
+                            <p class="text-xs text-slate-500 truncate max-w-[220px]">@Model.Title</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeRateModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <form asp-action="Rate" asp-controller="Media" method="post" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="WatchItemId" value="@userItem.Id" />
+                    <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+
+                    <!-- Rating Score (1 to 10) -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold text-slate-700">Your Score (1 to 10)</label>
+                        <select name="Rating" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                            <option value="">No Score</option>
+                            @for (int score = 10; score >= 1; score--)
+                            {
+                                <option value="@score" selected="@(userItem.UserRating == score)">@score / 10 @(score >= 9 ? "Masterpiece" : score >= 7 ? "Good" : score >= 5 ? "Average" : "Poor")</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Short Review -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold text-slate-700">Short Review</label>
+                        <textarea name="Review" rows="3" placeholder="What did you think of the story, acting, animation..."
+                                  class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">@userItem.UserReview</textarea>
+                    </div>
+
+                    <!-- Watched Date -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold text-slate-700">Date Watched</label>
+                        <input type="date" name="WatchedDate" value="@(userItem.WatchedDate?.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))"
+                               class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeRateModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-2xs">
+                            <i class="fa-solid fa-check mr-1.5 text-2xs"></i> Save Review
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openRateModal() {
+            document.getElementById('rateModal').classList.remove('hidden');
+        }
+        function closeRateModal() {
+            document.getElementById('rateModal').classList.add('hidden');
+        }
+    </script>
+}

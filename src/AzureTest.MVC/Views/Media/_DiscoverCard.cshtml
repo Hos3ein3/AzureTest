@@ -1,0 +1,81 @@
+@using AzureTest.Contracts.DTOs.Media
+@using AzureTest.Domain.Media.Enums
+@model (TmdbSearchResultDto Item, string ReturnUrl)
+
+@{
+    var item = Model.Item;
+    var returnUrl = Model.ReturnUrl;
+    string PosterUrl(string? path) => string.IsNullOrWhiteSpace(path)
+        ? "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=400&q=80"
+        : $"https://image.tmdb.org/t/p/w500{path}";
+
+    string TypeBadgeClass(MediaType type) => type switch
+    {
+        MediaType.Movie => "bg-blue-500/90 text-white",
+        MediaType.TvSeries => "bg-purple-500/90 text-white",
+        MediaType.Anime => "bg-rose-500/90 text-white",
+        _ => "bg-slate-700/90 text-white"
+    };
+
+    string TypeName(MediaType type) => type switch
+    {
+        MediaType.Movie => "Movie",
+        MediaType.TvSeries => "Series",
+        MediaType.Anime => "Anime",
+        _ => "Media"
+    };
+}
+
+<div class="group relative flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs hover:shadow-md transition-all">
+    <!-- Poster with overlay -->
+    <div class="relative aspect-2/3 bg-slate-900 overflow-hidden">
+        <img src="@PosterUrl(item.PosterPath)" alt="@item.Title"
+             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+             loading="lazy" />
+
+        <!-- Top Badges -->
+        <div class="absolute top-2 left-2 flex flex-col gap-1">
+            <span class="px-2 py-0.5 rounded-lg text-3xs font-bold uppercase tracking-wider backdrop-blur-xs @TypeBadgeClass(item.Type)">
+                @TypeName(item.Type)
+            </span>
+        </div>
+
+        @if (item.VoteAverage.HasValue && item.VoteAverage > 0)
+        {
+            <div class="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-slate-900/80 backdrop-blur-xs text-amber-400 text-3xs font-bold flex items-center gap-1">
+                <i class="fa-solid fa-star text-3xs"></i>
+                <span>@item.VoteAverage.Value.ToString("0.0")</span>
+            </div>
+        }
+
+        <!-- Quick Action Overlay on Hover -->
+        <div class="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 gap-2">
+            <a asp-action="Details" asp-controller="Media" asp-route-id="@item.Id" asp-route-type="@item.Type"
+               class="w-full py-1.5 rounded-xl bg-white/90 hover:bg-white text-slate-900 text-2xs font-bold text-center transition-colors">
+                <i class="fa-solid fa-circle-info mr-1"></i> Details
+            </a>
+            <button type="button"
+                    onclick="openQuickAddModal('@item.Id', '@item.Type', '@Html.Raw(item.Title.Replace("'", "\\\'"))')"
+                    class="w-full py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-2xs font-bold transition-colors">
+                <i class="fa-solid fa-plus mr-1"></i> Add
+            </button>
+        </div>
+    </div>
+
+    <!-- Info -->
+    <div class="p-2.5 flex-1 flex flex-col justify-between">
+        <a asp-action="Details" asp-controller="Media" asp-route-id="@item.Id" asp-route-type="@item.Type"
+           class="text-xs font-bold text-slate-900 hover:text-brand-600 line-clamp-1 transition-colors" title="@item.Title">
+            @item.Title
+        </a>
+        <div class="flex items-center justify-between text-3xs text-slate-400 mt-1">
+            <span>@(item.ReleaseDate?.Year.ToString() ?? "TBA")</span>
+            @if (item.VoteAverage.HasValue && item.VoteAverage > 0)
+            {
+                <span class="text-amber-500 font-semibold">
+                    <i class="fa-solid fa-star text-3xs"></i> @item.VoteAverage.Value.ToString("0.0")
+                </span>
+            }
+        </div>
+    </div>
+</div>

@@ -120,6 +120,19 @@ public static class ResultExtensions
         return viewName == null ? controller.View(result.Value) : controller.View(viewName, result.Value);
     }
 
+    public static IActionResult ToView<T>(this Result<T> result, Controller controller, string? viewName = null)
+        => result.ToViewResult(controller, viewName);
+
+    public static IActionResult ToView(this Result result, Controller controller, object? model = null, string? viewName = null)
+        => result.ToViewResult(controller, model, viewName);
+
+    public static IActionResult ToForm(this Result result, Controller controller, string successAction, string? successController = null, object? model = null)
+        => result.ToFormResult(controller, model ?? new object(), successAction, successController);
+
+    public static IActionResult ToForm<T>(this Result<T> result, Controller controller, string successAction, string? successController = null, object? model = null)
+        => ((Result)result).ToFormResult(controller, model ?? (object?)result.Value ?? new object(), successAction, successController);
+
+
     /// <summary>
     /// Attaches the result errors to ModelState and sets ViewData modal state flags
     /// so the UI knows which modal was active and should be reopened upon validation/operation failure.

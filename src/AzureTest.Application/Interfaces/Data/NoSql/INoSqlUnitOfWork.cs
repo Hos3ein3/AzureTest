@@ -45,5 +45,10 @@ public interface INoSqlUnitOfWork : IDisposable
 
     IIdentitySettingRepository IdentitySettings { get; }
     IAuditLogRepository AuditLogs { get; }
+
+    IWatchItemRepository WatchItems { get; }
+    IFollowedPersonRepository FollowedPeople { get; }
+    ICustomMediaListRepository CustomMediaLists { get; }
+
     Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

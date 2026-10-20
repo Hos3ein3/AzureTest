@@ -128,6 +128,11 @@ public static class DependencyInjection
 
         services.AddHttpClient<AzureTest.Application.Interfaces.Services.IFootballApiService, AzureTest.Infrastructure.Services.FootballApiService>();
 
+        // ── TMDb & Media Services ───────────────────────────────────────────
+        services.Configure<TmdbSettings>(configuration.GetSection(TmdbSettings.SectionName));
+        services.AddScoped<ITmdbService, TmdbService>();
+        services.AddHttpClient<IMovieNewsService, MovieNewsService>();
+
         return services;
     }
 }

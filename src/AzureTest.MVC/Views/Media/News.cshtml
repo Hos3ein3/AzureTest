@@ -1,0 +1,141 @@
+@using AzureTest.Contracts.DTOs.Media
+@using AzureTest.MVC.Models
+@model IReadOnlyList<MovieNewsItemDto>
+
+@{
+    ViewData["Title"] = "Entertainment News";
+
+    var headerModel = new PageHeaderModel(
+        Title: "Entertainment News",
+        Subtitle: "The latest movie releases, anime announcements, and series updates from top industry sources.",
+        Icon: "fa-solid fa-newspaper",
+        Badge: $"{Model.Count} Articles",
+        ActionText: "Discover Media",
+        ActionUrl: Url.Action("Discover", "Media"),
+        ActionIcon: "fa-solid fa-compass"
+    );
+
+    string NewsImageUrl(string? url) => string.IsNullOrWhiteSpace(url)
+        ? "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=800&q=80"
+        : url;
+
+    string TimeAgo(DateTime dt)
+    {
+        var span = DateTime.UtcNow - dt;
+        if (span.TotalMinutes < 60)
+            return $"{(int)Math.Max(1, span.TotalMinutes)}m ago";
+        if (span.TotalHours < 24)
+            return $"{(int)span.TotalHours}h ago";
+        if (span.TotalDays < 7)
+            return $"{(int)span.TotalDays}d ago";
+        return dt.ToString("MMM dd, yyyy");
+    }
+}
+
+<div class="space-y-8">
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
+
+    @if (!Model.Any())
+    {
+        var emptyModel = new EmptyStateModel(
+            Title: "No News Available",
+            Description: "News feeds are currently refreshing. Please check back in a few minutes.",
+            Icon: "fa-solid fa-newspaper"
+        );
+        <partial name="UiComponents/_EmptyState" model="emptyModel" />
+    }
+    else
+    {
+        var featured = Model.First();
+        var remaining = Model.Skip(1).ToList();
+
+        <!-- Featured Headline Story -->
+        <div class="relative bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-all group grid grid-cols-1 md:grid-cols-12">
+            <div class="md:col-span-7 relative aspect-video md:aspect-auto overflow-hidden bg-slate-900">
+                <img src="@NewsImageUrl(featured.ImageUrl)" alt="@featured.Title"
+                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent md:hidden"></div>
+            </div>
+
+            <div class="md:col-span-5 p-6 md:p-8 flex flex-col justify-between space-y-4">
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-1 rounded-lg text-3xs font-bold uppercase bg-brand-50 text-brand-700 border border-brand-200">
+                            @(featured.Category ?? "Featured")
+                        </span>
+                        <span class="text-3xs text-slate-400 font-medium">
+                            <i class="fa-regular fa-clock mr-1"></i>@TimeAgo(featured.PublishedAt)
+                        </span>
+                        <span class="text-3xs text-slate-500 font-semibold ml-auto">
+                            @featured.Source
+                        </span>
+                    </div>
+
+                    <h2 class="text-lg md:text-xl font-black text-slate-900 group-hover:text-brand-600 transition-colors leading-snug">
+                        <a href="@featured.Url" target="_blank" rel="noopener noreferrer">
+                            @featured.Title
+                        </a>
+                    </h2>
+
+                    <p class="text-xs text-slate-600 leading-relaxed line-clamp-3">
+                        @featured.Summary
+                    </p>
+                </div>
+
+                <div class="pt-2">
+                    <a href="@featured.Url" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors">
+                        <span>Read Full Story</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-2xs"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Remaining News Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            @foreach (var news in remaining)
+            {
+                <article class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between group">
+                    <div class="relative aspect-video bg-slate-100 overflow-hidden">
+                        <img src="@NewsImageUrl(news.ImageUrl)" alt="@news.Title"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                             loading="lazy" />
+                        <div class="absolute top-2 left-2">
+                            <span class="px-2 py-0.5 rounded-lg text-3xs font-bold bg-slate-900/80 backdrop-blur-xs text-white">
+                                @(news.Category ?? "Entertainment")
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between text-3xs text-slate-400">
+                                <span>@news.Source</span>
+                                <span><i class="fa-regular fa-clock mr-1"></i>@TimeAgo(news.PublishedAt)</span>
+                            </div>
+
+                            <h3 class="text-xs font-bold text-slate-900 group-hover:text-brand-600 line-clamp-2 transition-colors">
+                                <a href="@news.Url" target="_blank" rel="noopener noreferrer">
+                                    @news.Title
+                                </a>
+                            </h3>
+
+                            <p class="text-3xs text-slate-500 line-clamp-2 leading-relaxed">
+                                @news.Summary
+                            </p>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                            <a href="@news.Url" target="_blank" rel="noopener noreferrer"
+                               class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors">
+                                <span>Read Article</span>
+                                <i class="fa-solid fa-arrow-up-right-from-square text-2xs"></i>
+                            </a>
+                        </div>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</div>
