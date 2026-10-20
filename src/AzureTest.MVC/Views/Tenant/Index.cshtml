@@ -114,6 +114,39 @@
     </div>
 </div>
 
+<!-- Quick Impersonate Switcher Card -->
+<div class="mb-6 bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-user-secret text-indigo-600 text-base"></i> Impersonate Any Tenant
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">Select a tenant from the dropdown below to instantly switch into their isolated workspace environment.</p>
+        </div>
+        
+        <form asp-action="SwitchTenant" method="post" class="flex flex-wrap items-center gap-3">
+            @Html.AntiForgeryToken()
+            <div class="w-full sm:w-80">
+                <select name="targetTenantId" asp-items="Model.AllTenantsList" class="block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">-- Choose Tenant to Impersonate --</option>
+                </select>
+            </div>
+            <button type="submit" @(Model.IsMultiTenancyEnabled ? "" : "disabled") class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors">
+                <i class="fa-solid fa-user-secret mr-1.5"></i> Impersonate Workspace
+            </button>
+            @if (Model.IsAdminImpersonating)
+            {
+                <form asp-action="ResetTenant" method="post" class="inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="inline-flex items-center px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors">
+                        <i class="fa-solid fa-arrow-rotate-left mr-1.5"></i> Exit Impersonation
+                    </button>
+                </form>
+            }
+        </form>
+    </div>
+</div>
+
 <!-- Filter / Search Bar -->
 <div class="mb-6 bg-white p-5 rounded-xl shadow-sm border border-slate-200">
     <form asp-action="Index" method="get">
@@ -179,7 +212,7 @@
                     <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email & Username</th>
                     <th scope="col" class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Tenant Identifier</th>
                     <th scope="col" class="px-6 py-3.5 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                    <th scope="col" class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Switch Workspace</th>
+                    <th scope="col" class="px-6 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Impersonate Workspace</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 bg-white">
@@ -246,17 +279,34 @@
                         <td class="px-6 py-4 whitespace-nowrap text-right">
                             @if (tenant.IsActiveTenant)
                             {
-                                <span class="inline-flex items-center px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-lg shadow-sm">
-                                    <i class="fa-solid fa-circle-check mr-1.5 text-emerald-500"></i> Active Workspace
-                                </span>
+                                @if (Model.IsAdminImpersonating)
+                                {
+                                    <div class="inline-flex items-center gap-2">
+                                        <span class="inline-flex items-center px-3 py-1.5 bg-amber-100 text-amber-800 border border-amber-300 text-xs font-bold rounded-lg shadow-sm">
+                                            <i class="fa-solid fa-user-secret mr-1.5"></i> Impersonating Now
+                                        </span>
+                                        <form asp-action="ResetTenant" method="post" class="inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="inline-flex items-center px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors" title="Exit Impersonation">
+                                                <i class="fa-solid fa-arrow-rotate-left mr-1"></i> Exit
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-lg shadow-sm">
+                                        <i class="fa-solid fa-circle-check mr-1.5 text-emerald-500"></i> Active Workspace
+                                    </span>
+                                }
                             }
                             else
                             {
                                 <form asp-action="SwitchTenant" method="post" class="inline">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="targetTenantId" value="@tenant.TenantId" />
-                                    <button type="submit" @(Model.IsMultiTenancyEnabled ? "" : "disabled") class="inline-flex items-center px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow transition-colors">
-                                        <i class="fa-solid fa-right-left mr-1.5"></i> Switch To
+                                    <button type="submit" @(Model.IsMultiTenancyEnabled ? "" : "disabled") class="inline-flex items-center px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow transition-colors" title="Impersonate @tenant.FullName">
+                                        <i class="fa-solid fa-user-secret mr-1.5"></i> Impersonate
                                     </button>
                                 </form>
                             }

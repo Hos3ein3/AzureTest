@@ -96,6 +96,17 @@ public class TenantController : Controller
             })
             .ToListAsync();
 
+        var allUsersDropdown = await _userManager.Users.AsNoTracking()
+            .OrderBy(u => u.FirstName)
+            .ThenBy(u => u.LastName)
+            .Select(u => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+            {
+                Value = u.Id.ToString(),
+                Text = ((u.FirstName + " " + u.LastName).Trim().Length > 0 ? (u.FirstName + " " + u.LastName).Trim() : u.UserName) + " (" + (u.Email ?? u.UserName) + ")" + (u.Id == realAdminId ? " - [Your Admin Account]" : ""),
+                Selected = u.Id == currentTenantId
+            })
+            .ToListAsync();
+
         var vm = new TenantManagementViewModel
         {
             IsMultiTenancyEnabled = _tenantProvider.IsMultiTenancyEnabled,
@@ -108,7 +119,8 @@ public class TenantController : Controller
             PageNumber = pageNumber,
             PageSize = pageSize,
             TotalCount = totalCount,
-            Tenants = users
+            Tenants = users,
+            AllTenantsList = allUsersDropdown
         };
 
         return View(vm);

@@ -21,6 +21,7 @@ public class TenantManagementViewModel
     public bool HasNextPage => PageNumber < TotalPages;
 
     public List<TenantItemViewModel> Tenants { get; set; } = new();
+    public List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> AllTenantsList { get; set; } = new();
 }
 
 public class TenantItemViewModel
