@@ -1,38 +1,57 @@
 @model IEnumerable<AzureTest.Domain.Documents.DebtPerson>
 @{
-    ViewData["Title"] = "Debt People";
+    ViewData["Title"] = "Debt Counterparties";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Debts", Url = "/Debt/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Counterparties", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Debt Counterparties",
+        Subtitle = "Manage people and entities associated with loans and borrowings.",
+        Icon = "fa-solid fa-users",
+        Badge = $"{Model?.Count() ?? 0} Listed",
+        ActionText = "Add New Person",
+        ActionUrl = "/DebtPerson/Create",
+        ActionIcon = "fa-solid fa-plus",
+        Breadcrumbs = breadcrumbs
+    };
 }
 
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-slate-800">Debt People</h1>
-    
-    <div class="flex items-center space-x-4">
-        <a asp-action="Create" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors">
-            <i class="fa-solid fa-plus mr-2"></i> Add New Person
-        </a>
-    </div>
-</div>
+<partial name="UiComponents/_PageHeader" model="headerModel" />
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200">
-            <thead class="bg-slate-50">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200/80 uppercase tracking-wider text-2xs">
                 <tr>
-                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Full Name</th>
-                    <th scope="col" class="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                    <th scope="col" class="px-5 py-3.5">Full Name</th>
+                    <th scope="col" class="px-5 py-3.5 text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-slate-200">
+            <tbody class="divide-y divide-slate-100">
                 @if (Model != null && Model.Any())
                 {
                     foreach (var item in Model)
                     {
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                                @item.FullName
+                        <tr class="hover:bg-slate-50/70 transition-colors">
+                            <td class="px-5 py-3.5 whitespace-nowrap">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-xl bg-brand-50 border border-brand-100 text-brand-700 flex items-center justify-center font-bold text-xs shrink-0">
+                                        @(string.IsNullOrWhiteSpace(item.FullName) ? "?" : item.FullName.Substring(0, 1).ToUpper())
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-slate-900 text-xs">@item.FullName</div>
+                                        <div class="text-3xs text-slate-400 font-mono">@item.Id.ToString().Substring(0, 8)...</div>
+                                    </div>
+                                </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                                <a asp-action="Edit" asp-route-id="@item.Id" class="text-brand-600 hover:text-brand-900" title="Edit">
+                            <td class="px-5 py-3.5 whitespace-nowrap text-right">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors inline-block" title="Edit">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </a>
                             </td>
@@ -42,15 +61,8 @@
                 else
                 {
                     <tr>
-                        <td colspan="2" class="px-6 py-12 text-center text-slate-500">
-                            <div class="flex flex-col items-center justify-center">
-                                <i class="fa-solid fa-users text-4xl mb-3 text-slate-300"></i>
-                                <p class="text-lg font-medium text-slate-600">No people found</p>
-                                <p class="text-sm mt-1">Get started by adding a person you owe or who owes you.</p>
-                                <a asp-action="Create" class="mt-4 inline-flex items-center px-4 py-2 bg-brand-50 text-brand-700 hover:bg-brand-100 rounded-lg transition-colors font-medium text-sm">
-                                    <i class="fa-solid fa-plus mr-2"></i> Add First Person
-                                </a>
-                            </div>
+                        <td colspan="2" class="p-8">
+                            <partial name="UiComponents/_EmptyState" model='new AzureTest.MVC.Models.EmptyStateModel { Title = "No People Found", Description = "Get started by adding counterparties you owe or who owe you.", Icon = "fa-solid fa-users", ActionText = "Add First Person", ActionUrl = "/DebtPerson/Create" }' />
                         </td>
                     </tr>
                 }

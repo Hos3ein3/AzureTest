@@ -1,75 +1,74 @@
 @model AzureTest.Contracts.DTOs.Companies.CompanyDto
+@using AzureTest.MVC.Models
 @{
     ViewData["Title"] = "Delete Company";
+    var pageHeader = new PageHeaderModel
+    {
+        Title = "Delete Company",
+        Subtitle = "Confirm deletion of company profile",
+        Icon = "fa-solid fa-trash-can",
+        Breadcrumbs = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Companies", Url.Action("Index", "Company")),
+            new BreadcrumbItem(Model.CompanyName, Url.Action("Details", "Company", new { id = Model.Id })),
+            new BreadcrumbItem("Delete", active: true)
+        }
+    };
 }
 
-<nav aria-label="breadcrumb" class="mb-6">
-    <ol class="flex items-center space-x-2 text-sm text-slate-500">
-        <li>
-            <a asp-action="Index" class="hover:text-brand-600 transition-colors">Companies</a>
-        </li>
-        <li>
-            <i class="fa-solid fa-chevron-right text-xs mx-1"></i>
-        </li>
-        <li>
-            <a asp-action="Details" asp-route-id="@Model.Id" class="hover:text-brand-600 transition-colors">@Model.CompanyName</a>
-        </li>
-        <li>
-            <i class="fa-solid fa-chevron-right text-xs mx-1"></i>
-        </li>
-        <li class="font-medium text-slate-800" aria-current="page">Delete</li>
-    </ol>
-</nav>
+<partial name="UiComponents/_PageHeader" model="pageHeader" />
 
-<div class="max-w-xl mx-auto mt-8">
-    <div class="bg-white rounded-xl shadow-sm border border-red-200 overflow-hidden">
-        <div class="px-6 py-4 bg-red-50 border-b border-red-200 flex items-center">
-            <i class="fa-solid fa-triangle-exclamation text-red-500 text-xl mr-3"></i>
-            <h5 class="text-lg font-semibold text-red-800 m-0">Confirm Delete</h5>
+<div class="max-w-xl">
+    <div class="bg-white rounded-2xl border border-rose-200 shadow-2xs overflow-hidden">
+        <div class="px-6 py-4 bg-rose-50/70 border-b border-rose-100 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 class="text-xs font-bold text-rose-900 m-0">Confirm Deletion</h3>
+                <p class="text-2xs text-rose-700 mt-0.5">This company will be soft-deleted and can be recovered by an administrator.</p>
+            </div>
         </div>
         <div class="p-6">
-            <p class="text-slate-600 mb-6">Are you sure you want to delete the following company? This action can be undone by an administrator (soft delete).</p>
-            
-            <dl class="grid grid-cols-1 sm:grid-cols-3 gap-y-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
-                <div class="sm:col-span-3 grid grid-cols-3 gap-4">
-                    <dt class="text-sm font-medium text-slate-500 col-span-1">Company Name</dt>
-                    <dd class="text-sm font-semibold text-slate-900 col-span-2">@Model.CompanyName</dd>
+            <dl class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">
+                <div class="flex justify-between py-1 border-b border-slate-200/60">
+                    <dt class="font-medium text-slate-500">Company Name</dt>
+                    <dd class="font-bold text-slate-900">@Model.CompanyName</dd>
                 </div>
-                <div class="sm:col-span-3 grid grid-cols-3 gap-4">
-                    <dt class="text-sm font-medium text-slate-500 col-span-1">Location</dt>
-                    <dd class="text-sm text-slate-900 col-span-2">@(string.IsNullOrWhiteSpace(Model.Location) ? "—" : Model.Location)</dd>
+                <div class="flex justify-between py-1 border-b border-slate-200/60">
+                    <dt class="font-medium text-slate-500">Location</dt>
+                    <dd class="text-slate-800">@(string.IsNullOrWhiteSpace(Model.Location) ? "—" : Model.Location)</dd>
                 </div>
-                <div class="sm:col-span-3 grid grid-cols-3 gap-4">
-                    <dt class="text-sm font-medium text-slate-500 col-span-1">KVK Number</dt>
-                    <dd class="text-sm text-slate-900 col-span-2">@(string.IsNullOrWhiteSpace(Model.KvkNumber) ? "—" : Model.KvkNumber)</dd>
+                <div class="flex justify-between py-1 border-b border-slate-200/60">
+                    <dt class="font-medium text-slate-500">KVK Number</dt>
+                    <dd class="text-slate-800 font-mono">@(string.IsNullOrWhiteSpace(Model.KvkNumber) ? "—" : Model.KvkNumber)</dd>
                 </div>
-                <div class="sm:col-span-3 grid grid-cols-3 gap-4">
-                    <dt class="text-sm font-medium text-slate-500 col-span-1">IND Member</dt>
-                    <dd class="col-span-2">
+                <div class="flex justify-between py-1">
+                    <dt class="font-medium text-slate-500">IND Member</dt>
+                    <dd>
                         @if (Model.IsINDMember)
                         {
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                                <i class="fa-solid fa-check mr-1.5"></i> Yes
+                            <span class="inline-flex items-center gap-1 text-emerald-700 font-semibold text-2xs">
+                                <i class="fa-solid fa-check"></i> Yes
                             </span>
                         }
                         else
                         {
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-                                No
-                            </span>
+                            <span class="text-slate-500 text-2xs">No</span>
                         }
                     </dd>
                 </div>
             </dl>
         </div>
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end space-x-3">
-            <a asp-action="Index" class="inline-flex justify-center rounded-lg border border-slate-300 bg-white py-2 px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
-                Cancel
+        <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-3">
+            <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors">
+                <span>Cancel</span>
             </a>
-            <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+            <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="inline">
                 @Html.AntiForgeryToken()
-                <button type="submit" class="inline-flex justify-center rounded-lg border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors">
-                    Yes, Delete
+                <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm transition-colors">
+                    <i class="fa-solid fa-trash text-2xs"></i>
+                    <span>Yes, Delete</span>
                 </button>
             </form>
         </div>

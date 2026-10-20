@@ -19,21 +19,38 @@
     }
 }
 
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-slate-800">My Resumes</h1>
+@using AzureTest.MVC.Models
+
+<partial name="UiComponents/_Breadcrumb" model='new List<BreadcrumbItem> { new BreadcrumbItem("Home", "/"), new BreadcrumbItem("Resumes", active: true) }' />
+
+<div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 text-lg shadow-2xs shrink-0">
+            <i class="fa-solid fa-file-invoice"></i>
+        </div>
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+                My Resumes
+            </h1>
+            <p class="text-xs text-slate-500 mt-0.5">Manage job applications, statuses, match rates, and resumes</p>
+        </div>
+    </div>
     
-    <div class="flex items-center space-x-4">
-        <div class="inline-flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-            <span class="px-3 py-1.5 text-sm font-medium rounded-md bg-white text-slate-900 shadow-sm border border-slate-200 cursor-default">
-                <i class="fa-solid fa-list mr-1.5"></i> List
+    <div class="flex items-center gap-3">
+        <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <span class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-slate-900 shadow-2xs border border-slate-200/60 cursor-default flex items-center gap-1.5">
+                <i class="fa-solid fa-list text-2xs"></i>
+                <span>List</span>
             </span>
-            <a asp-action="Kanban" class="px-3 py-1.5 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 transition-colors">
-                <i class="fa-solid fa-border-all mr-1.5"></i> Board
+            <a asp-action="Kanban" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-border-all text-2xs"></i>
+                <span>Board</span>
             </a>
         </div>
         
-        <a asp-action="Create" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors">
-            <i class="fa-solid fa-plus mr-2"></i> Add New
+        <a asp-action="Create" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors">
+            <i class="fa-solid fa-plus text-2xs"></i>
+            <span>Add Application</span>
         </a>
     </div>
 </div>
@@ -269,74 +286,17 @@ else
         </div>
 
         <!-- Pagination -->
-        <div class="bg-white px-4 py-3 border-t border-slate-200 sm:px-6 flex items-center justify-between">
-            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                    <p class="text-sm text-slate-700">
-                        Showing <span class="font-medium">@(((Model.PageNumber - 1) * Model.PageSize) + 1)</span>
-                        to <span class="font-medium">@(Math.Min(Model.PageNumber * Model.PageSize, Model.TotalCount))</span>
-                        of <span class="font-medium">@Model.TotalCount</span> results
-                    </p>
-                </div>
-                <div>
-                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                        @{
-                            var prevDisabled = !Model.HasPreviousPage ? "pointer-events-none text-slate-300" : "text-slate-500 hover:bg-slate-50";
-                            var nextDisabled = !Model.HasNextPage ? "pointer-events-none text-slate-300" : "text-slate-500 hover:bg-slate-50";
-                        }
-                        <a href="@GetPageUrl(Model.PageNumber - 1)" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium @prevDisabled">
-                            <span class="sr-only">Previous</span>
-                            <i class="fa-solid fa-chevron-left"></i>
-                        </a>
-                        
-                        @{
-                            int window = 2; // Show 2 pages on each side of the current page
-                            int startPage = Math.Max(1, Model.PageNumber - window);
-                            int endPage = Math.Min(Model.TotalPages, Model.PageNumber + window);
-                            
-                            if (startPage > 1)
-                            {
-                                <a href="@GetPageUrl(1)" class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">1</a>
-                                if (startPage > 2)
-                                {
-                                    <span class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700">...</span>
-                                }
-                            }
-                            
-                            for (int i = startPage; i <= endPage; i++)
-                            {
-                                if (i == Model.PageNumber)
-                                {
-                                    <span class="relative inline-flex items-center px-4 py-2 border border-brand-500 bg-brand-50 text-sm font-medium text-brand-600 z-10">
-                                        @i
-                                    </span>
-                                }
-                                else
-                                {
-                                    <a href="@GetPageUrl(i)" class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
-                                        @i
-                                    </a>
-                                }
-                            }
-                            
-                            if (endPage < Model.TotalPages)
-                            {
-                                if (endPage < Model.TotalPages - 1)
-                                {
-                                    <span class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700">...</span>
-                                }
-                                <a href="@GetPageUrl(Model.TotalPages)" class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">@Model.TotalPages</a>
-                            }
-                        }
-
-                        <a href="@GetPageUrl(Model.PageNumber + 1)" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium @nextDisabled">
-                            <span class="sr-only">Next</span>
-                            <i class="fa-solid fa-chevron-right"></i>
-                        </a>
-                    </nav>
-                </div>
-            </div>
-        </div>
+        @{
+            var pagination = new PaginationModel
+            {
+                CurrentPage = Model.PageNumber,
+                PageSize = Model.PageSize,
+                TotalItems = Model.TotalCount,
+                TotalPages = Model.TotalPages,
+                PageUrlFactory = p => GetPageUrl(p)
+            };
+        }
+        <partial name="UiComponents/_Pagination" model="pagination" />
     </div>
 }
 

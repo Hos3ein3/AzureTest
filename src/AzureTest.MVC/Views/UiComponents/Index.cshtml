@@ -233,6 +233,20 @@
 &lt;/nav&gt;</code></pre>
                 </div>
             </div>
+
+            <!-- Component Card: Reusable Partial Tag Component -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Reusable Partial Tag Helper Breadcrumb PageHeader EmptyState Pagination Razor">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Reusable Razor Component Partials</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Use <code>UiComponents/_Breadcrumb</code>, <code>UiComponents/_PageHeader</code>, <code>UiComponents/_EmptyState</code>, and <code>UiComponents/_Pagination</code> across all views.</p>
+                    </div>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <partial name="UiComponents/_Breadcrumb" model='new List<AzureTest.MVC.Models.BreadcrumbItem> { new("Design System", "/UiComponents", "fa-solid fa-shapes"), new("Live Catalog", null, IsActive: true) }' />
+                    <partial name="UiComponents/_EmptyState" model='new AzureTest.MVC.Models.EmptyStateModel("No Records Found", "Example of the standardized empty state component.", "fa-solid fa-shapes", "Sample Action", "#")' />
+                </div>
+            </div>
         </div>
     </section>
 

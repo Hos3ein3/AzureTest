@@ -1,128 +1,155 @@
 @using AzureTest.Contracts.DTOs.IdeaTracker
 @using AzureTest.Domain.Documents
 @using AzureTest.Domain.Enums
+@using AzureTest.MVC.Models
 @model CreateIdeaDto
 @{
     ViewData["Title"] = "New Idea";
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Dashboard", Url.Action("Index", "Home"), "fa-solid fa-house"),
+        new BreadcrumbItem("Idea Tracker", Url.Action("Index"), "fa-solid fa-brain"),
+        new BreadcrumbItem("Create Idea", null, "fa-solid fa-plus", true)
+    };
+
+    var headerModel = new PageHeaderModel(
+        "Create New Idea",
+        "Set up the properties and write your idea details in the workspace.",
+        "fa-solid fa-lightbulb",
+        new HeaderAction("Back to Ideas", Url.Action("Index"), "fa-solid fa-arrow-left", "secondary")
+    );
 }
 
-<div class="max-w-5xl mx-auto py-10 px-6">
-    <div class="mb-8 flex justify-between items-center">
-        <div>
-            <h1 class="text-3xl font-bold text-slate-900">Create a New Idea</h1>
-            <p class="text-slate-500 mt-1">Setup the properties and write your idea.</p>
-        </div>
-        <a asp-action="Index" class="text-brand-600 font-medium hover:underline"><i class="fa-solid fa-arrow-left mr-1"></i> Back</a>
-    </div>
+<div class="px-4 sm:px-6 lg:px-8 py-8 mx-auto max-w-5xl space-y-6">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
 
-    <form asp-action="Create" method="post" id="ideaForm" class="space-y-6 bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm">
-        
+    <form asp-action="Create" method="post" id="ideaForm" class="space-y-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-sm">
         <input type="hidden" asp-for="ParentId" />
-        
-        <div asp-validation-summary="ModelOnly" class="text-red-500 text-sm mb-4"></div>
+        <div asp-validation-summary="ModelOnly" class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-700"></div>
 
         <div>
-            <label asp-for="Title" class="block text-sm font-medium text-slate-700 mb-1">Title</label>
-            <input asp-for="Title" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 text-2xl font-bold" placeholder="Untitled" />
-            <span asp-validation-for="Title" class="text-xs text-red-500 mt-1"></span>
+            <label asp-for="Title" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Idea Title <span class="text-rose-500">*</span></label>
+            <input asp-for="Title"
+                   class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xl font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-slate-900 placeholder:text-slate-400"
+                   placeholder="Enter an inspiring title..." />
+            <span asp-validation-for="Title" class="text-xs text-rose-600 mt-1 block font-medium"></span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-                <label asp-for="Icon" class="block text-sm font-medium text-slate-700 mb-1">Icon</label>
+                <label asp-for="Icon" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Icon</label>
                 <div class="relative">
                     <input type="hidden" asp-for="Icon" id="Icon" value="fa-solid fa-lightbulb" />
-                    <button type="button" onclick="document.getElementById('iconPicker').classList.toggle('hidden')" class="w-full flex items-center justify-between px-4 py-2 border border-slate-300 rounded-lg bg-white hover:bg-slate-50 focus:ring-brand-500 focus:border-brand-500 text-left">
-                        <span class="flex items-center text-slate-700 font-medium">
-                            <span class="w-8 h-8 rounded bg-slate-100 flex items-center justify-center mr-3 text-lg">
+                    <button type="button" onclick="document.getElementById('iconPicker').classList.toggle('hidden')"
+                            class="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-left transition-all">
+                        <span class="flex items-center text-slate-700 font-medium text-sm">
+                            <span class="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center mr-3 text-base">
                                 <i id="iconPreview" class="@(Model?.Icon ?? "fa-solid fa-lightbulb")"></i>
                             </span>
                             Choose Icon
                         </span>
-                        <i class="fa-solid fa-chevron-down text-slate-400"></i>
+                        <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
                     </button>
-                    
-                    <div id="iconPicker" class="hidden absolute top-full left-0 z-20 mt-1 w-full p-3 bg-white border border-slate-200 shadow-xl rounded-lg max-h-64 overflow-y-auto">
+
+                    <div id="iconPicker" class="hidden absolute top-full left-0 z-20 mt-1.5 w-full p-4 bg-white border border-slate-200 shadow-xl rounded-2xl max-h-64 overflow-y-auto">
                         <div class="grid grid-cols-6 sm:grid-cols-8 gap-2">
-                            <button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-lightbulb')"><i class="fa-solid fa-lightbulb"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-rocket')"><i class="fa-solid fa-rocket"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-brain')"><i class="fa-solid fa-brain"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-bolt')"><i class="fa-solid fa-bolt"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-fire')"><i class="fa-solid fa-fire"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-star')"><i class="fa-solid fa-star"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-heart')"><i class="fa-solid fa-heart"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-gem')"><i class="fa-solid fa-gem"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-crown')"><i class="fa-solid fa-crown"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-cube')"><i class="fa-solid fa-cube"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-code')"><i class="fa-solid fa-code"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-bug')"><i class="fa-solid fa-bug"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-flask')"><i class="fa-solid fa-flask"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-chart-line')"><i class="fa-solid fa-chart-line"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-bullseye')"><i class="fa-solid fa-bullseye"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-trophy')"><i class="fa-solid fa-trophy"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-compass')"><i class="fa-solid fa-compass"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-map')"><i class="fa-solid fa-map"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-book')"><i class="fa-solid fa-book"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-graduation-cap')"><i class="fa-solid fa-graduation-cap"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-pen')"><i class="fa-solid fa-pen"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-palette')"><i class="fa-solid fa-palette"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-camera')"><i class="fa-solid fa-camera"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-music')"><i class="fa-solid fa-music"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-video')"><i class="fa-solid fa-video"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-gamepad')"><i class="fa-solid fa-gamepad"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-mug-hot')"><i class="fa-solid fa-mug-hot"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-pizza-slice')"><i class="fa-solid fa-pizza-slice"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-plane')"><i class="fa-solid fa-plane"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-car')"><i class="fa-solid fa-car"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-bicycle')"><i class="fa-solid fa-bicycle"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-leaf')"><i class="fa-solid fa-leaf"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-tree')"><i class="fa-solid fa-tree"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-paw')"><i class="fa-solid fa-paw"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-sun')"><i class="fa-solid fa-sun"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-moon')"><i class="fa-solid fa-moon"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-cloud')"><i class="fa-solid fa-cloud"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-snowflake')"><i class="fa-solid fa-snowflake"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-wind')"><i class="fa-solid fa-wind"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-droplet')"><i class="fa-solid fa-droplet"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-envelope')"><i class="fa-solid fa-envelope"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-comment')"><i class="fa-solid fa-comment"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-users')"><i class="fa-solid fa-users"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-briefcase')"><i class="fa-solid fa-briefcase"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-building')"><i class="fa-solid fa-building"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-house')"><i class="fa-solid fa-house"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-shop')"><i class="fa-solid fa-shop"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-cart-shopping')"><i class="fa-solid fa-cart-shopping"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-wallet')"><i class="fa-solid fa-wallet"></i></button><button type="button" class="p-2 border border-slate-200 rounded hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-credit-card')"><i class="fa-solid fa-credit-card"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-lightbulb')"><i class="fa-solid fa-lightbulb"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-rocket')"><i class="fa-solid fa-rocket"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-brain')"><i class="fa-solid fa-brain"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-bolt')"><i class="fa-solid fa-bolt"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-fire')"><i class="fa-solid fa-fire"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-star')"><i class="fa-solid fa-star"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-heart')"><i class="fa-solid fa-heart"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-gem')"><i class="fa-solid fa-gem"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-crown')"><i class="fa-solid fa-crown"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-cube')"><i class="fa-solid fa-cube"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-code')"><i class="fa-solid fa-code"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-bug')"><i class="fa-solid fa-bug"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-flask')"><i class="fa-solid fa-flask"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-chart-line')"><i class="fa-solid fa-chart-line"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-bullseye')"><i class="fa-solid fa-bullseye"></i></button>
+                            <button type="button" class="p-2 border border-slate-200 rounded-xl hover:bg-brand-50 hover:text-brand-600 hover:border-brand-300 transition text-lg" onclick="selectIcon('fa-solid fa-trophy')"><i class="fa-solid fa-trophy"></i></button>
                         </div>
                         <div class="mt-3 pt-3 border-t border-slate-100">
                             <label class="text-xs font-semibold text-slate-500 mb-1 block">Custom Class (FontAwesome)</label>
-                            <input type="text" class="w-full px-3 py-1.5 border border-slate-300 rounded text-sm" placeholder="fa-solid fa-robot" onchange="selectIcon(this.value)" />
+                            <input type="text" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white" placeholder="fa-solid fa-robot" onchange="selectIcon(this.value)" />
                         </div>
                     </div>
                 </div>
             </div>
+
             <div>
-                <label asp-for="ThemeColor" class="block text-sm font-medium text-slate-700 mb-1">Theme Color</label>
+                <label asp-for="ThemeColor" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Theme Color</label>
                 <div class="flex items-center gap-3">
-                    <input type="color" asp-for="ThemeColor" class="h-10 w-16 p-0.5 border border-slate-300 rounded cursor-pointer bg-white" value="#3b82f6" />
-                    <span class="text-sm text-slate-500">Select a primary color for the cover banner.</span>
+                    <input type="color" asp-for="ThemeColor" class="h-10 w-16 p-0.5 border border-slate-200 rounded-xl cursor-pointer bg-white" value="#3b82f6" />
+                    <span class="text-xs text-slate-500">Pick an accent color for the cover banner.</span>
                 </div>
             </div>
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Cover Image (Optional)</label>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Cover Image (Optional)</label>
             <div class="flex items-center gap-4">
-                <!-- Hidden input that actually submits the URL -->
                 <input type="hidden" asp-for="CoverImage" id="CoverImageInput" />
-                
+
                 <!-- Preview Thumbnail -->
-                <div id="coverPreviewContainer" class="w-32 h-20 bg-slate-100 rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center relative group">
+                <div id="coverPreviewContainer" class="w-32 h-20 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden flex items-center justify-center relative group">
                     <img id="coverPreviewImg" src="@(Model?.CoverImage ?? "")" class="w-full h-full object-cover @(string.IsNullOrEmpty(Model?.CoverImage) ? "hidden" : "")" />
                     <i id="coverPlaceholder" class="fa-regular fa-image text-slate-400 text-2xl @(string.IsNullOrEmpty(Model?.CoverImage) ? "" : "hidden")"></i>
-                    
+
                     <button type="button" id="removeCoverBtn" class="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition @(string.IsNullOrEmpty(Model?.CoverImage) ? "hidden" : "")" onclick="removeCover()">
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>
-                
+
                 <div class="flex-1">
                     <div class="flex items-center gap-2 mb-2">
-                        <button type="button" onclick="document.getElementById('coverImageFile').click()" class="px-4 py-2 bg-white border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
-                            <i class="fa-solid fa-upload mr-1"></i> Upload File
+                        <button type="button" onclick="document.getElementById('coverImageFile').click()" class="px-4 py-2 bg-white border border-slate-200 rounded-xl shadow-sm text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                            <i class="fa-solid fa-upload mr-1.5"></i> Upload Image
                         </button>
-                        <span class="text-xs text-slate-500">or</span>
-                        <input type="text" id="CoverImageUrl" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="Paste URL here..." value="@Model?.CoverImage" onchange="updateCoverUrl(this.value)" />
+                        <span class="text-xs text-slate-400">or</span>
+                        <input type="text" id="CoverImageUrl" class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white" placeholder="Paste image URL here..." value="@Model?.CoverImage" onchange="updateCoverUrl(this.value)" />
                     </div>
                     <input type="file" id="coverImageFile" accept="image/*" class="hidden" onchange="uploadCoverImage(this)" />
-                    <p class="text-xs text-slate-400" id="uploadStatus">JPG, PNG, GIF up to 5MB.</p>
+                    <p class="text-xs text-slate-400" id="uploadStatus">JPG, PNG, WebP up to 5MB.</p>
                 </div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-                <label asp-for="Status" class="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                <select asp-for="Status" asp-items="Html.GetEnumSelectList<IdeaStatus>()" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 text-sm"></select>
+                <label asp-for="Status" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Status</label>
+                <select asp-for="Status" asp-items="Html.GetEnumSelectList<IdeaStatus>()"
+                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-slate-800"></select>
             </div>
             <div>
-                <label asp-for="Priority" class="block text-sm font-medium text-slate-700 mb-1">Priority</label>
-                <select asp-for="Priority" asp-items="Html.GetEnumSelectList<IdeaPriority>()" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 text-sm"></select>
+                <label asp-for="Priority" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Priority</label>
+                <select asp-for="Priority" asp-items="Html.GetEnumSelectList<IdeaPriority>()"
+                        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-slate-800"></select>
             </div>
         </div>
 
         <!-- TinyMCE Rich Text Editor -->
-        <div class="mt-8 border-t border-slate-200 pt-6">
-            <label asp-for="Content" class="block text-lg font-bold text-slate-900 mb-1">Page Content</label>
-            <p class="text-xs text-slate-500 mb-4">A powerful Word-like editor. Drag and drop images directly into the text area!</p>
-            
+        <div class="pt-6 border-t border-slate-100">
+            <label asp-for="Content" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Idea Content & Notes</label>
+            <p class="text-xs text-slate-400 mb-3">Rich text formatting supported. Drag and drop pictures or format tables.</p>
             <textarea asp-for="Content" id="Content"></textarea>
         </div>
 
-        <div class="pt-4 border-t border-slate-100 flex justify-end gap-3 sticky bottom-0 bg-white py-4 z-10 shadow-[0_-10px_10px_-10px_rgba(0,0,0,0.05)]">
-            <button type="submit" id="saveBtn" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg shadow-sm transition flex items-center">
-                <i class="fa-solid fa-save mr-2"></i> Save Page
+        <div class="pt-4 border-t border-slate-100 flex justify-end gap-3 sticky bottom-0 bg-white py-4 z-10">
+            <a asp-action="Index" class="px-5 py-2.5 border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm rounded-xl transition">
+                Cancel
+            </a>
+            <button type="submit" id="saveBtn" class="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl shadow-sm hover:shadow transition">
+                <i class="fa-solid fa-floppy-disk"></i> Save Idea
             </button>
         </div>
     </form>
 </div>
 
 @section Scripts {
-    <!-- TinyMCE CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
-
     <script>
         function selectIcon(iconClass) {
             if (!iconClass) return;
@@ -132,8 +159,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            
-            // Close icon picker when clicking outside
             document.addEventListener('click', (e) => {
                 const picker = document.getElementById('iconPicker');
                 const btn = picker.previousElementSibling;
@@ -142,51 +167,39 @@
                 }
             });
 
-            // Initialize TinyMCE
             tinymce.init({
                 selector: '#Content',
                 plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount',
-                toolbar: 'undo redo | formatselect | ' +
-                'bold italic forecolor backcolor | alignleft aligncenter ' +
-                'alignright alignjustify | bullist numlist outdent indent | ' +
-                'image media table | removeformat | help',
+                toolbar: 'undo redo | formatselect | bold italic forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | image media table | removeformat | help',
                 images_upload_url: '/IdeaTracker/UploadImage',
-                content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #334155; }',
-                height: 600,
-                promotion: false, // removes the upgrade button
+                content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #334155; }',
+                height: 500,
+                promotion: false,
                 branding: false,
                 image_title: true,
                 automatic_uploads: true,
                 file_picker_types: 'image',
-
                 file_picker_callback: function (cb, value, meta) {
                     var input = document.createElement('input');
                     input.setAttribute('type', 'file');
                     input.setAttribute('accept', 'image/*');
-
                     input.onchange = function () {
-                      var file = this.files[0];
-                      var reader = new FileReader();
-                      
-                      reader.onload = function () {
-                        var id = 'blobid' + (new Date()).getTime();
-                        var blobCache =  tinymce.activeEditor.editorUpload.blobCache;
-                        var base64 = reader.result.split(',')[1];
-                        var blobInfo = blobCache.create(id, file, base64);
-                        blobCache.add(blobInfo);
-
-                        cb(blobInfo.blobUri(), { title: file.name });
-                      };
-                      reader.readAsDataURL(file);
+                        var file = this.files[0];
+                        var reader = new FileReader();
+                        reader.onload = function () {
+                            var id = 'blobid' + (new Date()).getTime();
+                            var blobCache = tinymce.activeEditor.editorUpload.blobCache;
+                            var base64 = reader.result.split(',')[1];
+                            var blobInfo = blobCache.create(id, file, base64);
+                            blobCache.add(blobInfo);
+                            cb(blobInfo.blobUri(), { title: file.name });
+                        };
+                        reader.readAsDataURL(file);
                     };
-
                     input.click();
-                  },
-
+                },
                 setup: function(editor) {
-                    editor.on('change', function() {
-                        editor.save();
-                    });
+                    editor.on('change', function() { editor.save(); });
                 }
             });
 
@@ -202,7 +215,6 @@
             const img = document.getElementById('coverPreviewImg');
             const placeholder = document.getElementById('coverPlaceholder');
             const removeBtn = document.getElementById('removeCoverBtn');
-            
             if (url) {
                 img.src = url;
                 img.classList.remove('hidden');
@@ -225,18 +237,14 @@
             if (!input.files || input.files.length === 0) return;
             const file = input.files[0];
             const status = document.getElementById('uploadStatus');
-            
             status.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-brand-500 mr-1"></i> Uploading...';
-            
             const formData = new FormData();
             formData.append('image', file);
-            
             try {
                 const response = await fetch('/IdeaTracker/UploadImage', {
                     method: 'POST',
                     body: formData
                 });
-                
                 if (response.ok) {
                     const data = await response.json();
                     if (data.location) {
@@ -253,8 +261,6 @@
                 console.error(err);
                 status.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-rose-500 mr-1"></i> Error uploading.';
             }
-            
-            // clear input
             input.value = '';
         }
     </script>

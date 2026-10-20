@@ -1,71 +1,84 @@
 @model AzureTest.Contracts.DTOs.Companies.CompanyDto
+@using AzureTest.MVC.Models
 @{
     ViewData["Title"] = "Company Details";
+    var pageHeader = new PageHeaderModel
+    {
+        Title = Model.CompanyName,
+        Subtitle = "View IND sponsor credentials, KVK number, and location",
+        Icon = "fa-solid fa-building",
+        Breadcrumbs = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Companies", Url.Action("Index", "Company")),
+            new BreadcrumbItem(Model.CompanyName, active: true)
+        },
+        ActionText = "Edit Company",
+        ActionUrl = Url.Action("Edit", "Company", new { id = Model.Id }),
+        ActionIcon = "fa-solid fa-pen-to-square"
+    };
 }
 
-<nav aria-label="breadcrumb" class="mb-6">
-    <ol class="flex items-center space-x-2 text-sm text-slate-500">
-        <li>
-            <a asp-action="Index" class="hover:text-brand-600 transition-colors">Companies</a>
-        </li>
-        <li>
-            <i class="fa-solid fa-chevron-right text-xs mx-1"></i>
-        </li>
-        <li class="font-medium text-slate-800" aria-current="page">@Model.CompanyName</li>
-    </ol>
-</nav>
+<partial name="UiComponents/_PageHeader" model="pageHeader" />
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-8 max-w-3xl">
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden mb-6 max-w-3xl">
     <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-        <h5 class="text-lg font-semibold text-slate-800 m-0">@Model.CompanyName</h5>
-        <div class="flex space-x-2">
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="inline-flex items-center px-3 py-1.5 border border-brand-200 text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg text-sm font-medium transition-colors">
-                <i class="fa-solid fa-pen-to-square mr-1.5"></i> Edit
-            </a>
-            <a asp-action="Delete" asp-route-id="@Model.Id" class="inline-flex items-center px-3 py-1.5 border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-sm font-medium transition-colors">
-                <i class="fa-solid fa-trash mr-1.5"></i> Delete
+        <h2 class="text-sm font-bold text-slate-800 m-0 flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-brand-600"></i>
+            Company Overview
+        </h2>
+        <div class="flex items-center gap-2">
+            <a asp-action="Delete" asp-route-id="@Model.Id" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition-colors">
+                <i class="fa-solid fa-trash text-2xs"></i>
+                <span>Delete</span>
             </a>
         </div>
     </div>
     <div class="p-6">
-        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6">
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6">
             <div class="sm:col-span-2">
-                <dt class="text-sm font-medium text-slate-500">Company Name</dt>
-                <dd class="mt-1 text-sm font-semibold text-slate-900">@Model.CompanyName</dd>
+                <dt class="text-2xs font-semibold text-slate-400 uppercase tracking-wider">Company Name</dt>
+                <dd class="mt-1 text-base font-bold text-slate-900">@Model.CompanyName</dd>
             </div>
 
-            <div class="sm:col-span-1">
-                <dt class="text-sm font-medium text-slate-500">Location</dt>
-                <dd class="mt-1 text-sm text-slate-900">@(string.IsNullOrWhiteSpace(Model.Location) ? "—" : Model.Location)</dd>
+            <div>
+                <dt class="text-2xs font-semibold text-slate-400 uppercase tracking-wider">Location</dt>
+                <dd class="mt-1 text-xs text-slate-800 font-medium flex items-center gap-2">
+                    <i class="fa-solid fa-location-dot text-brand-500"></i>
+                    <span>@(string.IsNullOrWhiteSpace(Model.Location) ? "—" : Model.Location)</span>
+                </dd>
             </div>
 
-            <div class="sm:col-span-1">
-                <dt class="text-sm font-medium text-slate-500">KVK Number</dt>
-                <dd class="mt-1 text-sm text-slate-900">@(string.IsNullOrWhiteSpace(Model.KvkNumber) ? "—" : Model.KvkNumber)</dd>
+            <div>
+                <dt class="text-2xs font-semibold text-slate-400 uppercase tracking-wider">KVK Number</dt>
+                <dd class="mt-1 text-xs text-slate-800 font-mono font-semibold flex items-center gap-2">
+                    <i class="fa-solid fa-id-card text-brand-500"></i>
+                    <span>@(string.IsNullOrWhiteSpace(Model.KvkNumber) ? "—" : Model.KvkNumber)</span>
+                </dd>
             </div>
 
-            <div class="sm:col-span-1">
-                <dt class="text-sm font-medium text-slate-500">IND Member</dt>
-                <dd class="mt-1">
+            <div class="sm:col-span-2">
+                <dt class="text-2xs font-semibold text-slate-400 uppercase tracking-wider">IND Recognized Sponsor</dt>
+                <dd class="mt-1.5">
                     @if (Model.IsINDMember)
                     {
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                            <i class="fa-solid fa-check mr-1.5"></i> Yes
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/60 px-3 py-1 text-2xs font-semibold text-emerald-800">
+                            <i class="fa-solid fa-circle-check text-emerald-600"></i> Recognized IND Sponsor
                         </span>
                     }
                     else
                     {
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-                            No
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-2xs font-semibold text-slate-600">
+                            Not listed on IND register
                         </span>
                     }
                 </dd>
             </div>
-            
-            @* <div class="sm:col-span-1"> *@
-            @*     <dt class="text-sm font-medium text-slate-500">Added On</dt> *@
-            @*     <dd class="mt-1 text-sm text-slate-900">@Model.CreatedOn.ToString("MMMM d, yyyy")</dd> *@
-            @* </div> *@
         </dl>
+    </div>
+    <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center gap-3">
+        <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+            <i class="fa-solid fa-arrow-left text-2xs"></i>
+            <span>Back to Companies</span>
+        </a>
     </div>
 </div>

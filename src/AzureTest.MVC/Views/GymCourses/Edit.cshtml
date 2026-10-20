@@ -3,12 +3,27 @@
 @{
     ViewData["Title"] = "Edit Course";
     var availableTrainings = ViewBag.Trainings as List<Training> ?? new List<Training>();
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new("Dashboard", "/"),
+        new("Gym Courses", Url.Action("Index")),
+        new($"Edit: {Model?.Name}", IsActive: true)
+    };
 }
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="mb-6 flex items-center justify-between">
-        <h2 class="text-2xl font-bold text-gray-900">Edit Course</h2>
-        <button type="button" onclick="saveCourse()" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 shadow-sm font-medium">Save Changes</button>
+<div class="max-w-7xl mx-auto">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+        <button type="button" onclick="saveCourse()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 shadow-2xs font-semibold text-xs transition-colors">
+            <i class="fa-solid fa-floppy-disk"></i> Save Changes
+        </button>
+    </div>
+    <div class="mb-6">
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+            Edit Course: @Model?.Name
+        </h1>
+        <p class="text-xs text-slate-500 mt-0.5">Modify training weeks, schedule workouts, customize exercise configurations, or update media assets.</p>
     </div>
 
     <partial name="_UpsertPartial" />

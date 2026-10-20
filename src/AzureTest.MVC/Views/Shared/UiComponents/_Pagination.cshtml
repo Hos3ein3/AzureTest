@@ -1,0 +1,86 @@
+@model AzureTest.MVC.Models.PaginationModel
+
+@{
+    var effectiveTotalPages = Model?.TotalPages ?? 1;
+    if (Model != null && effectiveTotalPages <= 1 && Model.TotalItems > 0 && Model.PageSize > 0)
+    {
+        effectiveTotalPages = (int)Math.Ceiling((double)Model.TotalItems / Model.PageSize);
+    }
+}
+
+@if (Model != null && (effectiveTotalPages > 1 || Model.TotalItems > Model.PageSize))
+{
+    var startItem = (Model.CurrentPage - 1) * Model.PageSize + 1;
+    var endItem = Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalItems);
+
+    <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="text-xs text-slate-500 font-medium">
+            Showing <strong class="text-slate-800 font-mono">@startItem</strong> to <strong class="text-slate-800 font-mono">@endItem</strong> of <strong class="text-slate-800 font-mono">@Model.TotalItems</strong> entries
+        </div>
+
+        <div class="flex items-center gap-1">
+            @if (Model.CurrentPage > 1)
+            {
+                <a href="@BuildUrl(Model.CurrentPage - 1)" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 text-xs font-semibold transition-colors flex items-center gap-1 shadow-2xs">
+                    <i class="fa-solid fa-chevron-left text-3xs"></i> Prev
+                </a>
+            }
+            else
+            {
+                <span class="px-3 py-1.5 rounded-xl border border-slate-100 bg-slate-50 text-slate-300 text-xs font-semibold cursor-not-allowed flex items-center gap-1">
+                    <i class="fa-solid fa-chevron-left text-3xs"></i> Prev
+                </span>
+            }
+
+            @for (int p = Math.Max(1, Model.CurrentPage - 2); p <= Math.Min(effectiveTotalPages, Model.CurrentPage + 2); p++)
+            {
+                if (p == Model.CurrentPage)
+                {
+                    <span class="w-8 h-8 rounded-xl bg-brand-600 text-white text-xs font-bold shadow-2xs flex items-center justify-center font-mono">@p</span>
+                }
+                else
+                {
+                    <a href="@BuildUrl(p)" class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 text-xs font-semibold transition-colors flex items-center justify-center font-mono shadow-2xs">@p</a>
+                }
+            }
+
+            @if (Model.CurrentPage < effectiveTotalPages)
+            {
+                <a href="@BuildUrl(Model.CurrentPage + 1)" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 text-xs font-semibold transition-colors flex items-center gap-1 shadow-2xs">
+                    Next <i class="fa-solid fa-chevron-right text-3xs"></i>
+                </a>
+            }
+            else
+            {
+                <span class="px-3 py-1.5 rounded-xl border border-slate-100 bg-slate-50 text-slate-300 text-xs font-semibold cursor-not-allowed flex items-center gap-1">
+                    Next <i class="fa-solid fa-chevron-right text-3xs"></i>
+                </span>
+            }
+        </div>
+    </div>
+}
+
+@functions {
+    string BuildUrl(int page)
+    {
+        if (Model?.PageUrlFactory != null)
+        {
+            return Model.PageUrlFactory(page);
+        }
+
+        var baseUrl = Model?.BaseUrl ?? string.Empty;
+        var sep = baseUrl.Contains('?') ? "&" : "?";
+        var url = $"{baseUrl}{sep}page={page}";
+        if (Model?.RouteParams != null)
+        {
+            foreach (var kv in Model.RouteParams)
+            {
+                if (!string.Equals(kv.Key, "page", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(kv.Value))
+                {
+                    url += $"&{System.Net.WebUtility.UrlEncode(kv.Key)}={System.Net.WebUtility.UrlEncode(kv.Value)}";
+                }
+            }
+        }
+        return url;
+    }
+}

@@ -1,82 +1,105 @@
 @model AzureTest.Contracts.DTOs.IdeaTracker.IdeaPageDto
 @using AzureTest.Contracts.DTOs.IdeaTracker
+@using AzureTest.MVC.Models
 @{
     ViewData["Title"] = Model.Title;
     var idea = ViewBag.Idea as IdeaDto;
     var pages = ViewBag.Pages as List<IdeaPageDto> ?? new List<IdeaPageDto>();
     var sections = ViewBag.Sections as List<IdeaSectionDto> ?? new List<IdeaSectionDto>();
+
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Dashboard", Url.Action("Index", "Home"), "fa-solid fa-house"),
+        new BreadcrumbItem("Idea Tracker", Url.Action("Index", "IdeaTracker"), "fa-solid fa-brain"),
+        new BreadcrumbItem(idea?.Title ?? "Idea", Url.Action("Details", "IdeaTracker", new { id = Model.IdeaId }), "fa-regular fa-lightbulb"),
+        new BreadcrumbItem(Model.Title, null, "fa-regular fa-file-lines", true)
+    };
 }
 
 <!-- GridStack CSS -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/9.2.2/gridstack.min.css" rel="stylesheet" />
 
-<div class="flex h-[calc(100vh-4rem)] -mx-4 sm:-mx-6 lg:-mx-8">
+<div class="px-4 sm:px-6 lg:px-8 pt-4 pb-2">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+</div>
+
+<div class="flex h-[calc(100vh-8rem)] -mx-4 sm:-mx-6 lg:-mx-8 border-t border-slate-200">
     <!-- Left Sidebar: Book Reference Navigation -->
-    <div class="w-64 shrink-0 bg-slate-50 border-r border-slate-200 overflow-y-auto">
-        <div class="p-4 border-b border-slate-200 bg-white sticky top-0 z-10">
-            <a asp-controller="IdeaTracker" asp-action="Details" asp-route-id="@Model.IdeaId" class="text-sm font-medium text-slate-500 hover:text-brand-600 flex items-center mb-2 transition-colors">
-                <i class="fa-solid fa-arrow-left mr-1"></i> Back to Idea
+    <div class="w-64 shrink-0 bg-white border-r border-slate-200 overflow-y-auto flex flex-col">
+        <div class="p-4 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-10">
+            <a asp-controller="IdeaTracker" asp-action="Details" asp-route-id="@Model.IdeaId"
+               class="text-xs font-semibold text-slate-500 hover:text-brand-600 flex items-center mb-2 transition-colors">
+                <i class="fa-solid fa-arrow-left mr-1.5"></i> Back to Idea
             </a>
-            <h2 class="font-bold text-slate-900 truncate" title="@idea?.Title">
-                <i class="fa-solid fa-book-open text-brand-500 mr-1"></i> @(idea?.Title ?? "Idea")
+            <h2 class="font-bold text-sm text-slate-900 truncate" title="@idea?.Title">
+                <i class="fa-solid fa-book-open text-brand-600 mr-1.5"></i> @(idea?.Title ?? "Idea")
             </h2>
         </div>
-        
-        <div class="p-3 space-y-1">
-            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-2">Pages</h3>
-            @foreach(var p in pages)
+
+        <div class="p-3 space-y-1 flex-1">
+            <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">Document Pages</h3>
+            @foreach (var p in pages)
             {
                 var isActive = p.Id == Model.Id;
-                <a asp-action="Details" asp-route-id="@p.Id" class="block px-3 py-2 rounded-lg text-sm transition-colors @(isActive ? "bg-brand-50 text-brand-700 font-medium border border-brand-100" : "text-slate-600 hover:bg-slate-200 hover:text-slate-900")">
+                <a asp-action="Details" asp-route-id="@p.Id"
+                   class="block px-3 py-2 rounded-xl text-xs transition-colors @(isActive ? "bg-brand-50 text-brand-700 font-semibold border border-brand-100" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900")">
                     <div class="flex items-center">
-                        <i class="fa-regular @(isActive ? "fa-folder-open text-brand-500" : "fa-folder text-slate-400") mr-2"></i>
+                        <i class="fa-regular @(isActive ? "fa-folder-open text-brand-600" : "fa-folder text-slate-400") mr-2"></i>
                         <span class="truncate">@p.Title</span>
                     </div>
                 </a>
-                
-                @if(isActive && sections.Any())
+
+                @if (isActive && sections.Any())
                 {
-                    <div class="ml-6 mt-1 mb-2 space-y-1 border-l border-slate-200 pl-2">
-                        @foreach(var s in sections.OrderBy(x => x.OrderIndex))
+                    <div class="ml-5 mt-1 mb-2 space-y-1 border-l-2 border-slate-100 pl-2">
+                        @foreach (var s in sections.OrderBy(x => x.OrderIndex))
                         {
-                            <a href="#section-@s.Id" class="block px-2 py-1 text-xs text-slate-500 hover:text-brand-600 hover:bg-slate-100 rounded transition-colors truncate">
-                                @s.Title
+                            <a href="#section-@s.Id" class="block px-2 py-1 text-[11px] text-slate-500 hover:text-brand-600 hover:bg-slate-50 rounded-lg transition-colors truncate">
+                                <i class="fa-solid fa-cube text-[9px] text-slate-300 mr-1"></i> @s.Title
                             </a>
                         }
                     </div>
                 }
             }
-            
-            <a asp-action="Create" asp-route-ideaId="@Model.IdeaId" class="block px-3 py-2 mt-4 rounded-lg text-sm text-slate-500 border border-dashed border-slate-300 hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50 transition-colors text-center">
-                <i class="fa-solid fa-plus mr-1"></i> Add Page
+
+            <a asp-action="Create" asp-route-ideaId="@Model.IdeaId"
+               class="block px-3 py-2 mt-4 rounded-xl text-xs font-semibold text-slate-500 border border-dashed border-slate-300 hover:border-brand-400 hover:text-brand-600 hover:bg-brand-50/50 transition-colors text-center">
+                <i class="fa-solid fa-plus mr-1"></i> New Page
             </a>
         </div>
     </div>
 
     <!-- Main Content Area -->
-    <div class="flex-1 overflow-y-auto bg-slate-100 relative scroll-smooth">
-        
-        <div class="mx-auto py-10 px-6 sm:px-10 lg:px-12">
-            <!-- Page Header -->
-            <div class="mb-8 bg-white p-8 rounded-xl shadow-sm border border-slate-200 relative group">
-                <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight">@Model.Title</h1>
-                <div class="mt-2 text-sm text-slate-500 flex items-center gap-4">
-                    <span><i class="fa-regular fa-clock mr-1"></i> @Model.CreatedAt.ToString("MMM dd, yyyy")</span>
+    <div class="flex-1 overflow-y-auto bg-slate-50 relative scroll-smooth p-6 sm:p-8">
+        <div class="max-w-6xl mx-auto space-y-8">
+            <!-- Page Header Card -->
+            <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200/80 relative group">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">@Model.Title</h1>
+                        <div class="mt-2 text-xs text-slate-500 flex items-center gap-3">
+                            <span class="inline-flex items-center gap-1.5">
+                                <i class="fa-regular fa-clock text-slate-400"></i> @Model.CreatedAt.ToString("MMM dd, yyyy")
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Action bar -->
+                    <div class="flex items-center gap-1.5">
+                        <a asp-action="Edit" asp-route-id="@Model.Id"
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 transition"
+                           title="Edit Page">
+                            <i class="fa-solid fa-pen text-slate-500"></i> Edit
+                        </a>
+                        <form asp-action="Delete" asp-route-id="@Model.Id" asp-route-ideaId="@Model.IdeaId" method="post" onsubmit="return confirm('Delete this entire page?');" class="inline">
+                            <button type="submit" class="inline-flex items-center justify-center w-8 h-8 bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 text-xs rounded-xl border border-slate-200 transition" title="Delete Page">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                
-                <!-- Action bar (visible on hover) -->
-                <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-50 p-1 rounded-lg border border-slate-200 shadow-sm flex items-center gap-1">
-                    <a asp-action="Edit" asp-route-id="@Model.Id" class="p-2 text-slate-500 hover:text-brand-600 hover:bg-brand-100 rounded" title="Edit Page">
-                        <i class="fa-solid fa-pen"></i>
-                    </a>
-                    <form asp-action="Delete" asp-route-id="@Model.Id" asp-route-ideaId="@Model.IdeaId" method="post" onsubmit="return confirm('Delete this entire page?');" class="inline">
-                        <button type="submit" class="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-100 rounded" title="Delete Page">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </form>
-                </div>
-                
-                @if(!string.IsNullOrWhiteSpace(Model.Content))
+
+                @if (!string.IsNullOrWhiteSpace(Model.Content))
                 {
                     <div class="prose prose-slate prose-img:rounded-xl mt-6 max-w-none border-t border-slate-100 pt-6">
                         @Html.Raw(Model.Content)
@@ -85,39 +108,55 @@
             </div>
 
             <!-- Sections Area (GridStack) -->
-            <div>
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-2xl font-bold text-slate-900">Blocks & Elements</h2>
-                    <a asp-controller="IdeaSection" asp-action="Create" asp-route-ideaPageId="@Model.Id" class="text-sm font-medium bg-brand-600 text-white hover:bg-brand-700 shadow-sm px-4 py-2 rounded-lg transition-colors border border-brand-700">
-                        <i class="fa-solid fa-plus mr-1"></i> Add Element
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Canvas Blocks & Widgets</h2>
+                        <p class="text-xs text-slate-500">Drag headers to arrange modular content blocks.</p>
+                    </div>
+                    <a asp-controller="IdeaSection" asp-action="Create" asp-route-ideaPageId="@Model.Id"
+                       class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs rounded-xl shadow-sm hover:shadow transition">
+                        <i class="fa-solid fa-plus"></i> Add Block
                     </a>
                 </div>
 
-                @if(!sections.Any())
+                @if (!sections.Any())
                 {
-                    <div class="text-center py-12 px-4 border-2 border-dashed border-slate-300 rounded-xl bg-white shadow-sm">
-                        <i class="fa-solid fa-shapes text-4xl text-slate-300 mb-3 block"></i>
-                        <h3 class="text-lg font-bold text-slate-700">Canvas is empty</h3>
-                        <p class="text-sm text-slate-500 mt-1 mb-4">Add movable text blocks, widgets, and elements.</p>
+                    <div class="text-center py-12 px-4 border-2 border-dashed border-slate-200 rounded-2xl bg-white shadow-sm">
+                        <i class="fa-solid fa-shapes text-3xl text-slate-300 mb-2 block"></i>
+                        <h3 class="text-sm font-bold text-slate-700">Canvas is empty</h3>
+                        <p class="text-xs text-slate-500 mt-1 mb-4">Add movable text blocks, checklists, diagrams, and widgets.</p>
+                        <a asp-controller="IdeaSection" asp-action="Create" asp-route-ideaPageId="@Model.Id"
+                           class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition">
+                            <i class="fa-solid fa-plus"></i> Add First Block
+                        </a>
                     </div>
                 }
                 else
                 {
                     <div class="grid-stack">
-                        @foreach(var s in sections)
+                        @foreach (var s in sections)
                         {
-                            <div class="grid-stack-item" gs-id="@s.Id" gs-x="@(s.X)" gs-y="@(s.Y)" gs-w="@(s.Width)" gs-h="@(s.Height)">
-                                <div class="grid-stack-item-content bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col group/item">
-                                    <div class="grid-stack-item-header flex items-center justify-between px-3 py-2 border-b border-slate-100 bg-slate-50 cursor-move">
-                                        <h3 class="text-sm font-bold text-slate-700 truncate"><i class="fa-solid fa-grip-vertical text-slate-300 mr-2"></i>@s.Title</h3>
-                                        <div class="opacity-0 group-hover/item:opacity-100 transition-opacity flex gap-1">
-                                            <a asp-controller="IdeaSection" asp-action="Edit" asp-route-id="@s.Id" class="text-slate-400 hover:text-brand-600 p-1" title="Edit"><i class="fa-solid fa-pen text-xs"></i></a>
-                                            <form asp-controller="IdeaSection" asp-action="Delete" asp-route-id="@s.Id" asp-route-ideaPageId="@Model.Id" method="post" onsubmit="return confirm('Delete?');" class="inline">
-                                                <button type="submit" class="text-slate-400 hover:text-rose-600 p-1" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
+                            <div class="grid-stack-item" gs-id="@s.Id" gs-x="@(s.X)" gs-y="@(s.Y)" gs-w="@(s.Width)" gs-h="@(s.Height)" id="section-@s.Id">
+                                <div class="grid-stack-item-content bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col group/item">
+                                    <div class="grid-stack-item-header flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-slate-50/70 cursor-move">
+                                        <h3 class="text-xs font-bold text-slate-800 truncate flex items-center gap-1.5">
+                                            <i class="fa-solid fa-grip-vertical text-slate-300"></i>
+                                            @s.Title
+                                        </h3>
+                                        <div class="opacity-0 group-hover/item:opacity-100 transition-opacity flex items-center gap-1">
+                                            <a asp-controller="IdeaSection" asp-action="Edit" asp-route-id="@s.Id"
+                                               class="p-1 text-slate-400 hover:text-brand-600 rounded transition" title="Edit">
+                                                <i class="fa-solid fa-pen text-xs"></i>
+                                            </a>
+                                            <form asp-controller="IdeaSection" asp-action="Delete" asp-route-id="@s.Id" asp-route-ideaPageId="@Model.Id" method="post" onsubmit="return confirm('Delete block?');" class="inline">
+                                                <button type="submit" class="p-1 text-slate-400 hover:text-rose-600 rounded transition" title="Delete">
+                                                    <i class="fa-solid fa-trash text-xs"></i>
+                                                </button>
                                             </form>
                                         </div>
                                     </div>
-                                    <div class="flex-1 p-4 overflow-y-auto prose prose-sm max-w-none">
+                                    <div class="flex-1 p-4 overflow-y-auto prose prose-sm max-w-none text-slate-700">
                                         @Html.Raw(s.Content)
                                     </div>
                                 </div>
@@ -135,7 +174,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var grid = GridStack.init({
-                margin: 10,
+                margin: 12,
                 cellHeight: 80,
                 handle: '.grid-stack-item-header'
             });
@@ -149,7 +188,7 @@
                         Width: item.w,
                         Height: item.h
                     };
-                    
+
                     fetch('/IdeaSection/UpdateLayout', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },

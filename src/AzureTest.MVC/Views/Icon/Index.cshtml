@@ -3,7 +3,17 @@
 @{
     ViewData["Title"] = "SVG Icon Gallery";
     var activeCategory = string.IsNullOrWhiteSpace(Model.SelectedCategory) ? "All" : Model.SelectedCategory;
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new("Dashboard", "/"),
+        new("Icon Gallery", IsActive: true)
+    };
 }
+
+<div class="mb-4">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+</div>
 
 <!-- Header -->
 <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -1,51 +1,74 @@
 @model AzureTest.MVC.ViewModels.Users.UserRolesViewModel
 @{
     ViewData["Title"] = "Manage User Roles";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Administration", Url = "#" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Users", Url = "/User/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = $"Roles: {Model.FullName}", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Manage User Roles",
+        Subtitle = $"Assign role claims for {Model.FullName} ({Model.Email})",
+        Icon = "fa-solid fa-user-shield",
+        Breadcrumbs = breadcrumbs
+    };
 }
 
-<div class="flex items-center mb-6">
-    <a asp-action="Index" class="text-slate-400 hover:text-brand-600 mr-4 transition-colors">
-        <i class="fa-solid fa-arrow-left text-xl"></i>
-    </a>
-    <div>
-        <h1 class="text-2xl font-bold text-slate-800">Manage Roles</h1>
-        <p class="text-sm text-slate-500 mt-1">For <span class="font-medium text-slate-700">@Model.FullName</span> (@Model.Email)</p>
-    </div>
-</div>
+<partial name="UiComponents/_PageHeader" model="headerModel" />
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden max-w-2xl">
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden max-w-2xl">
+    <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-brand-600 text-xs"></i>
+            <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Role Assignments</h2>
+        </div>
+        <span class="text-2xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Security Profile</span>
+    </div>
+
     <form asp-action="ManageRoles" method="post" class="p-6 md:p-8">
+        @Html.AntiForgeryToken()
         <input type="hidden" asp-for="UserId" />
         <input type="hidden" asp-for="FullName" />
         <input type="hidden" asp-for="Email" />
-        <div asp-validation-summary="ModelOnly" class="text-red-500 text-sm mb-6 bg-red-50 p-4 rounded-lg"></div>
+        <div asp-validation-summary="ModelOnly" class="p-3 mb-6 bg-rose-50 border border-rose-200/80 rounded-xl text-rose-700 text-xs"></div>
 
         <div class="mb-8">
-            <h3 class="text-base font-semibold text-slate-800 mb-4">Assigned Roles</h3>
-            <p class="text-sm text-slate-500 mb-4">Select the permissions this user should have in the system.</p>
+            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">Available System Roles</h3>
+            <p class="text-2xs text-slate-500 mb-4">Toggle roles to grant or revoke corresponding permission sets for this user.</p>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 @foreach (var role in Model.AvailableRoles)
                 {
-                    <label class="flex items-center p-4 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors @(Model.SelectedRoles.Contains(role.Value) ? "bg-brand-50 border-brand-200" : "")">
-                        <input type="checkbox" name="SelectedRoles" value="@role.Value" checked="@(Model.SelectedRoles.Contains(role.Value))" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded">
-                        <div class="ml-3">
-                            <span class="block text-sm font-medium @(Model.SelectedRoles.Contains(role.Value) ? "text-brand-900" : "text-slate-700")">@role.Text</span>
+                    var isChecked = Model.SelectedRoles.Contains(role.Value);
+                    <label class="flex items-center gap-3 p-4 border @(isChecked ? "border-brand-300 bg-brand-50/40" : "border-slate-200/80 bg-white") rounded-xl cursor-pointer hover:bg-slate-50/70 transition-colors shadow-2xs">
+                        <input type="checkbox" name="SelectedRoles" value="@role.Value" checked="@isChecked" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300 transition-colors">
+                        <div>
+                            <span class="block text-xs font-bold @(isChecked ? "text-brand-900" : "text-slate-800")">@role.Text</span>
+                            <span class="block text-3xs text-slate-400">System authorization group</span>
                         </div>
                     </label>
                 }
 
                 @if (!Model.AvailableRoles.Any())
                 {
-                    <p class="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg col-span-2">No roles available in the system. <a asp-controller="Role" asp-action="Create" class="font-bold hover:underline">Create a role</a> first.</p>
+                    <div class="p-4 rounded-xl bg-amber-50 border border-amber-200/80 text-xs text-amber-800 col-span-2">
+                        No roles registered in the system yet. <a asp-controller="Role" asp-action="Create" class="font-bold underline text-brand-600">Create a role</a> first.
+                    </div>
                 }
             </div>
         </div>
 
-        <div class="flex items-center justify-end space-x-3 pt-6 border-t border-slate-100">
-            <a asp-action="Index" class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">Cancel</a>
-            <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-brand-600 border border-transparent rounded-lg hover:bg-brand-700 transition-colors shadow-sm flex items-center">
-                <i class="fa-solid fa-floppy-disk mr-2"></i> Save Roles
+        <div class="flex items-center justify-end gap-3 pt-5 border-t border-slate-100">
+            <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+                Cancel
+            </a>
+            <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                <i class="fa-solid fa-floppy-disk"></i> Save Roles
             </button>
         </div>
     </form>

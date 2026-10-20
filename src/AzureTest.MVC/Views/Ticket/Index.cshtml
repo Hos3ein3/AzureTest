@@ -1,12 +1,27 @@
+@using AzureTest.MVC.Models
+@using AzureTest.Domain.Enums
 @model AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.Tickets.TicketDto, AzureTest.Contracts.DTOs.Tickets.GetAllTicketsFilters>
 @{
-    ViewData["Title"] = "Tickets";
+    ViewData["Title"] = "Support Tickets";
     bool isAdmin = ViewBag.IsAdmin == true;
     string? currentStatus = ViewBag.Status as string;
     string? currentPriority = ViewBag.Priority as string;
     string? currentSortBy = ViewBag.SortBy as string ?? "date";
     string? currentSortOrder = ViewBag.SortOrder as string ?? "desc";
     int pageSize = ViewBag.PageSize is int ps ? ps : 10;
+
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Dashboard", Url.Action("Index", "Home"), "fa-solid fa-house"),
+        new BreadcrumbItem("Support Tickets", null, "fa-solid fa-headset", true)
+    };
+
+    var headerModel = new PageHeaderModel(
+        isAdmin ? "Support Ticket Central" : "My Support Tickets",
+        isAdmin ? "Respond to client queries, bug reports, and assistance requests." : "Track and manage your submitted support tickets.",
+        "fa-solid fa-headset",
+        isAdmin ? null : new HeaderAction("Open New Ticket", Url.Action("Create"), "fa-solid fa-plus", "primary")
+    );
 
     string GetSortUrl(string field)
     {
@@ -18,9 +33,9 @@
     {
         if (currentSortBy == field)
         {
-            return currentSortOrder == "asc" ? "fa-solid fa-arrow-up-short-wide text-brand-600 ml-1" : "fa-solid fa-arrow-down-wide-short text-brand-600 ml-1";
+            return currentSortOrder == "asc" ? "fa-solid fa-arrow-up-short-wide text-brand-600 ml-1 text-xs" : "fa-solid fa-arrow-down-wide-short text-brand-600 ml-1 text-xs";
         }
-        return "fa-solid fa-sort text-slate-300 ml-1 hover:text-slate-500";
+        return "fa-solid fa-sort text-slate-300 ml-1 text-xs hover:text-slate-500";
     }
 
     string BuildPageUrl(int targetPage)
@@ -29,221 +44,170 @@
     }
 }
 
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-slate-800">Support Tickets</h1>
-    @if (!isAdmin)
-    {
-        <div class="flex items-center space-x-4">
-            <a asp-action="Create" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors">
-                <i class="fa-solid fa-plus mr-2"></i> Open New Ticket
-            </a>
-        </div>
-    }
-</div>
+<div class="px-4 sm:px-6 lg:px-8 py-8 mx-auto max-w-7xl space-y-6">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
 
-<div class="mb-6 bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-    <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-slate-800">Filter Tickets</h3>
-    </div>
-    <form asp-action="Index" method="get">
-        <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Search</label>
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+    <!-- Filter Card -->
+    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+        <form asp-action="Index" method="get">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Search</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </div>
+                        <input name="SearchTerm" type="text" value="@(ViewBag.Filters?.SearchTerm)"
+                               class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-slate-800 placeholder:text-slate-400"
+                               placeholder="Subject or content..." />
                     </div>
-                    <input name="SearchTerm" type="text" value="@(ViewBag.Filters?.SearchTerm)" class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="Subject or content..." />
                 </div>
-            </div>
-            <!-- Status Filter -->
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                <select name="status" class="block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
-                    <option value="">All Statuses</option>
-                    @foreach (var s in Enum.GetNames<AzureTest.Domain.Enums.TicketStatus>())
-                    {
-                        if (string.Equals(currentStatus, s, StringComparison.OrdinalIgnoreCase))
-                        {
-                            <option value="@s" selected>@s</option>
-                        }
-                        else
-                        {
-                            <option value="@s">@s</option>
-                        }
-                    }
-                </select>
-            </div>
 
-            <!-- Priority Filter -->
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Priority</label>
-                <select name="priority" class="block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
-                    <option value="">All Priorities</option>
-                    @foreach (var p in Enum.GetNames<AzureTest.Domain.Enums.TicketPriority>())
-                    {
-                        if (string.Equals(currentPriority, p, StringComparison.OrdinalIgnoreCase))
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Status</label>
+                    <select name="status"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-slate-800">
+                        <option value="">All Statuses</option>
+                        @foreach (var s in Enum.GetNames<TicketStatus>())
                         {
-                            <option value="@p" selected>@p</option>
-                        }
-                        else
-                        {
-                            <option value="@p">@p</option>
-                        }
-                    }
-                </select>
-            </div>
-
-            <!-- Sort By -->
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Sort By</label>
-                <select name="sortBy" class="block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
-                    @if (currentSortBy == "date") { <option value="date" selected>Date Opened</option> } else { <option value="date">Date Opened</option> }
-                    @if (currentSortBy == "subject") { <option value="subject" selected>Subject</option> } else { <option value="subject">Subject</option> }
-                    @if (currentSortBy == "priority") { <option value="priority" selected>Priority</option> } else { <option value="priority">Priority</option> }
-                    @if (currentSortBy == "status") { <option value="status" selected>Status</option> } else { <option value="status">Status</option> }
-                </select>
-            </div>
-
-            <!-- Sort Direction & Page Size -->
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Order & Size</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <select name="sortOrder" class="block w-full px-2 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
-                        @if (currentSortOrder == "desc")
-                        {
-                            <option value="desc" selected>Desc</option>
-                            <option value="asc">Asc</option>
-                        }
-                        else
-                        {
-                            <option value="asc" selected>Asc</option>
-                            <option value="desc">Desc</option>
-                        }
-                    </select>
-                    <select name="pageSize" class="block w-full px-2 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
-                        @foreach (var size in new[] { 10, 25, 50 })
-                        {
-                            if (pageSize == size)
-                            {
-                                <option value="@size" selected>@size</option>
-                            }
-                            else
-                            {
-                                <option value="@size">@size</option>
-                            }
+                            var selected = string.Equals(currentStatus, s, StringComparison.OrdinalIgnoreCase) ? "selected" : null;
+                            <option value="@s" selected="@selected">@s</option>
                         }
                     </select>
                 </div>
-            </div>
 
-            <!-- Actions -->
-            <div class="flex items-end space-x-2">
-                <button type="submit" class="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-slate-800 hover:bg-slate-900 transition-colors">
-                    <i class="fa-solid fa-filter mr-2"></i> Filter
-                </button>
-                <a asp-action="Index" class="inline-flex justify-center items-center px-3.5 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition-colors" title="Reset Filters">
-                    <i class="fa-solid fa-rotate-left"></i>
-                </a>
-            </div>
-        </div>
-    </form>
-</div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Priority</label>
+                    <select name="priority"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-slate-800">
+                        <option value="">All Priorities</option>
+                        @foreach (var p in Enum.GetNames<TicketPriority>())
+                        {
+                            var selected = string.Equals(currentPriority, p, StringComparison.OrdinalIgnoreCase) ? "selected" : null;
+                            <option value="@p" selected="@selected">@p</option>
+                        }
+                    </select>
+                </div>
 
-<!-- Main Table Card -->
-<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-        <h5 class="text-lg font-semibold text-slate-800 m-0">@(isAdmin ? "All Support Tickets" : "Your Tickets")</h5>
-        <span class="text-xs text-slate-500">Total: <strong class="text-slate-700 font-semibold">@Model.TotalCount</strong> ticket@(Model.TotalCount == 1 ? "" : "s")</span>
-    </div>
-    
-    @if (!Model.Items.Any())
-    {
-        <div class="p-12 text-center text-slate-500">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
-                <i class="fa-solid fa-ticket text-3xl text-slate-400"></i>
-            </div>
-            <h3 class="text-base font-semibold text-slate-800 mb-1">No tickets found</h3>
-            <p class="text-sm text-slate-500">Try adjusting your filters or open a new support ticket.</p>
-            @if (!string.IsNullOrEmpty(currentStatus) || !string.IsNullOrEmpty(currentPriority))
-            {
-                <div class="mt-4">
-                    <a asp-action="Index" class="inline-flex items-center text-sm font-medium text-brand-600 hover:text-brand-700">
-                        <i class="fa-solid fa-xmark mr-1.5"></i> Clear all filters
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Sort By</label>
+                    <select name="sortBy"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-slate-800">
+                        <option value="date" selected="@(currentSortBy == "date" ? "selected" : null)">Date Opened</option>
+                        <option value="subject" selected="@(currentSortBy == "subject" ? "selected" : null)">Subject</option>
+                        <option value="priority" selected="@(currentSortBy == "priority" ? "selected" : null)">Priority</option>
+                        <option value="status" selected="@(currentSortBy == "status" ? "selected" : null)">Status</option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-3 flex items-center gap-2">
+                    <button type="submit"
+                            class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow transition-all duration-200">
+                        <i class="fa-solid fa-filter"></i> Filter
+                    </button>
+                    <a asp-action="Index"
+                       class="inline-flex items-center justify-center p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 rounded-xl transition-all"
+                       title="Reset Filters">
+                        <i class="fa-solid fa-rotate-left"></i>
                     </a>
                 </div>
-            }
-        </div>
-    }
-    else
-    {
+            </div>
+        </form>
+    </div>
+
+    <!-- Table Card -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-slate-600">
-                <thead class="text-xs text-slate-500 uppercase bg-slate-50/50 border-b border-slate-100">
+            <table class="w-full text-left text-sm whitespace-nowrap">
+                <thead class="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider">
                     <tr>
-                        <th scope="col" class="px-6 py-3 font-medium">
+                        <th scope="col" class="px-6 py-4 font-semibold">
                             <a href="@GetSortUrl("subject")" class="inline-flex items-center hover:text-slate-900 transition-colors">
                                 Subject <i class="@GetSortIcon("subject")"></i>
                             </a>
                         </th>
-                        <th scope="col" class="px-6 py-3 font-medium">
+                        <th scope="col" class="px-6 py-4 font-semibold">
                             <a href="@GetSortUrl("priority")" class="inline-flex items-center hover:text-slate-900 transition-colors">
                                 Priority <i class="@GetSortIcon("priority")"></i>
                             </a>
                         </th>
-                        <th scope="col" class="px-6 py-3 font-medium">
+                        <th scope="col" class="px-6 py-4 font-semibold">
                             <a href="@GetSortUrl("status")" class="inline-flex items-center hover:text-slate-900 transition-colors">
                                 Status <i class="@GetSortIcon("status")"></i>
                             </a>
                         </th>
-                        <th scope="col" class="px-6 py-3 font-medium">
+                        <th scope="col" class="px-6 py-4 font-semibold">
                             <a href="@GetSortUrl("date")" class="inline-flex items-center hover:text-slate-900 transition-colors">
                                 Date Opened <i class="@GetSortIcon("date")"></i>
                             </a>
                         </th>
-                        <th scope="col" class="px-6 py-3 font-medium text-right">Action</th>
+                        <th scope="col" class="px-6 py-4 font-semibold text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @foreach (var t in Model.Items)
                     {
                         var unread = !isAdmin && t.Messages.Any(m => m.UserId != t.UserId && !m.IsReadByCreator);
-                        
-                        <tr class="bg-white hover:bg-slate-50/70 transition-colors @(unread ? "bg-brand-50/30" : "")">
-                            <td class="px-6 py-4 font-medium text-slate-800 whitespace-nowrap flex items-center">
-                                @if (unread)
-                                {
-                                    <span class="w-2.5 h-2.5 rounded-full bg-brand-500 mr-2.5 animate-pulse" title="Unread Messages"></span>
-                                }
-                                <a asp-action="Details" asp-route-id="@t.Id" class="hover:text-brand-600 transition-colors">
-                                    @t.Subject
-                                </a>
+                        var priorityStyle = t.Priority switch
+                        {
+                            TicketPriority.Low => "bg-slate-100 text-slate-700 border-slate-200",
+                            TicketPriority.Medium => "bg-blue-50 text-blue-700 border-blue-200",
+                            TicketPriority.High => "bg-amber-50 text-amber-700 border-amber-200",
+                            TicketPriority.Urgent => "bg-rose-50 text-rose-700 border-rose-200",
+                            _ => "bg-slate-100 text-slate-700"
+                        };
+
+                        var statusStyle = t.Status switch
+                        {
+                            TicketStatus.Open => "bg-emerald-50 text-emerald-700 border-emerald-200",
+                            TicketStatus.InProgress => "bg-indigo-50 text-indigo-700 border-indigo-200",
+                            TicketStatus.Answered => "bg-brand-50 text-brand-700 border-brand-200",
+                            TicketStatus.Closed => "bg-slate-100 text-slate-600 border-slate-200",
+                            _ => "bg-slate-100 text-slate-700"
+                        };
+
+                        <tr class="hover:bg-slate-50/70 transition-colors @(unread ? "bg-brand-50/20" : "")">
+                            <td class="px-6 py-4 font-semibold text-slate-900">
+                                <div class="flex items-center gap-2.5">
+                                    @if (unread)
+                                    {
+                                        <span class="w-2.5 h-2.5 rounded-full bg-brand-500 animate-pulse shrink-0" title="Unread Messages"></span>
+                                    }
+                                    <a asp-action="Details" asp-route-id="@t.Id" class="hover:text-brand-600 transition-colors">
+                                        @t.Subject
+                                    </a>
+                                </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2.5 py-1 text-xs font-medium rounded-full 
-                                    @(t.Priority == AzureTest.Domain.Enums.TicketPriority.Low ? "bg-slate-100 text-slate-700" :
-                                      t.Priority == AzureTest.Domain.Enums.TicketPriority.Medium ? "bg-blue-100 text-blue-700" :
-                                      t.Priority == AzureTest.Domain.Enums.TicketPriority.High ? "bg-orange-100 text-orange-700" :
-                                      "bg-red-100 text-red-700")">
-                                    <i class="fa-solid fa-circle text-[8px] mr-1 opacity-70"></i>@t.Priority
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border @priorityStyle">
+                                    <i class="fa-solid fa-flag text-[10px]"></i> @t.Priority
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2.5 py-1 text-xs font-medium rounded-full 
-                                    @(t.Status == AzureTest.Domain.Enums.TicketStatus.Closed ? "bg-slate-100 text-slate-600" :
-                                      t.Status == AzureTest.Domain.Enums.TicketStatus.Answered ? "bg-brand-100 text-brand-700" :
-                                      t.Status == AzureTest.Domain.Enums.TicketStatus.InProgress ? "bg-indigo-100 text-indigo-700" :
-                                      "bg-emerald-100 text-emerald-700")">
-                                    @t.Status
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border @statusStyle">
+                                    <i class="fa-solid fa-circle text-[6px]"></i> @t.Status
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-500">
+                            <td class="px-6 py-4 text-xs font-medium text-slate-500">
                                 @t.CreatedOn.ToLocalTime().ToString("MMM dd, yyyy HH:mm")
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right">
-                                <a asp-action="Details" asp-route-id="@t.Id" class="inline-flex items-center text-brand-600 hover:text-brand-800 font-medium">
-                                    View <i class="fa-solid fa-chevron-right text-xs ml-1"></i>
+                            <td class="px-6 py-4 text-right">
+                                <a asp-action="Details" asp-route-id="@t.Id"
+                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 rounded-lg text-xs font-semibold transition">
+                                    <span>Details</span>
+                                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
                                 </a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                                <i class="fa-solid fa-ticket text-3xl text-slate-300 mb-2 block"></i>
+                                <p class="text-sm font-semibold text-slate-800">No support tickets found</p>
+                                <p class="text-xs text-slate-400 mt-1">Try adjusting your filters or open a new support ticket.</p>
                             </td>
                         </tr>
                     }
@@ -251,77 +215,18 @@
             </table>
         </div>
 
-        <!-- Pagination Controls -->
-        <div class="bg-white px-6 py-4 border-t border-slate-100 flex items-center justify-between">
-            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                    <p class="text-sm text-slate-600">
-                        Showing <span class="font-semibold text-slate-800">@(((Model.PageNumber - 1) * Model.PageSize) + 1)</span>
-                        to <span class="font-semibold text-slate-800">@(Math.Min(Model.PageNumber * Model.PageSize, Model.TotalCount))</span>
-                        of <span class="font-semibold text-slate-800">@Model.TotalCount</span> results
-                    </p>
-                </div>
-                <div>
-                    <nav class="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px" aria-label="Pagination">
-                        @{
-                            var prevDisabled = !Model.HasPreviousPage ? "pointer-events-none text-slate-300 bg-slate-50" : "text-slate-600 hover:bg-slate-50 bg-white";
-                            var nextDisabled = !Model.HasNextPage ? "pointer-events-none text-slate-300 bg-slate-50" : "text-slate-600 hover:bg-slate-50 bg-white";
-                        }
-                        
-                        <!-- Previous Page -->
-                        <a href="@BuildPageUrl(Model.PageNumber - 1)" class="relative inline-flex items-center px-3 py-2 rounded-l-lg border border-slate-300 text-sm font-medium @prevDisabled" title="Previous Page">
-                            <span class="sr-only">Previous</span>
-                            <i class="fa-solid fa-chevron-left text-xs"></i>
-                        </a>
-
-                        @{
-                            int window = 2;
-                            int startPage = Math.Max(1, Model.PageNumber - window);
-                            int endPage = Math.Min(Model.TotalPages, Model.PageNumber + window);
-
-                            if (startPage > 1)
-                            {
-                                <a href="@BuildPageUrl(1)" class="relative inline-flex items-center px-3.5 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">1</a>
-                                if (startPage > 2)
-                                {
-                                    <span class="relative inline-flex items-center px-3 py-2 border border-slate-300 bg-slate-50 text-sm font-medium text-slate-400">...</span>
-                                }
-                            }
-
-                            for (int i = startPage; i <= endPage; i++)
-                            {
-                                if (i == Model.PageNumber)
-                                {
-                                    <span class="relative inline-flex items-center px-3.5 py-2 border border-brand-500 bg-brand-50 text-sm font-semibold text-brand-600 z-10">
-                                        @i
-                                    </span>
-                                }
-                                else
-                                {
-                                    <a href="@BuildPageUrl(i)" class="relative inline-flex items-center px-3.5 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
-                                        @i
-                                    </a>
-                                }
-                            }
-
-                            if (endPage < Model.TotalPages)
-                            {
-                                if (endPage < Model.TotalPages - 1)
-                                {
-                                    <span class="relative inline-flex items-center px-3 py-2 border border-slate-300 bg-slate-50 text-sm font-medium text-slate-400">...</span>
-                                }
-                                <a href="@BuildPageUrl(Model.TotalPages)" class="relative inline-flex items-center px-3.5 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">@Model.TotalPages</a>
-                            }
-                        }
-
-                        <!-- Next Page -->
-                        <a href="@BuildPageUrl(Model.PageNumber + 1)" class="relative inline-flex items-center px-3 py-2 rounded-r-lg border border-slate-300 text-sm font-medium @nextDisabled" title="Next Page">
-                            <span class="sr-only">Next</span>
-                            <i class="fa-solid fa-chevron-right text-xs"></i>
-                        </a>
-                    </nav>
-                </div>
+        @if (Model.TotalPages > 1)
+        {
+            var paginationModel = new PaginationModel(
+                Model.PageNumber,
+                Model.TotalPages,
+                Model.PageSize,
+                Model.TotalCount,
+                p => BuildPageUrl(p)
+            );
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+                <partial name="UiComponents/_Pagination" model="paginationModel" />
             </div>
-        </div>
-    }
+        }
+    </div>
 </div>

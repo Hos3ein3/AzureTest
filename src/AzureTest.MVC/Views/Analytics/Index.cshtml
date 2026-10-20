@@ -1,18 +1,35 @@
 @model AzureTest.Contracts.DTOs.Resumes.ResumeAnalyticsDto
 @{
     ViewData["Title"] = "Analytics Dashboard";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Resume", Url = "/Resume/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Analytics", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Resume Analytics",
+        Subtitle = "Performance indicators, application pipeline health, and status distributions.",
+        Icon = "fa-solid fa-chart-pie",
+        Breadcrumbs = breadcrumbs
+    };
 }
 
-<div class="mb-6 flex justify-between items-center">
-    <h1 class="text-2xl font-bold text-slate-800">Analytics Dashboard</h1>
-</div>
+<partial name="UiComponents/_PageHeader" model="headerModel" />
 
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
-    <!-- Status Distribution Pie Chart -->
+    <!-- Status Distribution Doughnut Chart -->
     <div class="col-span-1 lg:col-span-5">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
-            <div class="px-6 py-4 border-b border-slate-100">
-                <h5 class="text-lg font-semibold text-slate-800 m-0">Applications by Status</h5>
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs h-full flex flex-col overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-brand-600 text-xs"></i>
+                    <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Applications by Status</h5>
+                </div>
+                <span class="text-3xs font-semibold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200/80">Pipeline</span>
             </div>
             <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
                 <canvas id="statusChart"></canvas>
@@ -22,9 +39,13 @@
 
     <!-- Applications Over Time Bar Chart -->
     <div class="col-span-1 lg:col-span-7">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
-            <div class="px-6 py-4 border-b border-slate-100">
-                <h5 class="text-lg font-semibold text-slate-800 m-0">Applications Over Time</h5>
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs h-full flex flex-col overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-chart-column text-brand-600 text-xs"></i>
+                    <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Applications Over Time</h5>
+                </div>
+                <span class="text-3xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Timeline</span>
             </div>
             <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
                 <canvas id="dateChart"></canvas>
@@ -36,9 +57,13 @@
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <!-- Position Title Chart -->
     <div class="col-span-1 lg:col-span-6">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
-            <div class="px-6 py-4 border-b border-slate-100">
-                <h5 class="text-lg font-semibold text-slate-800 m-0">Applications by Position</h5>
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs h-full flex flex-col overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-briefcase text-brand-600 text-xs"></i>
+                    <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Applications by Position</h5>
+                </div>
+                <span class="text-3xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Titles</span>
             </div>
             <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
                 <canvas id="positionChart"></canvas>
@@ -48,9 +73,13 @@
 
     <!-- Location Chart -->
     <div class="col-span-1 lg:col-span-6">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
-            <div class="px-6 py-4 border-b border-slate-100">
-                <h5 class="text-lg font-semibold text-slate-800 m-0">Applications by Location</h5>
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs h-full flex flex-col overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-location-dot text-brand-600 text-xs"></i>
+                    <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Applications by Location</h5>
+                </div>
+                <span class="text-3xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Geography</span>
             </div>
             <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
                 <canvas id="locationChart"></canvas>
@@ -67,15 +96,14 @@
             const statusLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusCounts.Keys));
             const statusData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusCounts.Values));
 
-            // Custom color palette mapped approximately to status semantics
             const statusColors = statusLabels.map(label => {
                 switch(label) {
-                    case 'Rejected': return '#dc2626'; // Tailwind red-600
-                    case 'Offer': return '#16a34a'; // Tailwind green-600
-                    case 'Interviewing': return '#d97706'; // Tailwind amber-600
-                    case 'Applied': return '#2563eb'; // Tailwind blue-600
-                    case 'Screening': return '#0284c7'; // Tailwind sky-600
-                    default: return '#475569'; // Tailwind slate-600
+                    case 'Rejected': return '#e11d48';
+                    case 'Offer': return '#10b981';
+                    case 'Interviewing': return '#f59e0b';
+                    case 'Applied': return '#3b82f6';
+                    case 'Screening': return '#06b6d4';
+                    default: return '#64748b';
                 }
             });
 
@@ -87,7 +115,8 @@
                     datasets: [{
                         data: statusData,
                         backgroundColor: statusColors,
-                        borderWidth: 1
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
                     }]
                 },
                 options: {
@@ -111,10 +140,10 @@
                     datasets: [{
                         label: 'Applications',
                         data: dateData,
-                        backgroundColor: 'rgba(37, 99, 235, 0.7)', // Tailwind blue-600
-                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: '#3b82f6',
                         borderWidth: 1,
-                        borderRadius: 4
+                        borderRadius: 8
                     }]
                 },
                 options: {
@@ -138,20 +167,20 @@
             
             const ctxPos = document.getElementById('positionChart').getContext('2d');
             new Chart(ctxPos, {
-                type: 'bar', // Horizontal bar is often better for labels
+                type: 'bar',
                 data: {
                     labels: posLabels,
                     datasets: [{
                         label: 'Positions',
                         data: posData,
-                        backgroundColor: 'rgba(13, 148, 136, 0.7)', // Tailwind teal-600 (brand-600)
-                        borderColor: '#0d9488',
+                        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                        borderColor: '#10b981',
                         borderWidth: 1,
-                        borderRadius: 4
+                        borderRadius: 8
                     }]
                 },
                 options: {
-                    indexAxis: 'y', // Make it horizontal
+                    indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
@@ -179,8 +208,9 @@
                         data: locData,
                         backgroundColor: [
                             '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#6366f1', '#14b8a6', '#f43f5e'
-                        ], // Vibrant tailwind colors
-                        borderWidth: 1
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
                     }]
                 },
                 options: {

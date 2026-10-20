@@ -14,50 +14,50 @@
 
 <div class="text-center space-y-6">
     <!-- Icon Header -->
-    <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/50 shadow-sm">
-        <i class="fa-solid fa-shield-halved text-3xl"></i>
+    <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 shadow-2xs">
+        <i class="fa-solid fa-shield-halved text-2xl"></i>
     </div>
 
     <div>
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300 mb-2">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-bold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200 mb-2">
             403 Restricted
         </span>
-        <h2 class="text-2xl font-bold text-slate-900 dark:text-white">
+        <h2 class="text-2xl font-black text-slate-900 tracking-tight">
             Access Denied
         </h2>
-        <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+        <p class="mt-1.5 text-xs text-slate-500 max-w-sm mx-auto">
             You don't have the permissions required to view or perform operations on this page.
         </p>
     </div>
 
     @if (!string.IsNullOrEmpty(returnUrl) && returnUrl != "/")
     {
-        <div class="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-3 border border-slate-200/80 dark:border-slate-700/60 text-xs text-slate-500 dark:text-slate-400 text-left font-mono break-all">
-            <span class="font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">Attempted Resource:</span>
-            <span class="text-rose-600 dark:text-rose-400">@returnUrl</span>
+        <div class="bg-slate-50 rounded-xl p-3 border border-slate-200/80 text-xs text-slate-500 text-left font-mono break-all">
+            <span class="font-bold text-slate-700 block mb-0.5 text-2xs uppercase tracking-wider">Attempted Resource:</span>
+            <span class="text-rose-600">@returnUrl</span>
         </div>
     }
 
     <!-- Action Buttons -->
-    <div class="space-y-3 pt-2">
-        <a href="/" class="w-full flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors shadow-sm">
-            <i class="fa-solid fa-house mr-2"></i> Return to Dashboard
+    <div class="space-y-2.5 pt-2">
+        <a href="/" class="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-2xs transition-colors">
+            <i class="fa-solid fa-house text-2xs"></i> Return to Dashboard
         </a>
 
-        <form asp-controller="Ticket" asp-action="Create" method="post" class="w-full">
+        <form asp-controller="Ticket" asp-action="Create" method="post" class="w-full m-0">
             @Html.AntiForgeryToken()
             <input type="hidden" name="subject" value="@errorSubject" />
             <input type="hidden" name="content" value="@errorContent" />
             <input type="hidden" name="priority" value="Medium" />
-            <button type="submit" class="w-full flex items-center justify-center py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors">
-                <i class="fa-solid fa-paper-plane mr-2 text-brand-600 dark:text-brand-400"></i> Request Access via Ticket
+            <button type="submit" class="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 shadow-2xs transition-colors">
+                <i class="fa-solid fa-paper-plane text-brand-600 text-2xs"></i> Request Access via Ticket
             </button>
         </form>
 
-        <form asp-controller="Auth" asp-action="Logout" method="post" class="w-full pt-2 border-t border-slate-100 dark:border-slate-700">
+        <form asp-controller="Auth" asp-action="Logout" method="post" class="w-full pt-2 border-t border-slate-100 m-0">
             @Html.AntiForgeryToken()
-            <button type="submit" class="w-full flex items-center justify-center py-2 px-4 rounded-xl text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors">
-                <i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Log Out & Switch Account
+            <button type="submit" class="w-full inline-flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors">
+                <i class="fa-solid fa-arrow-right-from-bracket text-3xs"></i> Log Out & Switch Account
             </button>
         </form>
     </div>

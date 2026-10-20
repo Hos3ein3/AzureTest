@@ -1,23 +1,29 @@
 @model IEnumerable<AzureTest.Contracts.DTOs.Habits.HabitTrackerDto>
+@using AzureTest.MVC.Models
 @{
     ViewData["Title"] = "Habit Tracker";
+    var pageHeader = new PageHeaderModel
+    {
+        Title = "Habit Tracker",
+        Subtitle = "Build atomic habits, monitor streak milestones, and achieve consistency",
+        Icon = "fa-solid fa-seedling",
+        Breadcrumbs = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Habits", active: true)
+        }
+    };
 }
 
-<nav aria-label="breadcrumb" class="mb-6">
-    <ol class="flex items-center space-x-2 text-sm text-slate-500">
-        <li class="font-medium text-slate-800" aria-current="page">Habits</li>
-    </ol>
-</nav>
+<partial name="UiComponents/_PageHeader" model="pageHeader" />
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
     <!-- Habits List -->
-    <div class="lg:col-span-2 space-y-6">
+    <div class="lg:col-span-2 space-y-4">
         @if (!Model.Any())
         {
-            <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-8 text-center text-slate-500">
-                <i class="fa-solid fa-seedling text-4xl mb-3 text-brand-400 block"></i>
-                <p class="font-medium text-slate-700">No habits tracked yet.</p>
-                <p class="text-sm text-slate-400 mt-1">Start building good routines today with the form on the right!</p>
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+                <partial name="UiComponents/_EmptyState" model='new EmptyStateModel("No habits tracked yet", "Start building good routines today using the form on the right.", "fa-solid fa-seedling")' />
             </div>
         }
         

@@ -1,64 +1,103 @@
 @model AzureTest.MVC.ViewModels.Users.UserCreateViewModel
 @{
     ViewData["Title"] = "Add New User";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Administration", Url = "#" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Users", Url = "/User/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Create", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Add New User",
+        Subtitle = "Create an account, set initial credentials, and assign role authorizations.",
+        Icon = "fa-solid fa-user-plus",
+        Breadcrumbs = breadcrumbs
+    };
 }
 
-<div class="flex items-center mb-6">
-    <a asp-action="Index" class="text-slate-400 hover:text-brand-600 mr-4 transition-colors">
-        <i class="fa-solid fa-arrow-left text-xl"></i>
-    </a>
-    <h1 class="text-2xl font-bold text-slate-800">Add New User</h1>
-</div>
+<partial name="UiComponents/_PageHeader" model="headerModel" />
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden max-w-3xl">
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden max-w-3xl">
+    <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-id-card text-brand-600 text-xs"></i>
+            <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Account Information</h2>
+        </div>
+        <span class="text-2xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">New Registration</span>
+    </div>
+
     <form asp-action="Create" method="post" class="p-6 md:p-8">
-        <div asp-validation-summary="ModelOnly" class="text-red-500 text-sm mb-6 bg-red-50 p-4 rounded-lg"></div>
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="p-3 mb-6 bg-rose-50 border border-rose-200/80 rounded-xl text-rose-700 text-xs"></div>
 
         <partial name="_UpsertPartial" />
 
-        <div class="mb-6">
-            <label asp-for="Email" class="block text-sm font-medium text-slate-700 mb-2">Email Address <span class="text-red-500">*</span></label>
-            <input asp-for="Email" class="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500" placeholder="e.g. john@example.com" />
-            <span asp-validation-for="Email" class="text-red-500 text-xs mt-1 block"></span>
+        <div class="mb-5">
+            <label asp-for="Email" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Address <span class="text-rose-500">*</span></label>
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                    <i class="fa-solid fa-envelope"></i>
+                </div>
+                <input asp-for="Email" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="e.g. john@example.com" />
+            </div>
+            <span asp-validation-for="Email" class="text-2xs text-rose-600 mt-1 block"></span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
             <div>
-                <label asp-for="Password" class="block text-sm font-medium text-slate-700 mb-2">Initial Password <span class="text-red-500">*</span></label>
-                <input asp-for="Password" type="password" class="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500" />
-                <span asp-validation-for="Password" class="text-red-500 text-xs mt-1 block"></span>
+                <label asp-for="Password" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Initial Password <span class="text-rose-500">*</span></label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <input asp-for="Password" type="password" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+                </div>
+                <span asp-validation-for="Password" class="text-2xs text-rose-600 mt-1 block"></span>
             </div>
             <div>
-                <label asp-for="ConfirmPassword" class="block text-sm font-medium text-slate-700 mb-2">Confirm Password <span class="text-red-500">*</span></label>
-                <input asp-for="ConfirmPassword" type="password" class="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500" />
-                <span asp-validation-for="ConfirmPassword" class="text-red-500 text-xs mt-1 block"></span>
+                <label asp-for="ConfirmPassword" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Confirm Password <span class="text-rose-500">*</span></label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <input asp-for="ConfirmPassword" type="password" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+                </div>
+                <span asp-validation-for="ConfirmPassword" class="text-2xs text-rose-600 mt-1 block"></span>
             </div>
         </div>
 
         <div class="mb-8">
-            <label class="block text-sm font-medium text-slate-700 mb-2">Assign Roles</label>
-            <p class="text-xs text-slate-500 mb-3">Select the permissions this user should have in the system.</p>
+            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Assign Roles</label>
+            <p class="text-2xs text-slate-400 mb-3">Select the roles to grant appropriate permission claims.</p>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 @foreach (var role in Model.AvailableRoles)
                 {
-                    <label class="flex items-center p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
-                        <input type="checkbox" name="SelectedRoles" value="@role.Value" class="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded">
-                        <span class="ml-3 text-sm text-slate-700 font-medium">@role.Text</span>
+                    <label class="flex items-center gap-3 p-3.5 border border-slate-200/80 rounded-xl cursor-pointer hover:bg-slate-50/70 transition-colors shadow-2xs">
+                        <input type="checkbox" name="SelectedRoles" value="@role.Value" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300 transition-colors">
+                        <span class="text-xs font-bold text-slate-800">@role.Text</span>
                     </label>
                 }
                 
                 @if (!Model.AvailableRoles.Any())
                 {
-                    <p class="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg col-span-2">No roles available in the system. <a asp-controller="Role" asp-action="Create" class="font-bold hover:underline">Create a role</a> first.</p>
+                    <div class="p-4 rounded-xl bg-amber-50 border border-amber-200/80 text-xs text-amber-800 col-span-2">
+                        No roles registered in system yet. <a asp-controller="Role" asp-action="Create" class="font-bold underline text-brand-600">Create a role</a> first.
+                    </div>
                 }
             </div>
         </div>
 
-        <div class="flex items-center justify-end space-x-3 pt-6 border-t border-slate-100">
-            <a asp-action="Index" class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">Cancel</a>
-            <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-brand-600 border border-transparent rounded-lg hover:bg-brand-700 transition-colors shadow-sm flex items-center">
-                <i class="fa-solid fa-check mr-2"></i> Create User
+        <div class="flex items-center justify-end gap-3 pt-5 border-t border-slate-100">
+            <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+                Cancel
+            </a>
+            <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                <i class="fa-solid fa-check"></i> Create User
             </button>
         </div>
     </form>

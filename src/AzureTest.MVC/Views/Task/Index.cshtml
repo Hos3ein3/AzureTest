@@ -1,122 +1,150 @@
 @model IEnumerable<AzureTest.Contracts.DTOs.Tasks.TaskDto>
+@using AzureTest.MVC.Models
 @{
     ViewData["Title"] = "Task Management";
+    var pageHeader = new PageHeaderModel
+    {
+        Title = "Task Management",
+        Subtitle = "Track daily tasks, priorities, deadlines, and pomodoro focus sessions",
+        Icon = "fa-solid fa-list-check",
+        Breadcrumbs = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Tasks", active: true)
+        }
+    };
 }
 
-<nav aria-label="breadcrumb" class="mb-6">
-    <ol class="flex items-center space-x-2 text-sm text-slate-500">
-        <li class="font-medium text-slate-800" aria-current="page">Tasks</li>
-    </ol>
-</nav>
+<partial name="UiComponents/_PageHeader" model="pageHeader" />
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
     <!-- Tasks List -->
-    <div class="lg:col-span-2 space-y-4">
+    <div class="lg:col-span-2 space-y-3">
         @if (!Model.Any())
         {
-            <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-8 text-center text-slate-500">
-                <i class="fa-solid fa-list-check text-4xl mb-3 text-slate-300 block"></i>
-                <p>No tasks found. Create one to get started!</p>
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+                <partial name="UiComponents/_EmptyState" model='new EmptyStateModel("No tasks yet", "Create your first task using the form to start tracking your to-dos.", "fa-solid fa-list-check")' />
             </div>
         }
-        @foreach(var t in Model)
+        else
         {
-            <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 flex items-start gap-4 hover:border-brand-300 transition-colors">
-                <form asp-action="Toggle" method="post" class="mt-1">
-                    <input type="hidden" name="id" value="@t.Id" />
-                    <button type="submit" class="text-2xl @(t.IsCompleted ? "text-brand-500" : "text-slate-300 hover:text-brand-400") focus:outline-none transition-colors">
-                        <i class="fa-solid @(t.IsCompleted ? "fa-circle-check" : "fa-circle")"></i>
-                    </button>
-                </form>
-                
-                <div class="flex-1">
-                    <h4 class="text-base font-semibold @(t.IsCompleted ? "line-through text-slate-400" : "text-slate-800")">
-                        @t.Title
-                        @if (!string.IsNullOrEmpty(t.Priority))
-                        {
-                            <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">@t.Priority</span>
-                        }
-                    </h4>
-                    @if (!string.IsNullOrEmpty(t.Description))
-                    {
-                        <p class="text-sm text-slate-500 mt-1 @(t.IsCompleted ? "line-through" : "")">@t.Description</p>
-                    }
-                    @if (t.StartDate.HasValue || t.EndDate.HasValue)
-                    {
-                        <p class="text-xs text-slate-400 mt-2">
-                            <i class="fa-regular fa-calendar mr-1"></i>
-                            @if (t.StartDate.HasValue && t.EndDate.HasValue)
-                            {
-                                <span>@t.StartDate.Value.ToShortDateString() &rarr; @t.EndDate.Value.ToShortDateString()</span>
-                            }
-                            else if (t.StartDate.HasValue)
-                            {
-                                <span>Start: @t.StartDate.Value.ToShortDateString()</span>
-                            }
-                            else if (t.EndDate.HasValue)
-                            {
-                                <span>Due: @t.EndDate.Value.ToShortDateString()</span>
-                            }
-                        </p>
-                    }
-                </div>
-
-                <div class="flex items-center gap-1">
-                    @if (!t.IsCompleted)
-                    {
-                        <a asp-controller="Pomodoro" asp-action="Index" asp-route-taskId="@t.Id" title="Focus on this task with Pomodoro" class="text-slate-400 hover:text-rose-500 p-2 rounded focus:outline-none transition-colors">
-                            <i class="fa-solid fa-stopwatch"></i>
-                        </a>
-                    }
-                    <form asp-action="Delete" method="post" onsubmit="return confirm('Delete this task?');">
+            @foreach(var t in Model)
+            {
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4 flex items-start gap-3.5 hover:border-slate-300 transition-all">
+                    <form asp-action="Toggle" method="post" class="mt-0.5 shrink-0">
                         <input type="hidden" name="id" value="@t.Id" />
-                        <button type="submit" class="text-slate-400 hover:text-red-500 p-2 rounded focus:outline-none transition-colors">
-                            <i class="fa-regular fa-trash-can"></i>
+                        <button type="submit" class="text-xl @(t.IsCompleted ? "text-emerald-500 hover:text-emerald-600" : "text-slate-300 hover:text-brand-500") focus:outline-none transition-colors" title="@(t.IsCompleted ? "Mark incomplete" : "Mark complete")">
+                            <i class="fa-solid @(t.IsCompleted ? "fa-circle-check" : "fa-circle")"></i>
                         </button>
                     </form>
+                    
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h4 class="text-xs font-bold @(t.IsCompleted ? "line-through text-slate-400" : "text-slate-800") truncate">
+                                @t.Title
+                            </h4>
+                            @if (!string.IsNullOrEmpty(t.Priority))
+                            {
+                                var priClass = t.Priority.ToLower() switch
+                                {
+                                    "high" => "bg-rose-50 text-rose-700 border-rose-200/60",
+                                    "medium" => "bg-amber-50 text-amber-700 border-amber-200/60",
+                                    "low" => "bg-blue-50 text-blue-700 border-blue-200/60",
+                                    _ => "bg-slate-50 text-slate-700 border-slate-200/60"
+                                };
+                                <span class="text-3xs font-semibold px-2 py-0.5 rounded-full border @priClass">@t.Priority</span>
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(t.Description))
+                        {
+                            <p class="text-2xs text-slate-500 mt-1 line-clamp-2 @(t.IsCompleted ? "line-through text-slate-400" : "")">@t.Description</p>
+                        }
+                        @if (t.StartDate.HasValue || t.EndDate.HasValue)
+                        {
+                            <div class="flex items-center gap-1.5 text-3xs text-slate-400 mt-2 font-medium">
+                                <i class="fa-regular fa-calendar text-slate-400"></i>
+                                @if (t.StartDate.HasValue && t.EndDate.HasValue)
+                                {
+                                    <span>@t.StartDate.Value.ToString("dd MMM") &rarr; @t.EndDate.Value.ToString("dd MMM yyyy")</span>
+                                }
+                                else if (t.StartDate.HasValue)
+                                {
+                                    <span>Starts @t.StartDate.Value.ToString("dd MMM yyyy")</span>
+                                }
+                                else if (t.EndDate.HasValue)
+                                {
+                                    <span>Due @t.EndDate.Value.ToString("dd MMM yyyy")</span>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="flex items-center gap-1 shrink-0">
+                        @if (!t.IsCompleted)
+                        {
+                            <a asp-controller="Pomodoro" asp-action="Index" asp-route-taskId="@t.Id" title="Focus with Pomodoro" class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors">
+                                <i class="fa-solid fa-stopwatch text-xs"></i>
+                            </a>
+                        }
+                        <form asp-action="Delete" method="post" onsubmit="return confirm('Delete this task?');">
+                            <input type="hidden" name="id" value="@t.Id" />
+                            <button type="submit" class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors" title="Delete Task">
+                                <i class="fa-regular fa-trash-can text-xs"></i>
+                            </button>
+                        </form>
+                    </div>
                 </div>
-            </div>
+            }
         }
     </div>
 
     <!-- Create Task Form -->
     <div class="lg:col-span-1">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden sticky top-6">
-            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                <h5 class="text-sm font-semibold text-slate-800 m-0"><i class="fa-solid fa-plus mr-2 text-brand-500"></i> New Task</h5>
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden sticky top-6">
+            <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
+                <span class="w-7 h-7 rounded-lg bg-brand-50 border border-brand-100 text-brand-600 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-plus"></i>
+                </span>
+                <h3 class="text-xs font-bold text-slate-800 m-0">New Task</h3>
             </div>
-            <div class="p-6">
-                <form asp-action="Create" method="post">
+            <div class="p-5">
+                <form asp-action="Create" method="post" class="space-y-4">
                     @Html.AntiForgeryToken()
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Task Title <span class="text-red-500">*</span></label>
-                        <input type="text" name="title" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="e.g. Call John" />
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                        <textarea name="description" rows="2" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" placeholder="Optional details..."></textarea>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
-                            <input type="date" name="startDate" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">End Date</label>
-                            <input type="date" name="endDate" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border" />
+                    <div>
+                        <label class="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Task Title <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                                <i class="fa-solid fa-heading"></i>
+                            </span>
+                            <input type="text" name="title" required class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="e.g. Prepare presentation" />
                         </div>
                     </div>
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Priority</label>
-                        <select name="priority" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border">
+                    <div>
+                        <label class="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Description</label>
+                        <textarea name="description" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white resize-y" placeholder="Optional details..."></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Start Date</label>
+                            <input type="date" name="startDate" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-2xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+                        </div>
+                        <div>
+                            <label class="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Due Date</label>
+                            <input type="date" name="endDate" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-2xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Priority</label>
+                        <select name="priority" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white">
                             <option value="">None</option>
                             <option value="Low">Low</option>
                             <option value="Medium">Medium</option>
                             <option value="High">High</option>
                         </select>
                     </div>
-                    <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent bg-brand-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
-                        Add Task
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-sm transition-colors">
+                        <i class="fa-solid fa-plus text-2xs"></i>
+                        <span>Add Task</span>
                     </button>
                 </form>
             </div>

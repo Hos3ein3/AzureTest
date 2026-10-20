@@ -1,6 +1,49 @@
-﻿@{
+@using AzureTest.MVC.Models
+@{
     ViewData["Title"] = "Privacy Policy";
-}
-<h1>@ViewData["Title"]</h1>
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Home", Url.Action("Index", "Home"), "fa-solid fa-house"),
+        new BreadcrumbItem("Privacy Policy", null, "fa-solid fa-shield-halved", true)
+    };
 
-<p>Use this page to detail your site's privacy policy.</p>
+    var headerModel = new PageHeaderModel(
+        "Privacy Policy",
+        "How we handle, secure, and protect your data across the platform.",
+        "fa-solid fa-shield-halved"
+    );
+}
+
+<div class="px-4 sm:px-6 lg:px-8 py-8 mx-auto max-w-4xl space-y-6">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
+
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-10 space-y-6 text-sm text-slate-700 leading-relaxed">
+        <section class="space-y-2">
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-lock text-brand-600"></i> Data Collection and Security
+            </h2>
+            <p>
+                We take your privacy seriously. Any information collected through job tracking, resumes, finance trackers, habits, notes, or fitness modules is stored securely and accessible only to your authenticated tenant session.
+            </p>
+        </section>
+
+        <section class="space-y-2">
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-user-shield text-brand-600"></i> Multi-Tenant Isolation
+            </h2>
+            <p>
+                All data is strictly segregated per tenant ID. Administrators may impersonate or inspect operational telemetry only under authorized role-based permission flags, with complete immutable audit trail logging enabled.
+            </p>
+        </section>
+
+        <section class="space-y-2">
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-cookie-bite text-brand-600"></i> Cookies & Authentication
+            </h2>
+            <p>
+                Essential cookies and JWT tokens are used solely for identity verification, session persistence, and tenant routing. No third-party ad tracking scripts are embedded.
+            </p>
+        </section>
+    </div>
+</div>

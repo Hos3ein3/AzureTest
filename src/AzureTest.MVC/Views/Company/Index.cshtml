@@ -1,74 +1,130 @@
 @model AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.Companies.CompanyDto>
+@using AzureTest.MVC.Models
 @{
     ViewData["Title"] = "Companies";
     var filters = ViewBag.Filters as AzureTest.Application.Companies.Queries.GetAllCompanies.GetAllCompaniesFilters;
+
+    var pageHeader = new PageHeaderModel
+    {
+        Title = "Companies",
+        Subtitle = "Manage sponsor companies, KVK records, and IND recognized sponsor registry",
+        Icon = "fa-solid fa-building",
+        Breadcrumbs = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Companies", active: true)
+        },
+        ActionText = "New Company",
+        ActionUrl = Url.Action("Create", "Company"),
+        ActionIcon = "fa-solid fa-plus"
+    };
+
+    var pagination = new PaginationModel
+    {
+        CurrentPage = Model.PageNumber,
+        PageSize = Model.PageSize,
+        TotalItems = Model.TotalCount,
+        PageUrlFactory = p => $"?PageNumber={p}&PageSize={filters?.PageSize}&Name={filters?.Name}&Location={filters?.Location}&IsINDMember={filters?.IsINDMember}"
+    };
 }
 
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-slate-800">Companies</h1>
-    <div class="flex space-x-3">
+<div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <partial name="UiComponents/_Breadcrumb" model="pageHeader.Breadcrumbs" />
+</div>
+
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 text-lg shadow-2xs shrink-0">
+            <i class="fa-solid fa-building"></i>
+        </div>
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+                Companies
+            </h1>
+            <p class="text-xs text-slate-500 mt-0.5">Manage sponsor companies, KVK records, and IND recognized sponsor registry</p>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-2.5">
         <form asp-action="Crawl" method="post" class="inline">
-            <button type="submit" class="inline-flex items-center px-4 py-2 border border-brand-600 text-brand-600 bg-white hover:bg-brand-50 text-sm font-medium rounded-lg shadow-sm transition-colors">
-                <i class="fa-solid fa-cloud-arrow-down mr-2"></i> Auto-Crawl IND
+            <button type="submit" class="inline-flex items-center gap-2 px-3.5 py-2.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl shadow-2xs transition-colors">
+                <i class="fa-solid fa-cloud-arrow-down text-brand-500 text-2xs"></i>
+                <span>Auto-Crawl IND</span>
             </button>
         </form>
-        <a asp-action="Create" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors">
-            <i class="fa-solid fa-plus mr-2"></i> Add New
+        <a asp-action="Create" class="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors">
+            <i class="fa-solid fa-plus text-2xs"></i>
+            <span>Add Company</span>
         </a>
     </div>
 </div>
 
-<div class="mb-6 bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-    <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-slate-800">Filter Companies</h3>
+<!-- Alerts -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center gap-3 text-xs text-emerald-800 shadow-2xs" role="alert">
+        <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
+        <div class="flex-1 font-medium">@TempData["SuccessMessage"]</div>
     </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200/80 flex items-center gap-3 text-xs text-rose-800 shadow-2xs" role="alert">
+        <i class="fa-solid fa-circle-exclamation text-rose-500 text-sm"></i>
+        <div class="flex-1 font-medium">@TempData["ErrorMessage"]</div>
+    </div>
+}
+
+<!-- Filters Bar -->
+<div class="mb-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
     <form asp-action="Index" method="get">
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Company Name</label>
+                <label class="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Company Name</label>
                 <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fa-solid fa-building text-slate-400"></i>
-                    </div>
-                    <input name="Name" type="text" value="@filters?.Name" class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="Search by name..." />
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                        <i class="fa-solid fa-building"></i>
+                    </span>
+                    <input name="Name" type="text" value="@filters?.Name" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="Search name..." />
                 </div>
             </div>
             
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                <label class="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Location</label>
                 <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fa-solid fa-location-dot text-slate-400"></i>
-                    </div>
-                    <input name="Location" type="text" value="@filters?.Location" class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 sm:text-sm" placeholder="City or Country..." />
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                        <i class="fa-solid fa-location-dot"></i>
+                    </span>
+                    <input name="Location" type="text" value="@filters?.Location" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="City or country..." />
                 </div>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">IND Member</label>
-                <select name="IsINDMember" class="block w-full pl-3 pr-10 py-2 text-base border border-slate-300 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm rounded-lg">
+                <label class="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">IND Member</label>
+                <select name="IsINDMember" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white">
                     <option value="">All</option>
                     @if (filters?.IsINDMember == true)
                     {
-                        <option value="true" selected>Yes</option>
+                        <option value="true" selected>Yes (IND Sponsor)</option>
                         <option value="false">No</option>
                     }
                     else if (filters?.IsINDMember == false)
                     {
-                        <option value="true">Yes</option>
+                        <option value="true">Yes (IND Sponsor)</option>
                         <option value="false" selected>No</option>
                     }
                     else
                     {
-                        <option value="true">Yes</option>
+                        <option value="true">Yes (IND Sponsor)</option>
                         <option value="false">No</option>
                     }
                 </select>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Page Size</label>
-                <select name="PageSize" class="block w-full pl-3 pr-10 py-2 text-base border border-slate-300 focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm rounded-lg">
+                <label class="block text-2xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Page Size</label>
+                <select name="PageSize" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white">
                     @foreach (var size in new[] { 10, 20, 50, 100 })
                     {
                         if (filters?.PageSize == size || (filters == null && size == 10))
@@ -83,11 +139,12 @@
                 </select>
             </div>
             
-            <div class="flex items-end space-x-2">
-                <button type="submit" class="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-slate-800 hover:bg-slate-900 focus:outline-none transition-colors">
-                    <i class="fa-solid fa-filter mr-2"></i> Apply
+            <div class="flex items-end gap-2">
+                <button type="submit" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-2xs">
+                    <i class="fa-solid fa-filter text-2xs"></i>
+                    <span>Apply</span>
                 </button>
-                <a asp-action="Index" class="inline-flex justify-center items-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none transition-colors" title="Clear Filters">
+                <a asp-action="Index" class="inline-flex items-center gap-1.5 px-3 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50 transition-colors shadow-2xs" title="Reset Filters">
                     <i class="fa-solid fa-rotate-left"></i>
                 </a>
             </div>
@@ -95,93 +152,64 @@
     </form>
 </div>
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 flex items-start" role="alert">
-        <i class="fa-solid fa-circle-check text-emerald-500 mt-0.5 mr-3"></i>
-        <div class="flex-1">
-            <p class="text-sm text-emerald-800 font-medium">@TempData["SuccessMessage"]</p>
-        </div>
-        <button type="button" class="text-emerald-500 hover:text-emerald-700 focus:outline-none" onclick="this.parentElement.style.display='none';">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-    </div>
-}
-
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start" role="alert">
-        <i class="fa-solid fa-circle-exclamation text-red-500 mt-0.5 mr-3"></i>
-        <div class="flex-1">
-            <p class="text-sm text-red-800 font-medium">@TempData["ErrorMessage"]</p>
-        </div>
-        <button type="button" class="text-red-500 hover:text-red-700 focus:outline-none" onclick="this.parentElement.style.display='none';">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-    </div>
-}
-
-@if (!Model.Items.Any())
-{
-    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-12 text-center">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 mb-4">
-            <i class="fa-solid fa-building text-2xl text-slate-400"></i>
-        </div>
-        <h3 class="text-lg font-medium text-slate-900 mb-1">No companies found</h3>
-        <p class="text-slate-500">Try adjusting your filters or add a new company.</p>
-    </div>
-}
-else
-{
-    <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+<!-- Table Card -->
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden mb-6">
+    @if (!Model.Items.Any())
+    {
+        <partial name="UiComponents/_EmptyState" model='new EmptyStateModel("No companies found", "Try adjusting your filters or register a new company.", "fa-solid fa-building", "Add Company", Url.Action("Create", "Company"))' />
+    }
+    else
+    {
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200">
-                <thead class="bg-slate-50">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50/75 text-slate-500 font-semibold border-b border-slate-200/80 uppercase tracking-wider text-2xs">
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Company Name</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Location</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">KVK Number</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">IND Member</th>
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-5 py-3.5">Company Name</th>
+                        <th class="px-5 py-3.5">Location</th>
+                        <th class="px-5 py-3.5">KVK Number</th>
+                        <th class="px-5 py-3.5">IND Member</th>
+                        <th class="px-5 py-3.5 text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-slate-200">
+                <tbody class="divide-y divide-slate-100">
                     @foreach (var item in Model.Items)
                     {
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-6 py-4">
-                                <div class="font-medium text-slate-900 break-words">@item.CompanyName</div>
+                        <tr class="hover:bg-slate-50/70 transition-colors">
+                            <td class="px-5 py-3.5 font-bold text-slate-900">
+                                @item.CompanyName
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                            <td class="px-5 py-3.5 text-slate-600">
                                 @(string.IsNullOrWhiteSpace(item.Location) ? "—" : item.Location)
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                            <td class="px-5 py-3.5 text-slate-600 font-mono">
                                 @(string.IsNullOrWhiteSpace(item.KvkNumber) ? "—" : item.KvkNumber)
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="px-5 py-3.5">
                                 @if (item.IsINDMember)
                                 {
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                                        <i class="fa-solid fa-check mr-1.5"></i> Yes
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-3xs font-semibold bg-emerald-50 border border-emerald-200/60 text-emerald-800">
+                                        <i class="fa-solid fa-check"></i> Yes
                                     </span>
                                 }
                                 else
                                 {
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-medium bg-slate-100 text-slate-600">
                                         No
                                     </span>
                                 }
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a asp-action="Details" asp-route-id="@item.Id" class="text-brand-600 hover:text-brand-900 mx-2" title="Details">
-                                    <i class="fa-solid fa-eye"></i>
-                                </a>
-                                <a asp-action="Edit" asp-route-id="@item.Id" class="text-slate-600 hover:text-slate-900 mx-2" title="Edit">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </a>
-                                <a asp-action="Delete" asp-route-id="@item.Id" class="text-red-500 hover:text-red-700 ml-2" title="Delete">
-                                    <i class="fa-solid fa-trash"></i>
-                                </a>
+                            <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                                <div class="inline-flex items-center gap-1">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="w-7 h-7 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-brand-50 flex items-center justify-center transition-colors" title="Details">
+                                        <i class="fa-solid fa-eye text-xs"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="w-7 h-7 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-brand-50 flex items-center justify-center transition-colors" title="Edit">
+                                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="w-7 h-7 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors" title="Delete">
+                                        <i class="fa-solid fa-trash text-xs"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -189,74 +217,6 @@ else
             </table>
         </div>
         
-        <!-- Pagination -->
-        <div class="bg-white px-4 py-3 border-t border-slate-200 sm:px-6 flex items-center justify-between">
-            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                    <p class="text-sm text-slate-700">
-                        Showing <span class="font-medium">@(((Model.PageNumber - 1) * Model.PageSize) + 1)</span>
-                        to <span class="font-medium">@(Math.Min(Model.PageNumber * Model.PageSize, Model.TotalCount))</span>
-                        of <span class="font-medium">@Model.TotalCount</span> results
-                    </p>
-                </div>
-                <div>
-                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                        @{
-                            var prevDisabled = !Model.HasPreviousPage ? "pointer-events-none text-slate-300" : "text-slate-500 hover:bg-slate-50";
-                            var nextDisabled = !Model.HasNextPage ? "pointer-events-none text-slate-300" : "text-slate-500 hover:bg-slate-50";
-                        }
-                        <a href="?PageNumber=@(Model.PageNumber - 1)&PageSize=@filters?.PageSize&Name=@filters?.Name&Location=@filters?.Location&IsINDMember=@filters?.IsINDMember" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium @prevDisabled">
-                            <span class="sr-only">Previous</span>
-                            <i class="fa-solid fa-chevron-left"></i>
-                        </a>
-                        
-                        @{
-                            int window = 2; // Show 2 pages on each side of the current page
-                            int startPage = Math.Max(1, Model.PageNumber - window);
-                            int endPage = Math.Min(Model.TotalPages, Model.PageNumber + window);
-                            
-                            if (startPage > 1)
-                            {
-                                <a href="?PageNumber=1&PageSize=@filters?.PageSize&Name=@filters?.Name&Location=@filters?.Location&IsINDMember=@filters?.IsINDMember" class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">1</a>
-                                if (startPage > 2)
-                                {
-                                    <span class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700">...</span>
-                                }
-                            }
-                            
-                            for (int i = startPage; i <= endPage; i++)
-                            {
-                                if (i == Model.PageNumber)
-                                {
-                                    <span class="relative inline-flex items-center px-4 py-2 border border-brand-500 bg-brand-50 text-sm font-medium text-brand-600 z-10">
-                                        @i
-                                    </span>
-                                }
-                                else
-                                {
-                                    <a href="?PageNumber=@i&PageSize=@filters?.PageSize&Name=@filters?.Name&Location=@filters?.Location&IsINDMember=@filters?.IsINDMember" class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
-                                        @i
-                                    </a>
-                                }
-                            }
-                            
-                            if (endPage < Model.TotalPages)
-                            {
-                                if (endPage < Model.TotalPages - 1)
-                                {
-                                    <span class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700">...</span>
-                                }
-                                <a href="?PageNumber=@Model.TotalPages&PageSize=@filters?.PageSize&Name=@filters?.Name&Location=@filters?.Location&IsINDMember=@filters?.IsINDMember" class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">@Model.TotalPages</a>
-                            }
-                        }
-
-                        <a href="?PageNumber=@(Model.PageNumber + 1)&PageSize=@filters?.PageSize&Name=@filters?.Name&Location=@filters?.Location&IsINDMember=@filters?.IsINDMember" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium @nextDisabled">
-                            <span class="sr-only">Next</span>
-                            <i class="fa-solid fa-chevron-right"></i>
-                        </a>
-                    </nav>
-                </div>
-            </div>
-        </div>
-    </div>
-}
+        <partial name="UiComponents/_Pagination" model="pagination" />
+    }
+</div>

@@ -1,3 +1,5 @@
+@using AzureTest.MVC.Models
+@using AzureTest.Domain.Enums
 @model AzureTest.Contracts.DTOs.Tickets.TicketDto
 @{
     ViewData["Title"] = $"Ticket: {Model.Subject}";
@@ -7,279 +9,275 @@
     string creatorInitials = !string.IsNullOrWhiteSpace(creator?.FirstName) && !string.IsNullOrWhiteSpace(creator?.LastName)
         ? $"{creator.FirstName[0]}{creator.LastName[0]}".ToUpper()
         : (!string.IsNullOrWhiteSpace(creatorName) && creatorName.Length >= 2 ? creatorName.Substring(0, 2).ToUpper() : "U");
+
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Dashboard", Url.Action("Index", "Home"), "fa-solid fa-house"),
+        new BreadcrumbItem("Support Tickets", Url.Action("Index"), "fa-solid fa-headset"),
+        new BreadcrumbItem(Model.Subject, null, "fa-regular fa-envelope-open", true)
+    };
+
+    var priorityStyle = Model.Priority switch
+    {
+        TicketPriority.Low => "bg-slate-100 text-slate-700 border-slate-200",
+        TicketPriority.Medium => "bg-blue-50 text-blue-700 border-blue-200",
+        TicketPriority.High => "bg-amber-50 text-amber-700 border-amber-200",
+        TicketPriority.Urgent => "bg-rose-50 text-rose-700 border-rose-200",
+        _ => "bg-slate-100 text-slate-700"
+    };
+
+    var statusStyle = Model.Status switch
+    {
+        TicketStatus.Open => "bg-emerald-50 text-emerald-700 border-emerald-200",
+        TicketStatus.InProgress => "bg-indigo-50 text-indigo-700 border-indigo-200",
+        TicketStatus.Answered => "bg-brand-50 text-brand-700 border-brand-200",
+        TicketStatus.Closed => "bg-slate-100 text-slate-600 border-slate-200",
+        _ => "bg-slate-100 text-slate-700"
+    };
 }
 
-<nav aria-label="breadcrumb" class="mb-6 flex justify-between items-center">
-    <ol class="flex items-center space-x-2 text-sm text-slate-500">
-        <li>
-            <a asp-action="Index" class="hover:text-brand-600 transition-colors">Tickets</a>
-        </li>
-        <li>
-            <i class="fa-solid fa-chevron-right text-xs mx-1 text-slate-400"></i>
-        </li>
-        <li class="font-medium text-slate-800 truncate max-w-md" aria-current="page">@Model.Subject</li>
-    </ol>
-    <div class="flex items-center space-x-3">
-        @if (isAdmin)
-        {
-            <form asp-action="UpdateStatus" method="post" class="flex items-center gap-2">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="ticketId" value="@Model.Id" />
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status:</span>
-                <select name="status" class="rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-xs px-3 py-1.5 border bg-white" onchange="this.form.submit()">
-                    @foreach (var s in Enum.GetValues(typeof(AzureTest.Domain.Enums.TicketStatus)))
-                    {
-                        if (Model.Status.ToString() == s.ToString())
+<div class="px-4 sm:px-6 lg:px-8 py-8 mx-auto max-w-7xl space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+
+        <div class="flex items-center gap-3">
+            @if (isAdmin)
+            {
+                <form asp-action="UpdateStatus" method="post" class="flex items-center gap-2">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ticketId" value="@Model.Id" />
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status:</span>
+                    <select name="status" class="rounded-xl border-slate-200 shadow-xs focus:border-brand-500 focus:ring-brand-500 text-xs px-3 py-1.5 border bg-white font-semibold" onchange="this.form.submit()">
+                        @foreach (var s in Enum.GetValues(typeof(TicketStatus)))
                         {
-                            <option value="@s" selected>@s</option>
+                            var selected = Model.Status.ToString() == s.ToString() ? "selected" : null;
+                            <option value="@s" selected="@selected">@s</option>
                         }
-                        else
-                        {
-                            <option value="@s">@s</option>
-                        }
-                    }
-                </select>
-            </form>
-        }
-        else
-        {
-            <span class="px-3 py-1 text-xs font-medium rounded-full 
-                @(Model.Status == AzureTest.Domain.Enums.TicketStatus.Closed ? "bg-slate-100 text-slate-600" :
-                  Model.Status == AzureTest.Domain.Enums.TicketStatus.Answered ? "bg-brand-100 text-brand-700" :
-                  Model.Status == AzureTest.Domain.Enums.TicketStatus.InProgress ? "bg-indigo-100 text-indigo-700" :
-                  "bg-emerald-100 text-emerald-700")">
-                @Model.Status
-            </span>
-        }
+                    </select>
+                </form>
+            }
+            else
+            {
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border @statusStyle">
+                    <i class="fa-solid fa-circle text-[6px]"></i> @Model.Status
+                </span>
+            }
+        </div>
     </div>
-</nav>
 
-<!-- Main Details Layout -->
-<div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-    <div class="lg:col-span-3 space-y-6">
-        
-        <!-- Original Ticket Content & Creator Header -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-            <!-- Ticket Header & Subject -->
-            <div class="p-6 border-b border-slate-100 bg-slate-50/40">
-                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <div class="flex items-center space-x-2">
-                        <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full 
-                            @(Model.Priority == AzureTest.Domain.Enums.TicketPriority.Low ? "bg-slate-100 text-slate-700" :
-                              Model.Priority == AzureTest.Domain.Enums.TicketPriority.Medium ? "bg-blue-100 text-blue-700" :
-                              Model.Priority == AzureTest.Domain.Enums.TicketPriority.High ? "bg-orange-100 text-orange-700" :
-                              "bg-red-100 text-red-700")">
-                            @Model.Priority Priority
-                        </span>
-                        <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-slate-100 text-slate-600">
-                            Ticket #@Model.Id.ToString().Substring(0, 8)
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div class="lg:col-span-3 space-y-6">
+            <!-- Ticket Info Card -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full border @priorityStyle">
+                                <i class="fa-solid fa-flag text-[10px]"></i> @Model.Priority Priority
+                            </span>
+                            <span class="px-2.5 py-0.5 text-xs font-mono rounded-full bg-slate-100 text-slate-600">
+                                #@Model.Id.ToString().Substring(0, 8)
+                            </span>
+                        </div>
+                        <span class="text-xs text-slate-400">
+                            <i class="fa-regular fa-clock mr-1"></i>@Model.CreatedOn.ToLocalTime().ToString("MMM dd, yyyy HH:mm")
                         </span>
                     </div>
-                    <span class="text-xs text-slate-400">
-                        <i class="fa-regular fa-clock mr-1"></i>@Model.CreatedOn.ToLocalTime().ToString("MMM dd, yyyy HH:mm")
-                    </span>
-                </div>
 
-                <!-- Subject -->
-                <h1 class="text-xl md:text-2xl font-bold text-slate-900 tracking-tight mb-4">
-                    @Model.Subject
-                </h1>
+                    <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight mb-4">
+                        @Model.Subject
+                    </h1>
 
-                <!-- Creator User Information Card Banner -->
-                <div class="flex items-center justify-between p-3.5 bg-white rounded-xl border border-slate-200/80 shadow-xs">
-                    <div class="flex items-center space-x-3.5">
-                        @if (!string.IsNullOrEmpty(creator?.ProfileImage))
-                        {
-                            <img src="@creator.ProfileImage" alt="@creatorName" class="w-11 h-11 rounded-full object-cover border-2 border-brand-500/20" />
-                        }
-                        else
-                        {
-                            <div class="w-11 h-11 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white font-bold flex items-center justify-center text-sm shadow-sm">
-                                @creatorInitials
-                            </div>
-                        }
-                        <div>
-                            <div class="flex items-center space-x-2">
-                                <span class="font-semibold text-slate-800 text-sm">@creatorName</span>
-                                @if (!string.IsNullOrEmpty(creator?.Roles))
-                                {
-                                    <span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-brand-50 text-brand-700 border border-brand-100">
-                                        @creator.Roles
-                                    </span>
-                                }
-                            </div>
-                            <div class="flex items-center space-x-3 text-xs text-slate-500 mt-0.5">
-                                @if (!string.IsNullOrEmpty(creator?.Email))
-                                {
-                                    <a href="mailto:@creator.Email" class="hover:text-brand-600 transition-colors flex items-center">
-                                        <i class="fa-regular fa-envelope mr-1 text-slate-400"></i>@creator.Email
-                                    </a>
-                                }
-                                @if (!string.IsNullOrEmpty(creator?.PhoneNumber))
-                                {
-                                    <span class="flex items-center">
-                                        <i class="fa-solid fa-phone mr-1 text-slate-400"></i>@creator.PhoneNumber
-                                    </span>
-                                }
+                    <div class="flex items-center justify-between p-3.5 bg-white rounded-xl border border-slate-200/80 shadow-xs">
+                        <div class="flex items-center space-x-3.5">
+                            @if (!string.IsNullOrEmpty(creator?.ProfileImage))
+                            {
+                                <img src="@creator.ProfileImage" alt="@creatorName" class="w-10 h-10 rounded-xl object-cover border border-slate-200" />
+                            }
+                            else
+                            {
+                                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                                    @creatorInitials
+                                </div>
+                            }
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold text-slate-900 text-sm">@creatorName</span>
+                                    @if (!string.IsNullOrEmpty(creator?.Roles))
+                                    {
+                                        <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-brand-50 text-brand-700 border border-brand-100">
+                                            @creator.Roles
+                                        </span>
+                                    }
+                                </div>
+                                <div class="flex items-center space-x-3 text-xs text-slate-500 mt-0.5">
+                                    @if (!string.IsNullOrEmpty(creator?.Email))
+                                    {
+                                        <a href="mailto:@creator.Email" class="hover:text-brand-600 transition-colors flex items-center">
+                                            <i class="fa-regular fa-envelope mr-1 text-slate-400"></i>@creator.Email
+                                        </a>
+                                    }
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="text-right hidden sm:block">
-                        <span class="text-xs text-slate-400 block">Created by User</span>
-                        <span class="text-xs font-mono text-slate-500">@Model.UserId.ToString().Substring(0, 8)...</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Ticket Body Content -->
-            <div class="p-6">
-                <div class="prose max-w-none text-slate-700 text-sm leading-relaxed">
-                    @Html.Raw(Model.Content)
-                </div>
-            </div>
-        </div>
-
-        <!-- Replies Section -->
-        <div class="space-y-4">
-            <h4 class="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-2">Conversation History</h4>
-            
-            @if (!Model.Messages.Any())
-            {
-                <div class="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center text-slate-400 text-sm">
-                    No replies yet.
-                </div>
-            }
-
-            @foreach (var msg in Model.Messages)
-            {
-                var isCreator = msg.UserId == Model.UserId;
-                <div class="flex @(isCreator ? "justify-end" : "justify-start")">
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-5 max-w-[85%] @(isCreator ? "bg-brand-50/40 border-brand-100" : "")">
-                        <div class="flex justify-between items-center mb-2.5 gap-4">
-                            <div class="flex items-center space-x-2">
-                                <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold @(isCreator ? "bg-brand-600 text-white" : "bg-slate-700 text-white")">
-                                    @(isCreator ? creatorInitials : "SA")
-                                </span>
-                                <span class="text-xs font-semibold @(isCreator ? "text-brand-700" : "text-slate-800")">
-                                    @(isCreator ? (creatorName ?? "User") : "Support Agent")
-                                </span>
-                            </div>
-                            <span class="text-xs text-slate-400">@msg.CreatedOn.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</span>
-                        </div>
-                        <div class="prose max-w-none text-slate-700 text-sm">
-                            @Html.Raw(msg.Content)
+                        <div class="text-right hidden sm:block">
+                            <span class="text-[11px] text-slate-400 block font-medium">Submitted by User</span>
+                            <span class="text-[11px] font-mono text-slate-500">@Model.UserId.ToString().Substring(0, 8)...</span>
                         </div>
                     </div>
                 </div>
-            }
-        </div>
 
-        <!-- Reply Form -->
-        @if (Model.Status != AzureTest.Domain.Enums.TicketStatus.Closed || isAdmin)
-        {
-            <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mt-8">
-                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                    <h5 class="text-sm font-semibold text-slate-800 m-0">Leave a Reply</h5>
-                </div>
                 <div class="p-6">
-                    <form asp-action="AddMessage" method="post">
+                    <div class="prose max-w-none text-slate-700 text-sm leading-relaxed">
+                        @Html.Raw(Model.Content)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversation History -->
+            <div class="space-y-4">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <i class="fa-regular fa-comments text-brand-600"></i> Conversation History
+                </h4>
+
+                @if (!Model.Messages.Any())
+                {
+                    <div class="p-8 bg-white rounded-2xl border border-dashed border-slate-200 text-center text-slate-400 text-xs">
+                        No responses recorded yet.
+                    </div>
+                }
+
+                @foreach (var msg in Model.Messages)
+                {
+                    var isCreator = msg.UserId == Model.UserId;
+                    <div class="flex @(isCreator ? "justify-end" : "justify-start")">
+                        <div class="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-5 max-w-[85%] @(isCreator ? "bg-brand-50/30 border-brand-200/60" : "")">
+                            <div class="flex justify-between items-center mb-2.5 gap-4">
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold @(isCreator ? "bg-brand-600 text-white" : "bg-slate-700 text-white")">
+                                        @(isCreator ? creatorInitials : "SA")
+                                    </span>
+                                    <span class="text-xs font-bold @(isCreator ? "text-brand-700" : "text-slate-800")">
+                                        @(isCreator ? (creatorName ?? "User") : "Support Staff")
+                                    </span>
+                                </div>
+                                <span class="text-[11px] text-slate-400">@msg.CreatedOn.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</span>
+                            </div>
+                            <div class="prose max-w-none text-slate-700 text-xs leading-relaxed">
+                                @Html.Raw(msg.Content)
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Reply Form -->
+            @if (Model.Status != TicketStatus.Closed || isAdmin)
+            {
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8 space-y-4">
+                    <h5 class="text-sm font-bold text-slate-900 m-0 flex items-center gap-2">
+                        <i class="fa-solid fa-reply text-brand-600"></i> Leave a Reply
+                    </h5>
+                    <form asp-action="AddMessage" method="post" class="space-y-4">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="ticketId" value="@Model.Id" />
-                        <div class="mb-4">
-                            <textarea id="replyEditor" name="content" rows="4" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm px-4 py-2 border"></textarea>
+                        <div class="border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+                            <textarea id="replyEditor" name="content" rows="4" class="w-full border-none focus:ring-0"></textarea>
                         </div>
-                        <button type="submit" class="inline-flex justify-center rounded-lg border border-transparent bg-brand-600 py-2.5 px-6 text-sm font-medium text-white shadow-sm hover:bg-brand-700 transition-colors">
-                            <i class="fa-solid fa-paper-plane mr-2 mt-0.5"></i> Send Reply
-                        </button>
+                        <div class="flex justify-end">
+                            <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow transition">
+                                <i class="fa-solid fa-paper-plane"></i> Send Reply
+                            </button>
+                        </div>
                     </form>
                 </div>
-            </div>
-        }
-        else
-        {
-            <div class="bg-slate-50 rounded-xl border border-slate-200 p-6 text-center text-slate-500">
-                <i class="fa-solid fa-lock mb-2 text-xl block text-slate-400"></i>
-                <p class="text-sm">This ticket is closed. If you need further assistance, please open a new ticket.</p>
-            </div>
-        }
-    </div>
-    
-    <!-- Sidebar Details -->
-    <div class="lg:col-span-1 space-y-6">
-        <!-- Ticket Meta Card -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-            <h5 class="text-sm font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-100">Ticket Info</h5>
-            
-            <div class="space-y-4 text-sm">
-                <div>
-                    <span class="block text-xs text-slate-400 mb-1">Status</span>
-                    <span class="px-2.5 py-1 text-xs font-medium rounded-full 
-                        @(Model.Status == AzureTest.Domain.Enums.TicketStatus.Closed ? "bg-slate-100 text-slate-600" :
-                          Model.Status == AzureTest.Domain.Enums.TicketStatus.Answered ? "bg-brand-100 text-brand-700" :
-                          Model.Status == AzureTest.Domain.Enums.TicketStatus.InProgress ? "bg-indigo-100 text-indigo-700" :
-                          "bg-emerald-100 text-emerald-700")">
-                        @Model.Status
-                    </span>
+            }
+            else
+            {
+                <div class="bg-slate-50 rounded-2xl border border-slate-200 p-6 text-center text-slate-500">
+                    <i class="fa-solid fa-lock mb-2 text-xl block text-slate-400"></i>
+                    <p class="text-xs">This ticket is closed. If you require additional support, please open a new ticket.</p>
                 </div>
-                <div>
-                    <span class="block text-xs text-slate-400 mb-1">Priority</span>
-                    <span class="font-medium text-slate-700">@Model.Priority</span>
-                </div>
-                <div>
-                    <span class="block text-xs text-slate-400 mb-1">Opened On</span>
-                    <span class="font-medium text-slate-700">@Model.CreatedOn.ToLocalTime().ToString("MMM dd, yyyy")</span>
-                </div>
-                <div>
-                    <span class="block text-xs text-slate-400 mb-1">Total Replies</span>
-                    <span class="font-medium text-slate-700">@Model.Messages.Count</span>
-                </div>
-            </div>
+            }
         </div>
 
-        <!-- Creator Information Sidebar Card -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-            <h5 class="text-sm font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-100 flex items-center justify-between">
-                <span>Creator Information</span>
-                <i class="fa-solid fa-user-tag text-slate-400"></i>
-            </h5>
-            
-            <div class="flex items-center space-x-3 mb-4">
-                @if (!string.IsNullOrEmpty(creator?.ProfileImage))
-                {
-                    <img src="@creator.ProfileImage" alt="@creatorName" class="w-12 h-12 rounded-full object-cover border border-slate-200" />
-                }
-                else
-                {
-                    <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-brand-600 to-brand-400 text-white font-bold flex items-center justify-center text-sm shadow-sm">
-                        @creatorInitials
+        <!-- Sidebar Details -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Ticket Meta Card -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+                <h5 class="text-xs font-bold text-slate-400 uppercase tracking-wider pb-3 border-b border-slate-100 flex items-center justify-between">
+                    <span>Ticket Metadata</span>
+                    <i class="fa-solid fa-circle-info text-slate-400"></i>
+                </h5>
+
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <span class="block text-slate-400 mb-1">Status</span>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 font-semibold rounded-full border @statusStyle">
+                            @Model.Status
+                        </span>
                     </div>
-                }
-                <div class="overflow-hidden">
-                    <p class="font-semibold text-slate-900 text-sm truncate">@creatorName</p>
-                    <span class="inline-block px-2 py-0.5 text-[11px] font-medium rounded-full bg-slate-100 text-slate-700 mt-0.5">
-                        @(creator?.Roles ?? "User")
-                    </span>
+                    <div>
+                        <span class="block text-slate-400 mb-1">Priority</span>
+                        <span class="font-semibold text-slate-800">@Model.Priority</span>
+                    </div>
+                    <div>
+                        <span class="block text-slate-400 mb-1">Opened On</span>
+                        <span class="font-semibold text-slate-800">@Model.CreatedOn.ToLocalTime().ToString("MMM dd, yyyy")</span>
+                    </div>
+                    <div>
+                        <span class="block text-slate-400 mb-1">Total Replies</span>
+                        <span class="font-semibold text-slate-800">@Model.Messages.Count</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="space-y-3 text-xs text-slate-600 border-t border-slate-50 pt-3">
-                @if (!string.IsNullOrEmpty(creator?.Email))
-                {
-                    <div>
-                        <span class="text-slate-400 block mb-0.5">Email</span>
-                        <a href="mailto:@creator.Email" class="font-medium text-brand-600 hover:underline break-all">@creator.Email</a>
+            <!-- Creator Card -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+                <h5 class="text-xs font-bold text-slate-400 uppercase tracking-wider pb-3 border-b border-slate-100 flex items-center justify-between">
+                    <span>Creator Profile</span>
+                    <i class="fa-solid fa-user-tag text-slate-400"></i>
+                </h5>
+
+                <div class="flex items-center space-x-3">
+                    @if (!string.IsNullOrEmpty(creator?.ProfileImage))
+                    {
+                        <img src="@creator.ProfileImage" alt="@creatorName" class="w-11 h-11 rounded-xl object-cover border border-slate-200" />
+                    }
+                    else
+                    {
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-400 text-white font-bold flex items-center justify-center text-xs shadow-xs">
+                            @creatorInitials
+                        </div>
+                    }
+                    <div class="overflow-hidden">
+                        <p class="font-bold text-slate-900 text-xs truncate">@creatorName</p>
+                        <span class="inline-block px-2 py-0.5 text-[10px] font-semibold rounded-full bg-slate-100 text-slate-600 mt-0.5">
+                            @(creator?.Roles ?? "User")
+                        </span>
                     </div>
-                }
-                @if (!string.IsNullOrEmpty(creator?.PhoneNumber))
-                {
+                </div>
+
+                <div class="space-y-2.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
+                    @if (!string.IsNullOrEmpty(creator?.Email))
+                    {
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">Email</span>
+                            <a href="mailto:@creator.Email" class="font-semibold text-brand-600 hover:underline break-all">@creator.Email</a>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(creator?.PhoneNumber))
+                    {
+                        <div>
+                            <span class="text-slate-400 block mb-0.5">Phone</span>
+                            <span class="font-semibold text-slate-700">@creator.PhoneNumber</span>
+                        </div>
+                    }
                     <div>
-                        <span class="text-slate-400 block mb-0.5">Phone</span>
-                        <span class="font-medium text-slate-700">@creator.PhoneNumber</span>
+                        <span class="text-slate-400 block mb-0.5">User ID</span>
+                        <span class="font-mono text-[10px] text-slate-500 break-all select-all">@Model.UserId</span>
                     </div>
-                }
-                <div>
-                    <span class="text-slate-400 block mb-0.5">User ID</span>
-                    <span class="font-mono text-[11px] text-slate-500 break-all select-all">@Model.UserId</span>
                 </div>
             </div>
         </div>

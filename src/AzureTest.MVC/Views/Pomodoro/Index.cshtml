@@ -67,20 +67,31 @@
     }
 </style>
 
-<div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-    <div>
-        <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-2">
-            <i class="fa-solid fa-stopwatch text-rose-500"></i> Pomodoro Focus Timer
-        </h1>
-        <p class="text-slate-500 text-sm mt-1">Boost deep work productivity with rhythm and beautiful themed timers.</p>
+@using AzureTest.MVC.Models
+
+<partial name="UiComponents/_Breadcrumb" model='new List<BreadcrumbItem> { new BreadcrumbItem("Home", "/"), new BreadcrumbItem("Pomodoro", active: true) }' />
+
+<div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 text-lg shadow-2xs shrink-0">
+            <i class="fa-solid fa-stopwatch"></i>
+        </div>
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+                Pomodoro Focus Timer
+            </h1>
+            <p class="text-xs text-slate-500 mt-0.5">Boost deep work productivity with rhythm and beautiful themed timers.</p>
+        </div>
     </div>
 
-    <div class="flex items-center gap-3">
-        <a asp-action="Analytics" class="inline-flex items-center px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
-            <i class="fa-solid fa-chart-pie mr-2 text-brand-500"></i> Analytics & Logs
+    <div class="flex items-center gap-2.5">
+        <a asp-action="Analytics" class="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-50 transition-colors shadow-2xs">
+            <i class="fa-solid fa-chart-pie text-brand-500"></i>
+            <span>Analytics & Logs</span>
         </a>
-        <button type="button" onclick="openSettingsModal()" class="inline-flex items-center px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-xl hover:bg-slate-700 transition-colors shadow-sm">
-            <i class="fa-solid fa-sliders mr-2"></i> Settings
+        <button type="button" onclick="openSettingsModal()" class="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition-colors shadow-2xs">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Settings</span>
         </button>
     </div>
 </div>

@@ -17,9 +17,19 @@
     var totalVolume = ViewBag.TotalVolume != null ? FormatSize((long)ViewBag.TotalVolume) : "0 B";
     
     var pathParts = string.IsNullOrEmpty(currentPath) ? new string[0] : currentPath.Split('/');
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new("Dashboard", "/"),
+        new("File Explorer", IsActive: true)
+    };
 }
 
-<div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden h-[calc(100vh-8rem)] flex flex-col font-sans select-none" id="fileExplorerContainer">
+<div class="mb-4">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+</div>
+
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden h-[calc(100vh-10rem)] flex flex-col font-sans select-none" id="fileExplorerContainer">
     <!-- Top Toolbar (Windows Style) -->
     <div class="bg-[#f5f6f7] border-b border-slate-300 p-2 flex items-center gap-2 shrink-0">
         <div class="flex items-center gap-1">

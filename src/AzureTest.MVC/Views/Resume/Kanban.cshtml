@@ -4,21 +4,38 @@
     var statuses = Enum.GetValues<AzureTest.Domain.Enums.ResumeStatus>();
 }
 
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-slate-800">My Resumes</h1>
+@using AzureTest.MVC.Models
+
+<partial name="UiComponents/_Breadcrumb" model='new List<BreadcrumbItem> { new BreadcrumbItem("Home", "/"), new BreadcrumbItem("Resumes", Url.Action("Index", "Resume")), new BreadcrumbItem("Kanban Board", active: true) }' />
+
+<div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 text-lg shadow-2xs shrink-0">
+            <i class="fa-solid fa-border-all"></i>
+        </div>
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+                My Resumes
+            </h1>
+            <p class="text-xs text-slate-500 mt-0.5">Drag-and-drop Kanban pipeline for tracking application stages</p>
+        </div>
+    </div>
     
-    <div class="flex items-center space-x-4">
-        <div class="inline-flex bg-slate-100 p-1 rounded-lg border border-slate-200">
-            <a asp-action="Index" class="px-3 py-1.5 text-sm font-medium rounded-md text-slate-600 hover:text-slate-900 transition-colors">
-                <i class="fa-solid fa-list mr-1.5"></i> List
+    <div class="flex items-center gap-3">
+        <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <a asp-action="Index" class="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-list text-2xs"></i>
+                <span>List</span>
             </a>
-            <span class="px-3 py-1.5 text-sm font-medium rounded-md bg-white text-slate-900 shadow-sm border border-slate-200 cursor-default">
-                <i class="fa-solid fa-border-all mr-1.5"></i> Board
+            <span class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-slate-900 shadow-2xs border border-slate-200/60 cursor-default flex items-center gap-1.5">
+                <i class="fa-solid fa-border-all text-2xs"></i>
+                <span>Board</span>
             </span>
         </div>
         
-        <a asp-action="Create" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors">
-            <i class="fa-solid fa-plus mr-2"></i> Add New
+        <a asp-action="Create" class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors">
+            <i class="fa-solid fa-plus text-2xs"></i>
+            <span>Add Application</span>
         </a>
     </div>
 </div>

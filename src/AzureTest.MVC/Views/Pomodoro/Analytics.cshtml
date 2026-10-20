@@ -18,26 +18,31 @@
     var hourlyMinutesJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.HourlyDistribution.Select(h => h.FocusMinutes));
 }
 
-<nav aria-label="breadcrumb" class="mb-6">
-    <ol class="flex items-center space-x-2 text-sm text-slate-500">
-        <li><a asp-action="Index" class="hover:text-brand-600 transition-colors">Pomodoro Timer</a></li>
-        <li><span class="text-slate-400">/</span></li>
-        <li class="font-medium text-slate-800" aria-current="page">Productivity Analytics</li>
-    </ol>
-</nav>
+@using AzureTest.MVC.Models
 
-<div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-    <div>
-        <h1 class="text-3xl font-bold text-slate-900">Pomodoro Analytics & Logs</h1>
-        <p class="text-slate-500 text-sm mt-1">Deep insights into your concentration cycles, category distribution, and focus streaks.</p>
+<partial name="UiComponents/_Breadcrumb" model='new List<BreadcrumbItem> { new BreadcrumbItem("Pomodoro", Url.Action("Index", "Pomodoro")), new BreadcrumbItem("Analytics & Logs", active: true) }' />
+
+<div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 text-lg shadow-2xs shrink-0">
+            <i class="fa-solid fa-chart-pie"></i>
+        </div>
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+                Pomodoro Analytics & Logs
+            </h1>
+            <p class="text-xs text-slate-500 mt-0.5">Deep insights into concentration cycles, category distribution, and focus streaks.</p>
+        </div>
     </div>
 
-    <div class="flex items-center gap-3">
-        <button type="button" onclick="openCreateSessionModal()" class="inline-flex items-center px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-xl hover:bg-slate-700 transition-colors shadow-sm">
-            <i class="fa-solid fa-plus mr-2"></i> Log Session
+    <div class="flex items-center gap-2.5">
+        <button type="button" onclick="openCreateSessionModal()" class="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition-colors shadow-2xs">
+            <i class="fa-solid fa-plus text-2xs"></i>
+            <span>Log Session</span>
         </button>
-        <a asp-action="Index" class="inline-flex items-center px-4 py-2 bg-rose-600 text-white text-sm font-semibold rounded-xl hover:bg-rose-700 transition-colors shadow-sm">
-            <i class="fa-solid fa-play mr-2"></i> Launch Timer
+        <a asp-action="Index" class="inline-flex items-center gap-2 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl transition-colors shadow-2xs">
+            <i class="fa-solid fa-play text-2xs"></i>
+            <span>Launch Timer</span>
         </a>
     </div>
 </div>

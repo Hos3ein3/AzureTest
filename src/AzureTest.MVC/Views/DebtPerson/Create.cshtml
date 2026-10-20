@@ -1,34 +1,54 @@
 @model AzureTest.Domain.Documents.DebtPerson
 @{
     ViewData["Title"] = "Add Debt Person";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Debts", Url = "/Debt/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Counterparties", Url = "/DebtPerson/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Add Person", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Add Counterparty",
+        Subtitle = "Register a debtor or creditor into the system directory.",
+        Icon = "fa-solid fa-user-plus",
+        Breadcrumbs = breadcrumbs
+    };
 }
 
-<div class="mb-6 flex items-center justify-between">
-    <div class="flex items-center space-x-3">
-        <a asp-action="Index" class="text-slate-400 hover:text-slate-600 transition-colors">
-            <i class="fa-solid fa-arrow-left text-lg"></i>
-        </a>
-        <h1 class="text-2xl font-bold text-slate-800">Add Person</h1>
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+<div class="max-w-xl">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-address-book text-brand-600 text-xs"></i>
+                <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Person Information</h2>
+            </div>
+            <span class="text-2xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">New Contact</span>
+        </div>
+
+        <form asp-action="Create" method="post" class="p-6 md:p-8">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="p-3 mb-6 bg-rose-50 border border-rose-200/80 rounded-xl text-rose-700 text-xs"></div>
+            
+            <partial name="_UpsertPartial" />
+
+            <div class="flex items-center justify-end gap-3 pt-5 border-t border-slate-100">
+                <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                    <i class="fa-solid fa-check"></i> Add Person
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden max-w-2xl">
-    <form asp-action="Create" method="post" class="p-6 sm:p-8">
-        <div asp-validation-summary="ModelOnly" class="mb-6 p-4 rounded-lg bg-red-50 text-red-700 text-sm border border-red-200 hidden"></div>
-        
-        <partial name="_UpsertPartial" />
-
-        <div class="mt-8 flex items-center justify-end space-x-4 pt-6 border-t border-slate-100">
-            <a asp-action="Index" class="px-5 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors">
-                Cancel
-            </a>
-            <button type="submit" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors flex items-center">
-                <i class="fa-solid fa-check mr-2"></i> Add Person
-            </button>
-        </div>
-    </form>
-</div>
-
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ValidationScriptsPartial" />
 }

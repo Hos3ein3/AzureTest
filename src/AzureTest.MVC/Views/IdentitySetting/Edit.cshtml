@@ -1,74 +1,110 @@
-
 @model AzureTest.Domain.Documents.IdentitySetting
-
 @{
-    ViewData["Title"] = "Identity Settings";
+    ViewData["Title"] = "Identity & Auth Settings";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Administration", Url = "#" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Identity Settings", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Identity & Auth Settings",
+        Subtitle = "Configure global authentication flows, default redirects, and registration role assignments.",
+        Icon = "fa-solid fa-shield-halved",
+        Breadcrumbs = breadcrumbs
+    };
 }
 
-<div class="mb-6">
-    <h1 class="text-2xl font-bold text-slate-800 dark:text-white">Identity & Auth Settings</h1>
-    <p class="text-slate-500">Configure global authentication flows and defaults.</p>
-</div>
+<partial name="UiComponents/_PageHeader" model="headerModel" />
 
-<div class="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-6 rounded shadow-sm">
-    <div class="flex items-start">
-        <div class="flex-shrink-0">
-            <i class="fa-solid fa-triangle-exclamation text-red-500 mt-1"></i>
-        </div>
-        <div class="ml-3">
-            <h3 class="text-sm font-bold text-red-800 dark:text-red-200">Warning: Proceed with Caution</h3>
-            <p class="text-sm text-red-700 dark:text-red-300 mt-1">
-                Changing these settings can alter the core authentication flow and default access rights. 
-                Invalid redirect URLs or incorrectly assigned roles might prevent users from logging in or grant them unintended privileges.
-            </p>
-        </div>
+<div class="bg-amber-50 border border-amber-200/80 p-4 mb-6 rounded-2xl flex items-start gap-3 shadow-2xs">
+    <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+    </div>
+    <div class="flex-1">
+        <h3 class="text-xs font-bold text-amber-900 uppercase tracking-wider">Warning: Proceed with Caution</h3>
+        <p class="text-xs text-amber-800 mt-1">
+            Modifying these settings alters the core authentication flow and default access rights. 
+            Invalid redirect URLs or incorrect role assignments might prevent users from logging in or grant them unintended privileges.
+        </p>
     </div>
 </div>
 
 @if (TempData["SuccessMessage"] != null)
 {
-    <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded mb-6 flex items-center shadow-sm">
-        <i class="fa-solid fa-check-circle mr-2"></i> @TempData["SuccessMessage"]
+    <div class="bg-emerald-50 border border-emerald-200/80 text-emerald-800 p-4 rounded-2xl mb-6 flex items-center gap-3 shadow-2xs">
+        <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div class="text-xs font-semibold">@TempData["SuccessMessage"]</div>
     </div>
 }
 
-<div class="bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 rounded-xl p-6">
-    <form asp-action="Edit" method="post">
-        <div asp-validation-summary="All" class="text-red-500 text-sm mb-4"></div>
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden max-w-4xl">
+    <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-brand-600 text-xs"></i>
+            <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">System Defaults</h2>
+        </div>
+        <span class="text-2xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Global Document</span>
+    </div>
+
+    <form asp-action="Edit" method="post" class="p-6 md:p-8">
+        <div asp-validation-summary="All" class="p-3 mb-6 bg-rose-50 border border-rose-200/80 rounded-xl text-rose-700 text-xs"></div>
         <input type="hidden" asp-for="Id" />
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="form-group">
-                <label asp-for="RedirectAfterLogin" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Redirect After Login</label>
-                <input asp-for="RedirectAfterLogin" class="form-input w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500" placeholder="/Home/Index" />
-                <span asp-validation-for="RedirectAfterLogin" class="text-xs text-red-500"></span>
+            <div>
+                <label asp-for="RedirectAfterLogin" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Redirect After Login</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                    </div>
+                    <input asp-for="RedirectAfterLogin" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="/Home/Index" />
+                </div>
+                <span asp-validation-for="RedirectAfterLogin" class="text-2xs text-rose-600 mt-1 block"></span>
+                <p class="text-3xs text-slate-400 mt-1">Relative URL target after successful authentication.</p>
             </div>
 
-            <div class="form-group">
-                <label asp-for="RedirectAfterRegister" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Redirect After Register</label>
-                <input asp-for="RedirectAfterRegister" class="form-input w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500" placeholder="/Auth/Login" />
-                <span asp-validation-for="RedirectAfterRegister" class="text-xs text-red-500"></span>
+            <div>
+                <label asp-for="RedirectAfterRegister" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Redirect After Register</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                        <i class="fa-solid fa-user-plus"></i>
+                    </div>
+                    <input asp-for="RedirectAfterRegister" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="/Auth/Login" />
+                </div>
+                <span asp-validation-for="RedirectAfterRegister" class="text-2xs text-rose-600 mt-1 block"></span>
+                <p class="text-3xs text-slate-400 mt-1">Relative URL target when new sign-up succeeds.</p>
             </div>
 
-            <div class="form-group">
-                <label asp-for="RolesForRegister" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Roles Assigned on Register</label>
-                <select asp-for="RolesForRegister" asp-items="ViewBag.Roles" multiple class="form-input w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500 h-32"></select>
-                <span asp-validation-for="RolesForRegister" class="text-xs text-red-500"></span>
-                <p class="text-xs text-slate-500 mt-1">Hold Ctrl/Cmd to select multiple roles.</p>
+            <div class="md:col-span-2">
+                <label asp-for="RolesForRegister" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Roles Assigned on Register</label>
+                <select asp-for="RolesForRegister" asp-items="ViewBag.Roles" multiple class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white h-36"></select>
+                <span asp-validation-for="RolesForRegister" class="text-2xs text-rose-600 mt-1 block"></span>
+                <p class="text-3xs text-slate-400 mt-1">Hold <kbd class="px-1 py-0.5 rounded bg-slate-100 border text-slate-600">Ctrl</kbd> or <kbd class="px-1 py-0.5 rounded bg-slate-100 border text-slate-600">Cmd</kbd> to select multiple default roles.</p>
             </div>
 
-            <div class="form-group flex flex-col justify-center">
-                <label class="flex items-center space-x-3 cursor-pointer">
-                    <input asp-for="StayLoginAfterRegister" type="checkbox" class="form-checkbox h-5 w-5 text-brand-600 border-slate-300 rounded focus:ring-brand-500 bg-white dark:bg-slate-700" />
-                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Auto-login After Registration</span>
-                </label>
-                <p class="text-xs text-slate-500 mt-2 ml-8">If checked, new users are automatically signed in after successful registration and sent to the Login redirect.</p>
+            <div class="md:col-span-2 p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-slate-800">Auto-login After Registration</span>
+                        <p class="text-2xs text-slate-500 mt-0.5">When enabled, newly registered users are automatically authenticated into the session immediately.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input asp-for="StayLoginAfterRegister" type="checkbox" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                    </label>
+                </div>
             </div>
         </div>
 
-        <div class="mt-8 flex justify-end">
-            <button type="submit" class="px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg shadow-sm font-medium transition-colors">
-                <i class="fa-solid fa-save mr-2"></i> Save Settings
+        <div class="mt-8 pt-5 border-t border-slate-100 flex items-center justify-end gap-3">
+            <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                <i class="fa-solid fa-floppy-disk"></i> Save Settings
             </button>
         </div>
     </form>

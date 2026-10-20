@@ -3,17 +3,9 @@
     ViewData["Title"] = Model.PositionTitle;
 }
 
-<nav aria-label="breadcrumb" class="mb-6">
-    <ol class="flex items-center space-x-2 text-sm text-slate-500">
-        <li>
-            <a asp-action="Index" class="hover:text-brand-600 transition-colors">Resumes</a>
-        </li>
-        <li>
-            <i class="fa-solid fa-chevron-right text-xs mx-1"></i>
-        </li>
-        <li class="font-medium text-slate-800" aria-current="page">@Model.PositionTitle</li>
-    </ol>
-</nav>
+@using AzureTest.MVC.Models
+
+<partial name="UiComponents/_Breadcrumb" model='new List<BreadcrumbItem> { new BreadcrumbItem("Resumes", Url.Action("Index", "Resume")), new BreadcrumbItem(Model.PositionTitle, active: true) }' />
 
 @if (TempData["Success"] != null)
 {

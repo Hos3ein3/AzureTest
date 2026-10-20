@@ -1,6 +1,3 @@
-@{
-    ViewData["Title"] = "Calendar";
-}
 
 <style>
     .fc .fc-toolbar {
@@ -42,21 +39,23 @@
     }
 </style>
 
-<div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-    <div>
-        <nav aria-label="breadcrumb" class="mb-1">
-            <ol class="flex items-center space-x-2 text-sm text-slate-500">
-                <li class="font-medium text-slate-800" aria-current="page">Calendar</li>
-            </ol>
-        </nav>
-        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <span class="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-600 flex items-center justify-center text-base">
-                <i class="fa-regular fa-calendar-days"></i>
-            </span>
-            Schedule & Planner
-        </h1>
-    </div>
-</div>
+@using AzureTest.MVC.Models
+@{
+    ViewData["Title"] = "Calendar";
+    var pageHeader = new PageHeaderModel
+    {
+        Title = "Schedule & Planner",
+        Subtitle = "View scheduled events, tasks, and deadlines in calendar view",
+        Icon = "fa-regular fa-calendar-days",
+        Breadcrumbs = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Calendar", active: true)
+        }
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="pageHeader" />
 
 <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden mb-8">
     <div class="px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/60 flex flex-wrap justify-between items-center gap-2">

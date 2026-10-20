@@ -17,26 +17,36 @@
         AzureTest.Domain.Documents.Food.Enums.MealType.Dinner
     };
     var planSlots = Model?.WeeklyPlan ?? new();
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new("Dashboard", "/"),
+        new("Food & Nutrition", Url.Action("Index")),
+        new("Weekly Meal Planner", IsActive: true)
+    };
 }
+
+<div class="mb-4">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+</div>
 
 <!-- Header -->
 <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
         <div class="flex items-center gap-2 mb-1">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
                 <i class="fa-solid fa-calendar-week mr-1.5"></i> Household Meal Prep
             </span>
         </div>
-        <h1 class="text-3xl font-black text-slate-900 tracking-tight">Weekly Meal Planner</h1>
-        <p class="text-slate-500 text-sm">Schedule meals from Monday to Sunday and generate grocery requirements in one click.</p>
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Weekly Meal Planner</h1>
+        <p class="text-slate-500 text-xs mt-0.5">Schedule meals from Monday to Sunday and generate grocery requirements in one click.</p>
     </div>
 
-    <div class="flex items-center gap-3">
-        <a href="@Url.Action("Index")" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
-            <i class="fa-solid fa-arrow-left mr-2"></i> Daily Diary
+    <div class="flex items-center gap-2.5">
+        <a href="@Url.Action("Index")" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors">
+            <i class="fa-solid fa-arrow-left mr-1.5 text-3xs"></i> Daily Diary
         </a>
-        <button type="button" onclick="openPlanModal()" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors">
-            <i class="fa-solid fa-plus mr-2"></i> Schedule Meal
+        <button type="button" onclick="openPlanModal()" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-brand-700 transition-colors">
+            <i class="fa-solid fa-plus mr-1.5 text-2xs"></i> Schedule Meal
         </button>
     </div>
 </div>

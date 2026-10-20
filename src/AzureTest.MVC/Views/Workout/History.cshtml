@@ -2,39 +2,59 @@
 @{
     ViewData["Title"] = "Workout History";
     var trainingsDict = ViewBag.TrainingsDict as Dictionary<Guid, AzureTest.Domain.Documents.Gym.Training> ?? new();
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new("Dashboard", "/"),
+        new("Workout", Url.Action("Index")),
+        new("Exercise Logs", IsActive: true)
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel(
+        "Workout Exercise Logs",
+        "Your chronological workout log, grouped by exercise, tracking repetitions, duration, and weight loads.",
+        "fa-solid fa-clock-rotate-left",
+        breadcrumbs: breadcrumbs,
+        ActionText: "Analytics",
+        ActionUrl: Url.Action("Analytics"),
+        ActionIcon: "fa-solid fa-chart-line"
+    );
+
+    var emptyModel = new AzureTest.MVC.Models.EmptyStateModel(
+        "No Exercise History Yet",
+        "Complete workout sessions in your enrolled courses to see exercise log breakdowns appear here.",
+        "fa-solid fa-clock-rotate-left",
+        ActionText: "Go to Workout Dashboard",
+        ActionUrl: Url.Action("Index"),
+        ActionIcon: "fa-solid fa-arrow-left"
+    );
 }
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
-    <div class="mb-8 border-b border-slate-200 pb-5 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Workout History</h2>
-            <p class="text-slate-500 text-sm mt-1 sm:mt-2">Your complete exercise log, grouped by exercise, so you can track your progress.</p>
+<div class="max-w-7xl mx-auto">
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
+
+    <!-- Utility Bar & Search Filter -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div class="relative w-full sm:w-80">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" id="historySearch" placeholder="Search exercises by name..." 
+                   class="w-full pl-9 pr-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" 
+                   oninput="filterHistory()" />
         </div>
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-            <div class="relative w-full sm:w-64">
-                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="historySearch" placeholder="Search exercises..." class="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-sm" oninput="filterHistory()" />
-            </div>
-            <div class="flex items-center gap-2">
-                <a href="@Url.Action("Analytics")" class="flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 transition-colors">
-                    <i class="fa-solid fa-chart-line mr-1.5"></i> Analytics
-                </a>
-                <a href="@Url.Action("Index")" class="flex-1 sm:flex-initial inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
-                    <i class="fa-solid fa-arrow-left mr-1.5"></i> Back
-                </a>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <a href="@Url.Action("Index")" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+                <i class="fa-solid fa-arrow-left text-3xs"></i> Dashboard
+            </a>
+            <div class="text-2xs text-slate-400 font-mono ml-2">
+                Exercises Logged: <strong class="text-slate-700">@Model.Count</strong>
             </div>
         </div>
     </div>
 
     @if (Model.Count == 0)
     {
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
-            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-                <i class="fa-solid fa-clock-rotate-left text-2xl"></i>
-            </div>
-            <h3 class="text-lg font-bold text-slate-900 mb-1">No History Yet</h3>
-            <p class="text-slate-500">Complete some workout sessions to see your logs appear here.</p>
-        </div>
+        <partial name="UiComponents/_EmptyState" model="emptyModel" />
     }
     else
     {
@@ -47,52 +67,56 @@
                 var trainingName = tDef?.Name ?? "Unknown Exercise";
                 var isDuration = tDef?.Type == AzureTest.Domain.Enums.TrainingType.DurationAndRest;
 
-                <div class="workout-history-card bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
-                    <div class="bg-slate-50 px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-2">
-                        <h4 class="font-bold text-slate-800 text-base sm:text-lg">@trainingName</h4>
-                        <span class="bg-brand-100 text-brand-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">
+                <div class="workout-history-card bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col h-full">
+                    <div class="bg-slate-50/75 px-5 py-3.5 border-b border-slate-100 flex flex-wrap justify-between items-center gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-brand-50 border border-brand-100 text-brand-600 flex items-center justify-center text-xs">
+                                <i class="fa-solid @(isDuration ? "fa-stopwatch" : "fa-dumbbell")"></i>
+                            </span>
+                            <h4 class="font-bold text-slate-900 text-sm">@trainingName</h4>
+                        </div>
+                        <span class="bg-brand-50 text-brand-700 border border-brand-200 text-2xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                             @logs.Count Log(s)
                         </span>
                     </div>
                     <div class="p-0 flex-1 overflow-x-auto overflow-y-auto max-h-80">
-                        <table class="min-w-full text-left text-xs sm:text-sm whitespace-nowrap">
-                            <thead class="bg-white sticky top-0 border-b border-slate-100 shadow-sm z-10 text-slate-500">
+                        <table class="min-w-full text-left text-xs whitespace-nowrap">
+                            <thead class="bg-white sticky top-0 border-b border-slate-100 shadow-2xs text-slate-500">
                                 <tr>
-                                    <th class="px-5 py-3 font-semibold">Date</th>
+                                    <th class="px-5 py-3 font-bold uppercase tracking-wider text-2xs">Date</th>
                                     @if (isDuration) {
-                                        <th class="px-5 py-3 font-semibold text-center">Duration</th>
+                                        <th class="px-5 py-3 font-bold uppercase tracking-wider text-2xs text-center">Duration</th>
                                     } else {
-                                        <th class="px-5 py-3 font-semibold text-center">Sets × Reps</th>
+                                        <th class="px-5 py-3 font-bold uppercase tracking-wider text-2xs text-center">Sets x Reps</th>
                                     }
-                                    <th class="px-5 py-3 font-semibold text-right">Weight (kg)</th>
+                                    <th class="px-5 py-3 font-bold uppercase tracking-wider text-2xs text-right">Weight (kg)</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 text-slate-700">
                                 @foreach (var item in logs)
                                 {
-                                    
                                     var log = item.Log;
                                     var date = item.SessionDate;
                                     
-                                    <tr class="hover:bg-slate-50 transition-colors">
-                                        <td class="px-5 py-3 font-medium text-slate-900">@date.ToString("MMM dd, yyyy")</td>
+                                    <tr class="hover:bg-slate-50/60 transition-colors">
+                                        <td class="px-5 py-3 font-semibold text-slate-900">@date.ToString("MMM dd, yyyy")</td>
                                         
                                         @if (isDuration) {
                                             <td class="px-5 py-3 text-center">
-                                                <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold border border-slate-200">
+                                                <span class="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg text-2xs font-bold border border-slate-200">
                                                     @(log?.DurationCompletedSeconds ?? 0)s
                                                 </span>
                                             </td>
                                         } else {
                                             <td class="px-5 py-3 text-center">
-                                                <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold border border-slate-200">
-                                                    @(log?.SetsCompleted ?? 0) × @(log?.RepsCompleted ?? 0)
+                                                <span class="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg text-2xs font-bold border border-slate-200">
+                                                    @(log?.SetsCompleted ?? 0) x @(log?.RepsCompleted ?? 0)
                                                 </span>
                                             </td>
                                         }
                                         
                                         <td class="px-5 py-3 text-right font-mono font-bold text-brand-600">
-                                            @(log?.WeightUsed ?? 0)
+                                            @(log?.WeightUsed ?? 0) <span class="text-2xs font-normal text-slate-400">kg</span>
                                         </td>
                                     </tr>
                                 }
@@ -105,14 +129,16 @@
     }
 </div>
 
-<script>
-    function filterHistory() {
-        var query = document.getElementById('historySearch').value.toLowerCase();
-        var cards = document.querySelectorAll('.workout-history-card');
-        cards.forEach(card => {
-            var title = card.querySelector('h4').innerText.toLowerCase();
-            if (title.includes(query)) card.style.display = '';
-            else card.style.display = 'none';
-        });
-    }
-</script>
+@section Scripts {
+    <script>
+        function filterHistory() {
+            var query = document.getElementById('historySearch').value.toLowerCase();
+            var cards = document.querySelectorAll('.workout-history-card');
+            cards.forEach(card => {
+                var title = card.querySelector('h4').innerText.toLowerCase();
+                if (title.includes(query)) card.style.display = '';
+                else card.style.display = 'none';
+            });
+        }
+    </script>
+}

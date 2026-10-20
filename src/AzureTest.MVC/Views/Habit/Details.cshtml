@@ -30,13 +30,9 @@
     var completionRate30Days = Math.Round((double)completedDaysCount / 30.0 * 100.0, 1);
 }
 
-<nav aria-label="breadcrumb" class="mb-6">
-    <ol class="flex items-center space-x-2 text-sm text-slate-500">
-        <li><a asp-action="Index" class="hover:text-brand-600 transition-colors">Habits</a></li>
-        <li><span class="text-slate-400">/</span></li>
-        <li class="font-medium text-slate-800" aria-current="page">@Model.Name</li>
-    </ol>
-</nav>
+@using AzureTest.MVC.Models
+
+<partial name="UiComponents/_Breadcrumb" model='new List<BreadcrumbItem> { new BreadcrumbItem("Habits", Url.Action("Index", "Habit")), new BreadcrumbItem(Model.Name, active: true) }' />
 
 <!-- Habit Header Card -->
 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">

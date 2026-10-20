@@ -2,33 +2,38 @@
 @{
     ViewData["Title"] = "Workout & Weight Analytics";
     var defaultHeight = Model.CurrentHeightCm ?? 175;
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new("Dashboard", "/"),
+        new("Workout", Url.Action("Index")),
+        new("Analytics & Weight Tracker", IsActive: true)
+    };
 }
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-7xl mx-auto">
     <!-- Header -->
-    <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <nav aria-label="breadcrumb" class="mb-2">
-                <ol class="flex items-center space-x-2 text-sm text-slate-500">
-                    <li><a asp-action="Index" class="hover:text-brand-600 transition-colors">Workout</a></li>
-                    <li><i class="fa-solid fa-chevron-right text-xs text-slate-400"></i></li>
-                    <li class="font-medium text-slate-800" aria-current="page">Analytics</li>
-                </ol>
-            </nav>
-            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
-                <span class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-600 flex items-center justify-center text-xl">
+            <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+            <div class="flex items-center gap-3 mt-2">
+                <div class="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 text-lg shadow-2xs">
                     <i class="fa-solid fa-chart-line"></i>
-                </span>
-                Workout Analytics & Weight Tracker
-            </h1>
-            <p class="text-slate-500 text-sm mt-1">Monitor workout performance, weight progression over time, BMI tracking, and free health calculators.</p>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black text-slate-900 tracking-tight">
+                        Workout Analytics & Weight Tracker
+                    </h1>
+                    <p class="text-xs text-slate-500 mt-0.5">Monitor workout performance, weight progression over time, BMI tracking, and body composition.</p>
+                </div>
+            </div>
         </div>
-        <div class="flex items-center gap-3">
-            <a asp-action="History" class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 shadow-sm transition-colors">
-                <i class="fa-solid fa-clock-rotate-left mr-2"></i> Workout Logs
+        <div class="flex items-center gap-2.5">
+            <a asp-action="History" class="inline-flex items-center gap-2 px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 shadow-2xs transition-colors">
+                <i class="fa-solid fa-clock-rotate-left text-slate-400 text-2xs"></i> Workout Logs
             </a>
-            <button type="button" onclick="openWeightModal()" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors">
-                <i class="fa-solid fa-weight-scale mr-2"></i> Log Weight
+            <button type="button" onclick="openWeightModal()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-2xs transition-colors">
+                <i class="fa-solid fa-weight-scale text-2xs"></i> Log Weight
             </button>
         </div>
     </div>

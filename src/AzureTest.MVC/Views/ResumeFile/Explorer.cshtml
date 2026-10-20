@@ -3,22 +3,30 @@
     ViewData["Title"] = "File Explorer";
 }
 
+@using AzureTest.MVC.Models
+
+<partial name="UiComponents/_Breadcrumb" model='new List<BreadcrumbItem> { new BreadcrumbItem("Resume Files", Url.Action("Index", "ResumeFile")), new BreadcrumbItem("File Explorer", active: true) }' />
+
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-    <div>
-        <h1 class="text-2xl font-bold text-gray-900 flex items-center">
-            <i class="fa-regular fa-folder-open text-brand-500 mr-3"></i>
-            File Explorer
-        </h1>
-        <p class="text-sm text-gray-500 mt-1">
-            <i class="fa-solid fa-hard-drive mr-1 text-gray-400"></i>
-            uploads / resumes / <span class="font-medium text-gray-700">@Model.CurrentFolderName</span>
-        </p>
+    <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 text-lg shadow-2xs shrink-0">
+            <i class="fa-solid fa-folder-open"></i>
+        </div>
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+                File Explorer
+            </h1>
+            <p class="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
+                <i class="fa-solid fa-hard-drive text-slate-400"></i>
+                <span>uploads / resumes / <strong class="text-slate-800">@Model.CurrentFolderName</strong></span>
+            </p>
+        </div>
     </div>
     
     @if (Model.IsAdmin)
     {
         <form method="get" class="flex items-center gap-2">
-            <select name="folder" class="block w-64 rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm">
+            <select name="folder" class="w-56 px-3 py-2 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white shadow-2xs">
                 <option value="">(Select User Folder)</option>
                 @foreach (var f in Model.AvailableFolders)
                 {
@@ -32,8 +40,9 @@
                     }
                 }
             </select>
-            <button type="submit" class="bg-slate-800 text-white px-3 py-2 rounded-md hover:bg-slate-700 text-sm font-medium transition-colors shadow-sm whitespace-nowrap">
-                <i class="fa-solid fa-arrow-right-arrow-left mr-1"></i> Switch
+            <button type="submit" class="inline-flex items-center gap-1.5 bg-slate-900 text-white px-3.5 py-2 rounded-xl hover:bg-slate-800 text-xs font-semibold transition-colors shadow-2xs whitespace-nowrap">
+                <i class="fa-solid fa-arrow-right-arrow-left text-2xs"></i>
+                <span>Switch</span>
             </button>
         </form>
     }
@@ -41,20 +50,16 @@
 
 @if (TempData["Success"] != null)
 {
-    <div class="mb-6 bg-green-50 text-green-700 p-4 rounded-lg border border-green-200 shadow-sm flex items-start">
-        <i class="fa-solid fa-circle-check mt-0.5 mr-3 text-green-500"></i>
-        <div class="font-medium">@TempData["Success"]</div>
+    <div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-3 text-xs text-emerald-800 shadow-2xs" role="alert">
+        <i class="fa-solid fa-circle-check text-emerald-500"></i>
+        <div class="flex-1 font-medium">@TempData["Success"]</div>
     </div>
 }
 
-<div class="bg-white shadow-sm rounded-xl border border-gray-200 p-6 min-h-[400px]">
+<div class="bg-white shadow-2xs rounded-2xl border border-slate-200/80 p-6 min-h-[400px]">
     @if (!Model.Files.Any())
     {
-        <div class="text-center py-20 flex flex-col items-center justify-center h-full">
-            <i class="fa-regular fa-folder-open text-6xl text-gray-300 mb-4"></i>
-            <h3 class="text-lg font-medium text-gray-900">This folder is empty</h3>
-            <p class="text-gray-500 mt-1">No files have been uploaded here yet.</p>
-        </div>
+        <partial name="UiComponents/_EmptyState" model='new EmptyStateModel("This folder is empty", "No files have been uploaded to this directory yet.", "fa-regular fa-folder-open")' />
     }
     else
     {

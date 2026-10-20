@@ -1,37 +1,49 @@
 @model AzureTest.Application.Debts.Commands.CreateDebtCommand
 @{
     ViewData["Title"] = "Add Debt";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Debts", Url = "/Debt/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Add Debt", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Record New Debt",
+        Subtitle = "Log a financial loan, borrow amount, counterparty, and promised return date.",
+        Icon = "fa-solid fa-hand-holding-dollar",
+        Breadcrumbs = breadcrumbs
+    };
 }
 
-<nav aria-label="breadcrumb" class="mb-6">
-    <ol class="flex items-center space-x-2 text-sm text-slate-500">
-        <li>
-            <a asp-action="Index" class="hover:text-brand-600 transition-colors">Debts</a>
-        </li>
-        <li>
-            <i class="fa-solid fa-chevron-right text-xs mx-1"></i>
-        </li>
-        <li class="font-medium text-slate-800" aria-current="page">Add New</li>
-    </ol>
-</nav>
+<partial name="UiComponents/_PageHeader" model="headerModel" />
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-visible h-fit">
-        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-            <h5 class="text-lg font-semibold text-slate-800 m-0">Add New Debt</h5>
+<div class="max-w-2xl">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-file-invoice-dollar text-brand-600 text-xs"></i>
+                <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Debt Record Details</h2>
+            </div>
+            <span class="text-2xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">New Entry</span>
         </div>
+
         <div class="p-6 md:p-8">
             <form asp-action="Create" method="post">
                 @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="p-3 mb-6 bg-rose-50 border border-rose-200/80 rounded-xl text-rose-700 text-xs"></div>
                 
                 <partial name="_UpsertPartial" />
-                <div class="flex items-center space-x-4 pt-4 border-t border-slate-100">
-                    <button type="submit" class="inline-flex justify-center rounded-lg border border-transparent bg-brand-600 py-2 px-6 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
-                        Save
-                    </button>
-                    <a asp-action="Index" class="inline-flex justify-center rounded-lg border border-slate-300 bg-white py-2 px-6 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
+
+                <div class="flex items-center justify-end gap-3 pt-5 border-t border-slate-100">
+                    <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
                         Cancel
                     </a>
+                    <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Debt
+                    </button>
                 </div>
             </form>
         </div>
@@ -39,13 +51,13 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <partial name="_ValidationScriptsPartial" />
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         const selectEl = document.getElementById('personSelect');
         let tsInstance = null;
         
-        if (selectEl) {
+        if (selectEl && typeof TomSelect !== 'undefined') {
             tsInstance = new TomSelect(selectEl, {
                 create: false,
                 sortField: { field: "text", direction: "asc" }
@@ -101,7 +113,7 @@
                     data.forEach(c => {
                         const item = document.createElement('button');
                         item.type = 'button';
-                        item.className = 'w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-brand-600 focus:outline-none focus:bg-slate-50';
+                        item.className = 'w-full text-left px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-brand-600 focus:outline-none transition-colors';
                         item.textContent = c.name;
                         item.addEventListener('click', () => {
                             if (tsInstance) {

@@ -3,94 +3,127 @@
     ViewData["Title"] = "Add New Role";
 }
 
-<div class="flex items-center mb-6">
-    <a asp-action="Index" class="text-slate-400 hover:text-brand-600 mr-4 transition-colors">
-        <i class="fa-solid fa-arrow-left text-xl"></i>
-    </a>
-    <h1 class="text-2xl font-bold text-slate-800">Add New Role</h1>
+<!-- Breadcrumb Component -->
+<partial name="UiComponents/_Breadcrumb" model='new List<AzureTest.MVC.Models.BreadcrumbItem> {
+    new("Administration", null, "fa-solid fa-shield-halved"),
+    new("Roles & Permissions", Url.Action("Index")),
+    new("Add New Role", null, null, IsActive: true)
+}' />
+
+<!-- Page Header Component -->
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <a asp-action="Index" class="w-10 h-10 rounded-2xl bg-white border border-slate-200 text-slate-500 hover:text-brand-600 hover:bg-slate-50 flex items-center justify-center transition-colors shadow-2xs">
+            <i class="fa-solid fa-arrow-left text-sm"></i>
+        </a>
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Add New Role</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Define a role name, access priority, and initial permission bundle.</p>
+        </div>
+    </div>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden max-w-2xl">
+<div class="bg-white rounded-2xl shadow-2xs border border-slate-100 overflow-hidden max-w-3xl">
     <form asp-action="Create" method="post" class="p-6 md:p-8">
-        <div asp-validation-summary="ModelOnly" class="text-red-500 text-sm mb-6 bg-red-50 p-4 rounded-lg"></div>
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-rose-600 text-xs mb-6 bg-rose-50 border border-rose-200/80 p-4 rounded-xl"></div>
 
-        
-        <div class="mb-6">
-            <label asp-for="RoleName" class="block text-sm font-medium text-slate-700 mb-2">Role Name <span class="text-red-500">*</span></label>
-            <input asp-for="RoleName" class="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500" placeholder="e.g. Moderator" />
-            <span asp-validation-for="RoleName" class="text-red-500 text-xs mt-1 block"></span>
-            <p class="text-xs text-slate-500 mt-2">Roles are used to define groups of permissions (e.g. Admin, Manager, User).</p>
-        </div>
-
-        <div class="mb-8">
-            <label asp-for="Priority" class="block text-sm font-medium text-slate-700 mb-2">Role Priority</label>
-            <input asp-for="Priority" type="number" class="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500" placeholder="e.g. 100" />
-            <span asp-validation-for="Priority" class="text-red-500 text-xs mt-1 block"></span>
-            <p class="text-xs text-slate-500 mt-2">Higher numbers indicate higher priority/access hierarchy (e.g. SEO Specialist = 100, Writer = 50). This can be used in your business logic to allow higher priority roles to modify lower priority roles' data.</p>
-        </div>
-
-
-        
-        <div class="mb-8 border-t border-slate-100 pt-6">
-            
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-medium text-slate-800">Initial Permissions (Optional)</h3>
-                <div class="relative w-64">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fa-solid fa-search text-slate-400 text-sm"></i>
-                    </div>
-                    <input type="text" id="permissionSearch" class="block w-full pl-9 pr-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-brand-500 focus:border-brand-500" placeholder="Search permissions...">
+        <div class="space-y-5">
+            <!-- Role Name Input -->
+            <div>
+                <label asp-for="RoleName" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    Role Name <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                    <i class="fa-solid fa-shield absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input asp-for="RoleName" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-2xs transition-all" placeholder="e.g. Moderator" />
                 </div>
+                <span asp-validation-for="RoleName" class="text-rose-600 text-3xs mt-1 block font-medium"></span>
+                <p class="text-2xs text-slate-400 mt-1">Roles are used to define groups of permissions (e.g. Admin, Manager, User).</p>
             </div>
 
-            
-            @if(Model.AvailablePermissions != null && Model.AvailablePermissions.Any())
-            {
-                var grouped = Model.AvailablePermissions.GroupBy(p => p.ControllerName);
-                <div class="space-y-6 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                    @foreach(var group in grouped)
-                    {
-                        <div class="border border-slate-200 rounded-lg overflow-hidden perm-group">
-                            <div class="bg-slate-50 px-4 py-2 border-b border-slate-200 flex justify-between items-center">
-                                <h4 class="font-bold text-slate-700 text-sm">@group.Key</h4>
-                                <label class="flex items-center cursor-pointer text-xs font-medium text-brand-600 hover:text-brand-800">
-                                    <input type="checkbox" class="form-checkbox h-3.5 w-3.5 text-brand-600 rounded border-slate-300 mr-1.5 toggle-group" data-group="@group.Key" />
-                                    Select All
-                                </label>
-                            </div>
-                            <div class="divide-y divide-slate-100">
-                                @foreach(var perm in group)
-                                {
-                                    <label class="px-4 py-3 flex items-start cursor-pointer hover:bg-slate-50 transition-colors perm-item ">
-                                        <div class="flex-shrink-0 mt-0.5 mr-3">
-                                            <input type="checkbox" name="SelectedPermissions" value="@perm.Id"  class="form-checkbox h-4 w-4 text-brand-600 rounded border-slate-300 shadow-sm focus:ring-brand-500 group-cb-@group.Key" />
-                                        </div>
-                                        <div class="flex-1 min-w-0">
-                                            <div class="flex items-center text-sm font-medium text-slate-900">
-                                                @perm.DisplayName
-                                                @if (!perm.IsRestricted) { <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800">Unrestricted</span> }
-                                            </div>
-                                            <div class="text-xs text-slate-500 mt-0.5">@perm.Description</div>
-                                        </div>
+            <!-- Priority Input -->
+            <div>
+                <label asp-for="Priority" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    Role Priority
+                </label>
+                <div class="relative">
+                    <i class="fa-solid fa-arrow-up-1-9 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input asp-for="Priority" type="number" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-2xs transition-all" placeholder="e.g. 100" />
+                </div>
+                <span asp-validation-for="Priority" class="text-rose-600 text-3xs mt-1 block font-medium"></span>
+                <p class="text-2xs text-slate-400 mt-1">Higher numbers denote higher seniority (e.g. Admin = 100, Editor = 50).</p>
+            </div>
+
+            <!-- Initial Permissions -->
+            <div class="pt-5 border-t border-slate-100">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800">Initial Permissions (Optional)</h3>
+                        <p class="text-2xs text-slate-400">Select endpoint operations granted to this role</p>
+                    </div>
+                    <div class="relative w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-2xs"></i>
+                        <input type="text" id="permissionSearch" class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" placeholder="Filter permissions..." />
+                    </div>
+                </div>
+
+                @if (Model.AvailablePermissions != null && Model.AvailablePermissions.Any())
+                {
+                    var grouped = Model.AvailablePermissions.GroupBy(p => p.ControllerName);
+                    <div class="space-y-4 max-h-[450px] overflow-y-auto pr-1">
+                        @foreach (var group in grouped)
+                        {
+                            <div class="border border-slate-200/80 rounded-2xl overflow-hidden perm-group">
+                                <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-200/80 flex justify-between items-center">
+                                    <h4 class="font-bold text-slate-800 text-xs flex items-center gap-2">
+                                        <i class="fa-solid fa-folder text-brand-600 text-2xs"></i>
+                                        <span>@group.Key</span>
+                                    </h4>
+                                    <label class="flex items-center cursor-pointer text-2xs font-semibold text-brand-600 hover:text-brand-800">
+                                        <input type="checkbox" class="w-3.5 h-3.5 rounded text-brand-600 focus:ring-brand-500 border-slate-300 mr-1.5 toggle-group" data-group="@group.Key" />
+                                        Select All
                                     </label>
-                                }
+                                </div>
+                                <div class="divide-y divide-slate-100">
+                                    @foreach (var perm in group)
+                                    {
+                                        <label class="px-4 py-3 flex items-start cursor-pointer hover:bg-slate-50/70 transition-colors perm-item">
+                                            <div class="shrink-0 mt-0.5 mr-3">
+                                                <input type="checkbox" name="SelectedPermissions" value="@perm.Id" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300 shadow-2xs group-cb-@group.Key" />
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center text-xs font-bold text-slate-900">
+                                                    <span>@perm.DisplayName</span>
+                                                    @if (!perm.IsRestricted)
+                                                    {
+                                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Unrestricted</span>
+                                                    }
+                                                </div>
+                                                <div class="text-2xs text-slate-500 mt-0.5">@perm.Description</div>
+                                            </div>
+                                        </label>
+                                    }
+                                </div>
                             </div>
-                        </div>
-                    }
-                </div>
-            }
-            else
-            {
-                <div class="p-4 bg-amber-50 text-amber-800 rounded-lg text-sm border border-amber-200">
-                    No synced permissions available. Create the role first, then sync endpoints from the Permissions page.
-                </div>
-            }
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200/80 text-amber-800 text-xs flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+                        <span>No synced permissions found. Synchronize endpoints in the Permissions catalog first.</span>
+                    </div>
+                }
+            </div>
         </div>
 
-        <div class="flex items-center justify-end space-x-3 pt-6 border-t border-slate-100">
-            <a asp-action="Index" class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">Cancel</a>
-            <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-brand-600 border border-transparent rounded-lg hover:bg-brand-700 transition-colors shadow-sm flex items-center">
-                <i class="fa-solid fa-check mr-2"></i> Create Role
+        <div class="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-100">
+            <a asp-action="Index" class="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Cancel</a>
+            <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-2xs transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-check text-2xs"></i>
+                <span>Create Role</span>
             </button>
         </div>
     </form>
@@ -98,4 +131,22 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('permissionSearch')?.addEventListener('keyup', function () {
+            const query = this.value.toLowerCase().trim();
+            document.querySelectorAll('.perm-item').forEach(item => {
+                const text = item.innerText.toLowerCase();
+                item.style.display = text.includes(query) ? '' : 'none';
+            });
+        });
+
+        document.querySelectorAll('.toggle-group').forEach(cb => {
+            cb.addEventListener('change', function () {
+                const group = this.getAttribute('data-group');
+                document.querySelectorAll('.group-cb-' + group).forEach(child => {
+                    child.checked = cb.checked;
+                });
+            });
+        });
+    </script>
 }

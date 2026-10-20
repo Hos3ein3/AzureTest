@@ -1,19 +1,28 @@
 @model AzureTest.Application.Events.Commands.UpdateEventCommand
+@using AzureTest.MVC.Models
 @{
     ViewData["Title"] = "Edit Event";
+    var pageHeader = new PageHeaderModel
+    {
+        Title = "Edit Event",
+        Subtitle = "Update event timing, details, or color",
+        Icon = "fa-solid fa-pen-to-square",
+        Breadcrumbs = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Events", Url.Action("Index", "Event")),
+            new BreadcrumbItem("Edit", active: true)
+        }
+    };
 }
 
-<nav aria-label="breadcrumb" class="mb-6">
-    <ol class="flex items-center space-x-2 text-sm text-slate-500">
-        <li><a asp-action="Index" class="hover:text-brand-600">Events</a></li>
-        <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
-        <li class="font-medium text-slate-800" aria-current="page">Edit</li>
-    </ol>
-</nav>
+<partial name="UiComponents/_PageHeader" model="pageHeader" />
 
-<div class="max-w-2xl bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-        <h5 class="text-sm font-semibold text-slate-800 m-0">Edit Event</h5>
+<div class="max-w-2xl bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <h2 class="text-sm font-bold text-slate-800 m-0 flex items-center gap-2">
+            <i class="fa-solid fa-pen text-brand-600"></i>
+            Edit Event
+        </h2>
     </div>
     <div class="p-6">
         <form asp-action="Edit" method="post">
@@ -21,12 +30,14 @@
             <input type="hidden" asp-for="Id" />
             
             <partial name="_UpsertPartial" />
-            <div class="flex gap-3">
-                <button type="submit" class="inline-flex justify-center rounded-lg border border-transparent bg-brand-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
-                    Update Event
+            
+            <div class="flex items-center gap-3 pt-6 mt-6 border-t border-slate-100">
+                <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-sm transition-colors">
+                    <i class="fa-solid fa-floppy-disk text-2xs"></i>
+                    <span>Update Event</span>
                 </button>
-                <a asp-action="Index" class="inline-flex justify-center rounded-lg border border-slate-300 bg-white py-2 px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
-                    Cancel
+                <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors">
+                    <span>Cancel</span>
                 </a>
             </div>
         </form>

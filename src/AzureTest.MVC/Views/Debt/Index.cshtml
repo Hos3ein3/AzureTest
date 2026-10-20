@@ -1,58 +1,75 @@
 @model AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.Debts.DebtDto, AzureTest.Contracts.DTOs.Debts.GetAllDebtsFilters>
 @{
-    ViewData["Title"] = "Debts";
+    ViewData["Title"] = "Debts Management";
     var filters = ViewBag.Filters as AzureTest.Contracts.DTOs.Debts.GetAllDebtsFilters ?? new();
     var debtPersons = ViewBag.DebtPersons as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new();
     var users = ViewBag.Users as IReadOnlyList<AzureTest.Contracts.DTOs.Users.UserListDto>;
     bool isAdmin = ViewBag.IsAdmin == true;
     var selectedUserIds = filters.UserIds ?? new List<Guid>();
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Finance", Url = "#" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Debts", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Debts Management",
+        Subtitle = "Track financial loans, borrowings, counterparties, and settlement statuses.",
+        Icon = "fa-solid fa-hand-holding-dollar",
+        Badge = $"{Model.TotalCount} Records",
+        ActionText = "Add New Debt",
+        ActionUrl = "/Debt/Create",
+        ActionIcon = "fa-solid fa-plus",
+        Breadcrumbs = breadcrumbs
+    };
 }
 
-<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-    <div>
-        <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <span class="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-600 flex items-center justify-center text-base">
-                <i class="fa-solid fa-hand-holding-dollar"></i>
-            </span>
-            Debts Management
-        </h1>
-        <p class="text-sm text-slate-500 mt-1">Track financial loans, borrowings, counterparties, and settlement statuses.</p>
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+<!-- Top Utility Actions -->
+<div class="flex flex-wrap items-center justify-between gap-3 mb-6 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
+    <div class="flex items-center gap-2">
+        <a asp-action="Analytics" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+            <i class="fa-solid fa-chart-pie text-brand-600"></i> Financial Analytics
+        </a>
+        <a asp-controller="DebtPerson" asp-action="Index" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+            <i class="fa-solid fa-users text-slate-600"></i> Manage Counterparties
+        </a>
     </div>
-    <div class="flex items-center gap-3">
-        <a asp-action="Analytics" class="inline-flex items-center px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-lg shadow-sm transition-colors">
-            <i class="fa-solid fa-chart-pie mr-2 text-brand-600"></i> Analytics
-        </a>
-        <a asp-action="Create" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors">
-            <i class="fa-solid fa-plus mr-2"></i> Add New
-        </a>
+
+    <div class="text-2xs text-slate-400 font-mono">
+        Total Items: @Model.TotalCount
     </div>
 </div>
 
-<!-- Redesigned Filter Panel -->
-<div class="mb-6 bg-white p-5 rounded-xl shadow-sm border border-slate-200/80">
+<!-- Filter Panel -->
+<div class="mb-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
     <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-            <i class="fa-solid fa-filter text-brand-500"></i> Filter & Search Debts
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+            <i class="fa-solid fa-filter text-brand-600"></i> Filter &amp; Search Debts
         </h3>
-        <span class="text-xs text-slate-400">@Model.TotalCount total results</span>
+        <span class="text-2xs font-semibold text-slate-400">@Model.TotalCount total records</span>
     </div>
     <form asp-action="Index" method="get">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
             <!-- Search -->
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Search Keyword</label>
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Search Keyword</label>
                 <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </div>
-                    <input name="SearchTerm" type="text" value="@filters.SearchTerm" class="block w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" placeholder="Description or Person..." />
+                    <input name="SearchTerm" type="text" value="@filters.SearchTerm" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="Description or Person..." />
                 </div>
             </div>
 
             <!-- Person Dropdown -->
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Counterparty (Person)</label>
-                <select name="DebtPersonId" class="block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Counterparty (Person)</label>
+                <select name="DebtPersonId" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white">
                     <option value="">-- All Persons --</option>
                     @foreach (var person in debtPersons)
                     {
@@ -64,8 +81,8 @@
 
             <!-- Status Dropdown -->
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Settlement Status</label>
-                <select name="IsDone" class="block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Settlement Status</label>
+                <select name="IsDone" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white">
                     <option value="">-- All Statuses --</option>
                     <!option value="false" @(filters.IsDone == false ? "selected" : "")>Pending / Active</!option>
                     <!option value="true" @(filters.IsDone == true ? "selected" : "")>Settled / Done</!option>
@@ -74,16 +91,16 @@
 
             <!-- Sort By -->
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Sort By</label>
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Sort By</label>
                 <div class="grid grid-cols-2 gap-2">
-                    <select name="SortBy" class="block w-full px-2 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
+                    <select name="SortBy" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white">
                         <!option value="DateOfBorrow" @(string.Equals(filters.SortBy, "DateOfBorrow", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Borrow Date</!option>
                         <!option value="Amount" @(string.Equals(filters.SortBy, "Amount", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Amount</!option>
                         <!option value="DebtPersonName" @(string.Equals(filters.SortBy, "DebtPersonName", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Person</!option>
                         <!option value="DateOfReturn" @(string.Equals(filters.SortBy, "DateOfReturn", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Return Date</!option>
                         <!option value="CreatedOn" @(string.Equals(filters.SortBy, "CreatedOn", StringComparison.OrdinalIgnoreCase) ? "selected" : "")>Created On</!option>
                     </select>
-                    <select name="SortDescending" class="block w-full px-2 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand-500">
+                    <select name="SortDescending" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white">
                         <!option value="true" @(filters.SortDescending ? "selected" : "")>Desc</!option>
                         <!option value="false" @(!filters.SortDescending ? "selected" : "")>Asc</!option>
                     </select>
@@ -91,42 +108,48 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <!-- CreatedOn From -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Created From</label>
-                <input name="CreatedOnFrom" type="date" value="@(filters.CreatedOnFrom?.ToString("yyyy-MM-dd"))" class="block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Created From</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                        <i class="fa-solid fa-calendar"></i>
+                    </div>
+                    <input name="CreatedOnFrom" type="date" value="@(filters.CreatedOnFrom?.ToString("yyyy-MM-dd"))" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+                </div>
             </div>
 
-            <!-- CreatedOn To -->
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Created To</label>
-                <input name="CreatedOnTo" type="date" value="@(filters.CreatedOnTo?.ToString("yyyy-MM-dd"))" class="block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Created To</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                        <i class="fa-solid fa-calendar"></i>
+                    </div>
+                    <input name="CreatedOnTo" type="date" value="@(filters.CreatedOnTo?.ToString("yyyy-MM-dd"))" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+                </div>
             </div>
 
-            <!-- Min Amount -->
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Min Amount</label>
-                <input name="MinAmount" type="number" step="0.01" value="@filters.MinAmount" placeholder="0.00" class="block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Min Amount</label>
+                <input name="MinAmount" type="number" step="0.01" value="@filters.MinAmount" placeholder="0.00" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white font-mono" />
             </div>
 
-            <!-- Max Amount -->
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Max Amount</label>
-                <input name="MaxAmount" type="number" step="0.01" value="@filters.MaxAmount" placeholder="Max" class="block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Max Amount</label>
+                <input name="MaxAmount" type="number" step="0.01" value="@filters.MaxAmount" placeholder="Max" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white font-mono" />
             </div>
         </div>
 
         @if (isAdmin && users != null && users.Any())
         {
-            <div class="mb-4 pt-3 border-t border-slate-100">
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Filter by Users (Admin Multi-Select)</label>
-                <div class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-2 bg-slate-50 rounded-lg border border-slate-200">
+            <div class="mb-3 pt-3 border-t border-slate-100">
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Filter by Users (Admin Multi-Select)</label>
+                <div class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200/80">
                     @foreach (var u in users)
                     {
                         var isChecked = selectedUserIds.Contains(u.Id);
-                        <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer @(isChecked ? "bg-brand-100 text-brand-800 border border-brand-300" : "bg-white text-slate-700 border border-slate-200")">
-                            <input type="checkbox" name="UserIds" value="@u.Id" @(isChecked ? "checked" : "") class="rounded text-brand-600 focus:ring-brand-500" />
+                        <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-2xs font-medium cursor-pointer transition-colors @(isChecked ? "bg-brand-50 text-brand-700 border border-brand-200" : "bg-white text-slate-700 border border-slate-200")">
+                            <input type="checkbox" name="UserIds" value="@u.Id" @(isChecked ? "checked" : "") class="w-3.5 h-3.5 rounded text-brand-600 focus:ring-brand-500 border-slate-300" />
                             <span>@u.FullName</span>
                         </label>
                     }
@@ -135,15 +158,15 @@
         }
 
         <div class="flex items-center justify-between pt-3 border-t border-slate-100">
-            <div class="text-xs text-slate-500">
+            <div class="text-2xs text-slate-400 font-mono">
                 Page @Model.PageNumber of @Math.Max(1, Model.TotalPages)
             </div>
             <div class="flex items-center gap-2">
-                <a asp-action="Index" class="inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-sm">
-                    <i class="fa-solid fa-rotate-left mr-1.5"></i> Reset
+                <a asp-action="Index" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors" title="Clear Filters">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
                 </a>
-                <button type="submit" class="inline-flex items-center px-5 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-brand-600 hover:bg-brand-700 transition-colors">
-                    <i class="fa-solid fa-filter mr-1.5"></i> Apply Filters
+                <button type="submit" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                    <i class="fa-solid fa-filter"></i> Apply Filters
                 </button>
             </div>
         </div>
@@ -151,91 +174,99 @@
 </div>
 
 <!-- Debts Table -->
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-50 text-slate-500 uppercase text-xs font-semibold">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200/80 uppercase tracking-wider text-2xs">
                 <tr>
-                    <th scope="col" class="px-6 py-3.5 text-left">Person</th>
-                    <th scope="col" class="px-6 py-3.5 text-right">Amount</th>
-                    <th scope="col" class="px-6 py-3.5 text-left">Borrow Date</th>
-                    <th scope="col" class="px-6 py-3.5 text-left">Promised / Return</th>
-                    <th scope="col" class="px-6 py-3.5 text-center">Status</th>
-                    <th scope="col" class="px-6 py-3.5 text-left">Description</th>
-                    <th scope="col" class="px-6 py-3.5 text-right">Actions</th>
+                    <th scope="col" class="px-5 py-3.5">Person</th>
+                    <th scope="col" class="px-5 py-3.5 text-right">Amount</th>
+                    <th scope="col" class="px-5 py-3.5">Borrow Date</th>
+                    <th scope="col" class="px-5 py-3.5">Promised / Return</th>
+                    <th scope="col" class="px-5 py-3.5 text-center">Status</th>
+                    <th scope="col" class="px-5 py-3.5">Description</th>
+                    <th scope="col" class="px-5 py-3.5 text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-slate-100">
+            <tbody class="divide-y divide-slate-100">
                 @if (Model != null && Model.Items.Any())
                 {
                     foreach (var item in Model.Items)
                     {
                         var isOverdue = !item.IsDone && item.PromissedReturnDate.HasValue && item.PromissedReturnDate.Value.Date < DateTime.Today;
-                        <tr class="hover:bg-slate-50/80 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap font-semibold text-slate-900">
-                                @item.DebtPersonName
+                        <tr class="hover:bg-slate-50/70 transition-colors">
+                            <td class="px-5 py-3.5 whitespace-nowrap">
+                                <div class="font-bold text-slate-900 text-xs flex items-center gap-2">
+                                    <div class="w-7 h-7 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center text-2xs shrink-0 font-bold">
+                                        @(string.IsNullOrWhiteSpace(item.DebtPersonName) ? "?" : item.DebtPersonName.Substring(0, 1).ToUpper())
+                                    </div>
+                                    <span>@item.DebtPersonName</span>
+                                </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right font-bold text-slate-800">
+                            <td class="px-5 py-3.5 whitespace-nowrap text-right font-black text-slate-900 font-mono text-xs">
                                 @item.Amount.ToString("C")
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-500">
+                            <td class="px-5 py-3.5 whitespace-nowrap text-slate-600 font-mono text-2xs">
                                 @item.DateOfBorrow.ToString("MMM dd, yyyy")
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-slate-500">
+                            <td class="px-5 py-3.5 whitespace-nowrap text-2xs font-mono">
                                 @if (item.IsDone)
                                 {
-                                    <span class="text-emerald-600 font-medium">
-                                        <i class="fa-solid fa-check mr-1"></i> Returned: @(item.DateOfReturn?.ToString("MMM dd, yyyy") ?? "-")
+                                    <span class="inline-flex items-center gap-1 text-emerald-600 font-semibold">
+                                        <i class="fa-solid fa-check text-3xs"></i> Returned: @(item.DateOfReturn?.ToString("MMM dd, yyyy") ?? "-")
                                     </span>
                                 }
                                 else if (isOverdue)
                                 {
-                                    <span class="text-rose-600 font-semibold">
-                                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Due: @(item.PromissedReturnDate?.ToString("MMM dd, yyyy") ?? "-")
+                                    <span class="inline-flex items-center gap-1 text-rose-600 font-bold">
+                                        <i class="fa-solid fa-triangle-exclamation text-3xs"></i> Due: @(item.PromissedReturnDate?.ToString("MMM dd, yyyy") ?? "-")
                                     </span>
                                 }
                                 else
                                 {
-                                    <span>
+                                    <span class="text-slate-500">
                                         Due: @(item.PromissedReturnDate?.ToString("MMM dd, yyyy") ?? "-")
                                     </span>
                                 }
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <td class="px-5 py-3.5 whitespace-nowrap text-center">
                                 @if (item.IsDone)
                                 {
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-                                        Settled
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                                        <i class="fa-solid fa-circle-check text-3xs"></i> Settled
                                     </span>
                                 }
                                 else if (isOverdue)
                                 {
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">
-                                        Overdue
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-rose-50 text-rose-700 border border-rose-200/80">
+                                        <i class="fa-solid fa-triangle-exclamation text-3xs"></i> Overdue
                                     </span>
                                 }
                                 else
                                 {
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
-                                        Pending
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80">
+                                        <i class="fa-solid fa-hourglass-half text-3xs"></i> Pending
                                     </span>
                                 }
                             </td>
-                            <td class="px-6 py-4 text-slate-500 truncate max-w-xs">
+                            <td class="px-5 py-3.5 text-slate-500 truncate max-w-xs text-2xs">
                                 @(string.IsNullOrWhiteSpace(item.Description) ? "-" : item.Description)
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a asp-action="Details" asp-route-id="@item.Id" class="text-brand-600 hover:text-brand-800 mx-1.5" title="Details">
-                                    <i class="fa-regular fa-eye"></i>
-                                </a>
-                                <a asp-action="Edit" asp-route-id="@item.Id" class="text-amber-600 hover:text-amber-800 mx-1.5" title="Edit">
-                                    <i class="fa-regular fa-pen-to-square"></i>
-                                </a>
-                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this debt?');">
-                                    <button type="submit" class="text-rose-600 hover:text-rose-800 mx-1.5 bg-transparent border-0 cursor-pointer p-0" title="Delete">
-                                        <i class="fa-regular fa-trash-can"></i>
-                                    </button>
-                                </form>
+                            <td class="px-5 py-3.5 whitespace-nowrap text-right">
+                                <div class="inline-flex items-center gap-1">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors" title="Details">
+                                        <i class="fa-regular fa-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="p-2 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-slate-100 transition-colors" title="Edit">
+                                        <i class="fa-regular fa-pen-to-square"></i>
+                                    </a>
+                                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this debt?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Delete">
+                                            <i class="fa-regular fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -243,10 +274,8 @@
                 else
                 {
                     <tr>
-                        <td colspan="7" class="px-6 py-12 text-center text-slate-500">
-                            <i class="fa-solid fa-folder-open text-4xl text-slate-300 mb-3 block"></i>
-                            <p class="font-medium text-slate-700">No debts found matching your criteria.</p>
-                            <p class="text-xs text-slate-400 mt-1">Try adjusting your filters or record a new debt.</p>
+                        <td colspan="7" class="p-8">
+                            <partial name="UiComponents/_EmptyState" model='new AzureTest.MVC.Models.EmptyStateModel { Title = "No Debts Found", Description = "No loan or debt transactions matched your filters.", Icon = "fa-solid fa-hand-holding-dollar", ActionText = "Record Debt", ActionUrl = "/Debt/Create" }' />
                         </td>
                     </tr>
                 }
@@ -257,44 +286,23 @@
     <!-- Pagination -->
     @if (Model != null && Model.TotalPages > 1)
     {
-        <div class="bg-white px-4 py-3 border-t border-slate-200 sm:px-6 flex items-center justify-between">
-            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                    <p class="text-sm text-slate-700">
-                        Showing Page <span class="font-medium">@Model.PageNumber</span> of <span class="font-medium">@Model.TotalPages</span>
-                        (<span class="font-medium">@Model.TotalCount</span> total items)
-                    </p>
-                </div>
-                <div>
-                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                        @{
-                            var prevDisabled = !Model.HasPreviousPage ? "pointer-events-none text-slate-300" : "text-slate-500 hover:bg-slate-50";
-                            var nextDisabled = !Model.HasNextPage ? "pointer-events-none text-slate-300" : "text-slate-500 hover:bg-slate-50";
-                        }
-                        <a asp-action="Index" asp-route-PageNumber="@(Model.PageNumber - 1)" asp-route-SearchTerm="@filters.SearchTerm" asp-route-DebtPersonId="@filters.DebtPersonId" asp-route-IsDone="@filters.IsDone" asp-route-SortBy="@filters.SortBy" asp-route-SortDescending="@filters.SortDescending" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium @prevDisabled">
-                            <span class="sr-only">Previous</span>
-                            <i class="fa-solid fa-chevron-left"></i>
-                        </a>
-
-                        @for (int i = 1; i <= Model.TotalPages; i++)
-                        {
-                            if (i == Model.PageNumber)
-                            {
-                                <span class="relative inline-flex items-center px-4 py-2 border border-brand-500 bg-brand-50 text-sm font-bold text-brand-600 z-10">@i</span>
-                            }
-                            else if (i == 1 || i == Model.TotalPages || (i >= Model.PageNumber - 2 && i <= Model.PageNumber + 2))
-                            {
-                                <a asp-action="Index" asp-route-PageNumber="@i" asp-route-SearchTerm="@filters.SearchTerm" asp-route-DebtPersonId="@filters.DebtPersonId" asp-route-IsDone="@filters.IsDone" asp-route-SortBy="@filters.SortBy" asp-route-SortDescending="@filters.SortDescending" class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">@i</a>
-                            }
-                        }
-
-                        <a asp-action="Index" asp-route-PageNumber="@(Model.PageNumber + 1)" asp-route-SearchTerm="@filters.SearchTerm" asp-route-DebtPersonId="@filters.DebtPersonId" asp-route-IsDone="@filters.IsDone" asp-route-SortBy="@filters.SortBy" asp-route-SortDescending="@filters.SortDescending" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium @nextDisabled">
-                            <span class="sr-only">Next</span>
-                            <i class="fa-solid fa-chevron-right"></i>
-                        </a>
-                    </nav>
-                </div>
-            </div>
-        </div>
+        var paginationModel = new AzureTest.MVC.Models.PaginationModel
+        {
+            CurrentPage = Model.PageNumber,
+            TotalPages = Model.TotalPages,
+            PageSize = Model.PageSize,
+            TotalItems = Model.TotalCount,
+            BaseUrl = "/Debt/Index",
+            RouteParams = new Dictionary<string, string>
+            {
+                { "SearchTerm", filters.SearchTerm ?? "" },
+                { "DebtPersonId", filters.DebtPersonId?.ToString() ?? "" },
+                { "IsDone", filters.IsDone?.ToString() ?? "" },
+                { "SortBy", filters.SortBy ?? "" },
+                { "SortDescending", filters.SortDescending.ToString() },
+                { "PageSize", Model.PageSize.ToString() }
+            }
+        };
+        <partial name="UiComponents/_Pagination" model="paginationModel" />
     }
 </div>

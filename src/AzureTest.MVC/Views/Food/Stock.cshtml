@@ -7,17 +7,21 @@
     var overview = ViewBag.Overview as StockInventoryOverviewDto;
     var filter = ViewBag.Filter as StockFilter ?? new StockFilter();
     var ingredients = ViewBag.IngredientsList as List<IngredientDto> ?? new List<IngredientDto>();
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new("Dashboard", "/"),
+        new("Food & Nutrition", Url.Action("Index")),
+        new("Pantry & Stock", IsActive: true)
+    };
 }
 
 <div class="space-y-6">
     <!-- Breadcrumbs & Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <nav class="flex items-center gap-2 text-xs text-slate-400 mb-1">
-                <a asp-action="Index" class="hover:text-brand-600 transition-colors">Food & Nutrition</a>
-                <i class="fa-solid fa-chevron-right text-3xs"></i>
-                <span class="text-slate-600 font-semibold">Pantry & Stock</span>
-            </nav>
+            <div class="mb-2">
+                <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+            </div>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
                 <i class="fa-solid fa-boxes-stacked text-brand-600"></i>
                 Pantry & Stock Inventory
