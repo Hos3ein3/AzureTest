@@ -143,6 +143,7 @@ public class TenantController : Controller
         if (targetTenantId == _tenantProvider.RealUserId)
         {
             Response.Cookies.Delete(TenantProvider.AdminTenantCookieKey);
+            Response.Cookies.Delete(TenantProvider.AdminTenantNameCookieKey);
             TempData["Success"] = $"Returned to your personal admin workspace ({targetUser.Email}).";
             _logger.LogInformation("Admin user {AdminId} returned to personal workspace", _tenantProvider.RealUserId);
         }
@@ -158,6 +159,8 @@ public class TenantController : Controller
             };
 
             Response.Cookies.Append(TenantProvider.AdminTenantCookieKey, targetTenantId.ToString(), cookieOptions);
+            var displayName = !string.IsNullOrWhiteSpace(targetUser.FullName) ? targetUser.FullName : (targetUser.Email ?? targetTenantId.ToString());
+            Response.Cookies.Append(TenantProvider.AdminTenantNameCookieKey, displayName, cookieOptions);
             TempData["Success"] = $"Active tenant switched to {targetUser.FullName} ({targetUser.Email}).";
             _logger.LogInformation("Admin user {AdminId} switched active tenant to {TargetTenantId} ({TargetEmail})",
                 _tenantProvider.RealUserId, targetTenantId, targetUser.Email);
@@ -178,6 +181,7 @@ public class TenantController : Controller
     public IActionResult ResetTenant([FromForm] string? returnUrl)
     {
         Response.Cookies.Delete(TenantProvider.AdminTenantCookieKey);
+        Response.Cookies.Delete(TenantProvider.AdminTenantNameCookieKey);
         TempData["Success"] = "Tenant impersonation cleared. You are back in your own admin workspace.";
         _logger.LogInformation("Admin user {AdminId} reset tenant impersonation", _tenantProvider.RealUserId);
 

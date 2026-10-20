@@ -180,6 +180,18 @@
                             <a asp-action="ManageRoles" asp-route-id="@user.Id" class="text-slate-600 hover:text-purple-600 mx-2" title="Manage Roles">
                                 <i class="fa-solid fa-user-shield"></i>
                             </a>
+
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <form asp-controller="Tenant" asp-action="SwitchTenant" method="post" class="inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="targetTenantId" value="@user.Id" />
+                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                                    <button type="submit" class="text-indigo-600 hover:text-indigo-800 mx-2" title="Switch To This Tenant (Impersonate)">
+                                        <i class="fa-solid fa-right-left"></i>
+                                    </button>
+                                </form>
+                            }
                             
                             <form asp-action="ToggleLockout" asp-route-id="@user.Id" method="post" class="inline">
                                 <button type="submit" class="@(user.IsLockedOut ? "text-emerald-500 hover:text-emerald-700" : "text-amber-500 hover:text-amber-700") mx-2" title="@(user.IsLockedOut ? "Unlock User" : "Lock User")">

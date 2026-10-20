@@ -103,7 +103,29 @@
                 <span class="font-medium text-slate-700">@ViewData["Title"]</span>
             </div>
             
-            <div class="flex items-center space-x-6">
+            <div class="flex items-center space-x-4">
+                @if (_CurrentUser?.IsAdmin == true && _TenantProvider != null && _TenantProvider.IsAdminImpersonating)
+                {
+                    <!-- Prominent Tenant Impersonation Warning Pill (Before Omnibar) -->
+                    <div class="flex items-center bg-amber-500 text-white rounded-lg shadow-sm border border-amber-600 pl-3 pr-1.5 py-1 text-xs gap-2 animate-pulse" title="Active Tenant: @_TenantProvider.CurrentTenantId">
+                        <i class="fa-solid fa-user-secret text-sm text-amber-100"></i>
+                        <div class="flex flex-col text-left leading-tight max-w-[130px] sm:max-w-[200px]">
+                            <span class="text-[9px] font-extrabold uppercase tracking-wider text-amber-100">Impersonating</span>
+                            <span class="font-bold truncate text-white">@(!string.IsNullOrWhiteSpace(_TenantProvider.ImpersonatedTenantName) ? _TenantProvider.ImpersonatedTenantName : _TenantProvider.CurrentTenantId.ToString())</span>
+                        </div>
+                        <a asp-controller="Tenant" asp-action="Index" class="ml-1 px-1.5 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white font-semibold text-[11px] transition-colors" title="Switch to another tenant">
+                            <i class="fa-solid fa-users-gear"></i>
+                        </a>
+                        <form asp-controller="Tenant" asp-action="ResetTenant" method="post" class="inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                            <button type="submit" class="w-5 h-5 rounded bg-amber-700 hover:bg-amber-800 text-white flex items-center justify-center transition-colors" title="Exit Impersonation (Return to your own workspace)">
+                                <i class="fa-solid fa-xmark text-xs"></i>
+                            </button>
+                        </form>
+                    </div>
+                }
+
                 <button onclick="toggleOmnibar()" class="hidden md:flex items-center space-x-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg text-sm text-slate-400 hover:text-slate-500 hover:border-slate-300 transition-colors shadow-sm w-48 focus:outline-none focus:ring-2 focus:ring-brand-500">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <span class="flex-1 text-left">Search...</span>
@@ -143,12 +165,9 @@
                 
                 @if (_CurrentUser?.IsAdmin == true && _TenantProvider != null && _TenantProvider.IsMultiTenancyEnabled)
                 {
-                    <a asp-action="Index" asp-controller="Tenant" class="text-slate-400 hover:text-brand-500 transition-colors relative flex items-center" title="Tenant Management@(_TenantProvider.IsAdminImpersonating ? " (Impersonating)" : "")">
-                        <i class="fa-solid fa-building-user text-lg @(_TenantProvider.IsAdminImpersonating ? "text-amber-500 animate-pulse" : "")"></i>
-                        @if (_TenantProvider.IsAdminImpersonating)
-                        {
-                            <span class="absolute -top-1 -right-1 bg-amber-500 rounded-full h-2 w-2"></span>
-                        }
+                    <a asp-action="Index" asp-controller="Tenant" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold @(_TenantProvider.IsAdminImpersonating ? "bg-amber-100 text-amber-800 border border-amber-300 animate-pulse" : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200") transition-all" title="Manage & Switch Tenant Workspace">
+                        <i class="fa-solid fa-building-user @(_TenantProvider.IsAdminImpersonating ? "text-amber-600" : "text-indigo-600") text-sm"></i>
+                        <span class="hidden sm:inline">@(_TenantProvider.IsAdminImpersonating ? "Impersonating" : "Tenants")</span>
                     </a>
                 }
 

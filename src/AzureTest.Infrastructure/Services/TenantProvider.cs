@@ -14,6 +14,7 @@ namespace AzureTest.Infrastructure.Services;
 public class TenantProvider : ITenantProvider
 {
     public const string AdminTenantCookieKey = "Admin_Active_TenantId";
+    public const string AdminTenantNameCookieKey = "Admin_Active_TenantName";
     public const string TenantHeaderKey = "X-Tenant-Id";
 
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -53,6 +54,26 @@ public class TenantProvider : ITenantProvider
 
             var overrideTenantId = GetAdminOverrideTenantId();
             return overrideTenantId.HasValue && overrideTenantId.Value != Guid.Empty && overrideTenantId.Value != RealUserId;
+        }
+    }
+
+    public string? ImpersonatedTenantName
+    {
+        get
+        {
+            if (!IsAdminImpersonating)
+                return null;
+
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext == null)
+                return null;
+
+            if (httpContext.Request.Cookies.TryGetValue(AdminTenantNameCookieKey, out var name) && !string.IsNullOrWhiteSpace(name))
+            {
+                return name;
+            }
+
+            return null;
         }
     }
 

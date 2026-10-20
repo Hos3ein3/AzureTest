@@ -157,6 +157,18 @@
     </form>
 </div>
 
+@if (Model.TotalCount <= 1 && !Model.IsAdminImpersonating)
+{
+    <div class="mb-6 p-4 rounded-xl bg-blue-50 border border-blue-200 text-sm text-blue-900 flex items-start gap-3">
+        <i class="fa-solid fa-circle-info text-blue-500 text-base mt-0.5"></i>
+        <div class="flex-1">
+            <span class="font-bold">Only 1 User Exists in Database:</span>
+            Your account is currently the only user registered in the system. Because this is already your active workspace, there are no other tenants to switch to yet.
+            To test tenant switching, simply create or register another user at <a asp-controller="User" asp-action="Create" class="font-bold underline text-indigo-700 hover:text-indigo-900">/User/Create</a> or <a href="/Auth/Register" class="font-bold underline text-indigo-700 hover:text-indigo-900">/Auth/Register</a>. Once created, the <strong>"Switch To"</strong> button will appear next to their name.
+        </div>
+    </div>
+}
+
 <!-- Tenants Table -->
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
     <div class="overflow-x-auto">
@@ -234,16 +246,16 @@
                         <td class="px-6 py-4 whitespace-nowrap text-right">
                             @if (tenant.IsActiveTenant)
                             {
-                                <button disabled class="inline-flex items-center px-3 py-1.5 bg-slate-100 text-slate-400 text-xs font-medium rounded-lg cursor-not-allowed">
-                                    <i class="fa-solid fa-lock mr-1.5"></i> Selected
-                                </button>
+                                <span class="inline-flex items-center px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-lg shadow-sm">
+                                    <i class="fa-solid fa-circle-check mr-1.5 text-emerald-500"></i> Active Workspace
+                                </span>
                             }
                             else
                             {
                                 <form asp-action="SwitchTenant" method="post" class="inline">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="targetTenantId" value="@tenant.TenantId" />
-                                    <button type="submit" @(Model.IsMultiTenancyEnabled ? "" : "disabled") class="inline-flex items-center px-3 py-1.5 @(Model.IsMultiTenancyEnabled ? "bg-brand-600 hover:bg-brand-700 text-white" : "bg-slate-200 text-slate-400 cursor-not-allowed") text-xs font-semibold rounded-lg shadow-sm transition-colors">
+                                    <button type="submit" @(Model.IsMultiTenancyEnabled ? "" : "disabled") class="inline-flex items-center px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow transition-colors">
                                         <i class="fa-solid fa-right-left mr-1.5"></i> Switch To
                                     </button>
                                 </form>

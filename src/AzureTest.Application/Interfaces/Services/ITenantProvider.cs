@@ -30,4 +30,9 @@ public interface ITenantProvider
     /// Returns true if multi-tenancy is enabled via FeatureManagement in application configuration.
     /// </summary>
     bool IsMultiTenancyEnabled { get; }
+
+    /// <summary>
+    /// Gets the display name or email of the actively impersonated tenant, or null if not impersonating.
+    /// </summary>
+    string? ImpersonatedTenantName { get; }
 }
