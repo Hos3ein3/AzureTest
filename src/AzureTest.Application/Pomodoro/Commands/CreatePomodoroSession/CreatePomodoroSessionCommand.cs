@@ -29,7 +29,8 @@ public sealed record CreatePomodoroSessionCommand(Guid UserId, CreatePomodoroSes
                 status: cmd.Dto.Status,
                 interruptionCount: cmd.Dto.InterruptionCount,
                 notes: cmd.Dto.Notes,
-                usedSkin: cmd.Dto.UsedSkin);
+                usedSkin: cmd.Dto.UsedSkin,
+                taskItemId: cmd.Dto.TaskItemId);
         }
     }
 }

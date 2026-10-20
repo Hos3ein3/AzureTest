@@ -30,4 +30,9 @@
       <Folder Include="wwwroot\uploads\resumes\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Remove="Views_backup*/**" />
+      <Content Remove="Views_backup*/**" />
+      <None Remove="Views_backup*/**" />
+    </ItemGroup>
 </Project>

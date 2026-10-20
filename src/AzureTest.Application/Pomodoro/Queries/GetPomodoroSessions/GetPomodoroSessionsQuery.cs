@@ -21,6 +21,8 @@ public sealed record GetPomodoroSessionsQuery(Guid UserId, PomodoroFilter Filter
                 s.UserId,
                 s.Title,
                 s.Category,
+                s.TaskItemId,
+                s.TaskItem?.Title,
                 s.SessionType,
                 s.Status,
                 s.PlannedDurationSeconds,

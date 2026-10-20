@@ -42,7 +42,14 @@ public sealed class PomodoroSessionConfiguration : IEntityTypeConfiguration<Pomo
         builder.Property(x => x.StartedAtUtc)
             .IsRequired();
 
+        builder.HasOne(x => x.TaskItem)
+            .WithMany()
+            .HasForeignKey(x => x.TaskItemId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.HasIndex(x => x.UserId);
+        builder.HasIndex(x => x.TaskItemId);
         builder.HasIndex(x => new { x.UserId, x.StartedAtUtc });
         builder.HasIndex(x => new { x.UserId, x.Status });
         builder.HasQueryFilter(x => !x.IsDeleted);

@@ -11,8 +11,8 @@ public class HabitTracker : AggregateRoot, ISoftDelete, IAudit
     public string? Description { get; private set; }
     public HabitType Type { get; private set; }
     public HabitDirection Direction { get; private set; } = HabitDirection.AtLeast;
-    public double Target { get; private set; }
-    public double Goal => Target;
+    public double? Target { get; private set; }
+    public double? Goal => Target;
     public string? Schedule { get; private set; }
     public HabitFrequency Frequency { get; private set; } = HabitFrequency.Daily;
     public string TimeZone { get; private set; } = "UTC";
@@ -41,7 +41,7 @@ public class HabitTracker : AggregateRoot, ISoftDelete, IAudit
         string? description,
         HabitType type,
         HabitDirection direction,
-        double target,
+        double? target,
         string? schedule,
         HabitFrequency frequency,
         string? timeZone,
@@ -67,7 +67,7 @@ public class HabitTracker : AggregateRoot, ISoftDelete, IAudit
         };
     }
 
-    public static HabitTracker Create(string name, string? description, HabitType type, HabitFrequency frequency, double goal, Guid userId)
+    public static HabitTracker Create(string name, string? description, HabitType type, HabitFrequency frequency, double? goal, Guid userId)
     {
         return Create(
             name: name,
@@ -89,7 +89,7 @@ public class HabitTracker : AggregateRoot, ISoftDelete, IAudit
         string? description,
         HabitType type,
         HabitDirection direction,
-        double target,
+        double? target,
         string? schedule,
         HabitFrequency frequency,
         string? timeZone,
@@ -110,7 +110,7 @@ public class HabitTracker : AggregateRoot, ISoftDelete, IAudit
         TypeConfig = typeConfig;
     }
 
-    public void Update(string name, string? description, HabitType type, HabitFrequency frequency, double goal)
+    public void Update(string name, string? description, HabitType type, HabitFrequency frequency, double? goal)
     {
         Name = name;
         Description = description;

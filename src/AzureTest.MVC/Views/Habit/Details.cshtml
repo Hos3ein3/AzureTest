@@ -48,7 +48,7 @@
                     @Model.Type
                 </span>
                 <span class="px-3 py-1 text-xs font-semibold rounded-full @(Model.Direction == HabitDirection.AtLeast ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700")">
-                    @(Model.Direction == HabitDirection.AtLeast ? "≥ At least" : "≤ At most") @Model.Target
+                    @(Model.Direction == HabitDirection.AtLeast ? "≥ At least" : "≤ At most") @(Model.Target.HasValue ? Model.Target.Value.ToString() : "None")
                 </span>
                 @if (isDone)
                 {
@@ -500,7 +500,7 @@
                 <p class="text-xs text-slate-500">Daily performance over the last 30 days</p>
             </div>
             <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
-                Target: @Model.Target
+                Target: @(Model.Target.HasValue ? Model.Target.Value.ToString() : "None")
             </span>
         </div>
         <div class="h-64 relative">
@@ -607,7 +607,7 @@
         document.addEventListener("DOMContentLoaded", function () {
             const labels = @Html.Raw(labelsJson);
             const dataValues = @Html.Raw(valuesJson);
-            const targetVal = @Model.Target;
+            const targetVal = @(Model.Target ?? 0);
 
             // 1. History Trend Chart
             const ctxHistory = document.getElementById('habitHistoryChart').getContext('2d');

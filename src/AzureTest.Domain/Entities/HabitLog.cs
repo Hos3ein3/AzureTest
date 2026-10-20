@@ -99,7 +99,7 @@ public class HabitLog : BaseEntity, IAudit, ISoftDelete
         LoggedAt = DateTime.UtcNow;
     }
 
-    public void SetTargetSnapshot(double targetSnapshot)
+    public void SetTargetSnapshot(double? targetSnapshot)
     {
         TargetSnapshot = targetSnapshot;
     }

@@ -10,7 +10,7 @@ public record HabitTrackerDto(
     string? Description,
     HabitType Type,
     HabitDirection Direction,
-    double Target,
+    double? Target,
     string? Schedule,
     HabitFrequency Frequency,
     string TimeZone,
@@ -27,7 +27,7 @@ public record HabitTrackerDto(
     double ProgressPercentage = 0
 )
 {
-    public double Goal => Target;
+    public double? Goal => Target;
 
     // Backward-compatible constructor
     public HabitTrackerDto(
@@ -36,7 +36,7 @@ public record HabitTrackerDto(
         string? description,
         HabitType type,
         HabitFrequency frequency,
-        double goal,
+        double? goal,
         Guid userId,
         List<HabitLogDto> logs)
         : this(

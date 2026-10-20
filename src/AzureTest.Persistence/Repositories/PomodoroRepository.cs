@@ -22,7 +22,7 @@ public class PomodoroRepository : GenericRepository<PomodoroSession>, IPomodoroR
         DateTime? toUtc = null,
         CancellationToken ct = default)
     {
-        var query = _dbSet.Where(s => s.UserId == userId);
+        var query = _dbSet.Include(s => s.TaskItem).Where(s => s.UserId == userId);
 
         if (fromUtc.HasValue)
         {

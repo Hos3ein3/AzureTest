@@ -59,8 +59,8 @@ public class HabitController : Controller
         string? description,
         HabitType type,
         HabitDirection direction = HabitDirection.AtLeast,
-        double target = 0,
-        double goal = 0,
+        double? target = null,
+        double? goal = null,
         string? schedule = null,
         HabitFrequency frequency = HabitFrequency.Daily,
         string? timeZone = "UTC",
@@ -68,8 +68,8 @@ public class HabitController : Controller
         string? typeConfig = null)
     {
         // Support backward-compatible 'goal' if target was omitted
-        double finalTarget = target > 0 ? target : goal;
-        if (finalTarget <= 0 && type == HabitType.Boolean) finalTarget = 1;
+        double? finalTarget = target ?? goal;
+        if (!finalTarget.HasValue && type == HabitType.Boolean) finalTarget = 1;
 
         if (ModelState.IsValid)
         {
@@ -102,7 +102,8 @@ public class HabitController : Controller
         string? description,
         HabitType type,
         HabitDirection direction = HabitDirection.AtLeast,
-        double target = 0,
+        double? target = null,
+        double? goal = null,
         string? schedule = null,
         HabitFrequency frequency = HabitFrequency.Daily,
         string? timeZone = "UTC",
@@ -110,6 +111,8 @@ public class HabitController : Controller
         bool isPrivate = false,
         string? typeConfig = null)
     {
+        double? finalTarget = target ?? goal;
+
         if (ModelState.IsValid)
         {
             var command = new UpdateHabitCommand(
@@ -118,7 +121,7 @@ public class HabitController : Controller
                 Description: description,
                 Type: type,
                 Direction: direction,
-                Target: target,
+                Target: finalTarget,
                 Schedule: schedule ?? frequency.ToString(),
                 Frequency: frequency,
                 TimeZone: timeZone ?? "UTC",

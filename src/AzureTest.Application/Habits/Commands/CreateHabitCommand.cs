@@ -11,7 +11,7 @@ public record CreateHabitCommand(
     string? Description,
     HabitType Type,
     HabitDirection Direction,
-    double Target,
+    double? Target,
     string? Schedule,
     HabitFrequency Frequency,
     string? TimeZone,
@@ -19,10 +19,10 @@ public record CreateHabitCommand(
     string? TypeConfig
 ) : ICommand<Result<Guid>>
 {
-    public double Goal => Target;
+    public double? Goal => Target;
 
     // Backward-compatible constructor
-    public CreateHabitCommand(string name, string? description, HabitType type, HabitFrequency frequency, double goal)
+    public CreateHabitCommand(string name, string? description, HabitType type, HabitFrequency frequency, double? goal)
         : this(
             name,
             description,
@@ -45,7 +45,7 @@ public sealed class CreateHabitCommandValidator : AbstractValidator<CreateHabitC
         RuleFor(x => x.Name).NotEmpty().WithMessage("Habit name is required.").MaximumLength(200);
         RuleFor(x => x.Type).IsInEnum();
         RuleFor(x => x.Direction).IsInEnum();
-        RuleFor(x => x.Target).GreaterThanOrEqualTo(0).WithMessage("Target must be non-negative.");
+        RuleFor(x => x.Target).GreaterThanOrEqualTo(0).When(x => x.Target.HasValue).WithMessage("Target must be non-negative.");
         RuleFor(x => x.Schedule).MaximumLength(100);
         RuleFor(x => x.TimeZone).MaximumLength(100);
     }

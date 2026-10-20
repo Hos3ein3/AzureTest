@@ -230,6 +230,20 @@
 
         <!-- Task & Tag Input -->
         <div class="w-full max-w-md mt-6 space-y-3">
+            @if (Model.ActiveTasks != null && Model.ActiveTasks.Any())
+            {
+                <div class="relative">
+                    <select id="select-linked-task" onchange="onTaskSelectChanged(this)"
+                            class="w-full bg-slate-800/90 border border-slate-700 rounded-2xl py-2.5 px-3.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all">
+                        <option value="">📋 Link to an active task (optional)</option>
+                        @foreach (var task in Model.ActiveTasks)
+                        {
+                            <option value="@task.Id" data-title="@task.Title">@task.Title</option>
+                        }
+                    </select>
+                </div>
+            }
+
             <div class="relative">
                 <input id="input-task-title" type="text" placeholder="What are you focusing on?"
                        class="w-full bg-slate-800/90 border border-slate-700 rounded-2xl py-3 px-4 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all shadow-inner" />
@@ -725,12 +739,29 @@
             else setMode('work');
         }
 
+        let selectedTaskItemId = null;
+
+        function onTaskSelectChanged(select) {
+            selectedTaskItemId = select.value || null;
+            if (select.value) {
+                const opt = select.options[select.selectedIndex];
+                const taskTitle = opt.getAttribute('data-title');
+                if (taskTitle) {
+                    document.getElementById('input-task-title').value = taskTitle;
+                }
+            }
+        }
+
         // Backend Sync API
         async function sendSessionLog(title, category, sessionType, actualSeconds, status) {
             try {
+                const selectEl = document.getElementById('select-linked-task');
+                const taskItemId = (selectEl && selectEl.value) ? selectEl.value : (selectedTaskItemId || null);
+
                 const payload = {
                     title: title,
                     category: category,
+                    taskItemId: taskItemId,
                     sessionType: sessionType,
                     plannedDurationSeconds: totalSeconds,
                     actualDurationSeconds: actualSeconds,

@@ -12,7 +12,7 @@ public record UpdateHabitCommand(
     string? Description,
     HabitType Type,
     HabitDirection Direction,
-    double Target,
+    double? Target,
     string? Schedule,
     HabitFrequency Frequency,
     string? TimeZone,
@@ -21,10 +21,10 @@ public record UpdateHabitCommand(
     string? TypeConfig
 ) : ICommand<Result>
 {
-    public double Goal => Target;
+    public double? Goal => Target;
 
     // Backward-compatible constructor
-    public UpdateHabitCommand(Guid id, string name, string? description, HabitType type, HabitFrequency frequency, double goal)
+    public UpdateHabitCommand(Guid id, string name, string? description, HabitType type, HabitFrequency frequency, double? goal)
         : this(
             id,
             name,
@@ -50,7 +50,7 @@ public sealed class UpdateHabitCommandValidator : AbstractValidator<UpdateHabitC
         RuleFor(x => x.Name).NotEmpty().WithMessage("Habit name is required.").MaximumLength(200);
         RuleFor(x => x.Type).IsInEnum();
         RuleFor(x => x.Direction).IsInEnum();
-        RuleFor(x => x.Target).GreaterThanOrEqualTo(0).WithMessage("Target must be non-negative.");
+        RuleFor(x => x.Target).GreaterThanOrEqualTo(0).When(x => x.Target.HasValue).WithMessage("Target must be non-negative.");
         RuleFor(x => x.Schedule).MaximumLength(100);
         RuleFor(x => x.TimeZone).MaximumLength(100);
     }

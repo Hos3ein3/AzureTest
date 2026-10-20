@@ -13,7 +13,7 @@ public class HabitTrackerConfiguration : IEntityTypeConfiguration<HabitTracker>
         builder.Property(h => h.Description).HasMaxLength(1000);
         builder.Property(h => h.Type).IsRequired();
         builder.Property(h => h.Direction).IsRequired();
-        builder.Property(h => h.Target).IsRequired();
+        builder.Property(h => h.Target).IsRequired(false);
         builder.Property(h => h.Schedule).HasMaxLength(100);
         builder.Property(h => h.Frequency).IsRequired();
         builder.Property(h => h.TimeZone).IsRequired().HasMaxLength(100).HasDefaultValue("UTC");

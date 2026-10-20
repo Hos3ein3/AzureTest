@@ -13,7 +13,7 @@ public class HabitDaySummary
     public bool IsCompleted { get; set; }
     public double? NumericValue { get; set; }
     public string? Value { get; set; }
-    public double Target { get; set; }
+    public double? Target { get; set; }
 }
 
 public class HabitComputedStats
@@ -108,9 +108,9 @@ public static class HabitStatsCalculator
         }
 
         double progress = 0;
-        if (tracker.Target > 0)
+        if (tracker.Target.HasValue && tracker.Target.Value > 0)
         {
-            progress = Math.Clamp(Math.Round((todaySummary.NumericValue ?? 0) / tracker.Target * 100, 1), 0, 100);
+            progress = Math.Clamp(Math.Round((todaySummary.NumericValue ?? 0) / tracker.Target.Value * 100, 1), 0, 100);
         }
         else if (todaySummary.IsCompleted)
         {
@@ -172,7 +172,7 @@ public static class HabitStatsCalculator
         }
 
         // Snapshot of target: use the first log's target snapshot if available, otherwise habit's current target
-        double effectiveTarget = dayLogs.First().TargetSnapshot ?? tracker.Target;
+        double? effectiveTarget = dayLogs.First().TargetSnapshot ?? tracker.Target;
         bool isAtLeast = tracker.Direction == HabitDirection.AtLeast;
 
         switch (tracker.Type)
@@ -194,8 +194,10 @@ public static class HabitStatsCalculator
             {
                 // Counter: sum numeric values or count of clicks
                 double total = dayLogs.Sum(l => l.NumericValue ?? 1);
-                bool completed = isAtLeast ? (effectiveTarget <= 0 ? total > 0 : total >= effectiveTarget)
-                                           : total <= effectiveTarget;
+                bool completed = isAtLeast
+                    ? (!effectiveTarget.HasValue || effectiveTarget.Value <= 0 ? total > 0 : total >= effectiveTarget.Value)
+                    : (!effectiveTarget.HasValue ? true : total <= effectiveTarget.Value);
+
                 return new HabitDaySummary
                 {
                     Date = date,
@@ -210,7 +212,10 @@ public static class HabitStatsCalculator
             case HabitType.Duration:
             {
                 double total = dayLogs.Sum(l => l.NumericValue ?? 0);
-                bool completed = isAtLeast ? total >= effectiveTarget : total <= effectiveTarget;
+                bool completed = isAtLeast
+                    ? (!effectiveTarget.HasValue || effectiveTarget.Value <= 0 ? total > 0 : total >= effectiveTarget.Value)
+                    : (!effectiveTarget.HasValue ? true : total <= effectiveTarget.Value);
+
                 return new HabitDaySummary
                 {
                     Date = date,
@@ -225,7 +230,10 @@ public static class HabitStatsCalculator
             {
                 var latest = dayLogs.OrderByDescending(l => l.LoggedAt).First();
                 double rating = latest.NumericValue ?? (double.TryParse(latest.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var r) ? r : 0);
-                bool completed = isAtLeast ? rating >= effectiveTarget : rating <= effectiveTarget;
+                bool completed = isAtLeast
+                    ? (!effectiveTarget.HasValue ? rating > 0 : rating >= effectiveTarget.Value)
+                    : (!effectiveTarget.HasValue ? true : rating <= effectiveTarget.Value);
+
                 return new HabitDaySummary
                 {
                     Date = date,
@@ -242,9 +250,15 @@ public static class HabitStatsCalculator
                 bool completed = false;
                 if (TimeOnly.TryParse(latest.Value, out var loggedTime))
                 {
-                    // Target can be formatted as time e.g. "07:00" in TypeConfig or numeric minutes in Target
-                    TimeOnly targetTime = TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(effectiveTarget));
-                    completed = isAtLeast ? loggedTime >= targetTime : loggedTime <= targetTime;
+                    if (effectiveTarget.HasValue)
+                    {
+                        TimeOnly targetTime = TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(effectiveTarget.Value));
+                        completed = isAtLeast ? loggedTime >= targetTime : loggedTime <= targetTime;
+                    }
+                    else
+                    {
+                        completed = true;
+                    }
                 }
                 return new HabitDaySummary
                 {
@@ -264,7 +278,10 @@ public static class HabitStatsCalculator
                 {
                     checkedCount = latest.Value.Split(new[] { ',', ';', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Length;
                 }
-                bool completed = isAtLeast ? checkedCount >= effectiveTarget : checkedCount <= effectiveTarget;
+                bool completed = isAtLeast
+                    ? (!effectiveTarget.HasValue ? checkedCount > 0 : checkedCount >= effectiveTarget.Value)
+                    : (!effectiveTarget.HasValue ? true : checkedCount <= effectiveTarget.Value);
+
                 return new HabitDaySummary
                 {
                     Date = date,

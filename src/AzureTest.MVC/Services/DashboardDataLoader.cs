@@ -118,7 +118,7 @@ public class DashboardDataLoader : IDashboardDataLoader
                 foreach (var dayGroup in logsByDate)
                 {
                     bool isDone = false;
-                    double target = dayGroup.First().TargetSnapshot ?? h.Target;
+                    double target = dayGroup.First().TargetSnapshot ?? h.Target ?? 0;
                     if (h.Type == AzureTest.Domain.Enums.HabitType.Boolean)
                     {
                         isDone = dayGroup.Any(l => l.BooleanValue || l.Value == "true");

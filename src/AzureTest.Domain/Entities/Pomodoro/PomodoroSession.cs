@@ -25,6 +25,9 @@ public sealed class PomodoroSession : AggregateRoot, ISoftDelete, IAudit
     public Guid UserId { get; private set; }
     public string Title { get; private set; } = string.Empty;
     public string? Category { get; private set; }
+    public Guid? TaskItemId { get; private set; }
+    public TaskItem? TaskItem { get; private set; }
+
     public PomodoroSessionType SessionType { get; private set; }
     public PomodoroStatus Status { get; private set; }
     public int PlannedDurationSeconds { get; private set; }
@@ -58,7 +61,8 @@ public sealed class PomodoroSession : AggregateRoot, ISoftDelete, IAudit
         PomodoroStatus status,
         int interruptionCount = 0,
         string? notes = null,
-        TimerSkin usedSkin = TimerSkin.Digital)
+        TimerSkin usedSkin = TimerSkin.Digital,
+        Guid? taskItemId = null)
     {
         var sanitizedTitle = string.IsNullOrWhiteSpace(title) ? "Focus Session" : title.Trim();
         if (sanitizedTitle.Length > Rules.TitleMaxLength)
@@ -87,6 +91,7 @@ public sealed class PomodoroSession : AggregateRoot, ISoftDelete, IAudit
             UserId = userId,
             Title = sanitizedTitle,
             Category = sanitizedCategory,
+            TaskItemId = taskItemId,
             SessionType = sessionType,
             Status = status,
             PlannedDurationSeconds = plannedSec,
@@ -98,6 +103,53 @@ public sealed class PomodoroSession : AggregateRoot, ISoftDelete, IAudit
             UsedSkin = usedSkin,
             CreatedOn = DateTime.UtcNow
         };
+    }
+
+    public void Update(
+        string title,
+        string? category,
+        Guid? taskItemId,
+        PomodoroSessionType sessionType,
+        int plannedDurationSeconds,
+        int actualDurationSeconds,
+        DateTime startedAtUtc,
+        DateTime? endedAtUtc,
+        PomodoroStatus status,
+        int interruptionCount,
+        string? notes,
+        TimerSkin usedSkin)
+    {
+        var sanitizedTitle = string.IsNullOrWhiteSpace(title) ? "Focus Session" : title.Trim();
+        if (sanitizedTitle.Length > Rules.TitleMaxLength)
+        {
+            sanitizedTitle = sanitizedTitle[..Rules.TitleMaxLength];
+        }
+
+        var sanitizedCategory = string.IsNullOrWhiteSpace(category) ? null : category.Trim();
+        if (sanitizedCategory != null && sanitizedCategory.Length > Rules.CategoryMaxLength)
+        {
+            sanitizedCategory = sanitizedCategory[..Rules.CategoryMaxLength];
+        }
+
+        var sanitizedNotes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
+        if (sanitizedNotes != null && sanitizedNotes.Length > Rules.NotesMaxLength)
+        {
+            sanitizedNotes = sanitizedNotes[..Rules.NotesMaxLength];
+        }
+
+        Title = sanitizedTitle;
+        Category = sanitizedCategory;
+        TaskItemId = taskItemId;
+        SessionType = sessionType;
+        PlannedDurationSeconds = Math.Clamp(plannedDurationSeconds, Rules.PlannedDurationSecondsMin, Rules.PlannedDurationSecondsMax);
+        ActualDurationSeconds = Math.Clamp(actualDurationSeconds, Rules.ActualDurationSecondsMin, Rules.ActualDurationSecondsMax);
+        StartedAtUtc = startedAtUtc;
+        EndedAtUtc = endedAtUtc;
+        Status = status;
+        InterruptionCount = Math.Clamp(interruptionCount, Rules.InterruptionCountMin, Rules.InterruptionCountMax);
+        Notes = sanitizedNotes;
+        UsedSkin = usedSkin;
+        ModifiedOn = DateTime.UtcNow;
     }
 
     public void Complete(int actualDurationSeconds, string? notes = null)

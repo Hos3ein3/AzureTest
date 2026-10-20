@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Interfaces.Services;
@@ -8,10 +9,13 @@ using AzureTest.Application.Pomodoro.Commands.AbandonPomodoroSession;
 using AzureTest.Application.Pomodoro.Commands.CompletePomodoroSession;
 using AzureTest.Application.Pomodoro.Commands.CreatePomodoroSession;
 using AzureTest.Application.Pomodoro.Commands.DeletePomodoroSession;
+using AzureTest.Application.Pomodoro.Commands.UpdatePomodoroSession;
 using AzureTest.Application.Pomodoro.Commands.UpdatePomodoroSetting;
 using AzureTest.Application.Pomodoro.Queries.GetPomodoroAnalytics;
 using AzureTest.Application.Pomodoro.Queries.GetPomodoroSessions;
 using AzureTest.Application.Pomodoro.Queries.GetPomodoroSetting;
+using AzureTest.Application.Tasks;
+using AzureTest.Application.Tasks.Queries;
 using AzureTest.Contracts.DTOs.Pomodoro;
 using AzureTest.MVC.Extensions;
 using AzureTest.MVC.Models;
@@ -27,17 +31,20 @@ public class PomodoroController : Controller
 {
     private readonly IPomodoroCommandUnit _commands;
     private readonly IPomodoroQueryUnit _queries;
+    private readonly ITaskQueryUnit _taskQuery;
     private readonly IValidationService _validationService;
     private readonly ICurrentUser _currentUser;
 
     public PomodoroController(
         IPomodoroCommandUnit commands,
         IPomodoroQueryUnit queries,
+        ITaskQueryUnit taskQuery,
         IValidationService validationService,
         ICurrentUser currentUser)
     {
         _commands = commands;
         _queries = queries;
+        _taskQuery = taskQuery;
         _validationService = validationService;
         _currentUser = currentUser;
     }
@@ -49,13 +56,15 @@ public class PomodoroController : Controller
     {
         var settingResult = await _queries.GetSetting.HandleAsync(new GetPomodoroSettingQuery(_currentUser.Id), ct);
         var analyticsResult = await _queries.GetAnalytics.HandleAsync(new GetPomodoroAnalyticsQuery(_currentUser.Id), ct);
+        var tasks = await _taskQuery.GetAllTasks.HandleAsync(new GetAllTasksQuery(_currentUser.Id), ct);
 
         var vm = new PomodoroIndexViewModel
         {
             Setting = settingResult.Value,
             TodayFocusMinutes = analyticsResult.Value?.TotalFocusMinutesToday ?? 0,
             TodayCompletedCount = analyticsResult.Value?.CompletedTodayCount ?? 0,
-            CurrentStreak = analyticsResult.Value?.CurrentDailyStreak ?? 0
+            CurrentStreak = analyticsResult.Value?.CurrentDailyStreak ?? 0,
+            ActiveTasks = tasks.Where(t => !t.IsCompleted).ToList()
         };
 
         return View(vm);
@@ -68,12 +77,14 @@ public class PomodoroController : Controller
     {
         var analyticsResult = await _queries.GetAnalytics.HandleAsync(new GetPomodoroAnalyticsQuery(_currentUser.Id), ct);
         var sessionsResult = await _queries.GetSessions.HandleAsync(new GetPomodoroSessionsQuery(_currentUser.Id, filter), ct);
+        var tasks = await _taskQuery.GetAllTasks.HandleAsync(new GetAllTasksQuery(_currentUser.Id), ct);
 
         var vm = new PomodoroAnalyticsViewModel
         {
             Analytics = analyticsResult.Value,
             RecentSessions = sessionsResult.Value ?? [],
-            Filter = filter
+            Filter = filter,
+            Tasks = tasks
         };
 
         return View(vm);
@@ -99,6 +110,40 @@ public class PomodoroController : Controller
         }
 
         return Json(new { success = true, id = result.Value });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Create Manual Session")]
+    [Description("Manually record a pomodoro focus session.")]
+    public async Task<IActionResult> CreateManualSession(CreatePomodoroSessionDto dto, CancellationToken ct)
+    {
+        var validation = await _validationService.ValidateAsync(dto, ct);
+        if (validation.IsFailure)
+        {
+            return validation.ToModal(this, "createSessionModal", successRedirectAction: nameof(Analytics));
+        }
+
+        var command = new CreatePomodoroSessionCommand(_currentUser.Id, dto);
+        var result = await _commands.CreateSession.HandleAsync(command, ct);
+        return result.ToModal(this, "createSessionModal", successRedirectAction: nameof(Analytics));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Edit Session")]
+    [Description("Update details of a pomodoro session.")]
+    public async Task<IActionResult> EditSession(UpdatePomodoroSessionDto dto, CancellationToken ct)
+    {
+        var validation = await _validationService.ValidateAsync(dto, ct);
+        if (validation.IsFailure)
+        {
+            return validation.ToModal(this, "editSessionModal", successRedirectAction: nameof(Analytics));
+        }
+
+        var command = new UpdatePomodoroSessionCommand(_currentUser.Id, dto);
+        var result = await _commands.UpdateSession.HandleAsync(command, ct);
+        return result.ToModal(this, "editSessionModal", successRedirectAction: nameof(Analytics));
     }
 
     [HttpPost]

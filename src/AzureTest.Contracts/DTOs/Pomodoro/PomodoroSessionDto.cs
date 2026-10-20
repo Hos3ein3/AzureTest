@@ -8,6 +8,8 @@ public sealed record PomodoroSessionDto(
     Guid UserId,
     string Title,
     string? Category,
+    Guid? TaskItemId,
+    string? TaskTitle,
     PomodoroSessionType SessionType,
     PomodoroStatus Status,
     int PlannedDurationSeconds,

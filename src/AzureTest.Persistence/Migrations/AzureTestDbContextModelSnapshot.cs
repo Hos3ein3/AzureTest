@@ -3931,7 +3931,7 @@ namespace AzureTest.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<double>("Target")
+                    b.Property<double?>("Target")
                         .HasColumnType("double precision");
 
                     b.Property<string>("TimeZone")
@@ -4189,6 +4189,9 @@ namespace AzureTest.Persistence.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("TaskItemId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -4201,6 +4204,8 @@ namespace AzureTest.Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TaskItemId");
 
                     b.HasIndex("UserId");
 
@@ -5648,6 +5653,16 @@ namespace AzureTest.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("AzureTest.Domain.Entities.Pomodoro.PomodoroSession", b =>
+                {
+                    b.HasOne("AzureTest.Domain.Entities.TaskItem", "TaskItem")
+                        .WithMany()
+                        .HasForeignKey("TaskItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("TaskItem");
                 });
 
             modelBuilder.Entity("AzureTest.Domain.Entities.RolePermission", b =>

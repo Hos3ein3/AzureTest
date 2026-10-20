@@ -660,7 +660,7 @@ public static class FakeDataGenerator
             var localDate = DateOnly.FromDateTime(logDate);
             var isBool = tracker.Type == HabitType.Boolean;
             var boolVal = f.Random.Bool(0.7f);
-            var numVal = isBool ? (boolVal ? 1.0 : 0.0) : f.Random.Double(0, tracker.Target * 1.5);
+            var numVal = isBool ? (boolVal ? 1.0 : 0.0) : f.Random.Double(0, (tracker.Target ?? 1.0) * 1.5);
             var valStr = isBool ? (boolVal ? "true" : "false") : numVal.ToString("0.##", CultureInfo.InvariantCulture);
 
             result.Add(HabitLog.Create(
