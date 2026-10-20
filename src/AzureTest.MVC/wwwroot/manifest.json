@@ -1,21 +1,67 @@
 {
-  "name": "TrackerPro",
+  "id": "/",
+  "name": "TrackerPro - Personal Workspace & Tracker",
   "short_name": "TrackerPro",
-  "description": "Your ultimate productivity and tracking workspace.",
+  "description": "Your ultimate personal workspace for tracking movies, series, anime, workouts, nutrition, and finances.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
   "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
+  "theme_color": "#0d9488",
+  "categories": [
+    "productivity",
+    "entertainment",
+    "lifestyle",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Open overview dashboard",
+      "url": "/",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Media & Watchlist",
+      "short_name": "Media",
+      "description": "Explore and track movies, series, and anime",
+      "url": "/Media",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Workouts",
+      "short_name": "Workouts",
+      "description": "Track workouts and fitness logs",
+      "url": "/Workout",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Expenses",
+      "short_name": "Expenses",
+      "description": "Manage expenses and financial records",
+      "url": "/Expense",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

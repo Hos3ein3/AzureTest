@@ -1,7 +1,8 @@
-const CACHE_NAME = 'trackerpro-cache-v1';
+const CACHE_NAME = 'trackerpro-cache-v2';
 const urlsToCache = [
   '/',
   '/css/site.css',
+  '/css/style.css',
   '/js/site.js',
   '/icon-192.png',
   '/icon-512.png',
@@ -15,7 +16,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        // We use addAll but wrap in try/catch or individually to prevent one failure from stopping all
+        // Use addAll but wrap in allSettled to prevent single missing resource from failing install
         return Promise.allSettled(urlsToCache.map(url => cache.add(url)));
       })
       .then(() => self.skipWaiting())
@@ -37,14 +38,13 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch event - network first, fallback to cache strategy for maximum freshness
+// Fetch event - network first, fallback to cache strategy
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // If valid response, clone it and cache it
         if (response && response.status === 200 && response.type === 'basic') {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME)
@@ -55,7 +55,6 @@ self.addEventListener('fetch', event => {
         return response;
       })
       .catch(() => {
-        // Network failed, try to serve from cache
         return caches.match(event.request);
       })
   );
