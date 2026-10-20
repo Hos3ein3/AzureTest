@@ -42,15 +42,15 @@
                     <div class="grid grid-cols-3 gap-3 max-w-md">
                         <label class="relative flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Shamsi ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm font-semibold" : "border-slate-200 hover:bg-slate-50 text-slate-600")">
                             <input type="radio" name="SelectedCalendar" value="Shamsi" @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Shamsi ? "checked" : "") onchange="this.form.submit()" class="sr-only" />
-                            <span>☀️ Shamsi (شمسی)</span>
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-sun text-amber-500"></i> Shamsi (شمسی)</span>
                         </label>
                         <label class="relative flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Miladi ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm font-semibold" : "border-slate-200 hover:bg-slate-50 text-slate-600")">
                             <input type="radio" name="SelectedCalendar" value="Miladi" @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Miladi ? "checked" : "") onchange="this.form.submit()" class="sr-only" />
-                            <span>🌍 Miladi (میلادی)</span>
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-earth-americas text-blue-500"></i> Miladi (میلادی)</span>
                         </label>
                         <label class="relative flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Ghamari ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm font-semibold" : "border-slate-200 hover:bg-slate-50 text-slate-600")">
                             <input type="radio" name="SelectedCalendar" value="Ghamari" @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Ghamari ? "checked" : "") onchange="this.form.submit()" class="sr-only" />
-                            <span>🌙 Ghamari (قمری)</span>
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-moon text-emerald-500"></i> Ghamari (قمری)</span>
                         </label>
                     </div>
                 </div>
@@ -101,8 +101,8 @@
                 <div class="rounded-xl border @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Shamsi ? "border-brand-500 ring-2 ring-brand-100 bg-brand-50/20" : "border-slate-200 bg-white") p-5 flex flex-col justify-between relative shadow-sm">
                     <div>
                         <div class="flex justify-between items-center mb-3">
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                ☀️ Shamsi (شمسی)
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                <i class="fa-solid fa-sun text-amber-500"></i> Shamsi (شمسی)
                             </span>
                             <button type="button" onclick="copyText('@Model.ConvertedResult.Shamsi.FormattedDate')" class="text-slate-400 hover:text-slate-600 transition-colors p-1" title="Copy date">
                                 <i class="fa-regular fa-copy"></i>
@@ -133,8 +133,8 @@
                 <div class="rounded-xl border @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Miladi ? "border-brand-500 ring-2 ring-brand-100 bg-brand-50/20" : "border-slate-200 bg-white") p-5 flex flex-col justify-between relative shadow-sm">
                     <div>
                         <div class="flex justify-between items-center mb-3">
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                                🌍 Miladi (میلادی)
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                <i class="fa-solid fa-earth-americas text-blue-500"></i> Miladi (میلادی)
                             </span>
                             <button type="button" onclick="copyText('@Model.ConvertedResult.Miladi.FormattedDate')" class="text-slate-400 hover:text-slate-600 transition-colors p-1" title="Copy date">
                                 <i class="fa-regular fa-copy"></i>
@@ -165,8 +165,8 @@
                 <div class="rounded-xl border @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Ghamari ? "border-brand-500 ring-2 ring-brand-100 bg-brand-50/20" : "border-slate-200 bg-white") p-5 flex flex-col justify-between relative shadow-sm">
                     <div>
                         <div class="flex justify-between items-center mb-3">
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                🌙 Ghamari (قمری)
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <i class="fa-solid fa-moon text-emerald-500"></i> Ghamari (قمری)
                             </span>
                             <button type="button" onclick="copyText('@Model.ConvertedResult.Ghamari.FormattedDate')" class="text-slate-400 hover:text-slate-600 transition-colors p-1" title="Copy date">
                                 <i class="fa-regular fa-copy"></i>
@@ -287,8 +287,8 @@
                         <div class="text-lg font-medium text-amber-100 mb-3">
                             @Model.AgeResult.Hours Hours, @Model.AgeResult.Minutes Minutes, @Model.AgeResult.Seconds Seconds
                         </div>
-                        <div class="pt-3 border-t border-amber-400/50 text-sm font-semibold text-white">
-                            🇮🇷 @Model.AgeResult.FormattedAgeFarsi
+                        <div class="pt-3 border-t border-amber-400/50 text-sm font-semibold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-language text-lg"></i> @Model.AgeResult.FormattedAgeFarsi
                         </div>
                     </div>
 
@@ -319,8 +319,8 @@
                     <!-- Insights Card (Next Birthday & Zodiac) -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="p-4 rounded-xl border border-slate-100 bg-white flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-2xl flex-shrink-0">
-                                🎁
+                            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl flex-shrink-0">
+                                <i class="fa-solid fa-cake-candles"></i>
                             </div>
                             <div>
                                 <span class="text-xs text-slate-400 block">Next Birthday (تولد بعدی)</span>
@@ -330,8 +330,8 @@
                         </div>
 
                         <div class="p-4 rounded-xl border border-slate-100 bg-white flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl flex-shrink-0">
-                                ♈
+                            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl flex-shrink-0">
+                                <i class="fa-solid fa-star-and-crescent"></i>
                             </div>
                             <div>
                                 <span class="text-xs text-slate-400 block">Zodiac Sign (برج فلکی / نماد ماه)</span>

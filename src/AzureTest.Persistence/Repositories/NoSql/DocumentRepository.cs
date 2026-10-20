@@ -2,13 +2,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Interfaces.Data.NoSql;
+using AzureTest.Contracts.DTOs.Common;
 using MongoDB.Driver;
 
 namespace AzureTest.Persistence.Repositories.NoSql;
-
 
 public class DocumentRepository<TDocument> : IDocumentRepository<TDocument> where TDocument : class
 {
@@ -19,16 +21,13 @@ public class DocumentRepository<TDocument> : IDocumentRepository<TDocument> wher
         _collection = database.GetCollection<TDocument>(collectionName);
     }
 
-    public virtual async Task<TDocument?> GetByIdAsync(Guid id,CancellationToken cancellationToken)
+    public virtual async Task<TDocument?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        // Use the BSON _id field name explicitly; the class map ensures Guid is mapped to _id
         var filter = Builders<TDocument>.Filter.Eq("_id", id);
         return await _collection.Find(filter).FirstOrDefaultAsync(cancellationToken);
     }
 
-    
-
-    public virtual async Task<IReadOnlyList<TDocument>> GetAllAsync(CancellationToken cancellationToken)
+    public virtual async Task<IReadOnlyList<TDocument>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _collection.Find(_ => true).ToListAsync(cancellationToken);
     }
@@ -48,20 +47,162 @@ public class DocumentRepository<TDocument> : IDocumentRepository<TDocument> wher
         return await _collection.Find(predicate).ToListAsync();
     }
 
-    public virtual async Task AddAsync(TDocument document,CancellationToken cancellationToken )
+    public virtual async Task AddAsync(TDocument document, CancellationToken cancellationToken = default)
     {
-        await _collection.InsertOneAsync(document,cancellationToken);
+        await _collection.InsertOneAsync(document, cancellationToken: cancellationToken);
     }
 
-    public virtual async Task UpdateAsync(Guid id, TDocument document,CancellationToken cancellationToken )
+    public virtual async Task UpdateAsync(Guid id, TDocument document, CancellationToken cancellationToken = default)
     {
         var filter = Builders<TDocument>.Filter.Eq("_id", id);
-        await _collection.ReplaceOneAsync(filter, document, new ReplaceOptions { IsUpsert = false },cancellationToken);
+        await _collection.ReplaceOneAsync(filter, document, new ReplaceOptions { IsUpsert = false }, cancellationToken);
     }
 
-    public virtual async Task RemoveAsync(Guid id,CancellationToken cancellationToken )
+    public virtual async Task RemoveAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var filter = Builders<TDocument>.Filter.Eq("_id", id);
-        await _collection.DeleteOneAsync(filter,cancellationToken);
+        await _collection.DeleteOneAsync(filter, cancellationToken);
+    }
+
+    public virtual async Task<(IReadOnlyList<TDocument> Items, int TotalCount)> GetPagedAsync(
+        Expression<Func<TDocument, bool>>? predicate,
+        int pageNumber,
+        int pageSize,
+        string? sortBy = null,
+        bool sortDescending = false,
+        CancellationToken cancellationToken = default)
+    {
+        var filterBuilder = Builders<TDocument>.Filter;
+        var filter = predicate != null ? filterBuilder.Where(predicate) : filterBuilder.Empty;
+
+        if (typeof(AzureTest.Domain.Primitives.ISoftDelete).IsAssignableFrom(typeof(TDocument)))
+        {
+            var isDeletedProp = typeof(TDocument).GetProperty("IsDeleted");
+            if (isDeletedProp != null)
+            {
+                filter = filterBuilder.And(filter, filterBuilder.Eq("IsDeleted", false));
+            }
+        }
+
+        var totalCount = (int)await _collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
+        var findFluent = _collection.Find(filter);
+
+        if (!string.IsNullOrWhiteSpace(sortBy))
+        {
+            var sort = sortDescending
+                ? Builders<TDocument>.Sort.Descending(sortBy)
+                : Builders<TDocument>.Sort.Ascending(sortBy);
+            findFluent = findFluent.Sort(sort);
+        }
+
+        int page = pageNumber < 1 ? 1 : pageNumber;
+        int size = pageSize < 1 ? 10 : pageSize;
+
+        if (pageSize > 0)
+        {
+            findFluent = findFluent.Skip((page - 1) * size).Limit(size);
+        }
+
+        var items = await findFluent.ToListAsync(cancellationToken);
+        return (items, totalCount);
+    }
+
+    public virtual async Task<PagedResult<TDocument>> GetPagedAsync(
+        IPagedFilter filter,
+        Expression<Func<TDocument, bool>>? predicate = null,
+        CancellationToken cancellationToken = default)
+    {
+        var (items, totalCount) = await ExecutePagedFilterAsync(filter, predicate, cancellationToken);
+        int page = filter.PageNumber < 1 ? 1 : filter.PageNumber;
+        int size = filter.PageSize < 1 ? 10 : filter.PageSize;
+        return new PagedResult<TDocument>(items, totalCount, page, size, filter);
+    }
+
+    public virtual async Task<PagedResult<TDocument, TFilter>> GetPagedAsync<TFilter>(
+        TFilter filter,
+        Expression<Func<TDocument, bool>>? predicate = null,
+        CancellationToken cancellationToken = default) where TFilter : class, IPagedFilter
+    {
+        var (items, totalCount) = await ExecutePagedFilterAsync(filter, predicate, cancellationToken);
+        int page = filter.PageNumber < 1 ? 1 : filter.PageNumber;
+        int size = filter.PageSize < 1 ? 10 : filter.PageSize;
+        return new PagedResult<TDocument, TFilter>(items, totalCount, page, size, filter);
+    }
+
+    protected virtual async Task<(IReadOnlyList<TDocument> Items, int TotalCount)> ExecutePagedFilterAsync(
+        IPagedFilter filter,
+        Expression<Func<TDocument, bool>>? predicate,
+        CancellationToken cancellationToken)
+    {
+        var filterBuilder = Builders<TDocument>.Filter;
+        var filtersList = new List<FilterDefinition<TDocument>>();
+
+        if (typeof(AzureTest.Domain.Primitives.ISoftDelete).IsAssignableFrom(typeof(TDocument)))
+        {
+            var isDeletedProp = typeof(TDocument).GetProperty("IsDeleted");
+            if (isDeletedProp != null)
+            {
+                filtersList.Add(filterBuilder.Eq("IsDeleted", false));
+            }
+        }
+
+        if (predicate != null)
+        {
+            filtersList.Add(filterBuilder.Where(predicate));
+        }
+
+        if (filter.UserIds != null && filter.UserIds.Any())
+        {
+            var userIdProp = typeof(TDocument).GetProperty("UserId");
+            if (userIdProp != null)
+            {
+                filtersList.Add(filterBuilder.In("UserId", filter.UserIds));
+            }
+        }
+
+        if (filter.CreatedOnFrom.HasValue || filter.CreatedOnTo.HasValue)
+        {
+            var dateProp = typeof(TDocument).GetProperty("CreatedOn")
+                        ?? typeof(TDocument).GetProperty("CreatedAt")
+                        ?? typeof(TDocument).GetProperty("Date");
+            if (dateProp != null)
+            {
+                if (filter.CreatedOnFrom.HasValue)
+                {
+                    filtersList.Add(filterBuilder.Gte(dateProp.Name, filter.CreatedOnFrom.Value));
+                }
+                if (filter.CreatedOnTo.HasValue)
+                {
+                    var toDate = filter.CreatedOnTo.Value.TimeOfDay == TimeSpan.Zero
+                        ? filter.CreatedOnTo.Value.Date.AddDays(1).AddTicks(-1)
+                        : filter.CreatedOnTo.Value;
+                    filtersList.Add(filterBuilder.Lte(dateProp.Name, toDate));
+                }
+            }
+        }
+
+        var combinedFilter = filtersList.Any() ? filterBuilder.And(filtersList) : filterBuilder.Empty;
+        var totalCount = (int)await _collection.CountDocumentsAsync(combinedFilter, cancellationToken: cancellationToken);
+
+        var findFluent = _collection.Find(combinedFilter);
+
+        if (!string.IsNullOrWhiteSpace(filter.SortBy))
+        {
+            var sort = filter.SortDescending
+                ? Builders<TDocument>.Sort.Descending(filter.SortBy)
+                : Builders<TDocument>.Sort.Ascending(filter.SortBy);
+            findFluent = findFluent.Sort(sort);
+        }
+
+        int page = filter.PageNumber < 1 ? 1 : filter.PageNumber;
+        int size = filter.PageSize < 1 ? 10 : filter.PageSize;
+
+        if (filter.PageSize > 0)
+        {
+            findFluent = findFluent.Skip((page - 1) * size).Limit(size);
+        }
+
+        var items = await findFluent.ToListAsync(cancellationToken);
+        return (items, totalCount);
     }
 }

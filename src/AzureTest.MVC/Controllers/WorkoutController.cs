@@ -53,8 +53,9 @@ public class WorkoutController : Controller {
     private readonly GetAllTrainingsQueryHandler _getAllTrainings;
     private readonly GetUserTrainingSessionsQueryHandler _getUserSessions;
     private readonly SaveUserTrainingSessionCommandHandler _saveSession;
-    
-    
+    private readonly GetWorkoutAnalyticsQueryHandler _getWorkoutAnalytics;
+    private readonly LogUserWeightCommandHandler _logUserWeight;
+    private readonly DeleteUserWeightCommandHandler _deleteUserWeight;
 
     public WorkoutController(
         GetAllTrainingCoursesQueryHandler getAllCourses, GetTrainingCourseByIdQueryHandler getCourseById,
@@ -63,7 +64,10 @@ public class WorkoutController : Controller {
         GetUserGymCourseByIdQueryHandler getUserGymCourseById,
         GetAllTrainingsQueryHandler getAllTrainings,
         GetUserTrainingSessionsQueryHandler getUserSessions,
-        SaveUserTrainingSessionCommandHandler saveSession) 
+        SaveUserTrainingSessionCommandHandler saveSession,
+        GetWorkoutAnalyticsQueryHandler getWorkoutAnalytics,
+        LogUserWeightCommandHandler logUserWeight,
+        DeleteUserWeightCommandHandler deleteUserWeight) 
     {
         _getAllCourses = getAllCourses;
         _getCourseById = getCourseById;
@@ -74,16 +78,91 @@ public class WorkoutController : Controller {
         _getAllTrainings = getAllTrainings;
         _getUserSessions = getUserSessions;
         _saveSession = saveSession;
+        _getWorkoutAnalytics = getWorkoutAnalytics;
+        _logUserWeight = logUserWeight;
+        _deleteUserWeight = deleteUserWeight;
     }
 
-    
     private Guid GetUserId()
     {
         var userIdString = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
         return Guid.TryParse(userIdString, out var userId) ? userId : Guid.Empty;
     }
 
-    
+    [HttpGet]
+    [DisplayName("Workout Analytics")]
+    [Description("View workout performance metrics, weight tracking history, and interactive BMI calculator.")]
+    public async Task<IActionResult> Analytics()
+    {
+        var userId = GetUserId();
+        if (userId == Guid.Empty) return Unauthorized();
+
+        var res = await _getWorkoutAnalytics.HandleAsync(new GetWorkoutAnalyticsQuery(userId));
+        var model = res.IsSuccess ? res.Value : new AzureTest.Contracts.DTOs.Gym.WorkoutAnalyticsDto(
+            0, 0, 0, 0, 0, null, null, null, null, null, null,
+            new List<AzureTest.Contracts.DTOs.Gym.UserWeightLogDto>(),
+            new List<AzureTest.Contracts.DTOs.Gym.ExerciseStatDto>(),
+            new List<AzureTest.Contracts.DTOs.Gym.WorkoutSessionPointDto>());
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Log Weight")]
+    [Description("Record a new weight and height log for the current user.")]
+    public async Task<IActionResult> LogWeight(AzureTest.Contracts.DTOs.Gym.LogWeightRequest req)
+    {
+        var userId = GetUserId();
+        if (userId == Guid.Empty) return Unauthorized();
+
+        if (req.WeightKg < AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MinWeightKg || req.WeightKg > AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MaxWeightKg)
+        {
+            TempData["Error"] = $"Weight must be between {AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MinWeightKg} and {AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MaxWeightKg} kg.";
+            return RedirectToAction(nameof(Analytics));
+        }
+
+        if (req.HeightCm < AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MinHeightCm || req.HeightCm > AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MaxHeightCm)
+        {
+            TempData["Error"] = $"Height must be between {AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MinHeightCm} and {AzureTest.Domain.Documents.Gym.UserWeightLog.Rules.MaxHeightCm} cm.";
+            return RedirectToAction(nameof(Analytics));
+        }
+
+        var res = await _logUserWeight.HandleAsync(new LogUserWeightCommand(userId, req.WeightKg, req.HeightCm, req.Date, req.Notes));
+        if (res.IsSuccess)
+        {
+            TempData["Success"] = "Weight entry recorded successfully.";
+        }
+        else
+        {
+            TempData["Error"] = res.Error;
+        }
+
+        return RedirectToAction(nameof(Analytics));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Delete Weight")]
+    [Description("Delete a weight log entry.")]
+    public async Task<IActionResult> DeleteWeight(Guid id)
+    {
+        var userId = GetUserId();
+        if (userId == Guid.Empty) return Unauthorized();
+
+        var res = await _deleteUserWeight.HandleAsync(new DeleteUserWeightCommand(userId, id));
+        if (res.IsSuccess)
+        {
+            TempData["Success"] = "Weight entry deleted.";
+        }
+        else
+        {
+            TempData["Error"] = res.Error;
+        }
+
+        return RedirectToAction(nameof(Analytics));
+    }
+
     [DisplayName("Course Details")]
     [Description("View details of a global training course before enrolling.")]
     public async Task<IActionResult> Details(Guid id) {
@@ -109,6 +188,8 @@ public class WorkoutController : Controller {
     }
 
     [HttpPost]
+    [DisplayName("Register Course")]
+    [Description("Enroll the current user into a training course.")]
     public async Task<IActionResult> Register(Guid courseId) {
         var res = await _registerUserGymCourse.HandleAsync(new RegisterUserGymCourseCommand(GetUserId(), courseId));
         if (res.IsSuccess) {

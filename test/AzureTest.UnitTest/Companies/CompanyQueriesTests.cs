@@ -29,6 +29,7 @@ public class CompanyQueriesTests
         _mockUnitOfWork = new Mock<IUnitOfWork>();
         _mockCompanyRepository = new Mock<ICompanyRepository>();
         _mockCacheService = new Mock<ICompanyCacheService>();
+        _mockNoSqlUnitOfWork.Setup(u => u.Companies).Returns(_mockCompanyRepository.Object);
     }
 
     [Fact]

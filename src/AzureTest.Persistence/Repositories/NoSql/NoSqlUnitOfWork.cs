@@ -63,11 +63,13 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     private ITrainingCourseRepository? _trainingCourses;
     private IUserGymCourseRepository? _userGymCourses;
     private IUserTrainingSessionRepository? _userTrainingSessions;
+    private IUserWeightLogRepository? _userWeightLogs;
 
     public ITrainingRepository Trainings => _trainings ??= new TrainingRepository(_database);
     public ITrainingCourseRepository TrainingCourses => _trainingCourses ??= new TrainingCourseRepository(_database);
     public IUserGymCourseRepository UserGymCourses => _userGymCourses ??= new UserGymCourseRepository(_database);
     public IUserTrainingSessionRepository UserTrainingSessions => _userTrainingSessions ??= new UserTrainingSessionRepository(_database);
+    public IUserWeightLogRepository UserWeightLogs => _userWeightLogs ??= new UserWeightLogRepository(_database);
 
     public IHouseSearchHistoryRepository HouseSearchHistories => _houseSearchHistories ??= new HouseSearchHistoryRepository(_database);
     public IHouseCrawlerCredentialRepository HouseCrawlerCredentials => _houseCrawlerCredentials ??= new HouseCrawlerCredentialRepository(_database);

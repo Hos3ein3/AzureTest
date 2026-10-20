@@ -38,12 +38,39 @@
     .glow-emerald {
         text-shadow: 0 0 25px rgba(16, 185, 129, 0.75), 0 0 50px rgba(16, 185, 129, 0.4);
     }
+
+    /* Fullscreen mode */
+    #pomodoro-timer-card:fullscreen,
+    #pomodoro-timer-card:-webkit-full-screen,
+    #pomodoro-timer-card.pomodoro-fullscreen {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: none !important;
+        border-radius: 0 !important;
+        z-index: 99999 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        overflow-y: auto !important;
+        margin: 0 !important;
+        padding: 2.5rem 1.5rem !important;
+        background: radial-gradient(circle at top, #0f172a 0%, #020617 100%) !important;
+    }
+    #pomodoro-timer-card:fullscreen .timer-inner-wrap,
+    #pomodoro-timer-card:-webkit-full-screen .timer-inner-wrap,
+    #pomodoro-timer-card.pomodoro-fullscreen .timer-inner-wrap {
+        transform: scale(1.12);
+        transition: transform 0.3s ease;
+    }
 </style>
 
 <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
     <div>
         <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-2">
-            <span>🍅</span> Pomodoro Focus Timer
+            <i class="fa-solid fa-stopwatch text-rose-500"></i> Pomodoro Focus Timer
         </h1>
         <p class="text-slate-500 text-sm mt-1">Boost deep work productivity with rhythm and beautiful themed timers.</p>
     </div>
@@ -62,7 +89,7 @@
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
     <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center text-lg">
-            🍅
+            <i class="fa-solid fa-stopwatch"></i>
         </div>
         <div>
             <span class="text-xs text-slate-400 block font-medium">Today's Focus</span>
@@ -82,7 +109,7 @@
 
     <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center text-lg">
-            🔥
+            <i class="fa-solid fa-fire text-amber-500"></i>
         </div>
         <div>
             <span class="text-xs text-slate-400 block font-medium">Daily Streak</span>
@@ -102,22 +129,27 @@
 </div>
 
 <!-- Main Timer Card -->
-<div class="bg-slate-900 rounded-3xl p-6 md:p-10 shadow-2xl border border-slate-800 text-white relative overflow-hidden mb-8">
+<div id="pomodoro-timer-card" class="bg-slate-900 rounded-3xl p-6 md:p-10 shadow-2xl border border-slate-800 text-white relative overflow-hidden mb-8">
     <!-- Ambient Backdrop Glow -->
     <div class="absolute -top-32 -left-32 w-80 h-80 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
     <div class="absolute -bottom-32 -right-32 w-80 h-80 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-    <div class="max-w-2xl mx-auto flex flex-col items-center">
+    <!-- Fullscreen Toggle Button -->
+    <button id="btn-fullscreen" type="button" onclick="toggleFullscreen()" class="absolute top-6 right-6 w-10 h-10 rounded-2xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-all border border-slate-700/80 shadow-md z-30" title="Full Screen (F)">
+        <i id="fullscreen-icon" class="fa-solid fa-expand"></i>
+    </button>
+
+    <div class="max-w-2xl mx-auto flex flex-col items-center timer-inner-wrap w-full">
         <!-- Session Type Mode Selector Tabs -->
         <div class="flex items-center gap-2 p-1.5 bg-slate-800/80 rounded-2xl border border-slate-700/60 mb-6 backdrop-blur-md">
-            <button id="mode-work" onclick="setMode('work')" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-rose-600 text-white shadow-md">
-                🍅 Focus (@Model.Setting.WorkDurationMinutes m)
+            <button id="mode-work" onclick="setMode('work')" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-rose-600 text-white shadow-md flex items-center gap-1.5">
+                <i class="fa-solid fa-stopwatch"></i> Focus (@Model.Setting.WorkDurationMinutes m)
             </button>
-            <button id="mode-short" onclick="setMode('shortBreak')" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-all">
-                ☕ Short Break (@Model.Setting.ShortBreakMinutes m)
+            <button id="mode-short" onclick="setMode('shortBreak')" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-mug-hot"></i> Short Break (@Model.Setting.ShortBreakMinutes m)
             </button>
-            <button id="mode-long" onclick="setMode('longBreak')" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-all">
-                🌴 Long Break (@Model.Setting.LongBreakMinutes m)
+            <button id="mode-long" onclick="setMode('longBreak')" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-umbrella-beach"></i> Long Break (@Model.Setting.LongBreakMinutes m)
             </button>
         </div>
 
@@ -125,19 +157,19 @@
         <div class="flex items-center gap-1.5 p-1 bg-slate-950/60 rounded-xl border border-slate-800 text-xs mb-8 flex-wrap justify-center">
             <span class="text-slate-500 text-[11px] px-2 uppercase tracking-wider font-semibold">Skin:</span>
             <button onclick="switchSkin(1)" id="skin-btn-1" class="px-3 py-1 rounded-lg font-medium transition-all @(currentSkin == 1 ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-200")">
-                💻 Digital
+                <i class="fa-solid fa-laptop-code mr-1"></i> Digital
             </button>
             <button onclick="switchSkin(2)" id="skin-btn-2" class="px-3 py-1 rounded-lg font-medium transition-all @(currentSkin == 2 ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-200")">
-                ⏱️ Analog
+                <i class="fa-regular fa-clock mr-1"></i> Analog
             </button>
             <button onclick="switchSkin(3)" id="skin-btn-3" class="px-3 py-1 rounded-lg font-medium transition-all @(currentSkin == 3 ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-200")">
-                ⏳ Sand Glass
+                <i class="fa-solid fa-hourglass-half mr-1"></i> Sand Glass
             </button>
             <button onclick="switchSkin(4)" id="skin-btn-4" class="px-3 py-1 rounded-lg font-medium transition-all @(currentSkin == 4 ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-200")">
-                ⏲️ Kitchen Timer
+                <i class="fa-solid fa-stopwatch-20 mr-1"></i> Kitchen Timer
             </button>
             <button onclick="switchSkin(5)" id="skin-btn-5" class="px-3 py-1 rounded-lg font-medium transition-all @(currentSkin == 5 ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-200")">
-                🕯️ Candle
+                <i class="fa-solid fa-fire-flame-curved mr-1"></i> Candle
             </button>
         </div>
 
@@ -235,10 +267,11 @@
                 <div class="relative">
                     <select id="select-linked-task" onchange="onTaskSelectChanged(this)"
                             class="w-full bg-slate-800/90 border border-slate-700 rounded-2xl py-2.5 px-3.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all">
-                        <option value="">📋 Link to an active task (optional)</option>
+                        <option value="">Link to an active task (optional)</option>
                         @foreach (var task in Model.ActiveTasks)
                         {
-                            <option value="@task.Id" data-title="@task.Title">@task.Title</option>
+                            var isPreSelected = ViewBag.SelectedTaskId != null && (Guid)ViewBag.SelectedTaskId == task.Id;
+                            <option value="@task.Id" data-title="@task.Title" selected="@(isPreSelected ? "selected" : null)">@task.Title</option>
                         }
                     </select>
                 </div>
@@ -785,6 +818,60 @@
             }
         }
 
+        // Fullscreen Handling
+        function toggleFullscreen() {
+            const card = document.getElementById('pomodoro-timer-card');
+            if (!card) return;
+
+            if (!document.fullscreenElement && !card.classList.contains('pomodoro-fullscreen')) {
+                if (card.requestFullscreen) {
+                    card.requestFullscreen().catch(() => {
+                        card.classList.add('pomodoro-fullscreen');
+                        updateFullscreenIcon(true);
+                    });
+                } else {
+                    card.classList.add('pomodoro-fullscreen');
+                    updateFullscreenIcon(true);
+                }
+            } else {
+                if (document.fullscreenElement && document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {
+                        card.classList.remove('pomodoro-fullscreen');
+                        updateFullscreenIcon(false);
+                    });
+                } else {
+                    card.classList.remove('pomodoro-fullscreen');
+                    updateFullscreenIcon(false);
+                }
+            }
+        }
+
+        function updateFullscreenIcon(isFs) {
+            const icon = document.getElementById('fullscreen-icon');
+            if (icon) {
+                icon.className = isFs ? 'fa-solid fa-compress' : 'fa-solid fa-expand';
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            updateFullscreenIcon(!!document.fullscreenElement);
+        });
+
+        // Keyboard shortcuts (F for fullscreen, Escape to exit custom fallback fullscreen)
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 'f' || e.key === 'F') && !['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+                e.preventDefault();
+                toggleFullscreen();
+            }
+            if (e.key === 'Escape') {
+                const card = document.getElementById('pomodoro-timer-card');
+                if (card && card.classList.contains('pomodoro-fullscreen')) {
+                    card.classList.remove('pomodoro-fullscreen');
+                    updateFullscreenIcon(false);
+                }
+            }
+        });
+
         // Settings Modal
         function openSettingsModal() {
             document.getElementById('settings-modal').classList.remove('hidden');
@@ -797,6 +884,12 @@
         document.addEventListener('DOMContentLoaded', function () {
             switchSkin(config.defaultSkin);
             renderAllSkins();
+
+            // Pre-select task if provided via query string
+            const selectEl = document.getElementById('select-linked-task');
+            if (selectEl && selectEl.value) {
+                onTaskSelectChanged(selectEl);
+            }
         });
     </script>
 }

@@ -52,11 +52,13 @@ public class PomodoroController : Controller
     [HttpGet]
     [DisplayName("Pomodoro Timer")]
     [Description("Interactive Pomodoro focus timer with customizable skins.")]
-    public async Task<IActionResult> Index(CancellationToken ct)
+    public async Task<IActionResult> Index([FromQuery] Guid? taskId, CancellationToken ct)
     {
         var settingResult = await _queries.GetSetting.HandleAsync(new GetPomodoroSettingQuery(_currentUser.Id), ct);
         var analyticsResult = await _queries.GetAnalytics.HandleAsync(new GetPomodoroAnalyticsQuery(_currentUser.Id), ct);
         var tasks = await _taskQuery.GetAllTasks.HandleAsync(new GetAllTasksQuery(_currentUser.Id), ct);
+
+        ViewBag.SelectedTaskId = taskId;
 
         var vm = new PomodoroIndexViewModel
         {

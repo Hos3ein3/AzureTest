@@ -93,13 +93,13 @@
         <div class="bg-slate-50 rounded-xl p-4 text-center">
             <span class="text-xs font-medium text-slate-500 block mb-1">Current Streak</span>
             <div class="text-2xl font-bold text-amber-600 flex items-center justify-center gap-1">
-                🔥 @Model.CurrentStreak <span class="text-xs font-normal text-slate-400">days</span>
+                <i class="fa-solid fa-fire text-amber-500 mr-1"></i> @Model.CurrentStreak <span class="text-xs font-normal text-slate-400">days</span>
             </div>
         </div>
         <div class="bg-slate-50 rounded-xl p-4 text-center">
             <span class="text-xs font-medium text-slate-500 block mb-1">Longest Streak</span>
             <div class="text-2xl font-bold text-indigo-600 flex items-center justify-center gap-1">
-                🏆 @Model.LongestStreak <span class="text-xs font-normal text-slate-400">days</span>
+                <i class="fa-solid fa-trophy text-indigo-500 mr-1"></i> @Model.LongestStreak <span class="text-xs font-normal text-slate-400">days</span>
             </div>
         </div>
         <div class="bg-slate-50 rounded-xl p-4 text-center">
@@ -125,8 +125,8 @@
         </h2>
         @if (isDone)
         {
-            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-                ✓ Goal Target Achieved
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full flex items-center gap-1">
+                <i class="fa-solid fa-check"></i> Goal Target Achieved
             </span>
         }
     </div>
@@ -412,8 +412,8 @@
         <div class="p-6 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
                 <span class="text-xs font-semibold uppercase tracking-wider opacity-90 block">Abstinence Tracker</span>
-                <div class="text-4xl font-extrabold mt-1">
-                    🌱 @Model.TodayValue
+                <div class="text-4xl font-extrabold mt-1 flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved"></i> @Model.TodayValue
                 </div>
                 <p class="text-xs opacity-80 mt-1">Stay strong! Every day clean is a milestone towards your freedom.</p>
             </div>
@@ -460,8 +460,12 @@
                         <input type="hidden" name="id" value="@Model.Id" />
                         <input type="hidden" name="value" value="@opt" />
                         <input type="hidden" name="returnUrl" value="@currentUrl" />
-                        <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all @(isSelected ? "bg-brand-600 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-700 hover:bg-brand-50 hover:text-brand-600")">
-                            @opt @(isSelected ? "✓" : "")
+                        <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5 @(isSelected ? "bg-brand-600 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-700 hover:bg-brand-50 hover:text-brand-600")">
+                            <span>@opt</span>
+                            @if (isSelected)
+                            {
+                                <i class="fa-solid fa-check text-xs"></i>
+                            }
                         </button>
                     </form>
                 }

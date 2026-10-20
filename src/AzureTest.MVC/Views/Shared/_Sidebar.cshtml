@@ -123,9 +123,14 @@
             <li class="pt-4 mt-4 border-t border-slate-100">
                 <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sidebar-text transition-all duration-300">Gym</p>
                 
-                <a asp-area="" asp-controller="Workout" asp-action="Index" data-title="Workout" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Workout")">
-                    <i class="fa-solid fa-person-running w-6 text-center text-lg transition-colors @GetActiveIconClasses("Workout")"></i>
+                <a asp-area="" asp-controller="Workout" asp-action="Index" data-title="Workout" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(ViewContext.RouteData.Values["controller"]?.ToString() == "Workout" && ViewContext.RouteData.Values["action"]?.ToString() != "Analytics" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-person-running w-6 text-center text-lg transition-colors @(ViewContext.RouteData.Values["controller"]?.ToString() == "Workout" && ViewContext.RouteData.Values["action"]?.ToString() != "Analytics" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Workout</span>
+                </a>
+
+                <a asp-area="" asp-controller="Workout" asp-action="Analytics" data-title="Weight Tracker & Analytics" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(ViewContext.RouteData.Values["controller"]?.ToString() == "Workout" && ViewContext.RouteData.Values["action"]?.ToString() == "Analytics" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-weight-scale w-6 text-center text-lg transition-colors @(ViewContext.RouteData.Values["controller"]?.ToString() == "Workout" && ViewContext.RouteData.Values["action"]?.ToString() == "Analytics" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Weight & Analytics</span>
                 </a>
 
                 <a asp-area="" asp-controller="GymCourses" asp-action="Index" data-title="Gym Courses" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("GymCourses")">
@@ -135,7 +140,7 @@
 
                 <a asp-area="" asp-controller="GymAdmin" asp-action="Index" data-title="Gym Admin" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("GymAdmin")">
                     <i class="fa-solid fa-dumbbell w-6 text-center text-lg transition-colors @GetActiveIconClasses("GymAdmin")"></i>
-                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Gym Admin</span>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Gym Trainings</span>
                 </a>
             </li>
             
@@ -175,9 +180,14 @@
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Categories</span>
                 </a>
                 
-                <a asp-area="" asp-controller="Debt" asp-action="Index" data-title="Debts" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Debt")">
-                    <i class="fa-solid fa-handshake-angle w-6 text-center text-lg transition-colors @GetActiveIconClasses("Debt")"></i>
+                <a asp-area="" asp-controller="Debt" asp-action="Index" data-title="Debts" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(ViewContext.RouteData.Values["controller"]?.ToString() == "Debt" && ViewContext.RouteData.Values["action"]?.ToString() != "Analytics" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-handshake-angle w-6 text-center text-lg transition-colors @(ViewContext.RouteData.Values["controller"]?.ToString() == "Debt" && ViewContext.RouteData.Values["action"]?.ToString() != "Analytics" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Debts</span>
+                </a>
+
+                <a asp-area="" asp-controller="Debt" asp-action="Analytics" data-title="Debt Analytics" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(ViewContext.RouteData.Values["controller"]?.ToString() == "Debt" && ViewContext.RouteData.Values["action"]?.ToString() == "Analytics" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-chart-pie w-6 text-center text-lg transition-colors @(ViewContext.RouteData.Values["controller"]?.ToString() == "Debt" && ViewContext.RouteData.Values["action"]?.ToString() == "Analytics" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Debt Analytics</span>
                 </a>
                 
                 <a asp-area="" asp-controller="DebtPerson" asp-action="Index" data-title="Debt Persons" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("DebtPerson")">
@@ -249,6 +259,11 @@
                         <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Components</span>
                     </a>
                 }
+                
+                <a asp-area="" asp-controller="Icon" asp-action="Index" data-title="Icon Gallery" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Icon")">
+                    <i class="fa-solid fa-icons w-6 text-center text-lg transition-colors @GetActiveIconClasses("Icon")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Icon Gallery</span>
+                </a>
                 
                 @if (_CurrentUser.IsAdmin)
                 {

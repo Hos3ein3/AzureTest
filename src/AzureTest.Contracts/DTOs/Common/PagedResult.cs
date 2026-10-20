@@ -13,6 +13,9 @@ public interface IPagedFilter
     bool SortDescending { get; set; }
     int PageNumber { get; set; }
     int PageSize { get; set; }
+    List<Guid>? UserIds { get; set; }
+    DateTime? CreatedOnFrom { get; set; }
+    DateTime? CreatedOnTo { get; set; }
 }
 
 /// <summary>
@@ -25,6 +28,9 @@ public class PagedFilterRequest : IPagedFilter
     public bool SortDescending { get; set; }
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;
+    public List<Guid>? UserIds { get; set; }
+    public DateTime? CreatedOnFrom { get; set; }
+    public DateTime? CreatedOnTo { get; set; }
 }
 
 /// <summary>

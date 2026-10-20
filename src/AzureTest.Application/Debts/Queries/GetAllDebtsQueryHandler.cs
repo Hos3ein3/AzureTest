@@ -46,14 +46,59 @@ public sealed class GetAllDebtsQueryHandler : BaseQueryHandler<GetAllDebtsQuery,
     protected override async Task<PagedResult<DebtDto, GetAllDebtsFilters>> ExecuteAsync(GetAllDebtsQuery query, CancellationToken cancellationToken)
     {
         var filters = query.Filters ?? new GetAllDebtsFilters();
-        var targetUserId = query.UserId ?? _currentUser.Id;
+        var isAdmin = _currentUser.IsAdmin || _currentUser.Roles.Contains("Admin");
         
         var queryable = await _unitOfWork.Debts.FindAsync(r => !r.IsDeleted);
         var debts = queryable.ToList();
         
-        if (query.UserId.HasValue || !_currentUser.Roles.Contains("Admin"))
+        // Security: Non-admin users are restricted to their own userId
+        if (!isAdmin)
         {
-            debts = debts.Where(r => r.UserId == targetUserId).ToList();
+            filters.UserIds = new List<Guid> { _currentUser.Id };
+            debts = debts.Where(r => r.UserId == _currentUser.Id).ToList();
+        }
+        else
+        {
+            if (filters.UserIds != null && filters.UserIds.Any())
+            {
+                var allowedUserIds = new HashSet<Guid>(filters.UserIds);
+                debts = debts.Where(r => allowedUserIds.Contains(r.UserId)).ToList();
+            }
+            else if (query.UserId.HasValue)
+            {
+                debts = debts.Where(r => r.UserId == query.UserId.Value).ToList();
+            }
+        }
+
+        // CreatedOn range filters
+        if (filters.CreatedOnFrom.HasValue)
+        {
+            debts = debts.Where(d => d.CreatedOn >= filters.CreatedOnFrom.Value).ToList();
+        }
+
+        if (filters.CreatedOnTo.HasValue)
+        {
+            var toDate = filters.CreatedOnTo.Value.TimeOfDay == TimeSpan.Zero
+                ? filters.CreatedOnTo.Value.Date.AddDays(1).AddTicks(-1)
+                : filters.CreatedOnTo.Value;
+            debts = debts.Where(d => d.CreatedOn <= toDate).ToList();
+        }
+
+        // Debt Person filter
+        if (filters.DebtPersonId.HasValue && filters.DebtPersonId.Value != Guid.Empty)
+        {
+            debts = debts.Where(d => d.DebtPersonId == filters.DebtPersonId.Value).ToList();
+        }
+
+        // Amount filters
+        if (filters.MinAmount.HasValue)
+        {
+            debts = debts.Where(d => d.Amount >= filters.MinAmount.Value).ToList();
+        }
+
+        if (filters.MaxAmount.HasValue)
+        {
+            debts = debts.Where(d => d.Amount <= filters.MaxAmount.Value).ToList();
         }
         
         var debtPersonIds = debts.Select(d => d.DebtPersonId).Distinct().ToList();
@@ -80,7 +125,8 @@ public sealed class GetAllDebtsQueryHandler : BaseQueryHandler<GetAllDebtsQuery,
             DebtPersonId = d.DebtPersonId,
             DebtPersonName = debtPersons.TryGetValue(d.DebtPersonId, out var name) ? name : "Unknown",
             Description = d.Description,
-            IsDone = d.IsDone
+            IsDone = d.IsDone,
+            CreatedOn = d.CreatedOn
         }).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(filters.SearchTerm))
@@ -104,6 +150,7 @@ public sealed class GetAllDebtsQueryHandler : BaseQueryHandler<GetAllDebtsQuery,
             "debtpersonname" or "person" => desc ? dtos.OrderByDescending(d => d.DebtPersonName) : dtos.OrderBy(d => d.DebtPersonName),
             "dateofreturn" or "returndate" => desc ? dtos.OrderByDescending(d => d.DateOfReturn) : dtos.OrderBy(d => d.DateOfReturn),
             "profit" => desc ? dtos.OrderByDescending(d => d.Profit) : dtos.OrderBy(d => d.Profit),
+            "createdon" or "createdat" => desc ? dtos.OrderByDescending(d => d.CreatedOn) : dtos.OrderBy(d => d.CreatedOn),
             _ => desc ? dtos.OrderByDescending(d => d.DateOfBorrow) : dtos.OrderBy(d => d.DateOfBorrow)
         };
 

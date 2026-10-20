@@ -23,12 +23,13 @@ public class CompanyCommandsTests
     private readonly Mock<ICompanyRepository> _mockCompanyRepository;
     private readonly Mock<ICompanyCacheService> _mockCacheService;
 
-    public CompanyCommandsTests(Mock<INoSqlUnitOfWork> mockNoSqlUnitOfWork)
+    public CompanyCommandsTests()
     {
-        _mockNoSqlUnitOfWork = mockNoSqlUnitOfWork;
+        _mockNoSqlUnitOfWork = new Mock<INoSqlUnitOfWork>();
         _mockUnitOfWork = new Mock<IUnitOfWork>();
         _mockCompanyRepository = new Mock<ICompanyRepository>();
         _mockCacheService = new Mock<ICompanyCacheService>();
+        _mockNoSqlUnitOfWork.Setup(u => u.Companies).Returns(_mockCompanyRepository.Object);
     }
 
     [Fact]

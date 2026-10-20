@@ -17,4 +17,5 @@ public record DebtDto
     public string? DebtPersonName { get; init; }
     public string? Description { get; init; }
     public bool IsDone { get; init; }
+    public DateTime CreatedOn { get; init; }
 }

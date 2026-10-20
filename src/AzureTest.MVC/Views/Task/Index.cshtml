@@ -61,12 +61,20 @@
                     }
                 </div>
 
-                <form asp-action="Delete" method="post" onsubmit="return confirm('Delete this task?');">
-                    <input type="hidden" name="id" value="@t.Id" />
-                    <button type="submit" class="text-slate-400 hover:text-red-500 p-2 rounded focus:outline-none transition-colors">
-                        <i class="fa-regular fa-trash-can"></i>
-                    </button>
-                </form>
+                <div class="flex items-center gap-1">
+                    @if (!t.IsCompleted)
+                    {
+                        <a asp-controller="Pomodoro" asp-action="Index" asp-route-taskId="@t.Id" title="Focus on this task with Pomodoro" class="text-slate-400 hover:text-rose-500 p-2 rounded focus:outline-none transition-colors">
+                            <i class="fa-solid fa-stopwatch"></i>
+                        </a>
+                    }
+                    <form asp-action="Delete" method="post" onsubmit="return confirm('Delete this task?');">
+                        <input type="hidden" name="id" value="@t.Id" />
+                        <button type="submit" class="text-slate-400 hover:text-red-500 p-2 rounded focus:outline-none transition-colors">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </form>
+                </div>
             </div>
         }
     </div>

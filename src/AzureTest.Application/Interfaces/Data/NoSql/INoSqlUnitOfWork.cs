@@ -33,6 +33,7 @@ public interface INoSqlUnitOfWork : IDisposable
     ITrainingCourseRepository TrainingCourses { get; }
     IUserGymCourseRepository UserGymCourses { get; }
     IUserTrainingSessionRepository UserTrainingSessions { get; }
+    IUserWeightLogRepository UserWeightLogs { get; }
 
     IIdentitySettingRepository IdentitySettings { get; }
     Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default);

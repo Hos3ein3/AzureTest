@@ -28,6 +28,7 @@ namespace AzureTest.MVC.Controllers;
     private readonly IDebtCommandUnit _commands;
     private readonly IDebtQueryUnit _queries;
     private readonly IDebtPersonRepository _debtPersonRepository;
+    private readonly AzureTest.Application.Users.IUserQueryUnit _userQueries;
     private readonly IValidator<CreateDebtCommand> _createValidator;
     private readonly IValidator<UpdateDebtCommand> _updateValidator;
     private readonly IValidator<DeleteDebtCommand> _deleteValidator;
@@ -36,6 +37,7 @@ namespace AzureTest.MVC.Controllers;
         IDebtCommandUnit commands,
         IDebtQueryUnit queries,
         IDebtPersonRepository debtPersonRepository,
+        AzureTest.Application.Users.IUserQueryUnit userQueries,
         IValidator<CreateDebtCommand> createValidator,
         IValidator<UpdateDebtCommand> updateValidator,
         IValidator<DeleteDebtCommand> deleteValidator)
@@ -43,6 +45,7 @@ namespace AzureTest.MVC.Controllers;
         _commands = commands;
         _queries = queries;
         _debtPersonRepository = debtPersonRepository;
+        _userQueries = userQueries;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
         _deleteValidator = deleteValidator;
@@ -63,7 +66,7 @@ namespace AzureTest.MVC.Controllers;
 
     [HttpGet]
     [DisplayName("Index")]
-    [Description("View a list of Debt.")]
+    [Description("View a filtered, sorted and paged list of debts.")]
     public async Task<IActionResult> Index([FromQuery] GetAllDebtsFilters filters, [FromQuery] int? page, [FromQuery] string? search, [FromQuery] string? sort, [FromQuery] string? dir, CancellationToken cancellationToken = default)
     {
         filters ??= new GetAllDebtsFilters();
@@ -71,6 +74,15 @@ namespace AzureTest.MVC.Controllers;
         if (!string.IsNullOrWhiteSpace(search) && string.IsNullOrWhiteSpace(filters.SearchTerm)) filters.SearchTerm = search;
         if (!string.IsNullOrWhiteSpace(sort)) filters.SortBy = sort;
         if (!string.IsNullOrWhiteSpace(dir)) filters.SortDescending = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase);
+
+        var isAdmin = User.IsInRole("Admin");
+        if (isAdmin)
+        {
+            var usersResult = await _userQueries.GetAllUsers.HandleAsync(new AzureTest.Application.Users.Queries.GetAllUsers.GetAllUsersQuery(new AzureTest.Contracts.DTOs.Users.GetAllUsersFilters { PageSize = 100 }), cancellationToken);
+            ViewBag.Users = usersResult.Items;
+        }
+
+        await LoadDebtPersonsViewBagAsync();
 
         var pagedResult = await _queries.GetAll.HandleAsync(new GetAllDebtsQuery(filters), cancellationToken);
 
@@ -80,8 +92,32 @@ namespace AzureTest.MVC.Controllers;
         ViewBag.CurrentSearch = filters.SearchTerm;
         ViewBag.CurrentSort = filters.SortBy;
         ViewBag.CurrentDir = filters.SortDescending ? "desc" : "asc";
+        ViewBag.IsAdmin = isAdmin;
 
         return View(pagedResult);
+    }
+
+    [HttpGet]
+    [DisplayName("Debt Analytics")]
+    [Description("View comprehensive financial analytics and charts for debts grouped by person and status.")]
+    public async Task<IActionResult> Analytics([FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] List<Guid>? userIds, CancellationToken cancellationToken = default)
+    {
+        var isAdmin = User.IsInRole("Admin");
+        if (isAdmin)
+        {
+            var usersResult = await _userQueries.GetAllUsers.HandleAsync(new AzureTest.Application.Users.Queries.GetAllUsers.GetAllUsersQuery(new AzureTest.Contracts.DTOs.Users.GetAllUsersFilters { PageSize = 100 }), cancellationToken);
+            ViewBag.Users = usersResult.Items;
+        }
+
+        var query = new GetDebtAnalyticsQuery(UserIds: userIds, FromDate: fromDate, ToDate: toDate);
+        var analytics = await _queries.GetAnalytics.HandleAsync(query, cancellationToken);
+
+        ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+        ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+        ViewBag.SelectedUserIds = userIds ?? new List<Guid>();
+        ViewBag.IsAdmin = isAdmin;
+
+        return View(analytics);
     }
 
     [HttpGet]

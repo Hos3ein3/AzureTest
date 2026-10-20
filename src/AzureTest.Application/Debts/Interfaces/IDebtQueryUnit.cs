@@ -10,4 +10,5 @@ public interface IDebtQueryUnit
 {
     IQueryHandler<GetAllDebtsQuery, PagedResult<DebtDto, GetAllDebtsFilters>> GetAll { get; }
     IQueryHandler<GetDebtByIdQuery, DebtDto?> GetById { get; }
+    IQueryHandler<GetDebtAnalyticsQuery, DebtAnalyticsDto> GetAnalytics { get; }
 }

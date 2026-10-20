@@ -95,6 +95,7 @@ public static class DependencyInjection
             services.AddScoped<ITrainingCourseRepository, TrainingCourseRepository>();
             services.AddScoped<IUserGymCourseRepository, UserGymCourseRepository>();
             services.AddScoped<IUserTrainingSessionRepository, UserTrainingSessionRepository>();
+            services.AddScoped<IUserWeightLogRepository, UserWeightLogRepository>();
             services.AddScoped<INoSqlUnitOfWork, NoSqlUnitOfWork>();
             services.AddScoped<AzureTest.Persistence.Seeding.CompanyDataSeeder>();
         }

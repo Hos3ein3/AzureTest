@@ -11,12 +11,15 @@ public sealed class DebtQueryUnit : IDebtQueryUnit
 {
     public IQueryHandler<GetAllDebtsQuery, PagedResult<DebtDto, GetAllDebtsFilters>> GetAll { get; }
     public IQueryHandler<GetDebtByIdQuery, DebtDto?> GetById { get; }
+    public IQueryHandler<GetDebtAnalyticsQuery, DebtAnalyticsDto> GetAnalytics { get; }
 
     public DebtQueryUnit(
         IQueryHandler<GetAllDebtsQuery, PagedResult<DebtDto, GetAllDebtsFilters>> getAll,
-        IQueryHandler<GetDebtByIdQuery, DebtDto?> getById)
+        IQueryHandler<GetDebtByIdQuery, DebtDto?> getById,
+        IQueryHandler<GetDebtAnalyticsQuery, DebtAnalyticsDto> getAnalytics)
     {
         GetAll = getAll;
         GetById = getById;
+        GetAnalytics = getAnalytics;
     }
 }

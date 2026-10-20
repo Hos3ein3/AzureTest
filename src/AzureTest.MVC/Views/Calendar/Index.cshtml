@@ -2,18 +2,75 @@
     ViewData["Title"] = "Calendar";
 }
 
-<nav aria-label="breadcrumb" class="mb-6">
-    <ol class="flex items-center space-x-2 text-sm text-slate-500">
-        <li class="font-medium text-slate-800" aria-current="page">Calendar</li>
-    </ol>
-</nav>
+<style>
+    .fc .fc-toolbar {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .fc-header-toolbar.fc-toolbar {
+        margin-bottom: 1.25rem !important;
+    }
+    @@media (max-width: 768px) {
+        .fc .fc-toolbar {
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .fc .fc-toolbar-title {
+            font-size: 1.15rem !important;
+            text-align: center;
+            margin: 0.25rem 0;
+        }
+        .fc .fc-button {
+            padding: 0.4rem 0.65rem !important;
+            font-size: 0.8rem !important;
+        }
+        .fc .fc-toolbar-chunk {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            width: 100%;
+        }
+        .fc-daygrid-event {
+            font-size: 0.7rem !important;
+        }
+        .fc-list-event-title {
+            font-size: 0.85rem !important;
+        }
+    }
+</style>
 
-<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-8">
-    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-        <h5 class="text-lg font-semibold text-slate-800 m-0">Schedule</h5>
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+        <nav aria-label="breadcrumb" class="mb-1">
+            <ol class="flex items-center space-x-2 text-sm text-slate-500">
+                <li class="font-medium text-slate-800" aria-current="page">Calendar</li>
+            </ol>
+        </nav>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-600 flex items-center justify-center text-base">
+                <i class="fa-regular fa-calendar-days"></i>
+            </span>
+            Schedule & Planner
+        </h1>
     </div>
-    <div class="p-6">
-        <div id="calendar" style="min-height: 700px;"></div>
+</div>
+
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden mb-8">
+    <div class="px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/60 flex flex-wrap justify-between items-center gap-2">
+        <h5 class="text-base font-bold text-slate-800 m-0 flex items-center gap-2">
+            <i class="fa-solid fa-calendar-check text-brand-600"></i> Events & Deadlines
+        </h5>
+        <div class="flex items-center gap-3 text-xs text-slate-500">
+            <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-brand-500"></span> Event</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Task</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Debt Due</span>
+        </div>
+    </div>
+    <div class="p-3 sm:p-6 overflow-x-auto">
+        <div id="calendar" class="w-full" style="min-height: 480px;"></div>
     </div>
 </div>
 
@@ -23,28 +80,67 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
+            var isMobile = window.innerWidth < 768;
+
             var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                headerToolbar: {
+                initialView: isMobile ? 'listMonth' : 'dayGridMonth',
+                headerToolbar: isMobile ? {
+                    left: 'prev,next',
+                    center: 'title',
+                    right: 'today,dayGridMonth,listMonth'
+                } : {
                     left: 'prev,next today',
                     center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
                 },
+                buttonText: {
+                    today: 'Today',
+                    month: 'Month',
+                    week: 'Week',
+                    day: 'Day',
+                    list: 'Agenda'
+                },
+                height: 'auto',
+                contentHeight: 'auto',
                 themeSystem: 'standard',
-                events: '/Calendar/GetEvents', // Fetches standard events and tasks
+                events: '/Calendar/GetEvents',
                 eventContent: function(arg) {
-                    // Custom rendering based on event type
                     var type = arg.event.extendedProps.type;
                     if (type === 'task') {
-                        return { html: '<div class="px-1 py-0.5 text-xs font-semibold rounded"><i class="fa-solid fa-check-square mr-1"></i>' + arg.event.title + '</div>' };
+                        return { html: '<div class="px-1.5 py-0.5 text-xs font-semibold rounded truncate"><i class="fa-solid fa-check-square mr-1"></i>' + arg.event.title + '</div>' };
                     } else if (type === 'debt') {
-                        return { html: '<div class="px-1 py-0.5 text-xs font-semibold rounded text-white" style="background-color: ' + arg.event.backgroundColor + '"><i class="fa-solid fa-money-bill-wave mr-1"></i>' + arg.event.title + '</div>' };
+                        return { html: '<div class="px-1.5 py-0.5 text-xs font-semibold rounded text-white truncate" style="background-color: ' + (arg.event.backgroundColor || '#f59e0b') + '"><i class="fa-solid fa-money-bill-wave mr-1"></i>' + arg.event.title + '</div>' };
                     } else {
-                        return { html: '<div class="px-1 py-0.5 text-xs font-semibold rounded text-white" style="background-color: ' + arg.event.backgroundColor + '"><i class="fa-regular fa-calendar-check mr-1"></i>' + arg.event.title + '</div>' };
+                        return { html: '<div class="px-1.5 py-0.5 text-xs font-semibold rounded text-white truncate" style="background-color: ' + (arg.event.backgroundColor || '#2563eb') + '"><i class="fa-regular fa-calendar-check mr-1"></i>' + arg.event.title + '</div>' };
                     }
                 }
             });
+
             calendar.render();
+
+            // Responsive adapt on resize
+            var resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    var nowMobile = window.innerWidth < 768;
+                    if (nowMobile !== isMobile) {
+                        isMobile = nowMobile;
+                        calendar.setOption('headerToolbar', isMobile ? {
+                            left: 'prev,next',
+                            center: 'title',
+                            right: 'today,dayGridMonth,listMonth'
+                        } : {
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+                        });
+                        if (isMobile && calendar.view.type === 'timeGridWeek') {
+                            calendar.changeView('listMonth');
+                        }
+                    }
+                }, 200);
+            });
         });
     </script>
 }
