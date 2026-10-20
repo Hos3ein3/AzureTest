@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using AzureTest.Application.Configuration;
@@ -629,8 +630,13 @@ public static class FakeDataGenerator
                 name:        f.Lorem.Word() + " " + f.PickRandom("Tracker", "Goal", "Challenge", "Routine", "Practice"),
                 description: f.Random.Bool(0.65f) ? f.Lorem.Sentence() : null,
                 type:        type,
+                direction:   HabitDirection.AtLeast,
+                target:      goal,
+                schedule:    "Daily",
                 frequency:   f.PickRandom<HabitFrequency>(),
-                goal:        goal,
+                timeZone:    "UTC",
+                isPrivate:   false,
+                typeConfig:  null,
                 userId:      userId
             );
             tracker.CreatedOn = Utc(f.Date.Past(1));        // ★ UTC audit
@@ -651,13 +657,21 @@ public static class FakeDataGenerator
 
             // ★ UTC: DateTime.UtcNow.Date is already UTC
             var logDate = DateTime.UtcNow.Date.AddDays(-day);
+            var localDate = DateOnly.FromDateTime(logDate);
+            var isBool = tracker.Type == HabitType.Boolean;
+            var boolVal = f.Random.Bool(0.7f);
+            var numVal = isBool ? (boolVal ? 1.0 : 0.0) : f.Random.Double(0, tracker.Target * 1.5);
+            var valStr = isBool ? (boolVal ? "true" : "false") : numVal.ToString("0.##", CultureInfo.InvariantCulture);
 
             result.Add(HabitLog.Create(
                 habitTrackerId: tracker.Id,
-                logDate:        logDate,          // ★ UTC date
-                booleanValue:   f.Random.Bool(0.7f),
-                numericValue:   f.Random.Double(0, tracker.Goal * 1.5),
-                notes:          f.Random.Bool(0.2f) ? f.Lorem.Sentence() : null
+                userId:         tracker.UserId,
+                localDate:      localDate,
+                loggedAt:       logDate,
+                value:          valStr,
+                numericValue:   numVal,
+                notes:          f.Random.Bool(0.2f) ? f.Lorem.Sentence() : null,
+                targetSnapshot: tracker.Target
             ));
         }
         return result;

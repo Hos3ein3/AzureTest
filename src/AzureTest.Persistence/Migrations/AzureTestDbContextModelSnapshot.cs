@@ -3818,9 +3818,6 @@ namespace AzureTest.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("BooleanValue")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
@@ -3839,7 +3836,10 @@ namespace AzureTest.Persistence.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<DateTime>("LogDate")
+                    b.Property<DateOnly>("LocalDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("LoggedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ModifiedBy")
@@ -3849,15 +3849,28 @@ namespace AzureTest.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Notes")
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
-                    b.Property<double>("NumericValue")
+                    b.Property<double?>("NumericValue")
                         .HasColumnType("double precision");
+
+                    b.Property<double?>("TargetSnapshot")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("HabitTrackerId", "LogDate")
-                        .IsUnique();
+                    b.HasIndex("HabitTrackerId", "LocalDate");
+
+                    b.HasIndex("UserId", "LocalDate");
 
                     b.ToTable("HabitLogs");
                 });
@@ -3881,16 +3894,27 @@ namespace AzureTest.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("Direction")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Frequency")
                         .HasColumnType("integer");
 
-                    b.Property<double>("Goal")
-                        .HasColumnType("double precision");
+                    b.Property<bool>("IsArchived")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPrivate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("text");
@@ -3903,8 +3927,25 @@ namespace AzureTest.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("Schedule")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<double>("Target")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasDefaultValue("UTC");
+
                     b.Property<int>("Type")
                         .HasColumnType("integer");
+
+                    b.Property<string>("TypeConfig")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -3912,6 +3953,8 @@ namespace AzureTest.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "IsArchived");
 
                     b.ToTable("HabitTrackers");
                 });

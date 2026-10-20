@@ -19,6 +19,7 @@ public static class DependencyInjection
         // services.AddScoped<IIdentityService, IdentityService>();
         
         services.AddScoped<INotificationService, MockNotificationService>();
+        services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         
         // ── Crawler Service ───────────────────────────────────────────────────
         services.AddHttpClient<IIndCrawlerService, IndCrawlerService>();

@@ -1,6 +1,6 @@
-
-
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Domain.Entities;
@@ -15,8 +15,33 @@ public class HabitLogRepository : GenericRepository<HabitLog>, IHabitLogReposito
     {
     }
 
+    public async Task<HabitLog?> GetHabitLogByDateAsync(Guid habitId, DateOnly localDate)
+    {
+        return await _dbSet
+            .Where(x => x.HabitTrackerId == habitId && x.LocalDate == localDate)
+            .OrderByDescending(x => x.LoggedAt)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<HabitLog?> GetHabitLogByDateAsync(Guid habitId, DateTime date)
     {
-        return await _dbSet.FirstOrDefaultAsync(x => x.HabitTrackerId == habitId && x.LogDate.Date == date.Date);
+        var localDate = DateOnly.FromDateTime(date.Kind == DateTimeKind.Utc ? date : date.ToUniversalTime());
+        return await GetHabitLogByDateAsync(habitId, localDate);
+    }
+
+    public async Task<HabitLog?> GetLatestLogAsync(Guid habitId, DateOnly localDate)
+    {
+        return await _dbSet
+            .Where(x => x.HabitTrackerId == habitId && x.LocalDate == localDate)
+            .OrderByDescending(x => x.LoggedAt)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<IReadOnlyList<HabitLog>> GetLogsForHabitAsync(Guid habitId, DateOnly? fromDate = null, DateOnly? toDate = null)
+    {
+        var query = _dbSet.Where(x => x.HabitTrackerId == habitId);
+        if (fromDate.HasValue) query = query.Where(x => x.LocalDate >= fromDate.Value);
+        if (toDate.HasValue) query = query.Where(x => x.LocalDate <= toDate.Value);
+        return await query.OrderByDescending(x => x.LocalDate).ThenByDescending(x => x.LoggedAt).ToListAsync();
     }
 }

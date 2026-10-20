@@ -1,7 +1,5 @@
-using AzureTest.Application.Abstractions;
-
 using System;
-
+using AzureTest.Application.Abstractions;
 using AzureTest.Application.Habits.Commands;
 using AzureTest.Application.Messaging;
 
@@ -13,4 +11,5 @@ public interface IHabitCommandUnit
     ICommandHandler<UpdateHabitCommand, Result> UpdateHabit { get; }
     ICommandHandler<DeleteHabitCommand, Result> DeleteHabit { get; }
     ICommandHandler<LogHabitCommand, Result> LogHabit { get; }
+    ICommandHandler<UndoHabitLogCommand, Result> UndoHabitLog { get; }
 }

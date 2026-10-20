@@ -143,10 +143,27 @@ namespace AzureTest.MVC.Controllers;
             var thirtyDaysAgo = now.AddDays(-30);
             foreach (var h in allHabits)
             {
-                var recentLogs = h.Logs.Where(l => l.LogDate >= thirtyDaysAgo).ToList();
-                foreach (var log in recentLogs)
+                var recentLogs = h.Logs.Where(l => l.LoggedAt >= thirtyDaysAgo).ToList();
+                var logsByDate = recentLogs.GroupBy(l => l.LocalDate).ToList();
+                foreach (var dayGroup in logsByDate)
                 {
-                    bool isDone = h.Type == AzureTest.Domain.Enums.HabitType.Boolean ? log.BooleanValue : log.NumericValue >= h.Goal;
+                    bool isDone = false;
+                    double target = dayGroup.First().TargetSnapshot ?? h.Target;
+                    if (h.Type == AzureTest.Domain.Enums.HabitType.Boolean)
+                    {
+                        isDone = dayGroup.Any(l => l.BooleanValue || l.Value == "true");
+                    }
+                    else if (h.Type == AzureTest.Domain.Enums.HabitType.Counter)
+                    {
+                        var sum = dayGroup.Sum(l => l.NumericValue > 0 ? l.NumericValue : 1);
+                        isDone = h.Direction == AzureTest.Domain.Enums.HabitDirection.AtLeast ? sum >= target : sum <= target;
+                    }
+                    else
+                    {
+                        var val = dayGroup.Sum(l => l.NumericValue);
+                        isDone = h.Direction == AzureTest.Domain.Enums.HabitDirection.AtLeast ? val >= target : val <= target;
+                    }
+
                     if (isDone) doneHabits++;
                     else pendingHabits++;
                 }

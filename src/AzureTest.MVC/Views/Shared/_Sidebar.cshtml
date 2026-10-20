@@ -92,6 +92,12 @@
                 </a>
             </li>
             <li>
+                <a asp-area="" asp-controller="DateTimeConverter" asp-action="Index" data-title="DateTime Converter" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("DateTimeConverter")">
+                    <i class="fa-solid fa-clock-rotate-left w-6 text-center text-lg transition-colors @GetActiveIconClasses("DateTimeConverter")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">DateTime Converter</span>
+                </a>
+            </li>
+            <li>
                 <a asp-area="" asp-controller="Task" asp-action="Index" data-title="Tasks" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Task")">
                     <i class="fa-solid fa-list-check w-6 text-center text-lg transition-colors @GetActiveIconClasses("Task")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Tasks</span>

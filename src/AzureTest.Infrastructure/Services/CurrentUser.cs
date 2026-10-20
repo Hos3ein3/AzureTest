@@ -126,6 +126,12 @@ public class CurrentUser : ICurrentUser
     public bool HasAccess(IHttpContextAccessor httpContextAccessor, string? url = null)
         => CheckAccess(httpContextAccessor, url);
 
+    public bool BelongToCurrentUser(string entityUserId)
+    => Id.Equals(entityUserId);
+
+    public bool BelongToCurrentUser(Guid entityUserId)
+    => Id.Equals(entityUserId);
+
     // ─── Core logic ─────────────────────────────────────────────────────────────
 
     private bool CheckAccess(IHttpContextAccessor accessor, string? url)

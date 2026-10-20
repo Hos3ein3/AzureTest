@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <IsPackable>false</IsPackable>
@@ -20,6 +20,7 @@
         <ProjectReference Include="..\..\src\AzureTest.Application\AzureTest.Application.csproj" />
         <ProjectReference Include="..\..\src\AzureTest.Domain\AzureTest.Domain.csproj" />
         <ProjectReference Include="..\..\src\AzureTest.Contracts\AzureTest.Contracts.csproj" />
+        <ProjectReference Include="..\..\src\AzureTest.Infrastructure\AzureTest.Infrastructure.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,0 +1,375 @@
+@model AzureTest.MVC.Controllers.DateTimeConverterViewModel
+@{
+    ViewData["Title"] = "DateTime Converter & Exact Age";
+}
+
+<nav aria-label="breadcrumb" class="mb-6">
+    <ol class="flex items-center space-x-2 text-sm text-slate-500">
+        <li><a asp-controller="Home" asp-action="Index" class="hover:text-slate-700">Dashboard</a></li>
+        <li><span class="text-slate-400">/</span></li>
+        <li class="font-medium text-slate-800" aria-current="page">DateTime Converter</li>
+    </ol>
+</nav>
+
+<div class="space-y-8">
+    
+    <!-- ══════════════════════════════════════════════════════════════════════════ -->
+    <!-- SECTION 1: MULTI-CALENDAR CONVERTER                                        -->
+    <!-- ══════════════════════════════════════════════════════════════════════════ -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-brand-600"></i>
+                    DateTime Converter (تبدیل تاریخ و زمان)
+                </h3>
+                <p class="text-sm text-slate-500 mt-0.5">
+                    Convert seamlessly between Solar Hijri (Shamsi), Gregorian (Miladi), and Lunar Hijri (Ghamari) calendars.
+                </p>
+            </div>
+            <button type="button" onclick="setNow()" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+                <i class="fa-solid fa-rotate mr-1.5 text-brand-500"></i> Set to Current Time
+            </button>
+        </div>
+
+        <div class="p-6">
+            <form asp-action="ConvertDate" method="post" id="convertForm">
+                @Html.AntiForgeryToken()
+                
+                <!-- Calendar System Selector -->
+                <div class="mb-5">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Input Calendar System</label>
+                    <div class="grid grid-cols-3 gap-3 max-w-md">
+                        <label class="relative flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Shamsi ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm font-semibold" : "border-slate-200 hover:bg-slate-50 text-slate-600")">
+                            <input type="radio" name="SelectedCalendar" value="Shamsi" @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Shamsi ? "checked" : "") onchange="this.form.submit()" class="sr-only" />
+                            <span>☀️ Shamsi (شمسی)</span>
+                        </label>
+                        <label class="relative flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Miladi ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm font-semibold" : "border-slate-200 hover:bg-slate-50 text-slate-600")">
+                            <input type="radio" name="SelectedCalendar" value="Miladi" @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Miladi ? "checked" : "") onchange="this.form.submit()" class="sr-only" />
+                            <span>🌍 Miladi (میلادی)</span>
+                        </label>
+                        <label class="relative flex items-center justify-center p-3 rounded-xl border cursor-pointer transition-all @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Ghamari ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm font-semibold" : "border-slate-200 hover:bg-slate-50 text-slate-600")">
+                            <input type="radio" name="SelectedCalendar" value="Ghamari" @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Ghamari ? "checked" : "") onchange="this.form.submit()" class="sr-only" />
+                            <span>🌙 Ghamari (قمری)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Date & Time Inputs -->
+                <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 mb-6">
+                    <div class="col-span-1 sm:col-span-2">
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Year (سال)</label>
+                        <input type="number" name="Year" id="inputYear" value="@Model.Year" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Month (ماه)</label>
+                        <input type="number" min="1" max="12" name="Month" id="inputMonth" value="@Model.Month" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Day (روز)</label>
+                        <input type="number" min="1" max="31" name="Day" id="inputDay" value="@Model.Day" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Hour (ساعت)</label>
+                        <input type="number" min="0" max="23" name="Hour" id="inputHour" value="@Model.Hour" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Minute (دقیقه)</label>
+                        <input type="number" min="0" max="59" name="Minute" id="inputMinute" value="@Model.Minute" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                    </div>
+                </div>
+
+                <!-- Hidden inputs to retain age section state -->
+                <input type="hidden" name="BirthCalendar" value="@Model.BirthCalendar" />
+                <input type="hidden" name="BirthYear" value="@Model.BirthYear" />
+                <input type="hidden" name="BirthMonth" value="@Model.BirthMonth" />
+                <input type="hidden" name="BirthDay" value="@Model.BirthDay" />
+                <input type="hidden" name="BirthHour" value="@Model.BirthHour" />
+                <input type="hidden" name="BirthMinute" value="@Model.BirthMinute" />
+
+                <div class="flex items-center gap-3">
+                    <button type="submit" class="px-5 py-2.5 bg-brand-600 text-white font-medium text-sm rounded-lg hover:bg-brand-700 shadow-sm transition-colors inline-flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-right-arrow-left"></i> Convert Date
+                    </button>
+                </div>
+            </form>
+
+            <!-- Conversion Results Cards (3 Columns) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                
+                <!-- SHAMSI CARD -->
+                <div class="rounded-xl border @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Shamsi ? "border-brand-500 ring-2 ring-brand-100 bg-brand-50/20" : "border-slate-200 bg-white") p-5 flex flex-col justify-between relative shadow-sm">
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                ☀️ Shamsi (شمسی)
+                            </span>
+                            <button type="button" onclick="copyText('@Model.ConvertedResult.Shamsi.FormattedDate')" class="text-slate-400 hover:text-slate-600 transition-colors p-1" title="Copy date">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+
+                        <div class="text-2xl font-black text-slate-800 tracking-tight mb-1" id="resShamsiDate">
+                            @Model.ConvertedResult.Shamsi.FormattedDate
+                        </div>
+                        <div class="text-xs text-slate-500 mb-3" id="resShamsiTime">
+                            @Model.ConvertedResult.Shamsi.FormattedDateTime.Substring(Math.Max(0, Model.ConvertedResult.Shamsi.FormattedDateTime.Length - 8))
+                        </div>
+
+                        <div class="space-y-1.5 pt-3 border-t border-slate-100 text-xs text-slate-600">
+                            <div><span class="text-slate-400">فارسی:</span> <strong class="text-slate-700">@Model.ConvertedResult.Shamsi.FullText</strong></div>
+                            <div><span class="text-slate-400">Month:</span> @Model.ConvertedResult.Shamsi.MonthName (@Model.ConvertedResult.Shamsi.MonthNameFarsi)</div>
+                            <div><span class="text-slate-400">Day:</span> @Model.ConvertedResult.Shamsi.DayOfWeekName (@Model.ConvertedResult.Shamsi.DayOfWeekNameFarsi)</div>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 mt-3 border-t border-slate-100 flex justify-between text-[11px] text-slate-400">
+                        <span>Day of Year: @Model.ConvertedResult.Shamsi.DayOfYear</span>
+                        <span>@(Model.ConvertedResult.Shamsi.IsLeapYear ? "Leap Year (کبیسه)" : "Standard Year")</span>
+                    </div>
+                </div>
+
+                <!-- MILADI CARD -->
+                <div class="rounded-xl border @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Miladi ? "border-brand-500 ring-2 ring-brand-100 bg-brand-50/20" : "border-slate-200 bg-white") p-5 flex flex-col justify-between relative shadow-sm">
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                🌍 Miladi (میلادی)
+                            </span>
+                            <button type="button" onclick="copyText('@Model.ConvertedResult.Miladi.FormattedDate')" class="text-slate-400 hover:text-slate-600 transition-colors p-1" title="Copy date">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+
+                        <div class="text-2xl font-black text-slate-800 tracking-tight mb-1" id="resMiladiDate">
+                            @Model.ConvertedResult.Miladi.FormattedDate
+                        </div>
+                        <div class="text-xs text-slate-500 mb-3" id="resMiladiTime">
+                            @Model.ConvertedResult.Miladi.FormattedDateTime.Substring(Math.Max(0, Model.ConvertedResult.Miladi.FormattedDateTime.Length - 8)) UTC
+                        </div>
+
+                        <div class="space-y-1.5 pt-3 border-t border-slate-100 text-xs text-slate-600">
+                            <div><span class="text-slate-400">Full:</span> <strong class="text-slate-700">@Model.ConvertedResult.Miladi.FullText</strong></div>
+                            <div><span class="text-slate-400">Month:</span> @Model.ConvertedResult.Miladi.MonthName (@Model.ConvertedResult.Miladi.MonthNameFarsi)</div>
+                            <div><span class="text-slate-400">Day:</span> @Model.ConvertedResult.Miladi.DayOfWeekName (@Model.ConvertedResult.Miladi.DayOfWeekNameFarsi)</div>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 mt-3 border-t border-slate-100 flex justify-between text-[11px] text-slate-400">
+                        <span>Day of Year: @Model.ConvertedResult.Miladi.DayOfYear</span>
+                        <span>@(Model.ConvertedResult.Miladi.IsLeapYear ? "Leap Year" : "Standard Year")</span>
+                    </div>
+                </div>
+
+                <!-- GHAMARI CARD -->
+                <div class="rounded-xl border @(Model.SelectedCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Ghamari ? "border-brand-500 ring-2 ring-brand-100 bg-brand-50/20" : "border-slate-200 bg-white") p-5 flex flex-col justify-between relative shadow-sm">
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                🌙 Ghamari (قمری)
+                            </span>
+                            <button type="button" onclick="copyText('@Model.ConvertedResult.Ghamari.FormattedDate')" class="text-slate-400 hover:text-slate-600 transition-colors p-1" title="Copy date">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+
+                        <div class="text-2xl font-black text-slate-800 tracking-tight mb-1" id="resGhamariDate">
+                            @Model.ConvertedResult.Ghamari.FormattedDate
+                        </div>
+                        <div class="text-xs text-slate-500 mb-3" id="resGhamariTime">
+                            @Model.ConvertedResult.Ghamari.FormattedDateTime.Substring(Math.Max(0, Model.ConvertedResult.Ghamari.FormattedDateTime.Length - 8))
+                        </div>
+
+                        <div class="space-y-1.5 pt-3 border-t border-slate-100 text-xs text-slate-600">
+                            <div><span class="text-slate-400">عربی/فارسی:</span> <strong class="text-slate-700">@Model.ConvertedResult.Ghamari.FullText</strong></div>
+                            <div><span class="text-slate-400">Month:</span> @Model.ConvertedResult.Ghamari.MonthName (@Model.ConvertedResult.Ghamari.MonthNameFarsi)</div>
+                            <div><span class="text-slate-400">Day:</span> @Model.ConvertedResult.Ghamari.DayOfWeekName (@Model.ConvertedResult.Ghamari.DayOfWeekNameFarsi)</div>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 mt-3 border-t border-slate-100 flex justify-between text-[11px] text-slate-400">
+                        <span>Day of Year: @Model.ConvertedResult.Ghamari.DayOfYear</span>
+                        <span>@(Model.ConvertedResult.Ghamari.IsLeapYear ? "Leap Year" : "Standard Year")</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════════ -->
+    <!-- SECTION 2: EXACT AGE CALCULATOR (ExactAge)                                 -->
+    <!-- ══════════════════════════════════════════════════════════════════════════ -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden" id="exactAgeSection">
+        <div class="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-amber-50/40 to-white">
+            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-cake-candles text-amber-500"></i>
+                Exact Age Calculator (محاسبه دقیق سن)
+            </h3>
+            <p class="text-sm text-slate-500 mt-0.5">
+                Enter your birth date in Shamsi, Miladi, or Ghamari to calculate your exact age in years, months, days, hours, and minutes.
+            </p>
+        </div>
+
+        <div class="p-6">
+            <form asp-action="CalculateAge" method="post" id="ageForm">
+                @Html.AntiForgeryToken()
+
+                <!-- Hidden inputs to preserve section 1 state -->
+                <input type="hidden" name="SelectedCalendar" value="@Model.SelectedCalendar" />
+                <input type="hidden" name="Year" value="@Model.Year" />
+                <input type="hidden" name="Month" value="@Model.Month" />
+                <input type="hidden" name="Day" value="@Model.Day" />
+                <input type="hidden" name="Hour" value="@Model.Hour" />
+                <input type="hidden" name="Minute" value="@Model.Minute" />
+                <input type="hidden" name="Second" value="@Model.Second" />
+
+                <!-- Birth Calendar System -->
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Birth Calendar</label>
+                    <div class="flex items-center gap-3 max-w-sm">
+                        <label class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                            <input type="radio" name="BirthCalendar" value="Shamsi" @(Model.BirthCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Shamsi ? "checked" : "") class="text-brand-600 focus:ring-brand-500" />
+                            <span>Shamsi (شمسی)</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                            <input type="radio" name="BirthCalendar" value="Miladi" @(Model.BirthCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Miladi ? "checked" : "") class="text-brand-600 focus:ring-brand-500" />
+                            <span>Miladi (میلادی)</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                            <input type="radio" name="BirthCalendar" value="Ghamari" @(Model.BirthCalendar == AzureTest.Application.Interfaces.Services.CalendarType.Ghamari ? "checked" : "") class="text-brand-600 focus:ring-brand-500" />
+                            <span>Ghamari (قمری)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Birth Date Inputs -->
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Birth Year (سال تولد)</label>
+                        <input type="number" name="BirthYear" id="birthYear" value="@Model.BirthYear" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" placeholder="e.g. 1375 or 1996" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Birth Month (ماه)</label>
+                        <input type="number" min="1" max="12" name="BirthMonth" id="birthMonth" value="@Model.BirthMonth" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Birth Day (روز)</label>
+                        <input type="number" min="1" max="31" name="BirthDay" id="birthDay" value="@Model.BirthDay" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Birth Hour (ساعت)</label>
+                        <input type="number" min="0" max="23" name="BirthHour" id="birthHour" value="@Model.BirthHour" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Birth Minute (دقیقه)</label>
+                        <input type="number" min="0" max="59" name="BirthMinute" id="birthMinute" value="@Model.BirthMinute" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                    </div>
+                </div>
+
+                <button type="submit" class="px-5 py-2.5 bg-amber-500 text-white font-medium text-sm rounded-lg hover:bg-amber-600 shadow-sm transition-colors inline-flex items-center gap-2">
+                    <i class="fa-solid fa-calculator"></i> Calculate Exact Age
+                </button>
+            </form>
+
+            @if (Model.AgeResult != null)
+            {
+                <div class="mt-8 space-y-6 pt-6 border-t border-slate-100">
+                    
+                    <!-- Exact Age Highlight Banner -->
+                    <div class="p-6 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/20">
+                        <div class="text-xs uppercase font-bold tracking-wider text-amber-100 mb-1">Your Exact Age (سن دقیق شما)</div>
+                        <div class="text-3xl sm:text-4xl font-black tracking-tight mb-2">
+                            @Model.AgeResult.Years <span class="text-amber-200 text-xl font-normal">Years</span>,
+                            @Model.AgeResult.Months <span class="text-amber-200 text-xl font-normal">Months</span>,
+                            @Model.AgeResult.Days <span class="text-amber-200 text-xl font-normal">Days</span>
+                        </div>
+                        <div class="text-lg font-medium text-amber-100 mb-3">
+                            @Model.AgeResult.Hours Hours, @Model.AgeResult.Minutes Minutes, @Model.AgeResult.Seconds Seconds
+                        </div>
+                        <div class="pt-3 border-t border-amber-400/50 text-sm font-semibold text-white">
+                            🇮🇷 @Model.AgeResult.FormattedAgeFarsi
+                        </div>
+                    </div>
+
+                    <!-- Statistics Cards Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div class="p-4 rounded-xl border border-slate-100 bg-slate-50 text-center">
+                            <span class="text-xs text-slate-400 block mb-1">Total Days Lived</span>
+                            <span class="text-xl font-extrabold text-slate-800">@Model.AgeResult.TotalDays.ToString("N0")</span>
+                            <span class="text-[11px] text-slate-400 block mt-0.5">روز سپری شده</span>
+                        </div>
+                        <div class="p-4 rounded-xl border border-slate-100 bg-slate-50 text-center">
+                            <span class="text-xs text-slate-400 block mb-1">Total Hours Lived</span>
+                            <span class="text-xl font-extrabold text-slate-800">@Model.AgeResult.TotalHours.ToString("N0")</span>
+                            <span class="text-[11px] text-slate-400 block mt-0.5">ساعت سپری شده</span>
+                        </div>
+                        <div class="p-4 rounded-xl border border-slate-100 bg-slate-50 text-center">
+                            <span class="text-xs text-slate-400 block mb-1">Total Minutes Lived</span>
+                            <span class="text-xl font-extrabold text-slate-800">@Model.AgeResult.TotalMinutes.ToString("N0")</span>
+                            <span class="text-[11px] text-slate-400 block mt-0.5">دقیقه سپری شده</span>
+                        </div>
+                        <div class="p-4 rounded-xl border border-slate-100 bg-slate-50 text-center">
+                            <span class="text-xs text-slate-400 block mb-1">Total Seconds Lived</span>
+                            <span class="text-xl font-extrabold text-slate-800">@Model.AgeResult.TotalSeconds.ToString("N0")</span>
+                            <span class="text-[11px] text-slate-400 block mt-0.5">ثانیه سپری شده</span>
+                        </div>
+                    </div>
+
+                    <!-- Insights Card (Next Birthday & Zodiac) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="p-4 rounded-xl border border-slate-100 bg-white flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-2xl flex-shrink-0">
+                                🎁
+                            </div>
+                            <div>
+                                <span class="text-xs text-slate-400 block">Next Birthday (تولد بعدی)</span>
+                                <span class="text-sm font-bold text-slate-800">In @Model.AgeResult.DaysUntilNextBirthday days</span>
+                                <span class="text-xs text-slate-500 block">On @Model.AgeResult.NextBirthdayDayOfWeek (@Model.AgeResult.NextBirthdayDayOfWeekFarsi)</span>
+                            </div>
+                        </div>
+
+                        <div class="p-4 rounded-xl border border-slate-100 bg-white flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl flex-shrink-0">
+                                ♈
+                            </div>
+                            <div>
+                                <span class="text-xs text-slate-400 block">Zodiac Sign (برج فلکی / نماد ماه)</span>
+                                <span class="text-sm font-bold text-slate-800">@Model.AgeResult.ZodiacSign</span>
+                                <span class="text-xs text-slate-500 block">@Model.AgeResult.ZodiacSignFarsi</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            }
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function copyText(text) {
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Copied to clipboard: ' + text);
+        });
+    }
+
+    function setNow() {
+        const now = new Date();
+        const selectedCal = document.querySelector('input[name="SelectedCalendar"]:checked').value;
+        
+        if (selectedCal === 'Miladi') {
+            document.getElementById('inputYear').value = now.getUTCFullYear();
+            document.getElementById('inputMonth').value = now.getUTCMonth() + 1;
+            document.getElementById('inputDay').value = now.getUTCDate();
+            document.getElementById('inputHour').value = now.getUTCHours();
+            document.getElementById('inputMinute').value = now.getUTCMinutes();
+            document.getElementById('convertForm').submit();
+        } else {
+            // Submit empty to allow server to resolve current in target calendar
+            window.location.href = '@Url.Action("Index", "DateTimeConverter")?calendar=' + selectedCal;
+        }
+    }
+</script>

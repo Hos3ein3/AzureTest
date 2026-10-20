@@ -115,6 +115,8 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
         public bool HasAccess() => true;
         public bool HasAccess(string url) => true;
         public bool HasAccess(Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, string? url = null) => true;
+        public bool BelongToCurrentUser(string entityUserId) => true;
+        public bool BelongToCurrentUser(Guid entityUserId) => true;
     }
 
 

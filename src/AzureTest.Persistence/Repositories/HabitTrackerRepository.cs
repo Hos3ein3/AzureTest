@@ -1,5 +1,3 @@
-
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,10 +15,11 @@ public class HabitTrackerRepository : GenericRepository<HabitTracker>, IHabitTra
     {
     }
 
-    public async Task<IReadOnlyList<HabitTracker>> GetHabitsWithLogsAsync(Guid? userId)
+    public async Task<IReadOnlyList<HabitTracker>> GetHabitsWithLogsAsync(Guid? userId, bool includeArchived = false)
     {
         var query = _dbSet.Include(h => h.Logs).AsQueryable();
         if (userId.HasValue) query = query.Where(h => h.UserId == userId.Value);
+        if (!includeArchived) query = query.Where(h => !h.IsArchived);
         return await query.OrderBy(h => h.CreatedOn).ToListAsync();
     }
 

@@ -32,4 +32,7 @@ public interface ICurrentUser
     /// Optionally override with a specific <paramref name="url"/>.
     /// </summary>
     bool HasAccess(Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, string? url = null);
+
+    bool BelongToCurrentUser(string entityUserId);
+    bool BelongToCurrentUser(Guid entityUserId);
 }

@@ -1,21 +1,19 @@
-using AzureTest.Application.Abstractions;
-
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-
-using AzureTest.Application.Interfaces.Services;
+using AzureTest.Application.Abstractions;
 using AzureTest.Application.Interfaces.Data;
+using AzureTest.Application.Interfaces.Services;
 using Microsoft.Extensions.Logging;
 
 namespace AzureTest.Application.Habits.Commands;
 
 public class UpdateHabitCommandHandler : BaseCommandHandler<UpdateHabitCommand, Result>
 {
-
     private readonly ICurrentUser _currentUser;
 
-    public UpdateHabitCommandHandler(ICurrentUser currentUser, IUnitOfWork unitOfWork, ILogger<UpdateHabitCommandHandler> logger) : base(unitOfWork, logger)
+    public UpdateHabitCommandHandler(ICurrentUser currentUser, IUnitOfWork unitOfWork, ILogger<UpdateHabitCommandHandler> logger)
+        : base(unitOfWork, logger)
     {
         _currentUser = currentUser;
     }
@@ -25,8 +23,20 @@ public class UpdateHabitCommandHandler : BaseCommandHandler<UpdateHabitCommand, 
         var h = await UnitOfWork.Habits.GetByIdAsync(command.Id);
         if (h == null || h.UserId != _currentUser.Id) return Result.Failure("Habit not found.");
 
-        h.Update(command.Name, command.Description, command.Type, command.Frequency, command.Goal);
-        
+        h.Update(
+            name: command.Name,
+            description: command.Description,
+            type: command.Type,
+            direction: command.Direction,
+            target: command.Target,
+            schedule: command.Schedule,
+            frequency: command.Frequency,
+            timeZone: command.TimeZone,
+            isArchived: command.IsArchived,
+            isPrivate: command.IsPrivate,
+            typeConfig: command.TypeConfig
+        );
+
         return Result.Success();
     }
 }
