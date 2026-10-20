@@ -43,13 +43,9 @@ public class GymCoursesController : Controller
     [HttpGet]
     [DisplayName("Courses Index")]
     [Description("List all training courses.")]
-    public async Task<IActionResult> Index(TrainingCourseFilter? filter, string search = "", string sort = "Name", string dir = "asc", int page = 1)
+    public async Task<IActionResult> Index([FromQuery] TrainingCourseFilter? filter)
     {
         filter ??= new TrainingCourseFilter();
-        if (!string.IsNullOrWhiteSpace(search)) filter.SearchTerm = search;
-        if (!string.IsNullOrWhiteSpace(sort)) filter.SortBy = sort;
-        if (!string.IsNullOrWhiteSpace(dir)) filter.SortDescending = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase);
-        if (page > 0) filter.PageNumber = page;
 
         var result = await _getAllTrainingCoursesQuery.HandleAsync(new GetAllTrainingCoursesQuery(filter));
         var paged = result.IsSuccess

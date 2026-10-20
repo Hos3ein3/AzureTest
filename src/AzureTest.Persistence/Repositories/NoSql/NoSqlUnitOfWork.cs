@@ -71,6 +71,16 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     public IUserTrainingSessionRepository UserTrainingSessions => _userTrainingSessions ??= new UserTrainingSessionRepository(_database);
     public IUserWeightLogRepository UserWeightLogs => _userWeightLogs ??= new UserWeightLogRepository(_database);
 
+    private IIngredientRepository? _ingredients;
+    private IRecipeRepository? _recipes;
+    private IMealLogRepository? _mealLogs;
+    private IDailyNutritionTargetRepository? _nutritionTargets;
+
+    public IIngredientRepository Ingredients => _ingredients ??= new IngredientRepository(_database);
+    public IRecipeRepository Recipes => _recipes ??= new RecipeRepository(_database);
+    public IMealLogRepository MealLogs => _mealLogs ??= new MealLogRepository(_database);
+    public IDailyNutritionTargetRepository NutritionTargets => _nutritionTargets ??= new DailyNutritionTargetRepository(_database);
+
     public IHouseSearchHistoryRepository HouseSearchHistories => _houseSearchHistories ??= new HouseSearchHistoryRepository(_database);
     public IHouseCrawlerCredentialRepository HouseCrawlerCredentials => _houseCrawlerCredentials ??= new HouseCrawlerCredentialRepository(_database);
 

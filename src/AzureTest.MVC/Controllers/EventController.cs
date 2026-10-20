@@ -34,31 +34,9 @@ namespace AzureTest.MVC.Controllers;
 
     [DisplayName("Index")]
     [Description("View a list of Event.")]
-    public async Task<IActionResult> Index([FromQuery] GetAllEventsFilters filters, [FromQuery] int? pageNumber, [FromQuery] string? searchString, [FromQuery] string? sortOrder, CancellationToken cancellationToken)
+    public async Task<IActionResult> Index([FromQuery] GetAllEventsFilters filters, CancellationToken cancellationToken)
     {
         filters ??= new GetAllEventsFilters();
-        if (!string.IsNullOrWhiteSpace(searchString) && string.IsNullOrWhiteSpace(filters.SearchTerm))
-        {
-            filters.SearchTerm = searchString;
-        }
-        if (pageNumber.HasValue && pageNumber.Value > 0)
-        {
-            filters.PageNumber = pageNumber.Value;
-        }
-        if (!string.IsNullOrWhiteSpace(sortOrder))
-        {
-            if (sortOrder.Contains("desc"))
-            {
-                filters.SortDescending = true;
-                filters.SortBy = sortOrder.Replace("_desc", "");
-            }
-            else
-            {
-                filters.SortDescending = false;
-                filters.SortBy = sortOrder;
-            }
-        }
-
         var userId = _currentUser.Id;
         var pagedResult = await _queryUnit.GetAllEvents.HandleAsync(new GetAllEventsQuery(filters, userId), cancellationToken);
 

@@ -48,11 +48,9 @@ public class PagesController : Controller
     [Authorize(Roles = "Admin")]
     [DisplayName("Index")]
     [Description("Action: Index")]
-    public async Task<IActionResult> Index([FromQuery] PageFilter filter, [FromQuery] int? page, [FromQuery] string? search)
+    public async Task<IActionResult> Index([FromQuery] PageFilter? filter)
     {
         filter ??= new PageFilter();
-        if (page.HasValue && page.Value > 0) filter.PageNumber = page.Value;
-        if (!string.IsNullOrWhiteSpace(search) && string.IsNullOrWhiteSpace(filter.SearchTerm)) filter.SearchTerm = search;
 
         var result = await _getAll.HandleAsync(new GetAllPagesQuery(filter));
         var pagedResult = result.IsSuccess 

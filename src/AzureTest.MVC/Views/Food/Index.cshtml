@@ -1,0 +1,534 @@
+@model AzureTest.Contracts.DTOs.Food.DailyNutritionSummaryDto
+@{
+    ViewData["Title"] = "Nutrition Diary";
+    var targets = ViewBag.Targets as AzureTest.Contracts.DTOs.Food.NutritionTargetDto;
+    var targetDate = (DateTime)(ViewBag.TargetDate ?? DateTime.UtcNow.Date);
+    var prevDate = targetDate.AddDays(-1).ToString("yyyy-MM-dd");
+    var nextDate = targetDate.AddDays(1).ToString("yyyy-MM-dd");
+    var todayDate = DateTime.UtcNow.Date.ToString("yyyy-MM-dd");
+
+    var ingredients = ViewBag.IngredientsList as List<AzureTest.Contracts.DTOs.Food.IngredientDto> ?? new();
+    var recipes = ViewBag.RecipesList as List<AzureTest.Contracts.DTOs.Food.RecipeDto> ?? new();
+
+    double calPct = Model.TargetCalories > 0 ? Math.Min(100, Math.Round((Model.TotalCalories / Model.TargetCalories) * 100.0, 1)) : 0;
+    double proPct = Model.TargetProtein > 0 ? Math.Min(100, Math.Round((Model.TotalProtein / Model.TargetProtein) * 100.0, 1)) : 0;
+    double carbPct = Model.TargetCarbs > 0 ? Math.Min(100, Math.Round((Model.TotalCarbs / Model.TargetCarbs) * 100.0, 1)) : 0;
+    double fatPct = Model.TargetFat > 0 ? Math.Min(100, Math.Round((Model.TotalFat / Model.TargetFat) * 100.0, 1)) : 0;
+    double waterPct = Model.TargetWaterMl > 0 ? Math.Min(100, Math.Round(((double)Model.TotalWaterMl / Model.TargetWaterMl) * 100.0, 1)) : 0;
+
+    var mealTypes = new[] {
+        AzureTest.Domain.Documents.Food.Enums.MealType.Breakfast,
+        AzureTest.Domain.Documents.Food.Enums.MealType.Lunch,
+        AzureTest.Domain.Documents.Food.Enums.MealType.Dinner,
+        AzureTest.Domain.Documents.Food.Enums.MealType.Snack,
+        AzureTest.Domain.Documents.Food.Enums.MealType.PreWorkout,
+        AzureTest.Domain.Documents.Food.Enums.MealType.PostWorkout
+    };
+}
+
+<!-- Top Header & Navigation -->
+<div class="mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                <i class="fa-solid fa-utensils mr-1.5"></i> Daily Nutrition
+            </span>
+            @if (targetDate == DateTime.UtcNow.Date)
+            {
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">Today</span>
+            }
+        </div>
+        <h1 class="text-3xl font-black text-slate-900 tracking-tight">Food & Nutrition Diary</h1>
+        <p class="text-slate-500 text-sm">Track your intake, balance macros, and monitor daily hydration.</p>
+    </div>
+
+    <!-- Date Navigation & Quick Links -->
+    <div class="flex flex-wrap items-center gap-2">
+        <div class="inline-flex items-center rounded-xl bg-white border border-slate-200 p-1 shadow-sm">
+            <a href="@Url.Action("Index", new { date = prevDate })" class="p-2 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors" title="Previous Day">
+                <i class="fa-solid fa-chevron-left text-sm"></i>
+            </a>
+            <input type="date" value="@targetDate.ToString("yyyy-MM-dd")" onchange="window.location.href='@Url.Action("Index")?date=' + this.value" class="border-0 bg-transparent text-sm font-bold text-slate-800 focus:ring-0 cursor-pointer px-2" />
+            <a href="@Url.Action("Index", new { date = nextDate })" class="p-2 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors" title="Next Day">
+                <i class="fa-solid fa-chevron-right text-sm"></i>
+            </a>
+            @if (targetDate != DateTime.UtcNow.Date)
+            {
+                <a href="@Url.Action("Index", new { date = todayDate })" class="ml-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+                    Today
+                </a>
+            }
+        </div>
+
+        <button type="button" onclick="openLogModal()" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors">
+            <i class="fa-solid fa-plus mr-2"></i> Log Food / Meal
+        </button>
+    </div>
+</div>
+
+<!-- Perspectives Submenu Bar -->
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
+    <a href="@Url.Action("Chef")" class="p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:border-amber-300 hover:bg-amber-50/30 transition-all flex items-center gap-3 group">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <i class="fa-solid fa-kitchen-set"></i>
+        </div>
+        <div>
+            <div class="text-xs font-bold text-slate-800">Chef Workspace</div>
+            <div class="text-2xs text-slate-400">Pantry, scale & conversions</div>
+        </div>
+    </a>
+    <a href="@Url.Action("Athlete")" class="p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:border-blue-300 hover:bg-blue-50/30 transition-all flex items-center gap-3 group">
+        <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <i class="fa-solid fa-dumbbell"></i>
+        </div>
+        <div>
+            <div class="text-xs font-bold text-slate-800">Athlete Hub</div>
+            <div class="text-2xs text-slate-400">Cut/Bulk, protein & trends</div>
+        </div>
+    </a>
+    <a href="@Url.Action("Planner")" class="p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:border-purple-300 hover:bg-purple-50/30 transition-all flex items-center gap-3 group">
+        <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <i class="fa-solid fa-calendar-week"></i>
+        </div>
+        <div>
+            <div class="text-xs font-bold text-slate-800">Weekly Planner</div>
+            <div class="text-2xs text-slate-400">Organize Monday-Sunday</div>
+        </div>
+    </a>
+    <a href="@Url.Action("Recipes")" class="p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:border-rose-300 hover:bg-rose-50/30 transition-all flex items-center gap-3 group">
+        <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <i class="fa-solid fa-book-open"></i>
+        </div>
+        <div>
+            <div class="text-xs font-bold text-slate-800">Recipes Catalog</div>
+            <div class="text-2xs text-slate-400">Browse & create dishes</div>
+        </div>
+    </a>
+    <a href="@Url.Action("Ingredients")" class="p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:border-emerald-300 hover:bg-emerald-50/30 transition-all flex items-center gap-3 group col-span-2 sm:col-span-1">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <i class="fa-solid fa-carrot"></i>
+        </div>
+        <div>
+            <div class="text-xs font-bold text-slate-800">Ingredients</div>
+            <div class="text-2xs text-slate-400">100g standard nutrition</div>
+        </div>
+    </a>
+</div>
+
+<!-- Daily Nutrition Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+    <!-- Calories Ring Card -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div>
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Calories</span>
+                <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+                    <i class="fa-solid fa-fire text-sm"></i>
+                </div>
+            </div>
+            <div class="flex items-baseline gap-2 mb-1">
+                <span class="text-3xl font-black text-slate-900 font-mono">@Model.TotalCalories.ToString("N0")</span>
+                <span class="text-xs text-slate-400">/ @Model.TargetCalories kcal</span>
+            </div>
+            <div class="text-xs text-slate-500">
+                @(Model.TargetCalories >= Model.TotalCalories ? $"{Math.Round(Model.TargetCalories - Model.TotalCalories)} kcal remaining" : $"{Math.Round(Model.TotalCalories - Model.TargetCalories)} kcal over target")
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-orange-500 h-2.5 rounded-full transition-all duration-500" style="width: @calPct%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Protein Card -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div>
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Protein</span>
+                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i class="fa-solid fa-drumstick-bite text-sm"></i>
+                </div>
+            </div>
+            <div class="flex items-baseline gap-2 mb-1">
+                <span class="text-3xl font-black text-blue-600 font-mono">@Model.TotalProtein.ToString("0.#")g</span>
+                <span class="text-xs text-slate-400">/ @Model.TargetProtein g</span>
+            </div>
+            <div class="text-xs text-slate-500">
+                @Math.Round((Model.TotalProtein * 4), 0) kcal from protein
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width: @proPct%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Carbs Card -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div>
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Carbs</span>
+                <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <i class="fa-solid fa-wheat-awn text-sm"></i>
+                </div>
+            </div>
+            <div class="flex items-baseline gap-2 mb-1">
+                <span class="text-3xl font-black text-amber-600 font-mono">@Model.TotalCarbs.ToString("0.#")g</span>
+                <span class="text-xs text-slate-400">/ @Model.TargetCarbs g</span>
+            </div>
+            <div class="text-xs text-slate-500">
+                Fiber: @Model.TotalFiber.ToString("0.#")g | Sugar: @Model.TotalSugar.ToString("0.#")g
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-amber-500 h-2.5 rounded-full transition-all duration-500" style="width: @carbPct%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fat Card -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div>
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Fats</span>
+                <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                    <i class="fa-solid fa-droplet text-sm"></i>
+                </div>
+            </div>
+            <div class="flex items-baseline gap-2 mb-1">
+                <span class="text-3xl font-black text-rose-600 font-mono">@Model.TotalFat.ToString("0.#")g</span>
+                <span class="text-xs text-slate-400">/ @Model.TargetFat g</span>
+            </div>
+            <div class="text-xs text-slate-500">
+                Sodium: @Model.TotalSodium.ToString("N0") mg
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-rose-500 h-2.5 rounded-full transition-all duration-500" style="width: @fatPct%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hydration Tracker -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div>
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Hydration</span>
+                <div class="w-8 h-8 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
+                    <i class="fa-solid fa-glass-water text-sm"></i>
+                </div>
+            </div>
+            <div class="flex items-baseline gap-2 mb-1">
+                <span class="text-3xl font-black text-cyan-600 font-mono">@Model.TotalWaterMl</span>
+                <span class="text-xs text-slate-400">/ @Model.TargetWaterMl ml</span>
+            </div>
+            <div class="flex items-center gap-1.5 mt-2">
+                <form asp-action="LogWater" method="post" class="inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Date" value="@targetDate.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="WaterMl" value="250" />
+                    <button type="submit" class="px-2 py-1 text-2xs font-bold rounded-md bg-cyan-50 text-cyan-700 hover:bg-cyan-100 transition-colors">+250ml</button>
+                </form>
+                <form asp-action="LogWater" method="post" class="inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Date" value="@targetDate.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="WaterMl" value="500" />
+                    <button type="submit" class="px-2 py-1 text-2xs font-bold rounded-md bg-cyan-50 text-cyan-700 hover:bg-cyan-100 transition-colors">+500ml</button>
+                </form>
+                <form asp-action="LogWater" method="post" class="inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Date" value="@targetDate.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="WaterMl" value="750" />
+                    <button type="submit" class="px-2 py-1 text-2xs font-bold rounded-md bg-cyan-50 text-cyan-700 hover:bg-cyan-100 transition-colors">+750ml</button>
+                </form>
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div class="bg-cyan-500 h-2.5 rounded-full transition-all duration-500" style="width: @waterPct%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Meal Occasions -->
+<div class="space-y-6">
+    @foreach (var mealType in mealTypes)
+    {
+        var mealLogs = Model.Meals.Where(m => m.MealType == mealType).ToList();
+        var mealItems = mealLogs.SelectMany(m => m.Items.Select(i => new { Item = i, LogId = m.Id })).ToList();
+        double mCal = mealItems.Sum(x => x.Item.Calories);
+        double mPro = mealItems.Sum(x => x.Item.Protein);
+        double mCarb = mealItems.Sum(x => x.Item.Carbs);
+        double mFat = mealItems.Sum(x => x.Item.Fat);
+
+        var (icon, colorClass, badgeBg) = mealType switch
+        {
+            AzureTest.Domain.Documents.Food.Enums.MealType.Breakfast => ("fa-mug-hot", "text-amber-500", "bg-amber-50"),
+            AzureTest.Domain.Documents.Food.Enums.MealType.Lunch => ("fa-bowl-food", "text-emerald-500", "bg-emerald-50"),
+            AzureTest.Domain.Documents.Food.Enums.MealType.Dinner => ("fa-utensils", "text-blue-500", "bg-blue-50"),
+            AzureTest.Domain.Documents.Food.Enums.MealType.PreWorkout => ("fa-bolt", "text-purple-500", "bg-purple-50"),
+            AzureTest.Domain.Documents.Food.Enums.MealType.PostWorkout => ("fa-dumbbell", "text-indigo-500", "bg-indigo-50"),
+            _ => ("fa-apple-whole", "text-orange-500", "bg-orange-50")
+        };
+
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/40">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl @badgeBg @colorClass flex items-center justify-center font-bold">
+                        <i class="fa-solid @icon"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">@mealType</h3>
+                        <p class="text-xs text-slate-500">
+                            @mCal.ToString("N0") kcal &bull; P: @mPro.ToString("0.#")g &bull; C: @mCarb.ToString("0.#")g &bull; F: @mFat.ToString("0.#")g
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="openLogModalForMeal('@mealType')" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs">
+                        <i class="fa-solid fa-plus mr-1 text-slate-400"></i> Add to @mealType
+                    </button>
+                </div>
+            </div>
+
+            @if (mealItems.Any())
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-slate-50/50 text-slate-400 uppercase text-2xs font-semibold border-b border-slate-100">
+                            <tr>
+                                <th class="px-5 py-2.5">Item</th>
+                                <th class="px-5 py-2.5 text-right">Quantity</th>
+                                <th class="px-5 py-2.5 text-right">Calories</th>
+                                <th class="px-5 py-2.5 text-right">Protein</th>
+                                <th class="px-5 py-2.5 text-right">Carbs</th>
+                                <th class="px-5 py-2.5 text-right">Fat</th>
+                                <th class="px-5 py-2.5 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700">
+                            @foreach (var entry in mealItems)
+                            {
+                                <tr class="hover:bg-slate-50/60 transition-colors">
+                                    <td class="px-5 py-3">
+                                        <div class="flex items-center gap-2">
+                                            @if (entry.Item.IsRecipe)
+                                            {
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-3xs font-bold bg-amber-100 text-amber-800">
+                                                    Recipe
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-3xs font-bold bg-slate-100 text-slate-700">
+                                                    Food
+                                                </span>
+                                            }
+                                            <span class="font-bold text-slate-900">@entry.Item.Name</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-5 py-3 text-right font-mono text-xs text-slate-600">
+                                        @entry.Item.Quantity @entry.Item.Unit
+                                    </td>
+                                    <td class="px-5 py-3 text-right font-mono font-bold text-slate-900">
+                                        @entry.Item.Calories.ToString("0.#")
+                                    </td>
+                                    <td class="px-5 py-3 text-right font-mono text-blue-600">
+                                        @entry.Item.Protein.ToString("0.#")g
+                                    </td>
+                                    <td class="px-5 py-3 text-right font-mono text-amber-600">
+                                        @entry.Item.Carbs.ToString("0.#")g
+                                    </td>
+                                    <td class="px-5 py-3 text-right font-mono text-rose-600">
+                                        @entry.Item.Fat.ToString("0.#")g
+                                    </td>
+                                    <td class="px-5 py-3 text-right">
+                                        <form asp-action="RemoveLogItem" method="post" class="inline" onsubmit="return confirm('Remove this item?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="mealLogId" value="@entry.LogId" />
+                                            <input type="hidden" name="itemId" value="@entry.Item.ItemId" />
+                                            <input type="hidden" name="date" value="@targetDate.ToString("yyyy-MM-dd")" />
+                                            <button type="submit" class="text-rose-500 hover:text-rose-700 p-1 bg-transparent border-0 cursor-pointer" title="Remove">
+                                                <i class="fa-regular fa-trash-can text-sm"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="py-6 px-4 text-center text-slate-400">
+                    <p class="text-xs">No items logged for @mealType yet.</p>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Log Item Modal -->
+<div id="logModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative">
+        <button type="button" onclick="closeLogModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+
+        <div class="mb-5">
+            <span class="text-xs font-bold uppercase tracking-wider text-brand-600">Food Diary</span>
+            <h3 class="text-xl font-black text-slate-900 mt-1">Log Food or Dish</h3>
+            <p class="text-xs text-slate-500">Choose an ingredient from the catalog or one of your saved recipes.</p>
+        </div>
+
+        <form asp-action="LogItem" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Date" value="@targetDate.ToString("yyyy-MM-dd")" />
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Meal Occasion</label>
+                <select id="modalMealType" name="MealType" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    @foreach (var mt in mealTypes)
+                    {
+                        <option value="@mt">@mt</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Tabs: Ingredient vs Recipe -->
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Item Type</label>
+                <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+                    <button type="button" id="tabIngredientBtn" onclick="toggleItemType(false)" class="py-2 text-xs font-bold rounded-lg bg-white text-slate-900 shadow-2xs">
+                        <i class="fa-solid fa-carrot mr-1"></i> Ingredient
+                    </button>
+                    <button type="button" id="tabRecipeBtn" onclick="toggleItemType(true)" class="py-2 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900">
+                        <i class="fa-solid fa-book-open mr-1"></i> Recipe / Dish
+                    </button>
+                </div>
+                <input type="hidden" id="modalIsRecipe" name="IsRecipe" value="false" />
+            </div>
+
+            <!-- Ingredient Selector -->
+            <div id="ingredientSelectBox">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Select Ingredient</label>
+                <select id="ingredientSelect" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" onchange="onIngredientChange(this)">
+                    <option value="">-- Choose Ingredient --</option>
+                    @foreach (var ing in ingredients.OrderBy(i => i.Category).ThenBy(i => i.Name))
+                    {
+                        <option value="@ing.Id" data-unit="@ing.DefaultUnit" data-serving="@ing.DefaultServingSizeGrams">
+                            @ing.Name (@ing.Category) - @ing.Calories kcal/100g
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <!-- Recipe Selector -->
+            <div id="recipeSelectBox" class="hidden">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Select Recipe</label>
+                <select id="recipeSelect" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" onchange="onRecipeChange(this)">
+                    <option value="">-- Choose Recipe --</option>
+                    @foreach (var r in recipes.OrderBy(r => r.Name))
+                    {
+                        <option value="@r.Id" data-servings="@r.Servings" data-cal="@r.PerServingCalories">
+                            @r.Name (@r.PerServingCalories kcal/serving)
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <input type="hidden" id="modalReferenceId" name="ReferenceId" value="" />
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Quantity</label>
+                    <input type="number" step="any" min="0.1" id="modalQuantity" name="Quantity" value="100" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" required />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Unit</label>
+                    <input type="text" id="modalUnit" name="Unit" value="g" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" required />
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Notes (Optional)</label>
+                <input type="text" name="Notes" placeholder="e.g. half portion, light seasoning" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+
+            <div class="pt-3 flex items-center justify-end gap-3">
+                <button type="button" onclick="closeLogModal()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-sm font-semibold text-white shadow-sm transition-colors">
+                    Add to Diary
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function openLogModal() {
+        document.getElementById('logModal').classList.remove('hidden');
+    }
+
+    function openLogModalForMeal(mealType) {
+        document.getElementById('modalMealType').value = mealType;
+        openLogModal();
+    }
+
+    function closeLogModal() {
+        document.getElementById('logModal').classList.add('hidden');
+    }
+
+    function toggleItemType(isRecipe) {
+        document.getElementById('modalIsRecipe').value = isRecipe ? "true" : "false";
+        if (isRecipe) {
+            document.getElementById('tabRecipeBtn').classList.add('bg-white', 'text-slate-900', 'shadow-2xs');
+            document.getElementById('tabRecipeBtn').classList.remove('text-slate-600');
+            document.getElementById('tabIngredientBtn').classList.remove('bg-white', 'text-slate-900', 'shadow-2xs');
+            document.getElementById('tabIngredientBtn').classList.add('text-slate-600');
+
+            document.getElementById('ingredientSelectBox').classList.add('hidden');
+            document.getElementById('recipeSelectBox').classList.remove('hidden');
+            document.getElementById('modalUnit').value = 'serving';
+            document.getElementById('modalQuantity').value = '1';
+            onRecipeChange(document.getElementById('recipeSelect'));
+        } else {
+            document.getElementById('tabIngredientBtn').classList.add('bg-white', 'text-slate-900', 'shadow-2xs');
+            document.getElementById('tabIngredientBtn').classList.remove('text-slate-600');
+            document.getElementById('tabRecipeBtn').classList.remove('bg-white', 'text-slate-900', 'shadow-2xs');
+            document.getElementById('tabRecipeBtn').classList.add('text-slate-600');
+
+            document.getElementById('recipeSelectBox').classList.add('hidden');
+            document.getElementById('ingredientSelectBox').classList.remove('hidden');
+            document.getElementById('modalUnit').value = 'g';
+            document.getElementById('modalQuantity').value = '100';
+            onIngredientChange(document.getElementById('ingredientSelect'));
+        }
+    }
+
+    function onIngredientChange(sel) {
+        document.getElementById('modalReferenceId').value = sel.value;
+        const opt = sel.options[sel.selectedIndex];
+        if (opt && opt.dataset.unit) {
+            document.getElementById('modalUnit').value = opt.dataset.unit;
+            document.getElementById('modalQuantity').value = opt.dataset.serving || 100;
+        }
+    }
+
+    function onRecipeChange(sel) {
+        document.getElementById('modalReferenceId').value = sel.value;
+        document.getElementById('modalUnit').value = 'serving';
+        document.getElementById('modalQuantity').value = '1';
+    }
+</script>
+}

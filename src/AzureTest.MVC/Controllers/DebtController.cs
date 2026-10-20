@@ -67,14 +67,9 @@ namespace AzureTest.MVC.Controllers;
     [HttpGet]
     [DisplayName("Index")]
     [Description("View a filtered, sorted and paged list of debts.")]
-    public async Task<IActionResult> Index([FromQuery] GetAllDebtsFilters filters, [FromQuery] int? page, [FromQuery] string? search, [FromQuery] string? sort, [FromQuery] string? dir, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Index([FromQuery] GetAllDebtsFilters filters, CancellationToken cancellationToken = default)
     {
         filters ??= new GetAllDebtsFilters();
-        if (page.HasValue && page.Value > 0) filters.PageNumber = page.Value;
-        if (!string.IsNullOrWhiteSpace(search) && string.IsNullOrWhiteSpace(filters.SearchTerm)) filters.SearchTerm = search;
-        if (!string.IsNullOrWhiteSpace(sort)) filters.SortBy = sort;
-        if (!string.IsNullOrWhiteSpace(dir)) filters.SortDescending = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase);
-
         var isAdmin = User.IsInRole("Admin");
         if (isAdmin)
         {

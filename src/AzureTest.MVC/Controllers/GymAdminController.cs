@@ -38,13 +38,9 @@ public class GymAdminController : Controller
     [DisplayName("Trainings Index")]
     [Description("List all base trainings.")]
    
-    public async Task<IActionResult> Index(TrainingFilter? filter, string search = "", string sort = "Name", string dir = "asc", int page = 1)
+    public async Task<IActionResult> Index([FromQuery] TrainingFilter? filter)
     {
         filter ??= new TrainingFilter();
-        if (!string.IsNullOrWhiteSpace(search)) filter.SearchTerm = search;
-        if (!string.IsNullOrWhiteSpace(sort)) filter.SortBy = sort;
-        if (!string.IsNullOrWhiteSpace(dir)) filter.SortDescending = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase);
-        if (page > 0) filter.PageNumber = page;
 
         var result = await _getAllTrainingsQuery.HandleAsync(new GetAllTrainingsQuery(filter));
         var paged = result.IsSuccess 

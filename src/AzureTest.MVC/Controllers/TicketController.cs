@@ -48,13 +48,9 @@ namespace AzureTest.MVC.Controllers;
 
     [DisplayName("Index")]
     [Description("View a list of Ticket.")]
-    public async Task<IActionResult> Index([FromQuery] GetAllTicketsFilters filters, [FromQuery] int? page, CancellationToken cancellationToken)
+    public async Task<IActionResult> Index([FromQuery] GetAllTicketsFilters? filters, CancellationToken cancellationToken = default)
     {
         filters ??= new GetAllTicketsFilters();
-        if (page.HasValue && page.Value > 0)
-        {
-            filters.PageNumber = page.Value;
-        }
 
         bool isStaff = _currentUser.Roles.Contains("Admin") || _currentUser.Permissions.Contains("Ticket/UpdateStatus");
         var pagedResult = await _ticketQuery.GetAllTickets.HandleAsync(new GetAllTicketsQuery(filters, isStaff ? null : _currentUser.Id), cancellationToken);

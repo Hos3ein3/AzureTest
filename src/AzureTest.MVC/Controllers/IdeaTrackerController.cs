@@ -38,13 +38,20 @@ namespace AzureTest.MVC.Controllers;
 
     [DisplayName("Index")]
     [Description("View a list of Idea Tracker.")]
-    public async Task<IActionResult> Index(string search, int? status, CancellationToken ct)
+    public async Task<IActionResult> Index([FromQuery] IdeaFilter? filter, CancellationToken ct)
     {
-        var filter = new IdeaFilter(_currentUser.Id, search, status);
+        filter ??= new IdeaFilter();
+        filter.UserId = _currentUser.Id;
+        if (!string.IsNullOrWhiteSpace(filter.SearchTerm) && string.IsNullOrWhiteSpace(filter.Search))
+        {
+            filter.Search = filter.SearchTerm;
+        }
+
         var result = await _queries.GetIdeas.HandleAsync(new GetIdeasQuery(filter), ct);
         
-        ViewBag.Search = search;
-        ViewBag.Status = status;
+        ViewBag.Search = filter.Search ?? filter.SearchTerm;
+        ViewBag.Status = filter.Status;
+        ViewBag.Filters = filter;
         
         return View(result.Value);
     }

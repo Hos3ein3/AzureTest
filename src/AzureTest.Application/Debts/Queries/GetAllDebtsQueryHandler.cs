@@ -47,73 +47,57 @@ public sealed class GetAllDebtsQueryHandler : BaseQueryHandler<GetAllDebtsQuery,
     {
         var filters = query.Filters ?? new GetAllDebtsFilters();
         var isAdmin = _currentUser.IsAdmin || _currentUser.Roles.Contains("Admin");
-        
-        var queryable = await _unitOfWork.Debts.FindAsync(r => !r.IsDeleted);
-        var debts = queryable.ToList();
-        
+
         // Security: Non-admin users are restricted to their own userId
         if (!isAdmin)
         {
             filters.UserIds = new List<Guid> { _currentUser.Id };
-            debts = debts.Where(r => r.UserId == _currentUser.Id).ToList();
         }
-        else
+        else if (filters.UserIds == null || !filters.UserIds.Any())
         {
-            if (filters.UserIds != null && filters.UserIds.Any())
+            if (query.UserId.HasValue)
             {
-                var allowedUserIds = new HashSet<Guid>(filters.UserIds);
-                debts = debts.Where(r => allowedUserIds.Contains(r.UserId)).ToList();
-            }
-            else if (query.UserId.HasValue)
-            {
-                debts = debts.Where(r => r.UserId == query.UserId.Value).ToList();
+                filters.UserIds = new List<Guid> { query.UserId.Value };
             }
         }
 
-        // CreatedOn range filters
-        if (filters.CreatedOnFrom.HasValue)
+        List<Guid>? matchingPersonIds = null;
+        if (!string.IsNullOrWhiteSpace(filters.SearchTerm))
         {
-            debts = debts.Where(d => d.CreatedOn >= filters.CreatedOnFrom.Value).ToList();
+            var matchingPersons = await _noSqlUnitOfWork.DebtPersons.SearchByNameAsync(filters.SearchTerm);
+            matchingPersonIds = matchingPersons.Select(p => p.Id).ToList();
         }
 
-        if (filters.CreatedOnTo.HasValue)
+        // Domain-specific predicate for Debts
+        System.Linq.Expressions.Expression<Func<Debt, bool>> predicate = d =>
+            (!filters.DebtPersonId.HasValue || filters.DebtPersonId == Guid.Empty || d.DebtPersonId == filters.DebtPersonId.Value) &&
+            (!filters.MinAmount.HasValue || d.Amount >= filters.MinAmount.Value) &&
+            (!filters.MaxAmount.HasValue || d.Amount <= filters.MaxAmount.Value) &&
+            (!filters.IsDone.HasValue || d.IsDone == filters.IsDone.Value) &&
+            (string.IsNullOrWhiteSpace(filters.SearchTerm) ||
+             (d.Description != null && d.Description.Contains(filters.SearchTerm)) ||
+             (matchingPersonIds != null && matchingPersonIds.Contains(d.DebtPersonId)));
+
+        if (string.IsNullOrWhiteSpace(filters.SortBy))
         {
-            var toDate = filters.CreatedOnTo.Value.TimeOfDay == TimeSpan.Zero
-                ? filters.CreatedOnTo.Value.Date.AddDays(1).AddTicks(-1)
-                : filters.CreatedOnTo.Value;
-            debts = debts.Where(d => d.CreatedOn <= toDate).ToList();
+            filters.SortBy = "DateOfBorrow";
+            filters.SortDescending = true;
         }
 
-        // Debt Person filter
-        if (filters.DebtPersonId.HasValue && filters.DebtPersonId.Value != Guid.Empty)
-        {
-            debts = debts.Where(d => d.DebtPersonId == filters.DebtPersonId.Value).ToList();
-        }
+        var pagedDebts = await _unitOfWork.Debts.GetPagedAsync(filters, predicate, cancellationToken);
 
-        // Amount filters
-        if (filters.MinAmount.HasValue)
-        {
-            debts = debts.Where(d => d.Amount >= filters.MinAmount.Value).ToList();
-        }
-
-        if (filters.MaxAmount.HasValue)
-        {
-            debts = debts.Where(d => d.Amount <= filters.MaxAmount.Value).ToList();
-        }
-        
-        var debtPersonIds = debts.Select(d => d.DebtPersonId).Distinct().ToList();
+        var debtPersonIds = pagedDebts.Items.Select(d => d.DebtPersonId).Distinct().ToList();
         var debtPersons = new Dictionary<Guid, string>();
-        
-        foreach(var personId in debtPersonIds)
+        foreach (var personId in debtPersonIds)
         {
-            var person = await _noSqlUnitOfWork.DebtPersons.GetByIdAsync(personId);
+            var person = await _noSqlUnitOfWork.DebtPersons.GetByIdAsync(personId, cancellationToken);
             if (person != null)
             {
                 debtPersons[personId] = person.FullName;
             }
         }
 
-        var dtos = debts.Select(d => new DebtDto
+        var dtos = pagedDebts.Items.Select(d => new DebtDto
         {
             Id = d.Id,
             UserId = d.UserId,
@@ -127,41 +111,13 @@ public sealed class GetAllDebtsQueryHandler : BaseQueryHandler<GetAllDebtsQuery,
             Description = d.Description,
             IsDone = d.IsDone,
             CreatedOn = d.CreatedOn
-        }).AsQueryable();
+        }).ToList();
 
-        if (!string.IsNullOrWhiteSpace(filters.SearchTerm))
-        {
-            var term = filters.SearchTerm.ToLower();
-            dtos = dtos.Where(d => (d.Description != null && d.Description.ToLower().Contains(term)) ||
-                                   (d.DebtPersonName != null && d.DebtPersonName.ToLower().Contains(term)));
-        }
-
-        if (filters.IsDone.HasValue)
-        {
-            dtos = dtos.Where(d => d.IsDone == filters.IsDone.Value);
-        }
-
-        string sortBy = (filters.SortBy ?? "dateofborrow").ToLower();
-        bool desc = filters.SortDescending;
-
-        dtos = sortBy switch
-        {
-            "amount" => desc ? dtos.OrderByDescending(d => d.Amount) : dtos.OrderBy(d => d.Amount),
-            "debtpersonname" or "person" => desc ? dtos.OrderByDescending(d => d.DebtPersonName) : dtos.OrderBy(d => d.DebtPersonName),
-            "dateofreturn" or "returndate" => desc ? dtos.OrderByDescending(d => d.DateOfReturn) : dtos.OrderBy(d => d.DateOfReturn),
-            "profit" => desc ? dtos.OrderByDescending(d => d.Profit) : dtos.OrderBy(d => d.Profit),
-            "createdon" or "createdat" => desc ? dtos.OrderByDescending(d => d.CreatedOn) : dtos.OrderBy(d => d.CreatedOn),
-            _ => desc ? dtos.OrderByDescending(d => d.DateOfBorrow) : dtos.OrderBy(d => d.DateOfBorrow)
-        };
-
-        var dtoList = dtos.ToList();
-        int totalCount = dtoList.Count;
-        int currentPage = filters.PageNumber < 1 ? 1 : filters.PageNumber;
-        int pageSize = filters.PageSize < 1 ? 10 : filters.PageSize;
-
-        var items = (filters.PageSize <= 0)
-            ? dtoList
-            : dtoList.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
-        return new PagedResult<DebtDto, GetAllDebtsFilters>(items, totalCount, currentPage, pageSize, filters);
+        return new PagedResult<DebtDto, GetAllDebtsFilters>(
+            dtos,
+            pagedDebts.TotalCount,
+            pagedDebts.PageNumber,
+            pagedDebts.PageSize,
+            filters);
     }
 }

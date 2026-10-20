@@ -1,0 +1,376 @@
+@model AzureTest.Contracts.DTOs.Food.AthleteProfileDto
+@{
+    ViewData["Title"] = "Athlete Nutrition Hub";
+    var recentDays = Model.RecentDays ?? new();
+}
+
+<!-- Header -->
+<div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                <i class="fa-solid fa-dumbbell mr-1.5"></i> High Performance Conditioning
+            </span>
+        </div>
+        <h1 class="text-3xl font-black text-slate-900 tracking-tight">Athlete Nutrition Hub</h1>
+        <p class="text-slate-500 text-sm">Synchronized body weight metrics, macro periodization, protein per kg, and carb cycling.</p>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <a href="@Url.Action("Index")" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+            <i class="fa-solid fa-arrow-left mr-2"></i> Daily Diary
+        </a>
+        <a href="@Url.Action("Analytics", "Workout")#weight-history-section" class="inline-flex items-center justify-center rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-700 transition-colors">
+            <i class="fa-solid fa-weight-scale mr-2"></i> Weight Logs
+        </a>
+    </div>
+</div>
+
+<!-- Body Metrics & Target Goal Overview -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <!-- Current Weight (Synced from UserWeightLog) -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div>
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Current Weight</span>
+                <div class="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+                    <i class="fa-solid fa-weight-scale text-sm"></i>
+                </div>
+            </div>
+            <div class="text-3xl font-black text-slate-900 font-mono mb-1">
+                @(Model.CurrentWeightKg.HasValue ? $"{Model.CurrentWeightKg:0.0} kg" : "Not Logged")
+            </div>
+            <div class="text-xs text-slate-500">
+                @if (Model.CurrentHeightCm.HasValue)
+                {
+                    <span>@Model.CurrentHeightCm.Value.ToString("0.#") cm &bull; BMI: @Model.CurrentBmi?.ToString("0.0") (@Model.CurrentBmiCategory)</span>
+                }
+                else
+                {
+                    <a href="@Url.Action("Analytics", "Workout")#weight-history-section" class="text-brand-600 hover:underline">Log height & weight in Gym</a>
+                }
+            </div>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-400">
+            <span>Synced from Workout Log</span>
+            <i class="fa-solid fa-link text-slate-300"></i>
+        </div>
+    </div>
+
+    <!-- Protein Ratio per kg Body Weight -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div>
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Protein per kg</span>
+                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i class="fa-solid fa-drumstick-bite text-sm"></i>
+                </div>
+            </div>
+            <div class="text-3xl font-black text-blue-600 font-mono mb-1">
+                @Model.ProteinPerKgActual.ToString("0.00") g/kg
+            </div>
+            <div class="text-xs text-slate-500">
+                @Model.ProteinGramsTarget g target for @(Model.CurrentWeightKg ?? 75) kg
+            </div>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-2xs">
+            <span class="font-bold @(Model.ProteinPerKgActual >= 1.6 ? "text-emerald-600" : "text-amber-600")">
+                @(Model.ProteinPerKgActual >= 1.6 ? "Hypertrophy Range (1.6 - 2.2 g/kg)" : "Maintenance Range")
+            </span>
+        </div>
+    </div>
+
+    <!-- Current Goal Mode -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div>
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Nutrition Goal</span>
+                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i class="fa-solid fa-bullseye text-sm"></i>
+                </div>
+            </div>
+            <div class="text-3xl font-black text-emerald-700 mb-1">
+                @Model.GoalType
+            </div>
+            <div class="text-xs text-slate-500">
+                @Model.CalorieTarget kcal daily target
+            </div>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-400">
+            <span>P: @Model.ProteinGramsTarget g &bull; C: @Model.CarbsGramsTarget g &bull; F: @Model.FatGramsTarget g</span>
+        </div>
+    </div>
+
+    <!-- Carb Cycling Status -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div>
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Carb Cycling</span>
+                <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <i class="fa-solid fa-arrows-split-up-and-left text-sm"></i>
+                </div>
+            </div>
+            <div class="text-2xl font-black text-slate-900 mb-1">
+                @(Model.EnableCarbCycling ? "Active" : "Disabled")
+            </div>
+            <div class="text-xs text-slate-500">
+                Training: @Model.TrainingDayCarbs g C | Rest: @Model.RestDayCarbs g C
+            </div>
+        </div>
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-400">
+            <span>Periodized glycogen replenishment</span>
+        </div>
+    </div>
+</div>
+
+<!-- Macro Calculator & Goal Settings Form -->
+<div class="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm mb-8">
+    <div class="mb-6 pb-3 border-b border-slate-100 flex items-center justify-between flex-wrap gap-4">
+        <div>
+            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-brand-600"></i> Macro Targets & Periodization Config
+            </h3>
+            <p class="text-xs text-slate-500">Adjust targets according to cutting, maintenance, or bulking phase.</p>
+        </div>
+
+        <!-- Quick Goal Presets -->
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="applyGoalPreset('Cut')" class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors">
+                Cut (-20%)
+            </button>
+            <button type="button" onclick="applyGoalPreset('Maintain')" class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors">
+                Maintain
+            </button>
+            <button type="button" onclick="applyGoalPreset('Bulk')" class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors">
+                Bulk (+15%)
+            </button>
+        </div>
+    </div>
+
+    <form asp-action="UpdateTargets" method="post" class="space-y-6">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div>
+                <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Goal Phase</label>
+                <select id="goalTypeSelect" name="GoalType" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500">
+                    @foreach (AzureTest.Domain.Documents.Food.Enums.FitnessGoalType g in Enum.GetValues(typeof(AzureTest.Domain.Documents.Food.Enums.FitnessGoalType)))
+                    {
+                        <option value="@g" selected="@(Model.GoalType == g ? "selected" : null)">@g</option>
+                    }
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Daily Calories (kcal)</label>
+                <input type="number" id="inputCalories" name="CalorieTarget" value="@Model.CalorieTarget" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required />
+            </div>
+
+            <div>
+                <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Protein Target (g)</label>
+                <input type="number" id="inputProtein" name="ProteinGramsTarget" value="@Model.ProteinGramsTarget" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-500" required />
+            </div>
+
+            <div>
+                <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Carbs Target (g)</label>
+                <input type="number" id="inputCarbs" name="CarbsGramsTarget" value="@Model.CarbsGramsTarget" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-amber-600 focus:outline-none focus:ring-1 focus:ring-amber-500" required />
+            </div>
+
+            <div>
+                <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Fats Target (g)</label>
+                <input type="number" id="inputFat" name="FatGramsTarget" value="@Model.FatGramsTarget" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-rose-600 focus:outline-none focus:ring-1 focus:ring-rose-500" required />
+            </div>
+        </div>
+
+        <!-- Carb Cycling Sub-Form -->
+        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="chkCarbCycling" name="EnableCarbCycling" value="true" checked="@(Model.EnableCarbCycling ? "checked" : null)" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500" />
+                    <label for="chkCarbCycling" class="text-xs font-bold text-slate-800 cursor-pointer">
+                        Enable Training Day vs Rest Day Carb Cycling
+                    </label>
+                </div>
+                <span class="text-2xs text-slate-500">Higher carbs on heavy training days; lower carbs & calories on rest days</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Training Day Calories</label>
+                    <input type="number" name="TrainingDayCalories" value="@Model.TrainingDayCalories" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs text-slate-800 bg-white" />
+                </div>
+                <div>
+                    <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Training Day Carbs (g)</label>
+                    <input type="number" name="TrainingDayCarbs" value="@Model.TrainingDayCarbs" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs text-slate-800 bg-white" />
+                </div>
+                <div>
+                    <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Rest Day Calories</label>
+                    <input type="number" name="RestDayCalories" value="@Model.RestDayCalories" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs text-slate-800 bg-white" />
+                </div>
+                <div>
+                    <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Rest Day Carbs (g)</label>
+                    <input type="number" name="RestDayCarbs" value="@Model.RestDayCarbs" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs text-slate-800 bg-white" />
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <button type="submit" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-sm transition-colors">
+                Save Nutrition Targets
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- 7-Day Macro Adherence Trends -->
+<div class="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm mb-8">
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-chart-column text-blue-600"></i> 7-Day Macro Consistency & Trends
+            </h3>
+            <p class="text-xs text-slate-500">Compare daily intakes against target threshold</p>
+        </div>
+    </div>
+
+    <div class="h-64 relative mb-6">
+        <canvas id="macroTrendChart"></canvas>
+    </div>
+
+    <!-- Daily Breakdown Table -->
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs whitespace-nowrap">
+            <thead class="bg-slate-50 text-slate-500 uppercase text-3xs font-semibold border-b border-slate-200">
+                <tr>
+                    <th class="px-4 py-2.5">Date</th>
+                    <th class="px-4 py-2.5 text-right">Calories</th>
+                    <th class="px-4 py-2.5 text-right">Protein</th>
+                    <th class="px-4 py-2.5 text-right">Carbs</th>
+                    <th class="px-4 py-2.5 text-right">Fats</th>
+                    <th class="px-4 py-2.5 text-right">Water</th>
+                    <th class="px-4 py-2.5 text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700">
+                @foreach (var day in recentDays)
+                {
+                    double diff = Math.Abs(day.TotalCalories - Model.CalorieTarget);
+                    bool onTrack = diff <= 200;
+
+                    <tr class="hover:bg-slate-50/60 transition-colors">
+                        <td class="px-4 py-3 font-semibold text-slate-900">
+                            @day.Date.ToString("ddd, MMM dd")
+                        </td>
+                        <td class="px-4 py-3 text-right font-mono font-bold text-slate-900">
+                            @day.TotalCalories.ToString("N0") kcal
+                        </td>
+                        <td class="px-4 py-3 text-right font-mono text-blue-600">
+                            @day.TotalProtein.ToString("0.#") g
+                        </td>
+                        <td class="px-4 py-3 text-right font-mono text-amber-600">
+                            @day.TotalCarbs.ToString("0.#") g
+                        </td>
+                        <td class="px-4 py-3 text-right font-mono text-rose-600">
+                            @day.TotalFat.ToString("0.#") g
+                        </td>
+                        <td class="px-4 py-3 text-right font-mono text-cyan-600">
+                            @day.TotalWaterMl ml
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            @if (day.TotalCalories > 0)
+                            {
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-3xs font-bold @(onTrack ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700")">
+                                    @(onTrack ? "Target Met" : "Off Target")
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-3xs text-slate-300">No logs</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    function applyGoalPreset(goal) {
+        const wt = @(Model.CurrentWeightKg ?? 75);
+        document.getElementById('goalTypeSelect').value = goal;
+
+        if (goal === 'Cut') {
+            document.getElementById('inputCalories').value = Math.round(wt * 26);
+            document.getElementById('inputProtein').value = Math.round(wt * 2.2);
+            document.getElementById('inputFat').value = Math.round(wt * 0.7);
+            const p = Math.round(wt * 2.2);
+            const f = Math.round(wt * 0.7);
+            const cKcal = Math.round(wt * 26) - (p * 4 + f * 9);
+            document.getElementById('inputCarbs').value = Math.max(50, Math.round(cKcal / 4));
+        } else if (goal === 'Bulk') {
+            document.getElementById('inputCalories').value = Math.round(wt * 38);
+            document.getElementById('inputProtein').value = Math.round(wt * 2.0);
+            document.getElementById('inputFat').value = Math.round(wt * 1.0);
+            const p = Math.round(wt * 2.0);
+            const f = Math.round(wt * 1.0);
+            const cKcal = Math.round(wt * 38) - (p * 4 + f * 9);
+            document.getElementById('inputCarbs').value = Math.max(100, Math.round(cKcal / 4));
+        } else {
+            // Maintain
+            document.getElementById('inputCalories').value = Math.round(wt * 32);
+            document.getElementById('inputProtein').value = Math.round(wt * 2.0);
+            document.getElementById('inputFat').value = Math.round(wt * 0.9);
+            const p = Math.round(wt * 2.0);
+            const f = Math.round(wt * 0.9);
+            const cKcal = Math.round(wt * 32) - (p * 4 + f * 9);
+            document.getElementById('inputCarbs').value = Math.max(80, Math.round(cKcal / 4));
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        @{
+            var dates = recentDays.Select(d => d.Date.ToString("MMM dd")).ToList();
+            var calValues = recentDays.Select(d => d.TotalCalories).ToList();
+            var proValues = recentDays.Select(d => d.TotalProtein).ToList();
+            var carbValues = recentDays.Select(d => d.TotalCarbs).ToList();
+            var fatValues = recentDays.Select(d => d.TotalFat).ToList();
+        }
+
+        const labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(dates));
+        const cals = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(calValues));
+        const pros = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(proValues));
+        const carbs = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(carbValues));
+        const fats = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(fatValues));
+
+        const ctx = document.getElementById('macroTrendChart')?.getContext('2d');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Protein (g)', data: pros, backgroundColor: '#2563eb' },
+                        { label: 'Carbs (g)', data: carbs, backgroundColor: '#f59e0b' },
+                        { label: 'Fat (g)', data: fats, backgroundColor: '#f43f5e' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, title: { display: true, text: 'Grams' } }
+                    }
+                }
+            });
+        }
+    });
+</script>
+}

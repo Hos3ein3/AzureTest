@@ -35,6 +35,11 @@ public interface INoSqlUnitOfWork : IDisposable
     IUserTrainingSessionRepository UserTrainingSessions { get; }
     IUserWeightLogRepository UserWeightLogs { get; }
 
+    IIngredientRepository Ingredients { get; }
+    IRecipeRepository Recipes { get; }
+    IMealLogRepository MealLogs { get; }
+    IDailyNutritionTargetRepository NutritionTargets { get; }
+
     IIdentitySettingRepository IdentitySettings { get; }
     Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -82,6 +82,10 @@ public static class DependencyInjection
         services.AddScoped<AzureTest.Application.FootballFantasy.IFootballFantasyQueryUnit, AzureTest.Application.FootballFantasy.FootballFantasyQueryUnit>();
         services.AddScoped<AzureTest.Application.FootballFantasy.IFootballFantasyCommandUnit, AzureTest.Application.FootballFantasy.FootballFantasyCommandUnit>();
 
+        // Food & Cooking
+        services.AddScoped<AzureTest.Application.Food.IFoodQueryUnit, AzureTest.Application.Food.FoodQueryUnit>();
+        services.AddScoped<AzureTest.Application.Food.IFoodCommandUnit, AzureTest.Application.Food.FoodCommandUnit>();
+
         return services;
     }
 }

@@ -38,15 +38,9 @@ namespace AzureTest.MVC.Controllers;
     // GET: User
     [DisplayName("Index")]
     [Description("View a list of User.")]
-    public async Task<IActionResult> Index([FromQuery] AzureTest.Contracts.DTOs.Users.GetAllUsersFilters filters, [FromQuery] string? searchTerm, [FromQuery] string? role, [FromQuery] string? sortBy, [FromQuery] bool? sortDescending, [FromQuery] int? pageNumber, [FromQuery] int? pageSize)
+    public async Task<IActionResult> Index([FromQuery] AzureTest.Contracts.DTOs.Users.GetAllUsersFilters? filters)
     {
         filters ??= new AzureTest.Contracts.DTOs.Users.GetAllUsersFilters();
-        if (!string.IsNullOrWhiteSpace(searchTerm)) filters.SearchTerm = searchTerm;
-        if (!string.IsNullOrWhiteSpace(role)) filters.Role = role;
-        if (!string.IsNullOrWhiteSpace(sortBy)) filters.SortBy = sortBy;
-        if (sortDescending.HasValue) filters.SortDescending = sortDescending.Value;
-        if (pageNumber.HasValue && pageNumber.Value > 0) filters.PageNumber = pageNumber.Value;
-        if (pageSize.HasValue && pageSize.Value > 0) filters.PageSize = pageSize.Value;
 
         var query = new GetAllUsersQuery(filters);
         var result = await _queryUnit.GetAllUsers.HandleAsync(query);

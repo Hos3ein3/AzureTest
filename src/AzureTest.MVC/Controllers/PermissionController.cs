@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Permissions;
@@ -8,6 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace AzureTest.MVC.Controllers;
 
 [Authorize(Roles = "Admin")]
+[DisplayName("Permission Management")]
+[Description("Manage system permissions.")]
 public class PermissionController : Controller
 {
     private readonly IPermissionQueryUnit _queryUnit;
@@ -50,13 +53,11 @@ public class PermissionController : Controller
         return View();
     }
 
-    public async Task<IActionResult> Index(PermissionFilter? filter, int page = 1, string sort = "ControllerName", string dir = "asc", string search = "", CancellationToken cancellationToken = default)
+    [DisplayName("Index")]
+    [Description("View a list of Permissions.")]
+    public async Task<IActionResult> Index([FromQuery] PermissionFilter? filter, CancellationToken cancellationToken = default)
     {
         filter ??= new PermissionFilter();
-        if (!string.IsNullOrWhiteSpace(search)) filter.SearchTerm = search;
-        if (!string.IsNullOrWhiteSpace(sort)) filter.SortBy = sort;
-        if (!string.IsNullOrWhiteSpace(dir)) filter.SortDescending = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase);
-        if (page > 0) filter.PageNumber = page;
 
         var paged = await _queryUnit.GetPermissions.HandleAsync(new GetPermissionsQuery(filter), cancellationToken);
 

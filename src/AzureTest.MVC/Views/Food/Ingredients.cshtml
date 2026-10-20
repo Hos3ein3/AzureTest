@@ -1,0 +1,261 @@
+@model AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.Food.IngredientDto, AzureTest.Contracts.DTOs.Food.IngredientFilter>
+@{
+    ViewData["Title"] = "Ingredients Catalog";
+    var filter = ViewBag.Filter as AzureTest.Contracts.DTOs.Food.IngredientFilter ?? new();
+}
+
+<div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                <i class="fa-solid fa-carrot mr-1.5"></i> Nutrition Database
+            </span>
+        </div>
+        <h1 class="text-3xl font-black text-slate-900 tracking-tight">Ingredients Catalog</h1>
+        <p class="text-slate-500 text-sm">Standard 100g nutritional facts, volumetric density, and dietary classifications.</p>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <a href="@Url.Action("Index")" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+            <i class="fa-solid fa-arrow-left mr-2"></i> Daily Diary
+        </a>
+        <button type="button" onclick="openIngredientModal()" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors">
+            <i class="fa-solid fa-plus mr-2"></i> Add Ingredient
+        </button>
+    </div>
+</div>
+
+<!-- Search & Filters -->
+<div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm mb-8">
+    <form asp-action="Ingredients" method="get" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Search Ingredient</label>
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                </span>
+                <input type="text" name="SearchTerm" value="@filter.SearchTerm" placeholder="Chicken, Rice, Olive oil..." class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Category</label>
+            <select name="Category" class="w-full py-2 px-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <option value="">All Categories</option>
+                @foreach (AzureTest.Domain.Documents.Food.Enums.FoodCategory cat in Enum.GetValues(typeof(AzureTest.Domain.Documents.Food.Enums.FoodCategory)))
+                {
+                    <option value="@cat" selected="@(filter.Category == cat ? "selected" : null)">@cat</option>
+                }
+            </select>
+        </div>
+
+        <div class="flex items-end gap-2">
+            <button type="submit" class="flex-1 py-2 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold shadow-sm transition-colors">
+                Filter
+            </button>
+            <a href="@Url.Action("Ingredients")" class="py-2 px-3 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold transition-colors">
+                Reset
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Ingredients Table -->
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden mb-8">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+            <thead class="bg-slate-50 text-slate-500 uppercase text-xs font-semibold border-b border-slate-200">
+                <tr>
+                    <th class="px-6 py-3.5">Name</th>
+                    <th class="px-6 py-3.5">Category</th>
+                    <th class="px-6 py-3.5 text-right">Calories <span class="text-3xs font-normal lowercase">/100g</span></th>
+                    <th class="px-6 py-3.5 text-right">Protein</th>
+                    <th class="px-6 py-3.5 text-right">Carbs</th>
+                    <th class="px-6 py-3.5 text-right">Fat</th>
+                    <th class="px-6 py-3.5 text-right">Fiber</th>
+                    <th class="px-6 py-3.5 text-center">Serving Size</th>
+                    <th class="px-6 py-3.5 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700">
+                @if (Model.Items.Any())
+                {
+                    foreach (var ing in Model.Items)
+                    {
+                        <tr class="hover:bg-slate-50/80 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-slate-900">@ing.Name</div>
+                                @if (ing.DietaryTags != null && ing.DietaryTags.Any())
+                                {
+                                    <div class="flex items-center gap-1 mt-1 flex-wrap">
+                                        @foreach (var tag in ing.DietaryTags)
+                                        {
+                                            <span class="inline-flex items-center px-1.5 py-0.2 rounded text-3xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                                @tag
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                            <td class="px-6 py-4 text-xs font-semibold text-slate-600">
+                                @ing.Category
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono font-black text-slate-900">
+                                @ing.Calories.ToString("0.#") kcal
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono font-bold text-blue-600">
+                                @ing.ProteinGrams.ToString("0.#") g
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono font-bold text-amber-600">
+                                @ing.CarbsGrams.ToString("0.#") g
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono font-bold text-rose-600">
+                                @ing.FatGrams.ToString("0.#") g
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono text-slate-500">
+                                @ing.FiberGrams.ToString("0.#") g
+                            </td>
+                            <td class="px-6 py-4 text-center font-mono text-xs text-slate-600">
+                                @ing.DefaultServingSizeGrams g (@ing.DefaultUnit)
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button type="button" onclick="editIngredient(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(ing)))" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 mr-1" title="Edit">
+                                    <i class="fa-regular fa-pen-to-square text-xs"></i>
+                                </button>
+                                <form asp-action="DeleteIngredient" asp-route-id="@ing.Id" method="post" class="inline" onsubmit="return confirm('Delete this ingredient?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="p-1.5 text-rose-400 hover:text-rose-600 rounded-lg hover:bg-rose-50" title="Delete">
+                                        <i class="fa-regular fa-trash-can text-xs"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="px-6 py-12 text-center text-slate-400">
+                            <i class="fa-solid fa-carrot text-4xl text-slate-300 mb-3 block"></i>
+                            <p class="font-bold text-slate-700">No ingredients match your query.</p>
+                            <p class="text-xs text-slate-400 mt-1">Click "Add Ingredient" above to create one.</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Create / Edit Ingredient -->
+<div id="ingredientModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative my-8">
+        <button type="button" onclick="closeIngredientModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+
+        <h3 id="modalTitle" class="text-xl font-black text-slate-900 mb-1">Add Ingredient</h3>
+        <p class="text-xs text-slate-500 mb-5">Values are standardized per 100 grams.</p>
+
+        <form id="ingredientForm" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="ingId" name="Id" value="" />
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Name *</label>
+                    <input type="text" id="ingName" name="Name" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" required />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Category</label>
+                    <select id="ingCategory" name="Category" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        @foreach (AzureTest.Domain.Documents.Food.Enums.FoodCategory cat in Enum.GetValues(typeof(AzureTest.Domain.Documents.Food.Enums.FoodCategory)))
+                        {
+                            <option value="@cat">@cat</option>
+                        }
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Calories (kcal/100g) *</label>
+                    <input type="number" step="any" min="0" id="ingCalories" name="Calories" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" required />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Protein (g/100g) *</label>
+                    <input type="number" step="any" min="0" id="ingProtein" name="ProteinGrams" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" required />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Carbs (g/100g) *</label>
+                    <input type="number" step="any" min="0" id="ingCarbs" name="CarbsGrams" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" required />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Fat (g/100g) *</label>
+                    <input type="number" step="any" min="0" id="ingFat" name="FatGrams" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" required />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Fiber (g/100g)</label>
+                    <input type="number" step="any" min="0" id="ingFiber" name="FiberGrams" value="0" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Default Serving (g)</label>
+                    <input type="number" step="any" min="1" id="ingServing" name="DefaultServingSizeGrams" value="100" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Density (g/ml)</label>
+                    <input type="number" step="0.01" min="0.1" id="ingDensity" name="DensityGramsPerMl" value="1.0" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                </div>
+            </div>
+
+            <div class="pt-3 flex items-center justify-end gap-3">
+                <button type="button" onclick="closeIngredientModal()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-xs font-semibold text-white shadow-sm">Save Ingredient</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function openIngredientModal() {
+        document.getElementById('modalTitle').innerText = "Add Ingredient";
+        document.getElementById('ingredientForm').action = '@Url.Action("CreateIngredient")';
+        document.getElementById('ingId').value = "";
+        document.getElementById('ingName').value = "";
+        document.getElementById('ingCalories').value = "";
+        document.getElementById('ingProtein').value = "";
+        document.getElementById('ingCarbs').value = "";
+        document.getElementById('ingFat').value = "";
+        document.getElementById('ingFiber').value = "0";
+        document.getElementById('ingServing').value = "100";
+        document.getElementById('ingDensity').value = "1.0";
+        document.getElementById('ingredientModal').classList.remove('hidden');
+    }
+
+    function editIngredient(data) {
+        document.getElementById('modalTitle').innerText = "Edit Ingredient";
+        document.getElementById('ingredientForm').action = '@Url.Action("UpdateIngredient")';
+        document.getElementById('ingId').value = data.Id;
+        document.getElementById('ingName').value = data.Name;
+        document.getElementById('ingCategory').value = data.Category;
+        document.getElementById('ingCalories').value = data.Calories;
+        document.getElementById('ingProtein').value = data.ProteinGrams;
+        document.getElementById('ingCarbs').value = data.CarbsGrams;
+        document.getElementById('ingFat').value = data.FatGrams;
+        document.getElementById('ingFiber').value = data.FiberGrams;
+        document.getElementById('ingServing').value = data.DefaultServingSizeGrams;
+        document.getElementById('ingDensity').value = data.DensityGramsPerMl;
+        document.getElementById('ingredientModal').classList.remove('hidden');
+    }
+
+    function closeIngredientModal() {
+        document.getElementById('ingredientModal').classList.add('hidden');
+    }
+</script>
+}

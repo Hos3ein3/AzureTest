@@ -13,7 +13,21 @@ using Microsoft.Extensions.Logging;
 namespace AzureTest.Application.IdeaTracker;
 
 // --- QUERIES & FILTERS ---
-public record IdeaFilter(Guid UserId, string? Search = null, int? Status = null);
+public class IdeaFilter : AzureTest.Contracts.DTOs.Common.PagedFilterRequest
+{
+    public Guid UserId { get; set; }
+    public string? Search { get; set; }
+    public int? Status { get; set; }
+
+    public IdeaFilter() { }
+    public IdeaFilter(Guid userId, string? search = null, int? status = null)
+    {
+        UserId = userId;
+        Search = search;
+        Status = status;
+        SearchTerm = search;
+    }
+}
 public record GetIdeasQuery(IdeaFilter Filter) : IQuery<Result<List<IdeaDto>>>;
 public record GetIdeaByIdQuery(Guid UserId, Guid Id) : IQuery<Result<IdeaDto>>;
 

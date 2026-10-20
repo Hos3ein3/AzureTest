@@ -51,16 +51,9 @@ namespace AzureTest.MVC.Controllers;
 
     [DisplayName("Index")]
     [Description("View a list of Component.")]
-    public async Task<IActionResult> Index([FromQuery] AzureTest.Contracts.DTOs.Dashboards.GetAllComponentsFilters filters, [FromQuery] string? search, [FromQuery] string? category, [FromQuery] string? type, [FromQuery] string? sort, [FromQuery] string? dir, [FromQuery] int? page, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Index([FromQuery] AzureTest.Contracts.DTOs.Dashboards.GetAllComponentsFilters filters, CancellationToken cancellationToken = default)
     {
         filters ??= new AzureTest.Contracts.DTOs.Dashboards.GetAllComponentsFilters();
-        if (!string.IsNullOrWhiteSpace(search)) filters.SearchTerm = search;
-        if (!string.IsNullOrWhiteSpace(category)) filters.Category = category;
-        if (!string.IsNullOrWhiteSpace(type)) filters.Type = type;
-        if (!string.IsNullOrWhiteSpace(sort)) filters.SortBy = sort;
-        if (!string.IsNullOrWhiteSpace(dir)) filters.SortDescending = string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase);
-        if (page.HasValue && page.Value > 0) filters.PageNumber = page.Value;
-
         var query = new GetAllComponentsQuery(filters);
         var components = await _getAllComponentsQuery.HandleAsync(query, cancellationToken);
 

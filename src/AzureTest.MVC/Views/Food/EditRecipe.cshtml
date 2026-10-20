@@ -1,0 +1,294 @@
+@model AzureTest.Contracts.DTOs.Food.UpdateRecipeDto
+@{
+    ViewData["Title"] = "Edit Recipe - " + Model.Name;
+    var availableIngredients = ViewBag.AvailableIngredients as List<AzureTest.Contracts.DTOs.Food.IngredientDto> ?? new();
+}
+
+<div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">
+                <i class="fa-solid fa-pen-to-square mr-1.5"></i> Recipe Editor
+            </span>
+        </div>
+        <h1 class="text-3xl font-black text-slate-900 tracking-tight">Edit Recipe</h1>
+        <p class="text-slate-500 text-sm">Update ingredients, timers, steps, and cooking yield.</p>
+    </div>
+
+    <a href="@Url.Action("RecipeDetails", new { id = Model.Id })" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+        <i class="fa-solid fa-arrow-left mr-2"></i> Back to Details
+    </a>
+</div>
+
+<form asp-action="EditRecipe" method="post" id="recipeForm" class="space-y-8">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="Id" value="@Model.Id" />
+
+    <!-- Basic Information -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm">
+        <h3 class="text-lg font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-brand-600"></i> Recipe Profile
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="md:col-span-2">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Recipe Name *</label>
+                <input type="text" name="Name" value="@Model.Name" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" required />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Category</label>
+                <input type="text" name="Category" value="@Model.Category" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Difficulty</label>
+                <select name="Difficulty" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    @foreach (AzureTest.Domain.Documents.Food.Enums.RecipeDifficulty d in Enum.GetValues(typeof(AzureTest.Domain.Documents.Food.Enums.RecipeDifficulty)))
+                    {
+                        <option value="@d" selected="@(Model.Difficulty == d ? "selected" : null)">@d</option>
+                    }
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Default Servings</label>
+                <input type="number" min="1" max="100" name="Servings" value="@Model.Servings" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" required />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Prep Time (min)</label>
+                <input type="number" min="0" name="PrepTimeMinutes" value="@Model.PrepTimeMinutes" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Cook Time (min)</label>
+                <input type="number" min="0" name="CookTimeMinutes" value="@Model.CookTimeMinutes" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Cooking Yield Factor</label>
+                <input type="number" step="0.05" min="0.2" max="5.0" name="CookingYieldFactor" value="@Model.CookingYieldFactor" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+
+            <div class="md:col-span-2 lg:col-span-4">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Description & Chef Notes</label>
+                <textarea name="Description" rows="2" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">@Model.Description</textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ingredients Builder -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+            <div>
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-carrot text-emerald-600"></i> Ingredients Bill of Materials
+                </h3>
+                <p class="text-xs text-slate-500">Update ingredients and proportions.</p>
+            </div>
+
+            <button type="button" onclick="addIngredientRow()" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                <i class="fa-solid fa-plus mr-1"></i> Add Ingredient
+            </button>
+        </div>
+
+        <div id="ingredientsContainer" class="space-y-3">
+            @for (int i = 0; i < Model.Ingredients.Count; i++)
+            {
+                var ing = Model.Ingredients[i];
+                <div class="ingredient-row p-4 rounded-xl border border-slate-200 bg-slate-50/50 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                    <div class="md:col-span-4">
+                        <label class="block text-3xs uppercase font-bold text-slate-500 mb-0.5">Ingredient</label>
+                        <select name="Ingredients[@i].IngredientId" class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required>
+                            <option value="">-- Choose Ingredient --</option>
+                            @foreach (var a in availableIngredients.OrderBy(a => a.Category).ThenBy(a => a.Name))
+                            {
+                                <option value="@a.Id" selected="@(a.Id == ing.IngredientId ? "selected" : null)">@a.Name (@a.Calories kcal/100g)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-3xs uppercase font-bold text-slate-500 mb-0.5">Quantity</label>
+                        <input type="number" step="any" min="0.1" name="Ingredients[@i].Quantity" value="@ing.Quantity" class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required />
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-3xs uppercase font-bold text-slate-500 mb-0.5">Unit</label>
+                        <input type="text" name="Ingredients[@i].Unit" value="@ing.Unit" class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required />
+                    </div>
+
+                    <div class="md:col-span-3">
+                        <label class="block text-3xs uppercase font-bold text-slate-500 mb-0.5">Prep Note / Substitution</label>
+                        <input type="text" name="Ingredients[@i].Notes" value="@ing.Notes" placeholder="e.g. minced / can sub with..." class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                    </div>
+
+                    <div class="md:col-span-1 flex items-end justify-center pt-3">
+                        <button type="button" onclick="this.closest('.ingredient-row').remove()" class="p-2 text-rose-500 hover:text-rose-700 transition-colors" title="Remove">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Steps Builder -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+            <div>
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-blue-600"></i> Step-by-Step Instructions & Timers
+                </h3>
+                <p class="text-xs text-slate-500">Edit preparation steps and timers.</p>
+            </div>
+
+            <button type="button" onclick="addStepRow()" class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                <i class="fa-solid fa-plus mr-1"></i> Add Step
+            </button>
+        </div>
+
+        <div id="stepsContainer" class="space-y-3">
+            @for (int s = 0; s < Model.Steps.Count; s++)
+            {
+                var step = Model.Steps[s];
+                <div class="step-row p-4 rounded-xl border border-slate-200 bg-slate-50/50 grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+                    <div class="md:col-span-1 pt-2 text-center">
+                        <span class="step-number-badge inline-flex w-7 h-7 rounded-full bg-blue-100 text-blue-800 font-bold text-xs items-center justify-center">@(s + 1)</span>
+                        <input type="hidden" name="Steps[@s].StepNumber" class="step-number-input" value="@(s + 1)" />
+                    </div>
+
+                    <div class="md:col-span-7">
+                        <label class="block text-3xs uppercase font-bold text-slate-500 mb-0.5">Instruction *</label>
+                        <textarea name="Steps[@s].Instruction" rows="2" class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required>@step.Instruction</textarea>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-3xs uppercase font-bold text-slate-500 mb-0.5">Timer (min)</label>
+                        <input type="number" min="0" max="720" name="Steps[@s].TimerMinutes" value="@step.TimerMinutes" placeholder="Optional" class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                    </div>
+
+                    <div class="md:col-span-2 flex items-center justify-between pt-4">
+                        <input type="text" name="Steps[@s].ChefTip" value="@step.ChefTip" placeholder="Chef tip..." class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 mr-2" />
+                        <button type="button" onclick="removeStepRow(this)" class="p-2 text-rose-500 hover:text-rose-700 transition-colors" title="Remove">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="flex items-center justify-end gap-3 pt-4">
+        <a href="@Url.Action("RecipeDetails", new { id = Model.Id })" class="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+            Cancel
+        </a>
+        <button type="submit" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-sm font-semibold text-white shadow-sm transition-colors">
+            Update Recipe
+        </button>
+    </div>
+</form>
+
+<!-- Ingredient Row Template -->
+<template id="ingredientRowTemplate">
+    <div class="ingredient-row p-4 rounded-xl border border-slate-200 bg-slate-50/50 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+        <div class="md:col-span-4">
+            <label class="block text-3xs uppercase font-bold text-slate-500 mb-0.5">Ingredient</label>
+            <select name="Ingredients[{index}].IngredientId" class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required>
+                <option value="">-- Choose Ingredient --</option>
+                @foreach (var ing in availableIngredients.OrderBy(i => i.Category).ThenBy(i => i.Name))
+                {
+                    <option value="@ing.Id">@ing.Name (@ing.Calories kcal/100g)</option>
+                }
+            </select>
+        </div>
+
+        <div class="md:col-span-2">
+            <label class="block text-3xs uppercase font-bold text-slate-500 mb-0.5">Quantity</label>
+            <input type="number" step="any" min="0.1" name="Ingredients[{index}].Quantity" value="100" class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required />
+        </div>
+
+        <div class="md:col-span-2">
+            <label class="block text-3xs uppercase font-bold text-slate-500 mb-0.5">Unit</label>
+            <input type="text" name="Ingredients[{index}].Unit" value="g" class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required />
+        </div>
+
+        <div class="md:col-span-3">
+            <label class="block text-3xs uppercase font-bold text-slate-500 mb-0.5">Prep Note / Substitution</label>
+            <input type="text" name="Ingredients[{index}].Notes" placeholder="e.g. minced / can sub with..." class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" />
+        </div>
+
+        <div class="md:col-span-1 flex items-end justify-center pt-3">
+            <button type="button" onclick="this.closest('.ingredient-row').remove()" class="p-2 text-rose-500 hover:text-rose-700 transition-colors" title="Remove">
+                <i class="fa-regular fa-trash-can"></i>
+            </button>
+        </div>
+    </div>
+</template>
+
+<!-- Step Row Template -->
+<template id="stepRowTemplate">
+    <div class="step-row p-4 rounded-xl border border-slate-200 bg-slate-50/50 grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+        <div class="md:col-span-1 pt-2 text-center">
+            <span class="step-number-badge inline-flex w-7 h-7 rounded-full bg-blue-100 text-blue-800 font-bold text-xs items-center justify-center">1</span>
+            <input type="hidden" name="Steps[{index}].StepNumber" class="step-number-input" value="1" />
+        </div>
+
+        <div class="md:col-span-7">
+            <label class="block text-3xs uppercase font-bold text-slate-500 mb-0.5">Instruction *</label>
+            <textarea name="Steps[{index}].Instruction" rows="2" placeholder="Describe the culinary process..." class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required></textarea>
+        </div>
+
+        <div class="md:col-span-2">
+            <label class="block text-3xs uppercase font-bold text-slate-500 mb-0.5">Timer (min)</label>
+            <input type="number" min="0" max="720" name="Steps[{index}].TimerMinutes" placeholder="Optional" class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" />
+        </div>
+
+        <div class="md:col-span-2 flex items-center justify-between pt-4">
+            <input type="text" name="Steps[{index}].ChefTip" placeholder="Chef tip..." class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 mr-2" />
+            <button type="button" onclick="removeStepRow(this)" class="p-2 text-rose-500 hover:text-rose-700 transition-colors" title="Remove">
+                <i class="fa-regular fa-trash-can"></i>
+            </button>
+        </div>
+    </div>
+</template>
+
+@section Scripts {
+<script>
+    let ingIndex = @Model.Ingredients.Count;
+    let stepIndex = @Model.Steps.Count;
+
+    function addIngredientRow() {
+        const tpl = document.getElementById('ingredientRowTemplate').innerHTML;
+        const html = tpl.replaceAll('{index}', ingIndex++);
+        const div = document.createElement('div');
+        div.innerHTML = html.trim();
+        document.getElementById('ingredientsContainer').appendChild(div.firstChild);
+    }
+
+    function addStepRow() {
+        const tpl = document.getElementById('stepRowTemplate').innerHTML;
+        const html = tpl.replaceAll('{index}', stepIndex++);
+        const div = document.createElement('div');
+        div.innerHTML = html.trim();
+        document.getElementById('stepsContainer').appendChild(div.firstChild);
+        renumberSteps();
+    }
+
+    function removeStepRow(btn) {
+        btn.closest('.step-row').remove();
+        renumberSteps();
+    }
+
+    function renumberSteps() {
+        const rows = document.querySelectorAll('#stepsContainer .step-row');
+        rows.forEach((row, i) => {
+            const badge = row.querySelector('.step-number-badge');
+            const input = row.querySelector('.step-number-input');
+            if (badge) badge.innerText = (i + 1);
+            if (input) input.value = (i + 1);
+        });
+    }
+</script>
+}
