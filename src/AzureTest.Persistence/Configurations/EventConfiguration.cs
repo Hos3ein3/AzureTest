@@ -12,5 +12,6 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
         builder.Property(e => e.Title).IsRequired().HasMaxLength(200);
         builder.Property(e => e.Color).HasMaxLength(20);
         builder.HasIndex(e => e.UserId);
+        builder.HasIndex(e => e.TenantId);
     }
 }

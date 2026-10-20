@@ -103,6 +103,7 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
     {
         public static readonly Guid UserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
         public Guid Id => UserId;
+        public Guid TenantId => UserId;
         public string Email => "test@test.com";
         public string? PhoneNumber => null;
         public string? ProfileImage => null;

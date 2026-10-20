@@ -1,5 +1,6 @@
 
 
+using AzureTest.Application.Interfaces.Services;
 using AzureTest.Domain.Entities;
 using AzureTest.Domain.Entities.Identity;
 using AzureTest.Domain.Primitives;
@@ -10,18 +11,30 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AzureTest.Persistence.Context;
 
 public class AzureTestDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>
 {
     private readonly DomainEventsInterceptor? _domainEventsInterceptor;
+    private readonly ITenantProvider? _tenantProvider;
 
     public AzureTestDbContext(
         DbContextOptions<AzureTestDbContext> options,
-        DomainEventsInterceptor? domainEventsInterceptor = null) : base(options)
+        DomainEventsInterceptor? domainEventsInterceptor = null,
+        ITenantProvider? tenantProvider = null) : base(options)
     {
         _domainEventsInterceptor = domainEventsInterceptor;
+        _tenantProvider = tenantProvider;
+    }
+
+    public AzureTestDbContext(
+        DbContextOptions<AzureTestDbContext> options,
+        ITenantProvider? tenantProvider) : base(options)
+    {
+        _tenantProvider = tenantProvider;
     }
 
     public AzureTestDbContext(
@@ -35,6 +48,14 @@ public class AzureTestDbContext : IdentityDbContext<ApplicationUser, Application
 
     /// <summary>Exposes collected domain events after SaveChanges for dispatch.</summary>
     public DomainEventsInterceptor? DomainEventsInterceptor => _domainEventsInterceptor;
+
+    /// <summary>Active tenant ID for query filter evaluation.</summary>
+    public virtual Guid CurrentTenantId => _tenantProvider?.IsMultiTenancyEnabled == true
+        ? _tenantProvider.CurrentTenantId
+        : Guid.Empty;
+
+    /// <summary>Indicates whether multi-tenancy is active via configuration feature flags.</summary>
+    public virtual bool IsMultiTenancyEnabled => _tenantProvider?.IsMultiTenancyEnabled == true;
 
     public DbSet<Resume> Resumes => Set<Resume>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
@@ -125,18 +146,84 @@ public class AzureTestDbContext : IdentityDbContext<ApplicationUser, Application
 
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
-        // Apply a global query filter for all ISoftDelete entities.
-        // Automatically excludes soft-deleted records from every query.
+        // Apply a unified global query filter for ISoftDelete and ITenantEntity.
+        // Combining filters into a single lambda avoids EF Core's HasQueryFilter overwrite limitation.
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            if (!typeof(ISoftDelete).IsAssignableFrom(entityType.ClrType))
+            var clrType = entityType.ClrType;
+            bool isSoftDelete = typeof(ISoftDelete).IsAssignableFrom(clrType);
+            bool isTenantEntity = typeof(ITenantEntity).IsAssignableFrom(clrType);
+
+            if (!isSoftDelete && !isTenantEntity)
                 continue;
 
-            var param = Expression.Parameter(entityType.ClrType, "e");
-            var prop = Expression.Property(param, nameof(ISoftDelete.IsDeleted));
-            var filter = Expression.Lambda(Expression.Not(prop), param);
-            modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
+            var param = Expression.Parameter(clrType, "e");
+            Expression? combinedExpr = null;
+
+            if (isSoftDelete)
+            {
+                var isDeletedProp = Expression.Property(param, nameof(ISoftDelete.IsDeleted));
+                combinedExpr = Expression.Not(isDeletedProp); // !e.IsDeleted
+            }
+
+            if (isTenantEntity)
+            {
+                // Multi-tenancy filter expression:
+                // (!this.IsMultiTenancyEnabled || this.CurrentTenantId == Guid.Empty || e.TenantId == this.CurrentTenantId)
+                var thisExpr = Expression.Constant(this);
+
+                var isEnabledProp = Expression.Property(thisExpr, nameof(IsMultiTenancyEnabled));
+                var disabledExpr = Expression.Not(isEnabledProp);
+
+                var currentTenantProp = Expression.Property(thisExpr, nameof(CurrentTenantId));
+                var emptyTenantExpr = Expression.Equal(currentTenantProp, Expression.Constant(Guid.Empty));
+
+                var entityTenantProp = Expression.Property(param, nameof(ITenantEntity.TenantId));
+                var tenantMatchExpr = Expression.Equal(entityTenantProp, currentTenantProp);
+
+                var tenantFilterExpr = Expression.OrElse(
+                    disabledExpr,
+                    Expression.OrElse(emptyTenantExpr, tenantMatchExpr)
+                );
+
+                combinedExpr = combinedExpr == null
+                    ? tenantFilterExpr
+                    : Expression.AndAlso(combinedExpr, tenantFilterExpr);
+            }
+
+            if (combinedExpr != null)
+            {
+                var lambda = Expression.Lambda(combinedExpr, param);
+                modelBuilder.Entity(clrType).HasQueryFilter(lambda);
+            }
+        }
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        ApplyTenantId();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override int SaveChanges()
+    {
+        ApplyTenantId();
+        return base.SaveChanges();
+    }
+
+    private void ApplyTenantId()
+    {
+        if (IsMultiTenancyEnabled && CurrentTenantId != Guid.Empty)
+        {
+            foreach (var entry in ChangeTracker.Entries<ITenantEntity>())
+            {
+                if (entry.State == EntityState.Added && entry.Entity.TenantId == Guid.Empty)
+                {
+                    entry.Entity.TenantId = CurrentTenantId;
+                }
+            }
         }
     }
 }
+
 

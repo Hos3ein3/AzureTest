@@ -5,9 +5,10 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Entities;
 
-public class Debt : BaseEntity, IAudit, ISoftDelete
+public class Debt : BaseEntity, IAudit, ISoftDelete, ITenantEntity
 {
     public Guid UserId { get; set; }
+    public Guid TenantId { get; set; }
     public decimal Amount { get; set; }
     public DateTime DateOfBorrow { get; set; }
     public DateTime? DateOfReturn { get; set; }

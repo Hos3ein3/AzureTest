@@ -317,6 +317,10 @@
                 
                 @if (_CurrentUser.IsAdmin)
                 {
+                    <a asp-area="" asp-controller="Tenant" asp-action="Index" data-title="Tenant Management" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Tenant")">
+                        <i class="fa-solid fa-building-user w-6 text-center text-lg transition-colors @GetActiveIconClasses("Tenant")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Tenant Management</span>
+                    </a>
                     <a href="/healthchecks-ui" target="_blank" data-title="Health Status" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group text-slate-600 hover:bg-slate-50 hover:text-slate-900">
                         <i class="fa-solid fa-heart-pulse w-6 text-center text-lg text-slate-400 group-hover:text-slate-600"></i>
                         <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Health Status</span>

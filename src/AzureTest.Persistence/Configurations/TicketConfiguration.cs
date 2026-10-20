@@ -11,6 +11,7 @@ public class TicketConfiguration : IEntityTypeConfiguration<Ticket>
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Subject).IsRequired().HasMaxLength(255);
         builder.HasIndex(t => t.UserId);
+        builder.HasIndex(t => t.TenantId);
 
         builder.HasMany(t => t.Messages)
                .WithOne(m => m.Ticket)

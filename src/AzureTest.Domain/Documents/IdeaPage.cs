@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Documents;
 
-public class IdeaPage
+public class IdeaPage : ITenantEntity
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
+    public Guid TenantId { get; set; }
     public Guid IdeaId { get; set; }
     
     public string Title { get; set; } = string.Empty;

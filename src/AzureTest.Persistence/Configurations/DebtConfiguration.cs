@@ -9,5 +9,6 @@ public class DebtConfiguration : IEntityTypeConfiguration<Debt>
     public void Configure(EntityTypeBuilder<Debt> builder)
     {
         builder.HasKey(x => x.Id);
+        builder.HasIndex(x => x.TenantId);
     }
 }

@@ -16,6 +16,7 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
 {
     private readonly IMongoClient _mongoClient;
     private readonly IMongoDatabase _database;
+    private readonly AzureTest.Application.Interfaces.Services.ITenantProvider? _tenantProvider;
     private IIdentitySettingRepository? _identitySettings;
     private IClientSessionHandle? _session;
 
@@ -37,10 +38,11 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
 
 
 
-    public NoSqlUnitOfWork(IMongoClient mongoClient, IMongoDatabase database)
+    public NoSqlUnitOfWork(IMongoClient mongoClient, IMongoDatabase database, AzureTest.Application.Interfaces.Services.ITenantProvider? tenantProvider = null)
     {
         _mongoClient = mongoClient ?? throw new ArgumentNullException(nameof(mongoClient));
         _database = database ?? throw new ArgumentNullException(nameof(database));
+        _tenantProvider = tenantProvider;
     }
 
     public IResumeFilesRepository ResumeFiles => _resumeFiles ??= new ResumeFilesRepository(_database);
@@ -83,9 +85,9 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     public IRecipeRepository Recipes => _recipes ??= new RecipeRepository(_database);
     public IMealLogRepository MealLogs => _mealLogs ??= new MealLogRepository(_database);
     public IDailyNutritionTargetRepository NutritionTargets => _nutritionTargets ??= new DailyNutritionTargetRepository(_database);
-    public IPantryStockItemRepository PantryStockItems => _pantryStockItems ??= new PantryStockItemRepository(_database);
+    public IPantryStockItemRepository PantryStockItems => _pantryStockItems ??= new PantryStockItemRepository(_database, _tenantProvider);
     public IStockMovementRepository StockMovements => _stockMovements ??= new StockMovementRepository(_database);
-    public IShoppingListItemRepository ShoppingListItems => _shoppingListItems ??= new ShoppingListItemRepository(_database);
+    public IShoppingListItemRepository ShoppingListItems => _shoppingListItems ??= new ShoppingListItemRepository(_database, _tenantProvider);
 
     public IHouseSearchHistoryRepository HouseSearchHistories => _houseSearchHistories ??= new HouseSearchHistoryRepository(_database);
     public IHouseCrawlerCredentialRepository HouseCrawlerCredentials => _houseCrawlerCredentials ??= new HouseCrawlerCredentialRepository(_database);

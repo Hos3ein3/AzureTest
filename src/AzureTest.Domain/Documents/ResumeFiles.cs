@@ -5,7 +5,7 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Documents;
 
-public class ResumeFiles : ISoftDelete
+public class ResumeFiles : ISoftDelete, ITenantEntity
 {
     public Guid Id { get; set; } = Guid.CreateVersion7();
 
@@ -14,6 +14,7 @@ public class ResumeFiles : ISoftDelete
     /// </summary>
     public Guid ResumeId { get; init; }
     
+    public Guid TenantId { get; set; }
     public Guid UserId { get; set; }
 
     // Curriculum Vitae (CV) Properties

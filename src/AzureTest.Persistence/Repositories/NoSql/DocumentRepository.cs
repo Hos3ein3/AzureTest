@@ -7,7 +7,9 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Interfaces.Data.NoSql;
+using AzureTest.Application.Interfaces.Services;
 using AzureTest.Contracts.DTOs.Common;
+using AzureTest.Domain.Primitives;
 using MongoDB.Driver;
 
 namespace AzureTest.Persistence.Repositories.NoSql;
@@ -15,40 +17,104 @@ namespace AzureTest.Persistence.Repositories.NoSql;
 public class DocumentRepository<TDocument> : IDocumentRepository<TDocument> where TDocument : class
 {
     protected readonly IMongoCollection<TDocument> _collection;
+    protected readonly ITenantProvider? _tenantProvider;
 
-    public DocumentRepository(IMongoDatabase database, string collectionName)
+    public DocumentRepository(IMongoDatabase database, string collectionName, ITenantProvider? tenantProvider = null)
     {
         _collection = database.GetCollection<TDocument>(collectionName);
+        _tenantProvider = tenantProvider;
+    }
+
+    protected virtual FilterDefinition<TDocument> GetBaseFilter()
+    {
+        var filterBuilder = Builders<TDocument>.Filter;
+        var filters = new List<FilterDefinition<TDocument>>();
+
+        if (typeof(ISoftDelete).IsAssignableFrom(typeof(TDocument)))
+        {
+            filters.Add(filterBuilder.Eq("IsDeleted", false));
+        }
+
+        if (_tenantProvider?.IsMultiTenancyEnabled == true &&
+            _tenantProvider.CurrentTenantId != Guid.Empty &&
+            typeof(ITenantEntity).IsAssignableFrom(typeof(TDocument)))
+        {
+            var hasUserId = typeof(TDocument).GetProperty("UserId") != null;
+            if (hasUserId)
+            {
+                // Match TenantId OR fallback to UserId for legacy database records created prior to multi-tenancy
+                filters.Add(filterBuilder.Or(
+                    filterBuilder.Eq("TenantId", _tenantProvider.CurrentTenantId),
+                    filterBuilder.And(
+                        filterBuilder.Or(
+                            filterBuilder.Eq("TenantId", Guid.Empty),
+                            filterBuilder.Exists("TenantId", false)
+                        ),
+                        filterBuilder.Eq("UserId", _tenantProvider.CurrentTenantId)
+                    )
+                ));
+            }
+            else
+            {
+                filters.Add(filterBuilder.Eq("TenantId", _tenantProvider.CurrentTenantId));
+            }
+        }
+
+        return filters.Any() ? filterBuilder.And(filters) : filterBuilder.Empty;
     }
 
     public virtual async Task<TDocument?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var filter = Builders<TDocument>.Filter.Eq("_id", id);
+        var filterBuilder = Builders<TDocument>.Filter;
+        var filter = filterBuilder.Eq("_id", id);
+        var baseFilter = GetBaseFilter();
+        if (baseFilter != filterBuilder.Empty)
+        {
+            filter &= baseFilter;
+        }
         return await _collection.Find(filter).FirstOrDefaultAsync(cancellationToken);
     }
 
     public virtual async Task<IReadOnlyList<TDocument>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _collection.Find(_ => true).ToListAsync(cancellationToken);
+        var filter = GetBaseFilter();
+        return await _collection.Find(filter).ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<TDocument>> GetAllAvailableAsync()
     {
-        if (typeof(AzureTest.Domain.Primitives.ISoftDelete).IsAssignableFrom(typeof(TDocument)))
-        {
-            var filter = Builders<TDocument>.Filter.Eq("IsDeleted", false);
-            return await _collection.Find(filter).ToListAsync();
-        }
-        return await _collection.Find(_ => true).ToListAsync();
+        var filter = GetBaseFilter();
+        return await _collection.Find(filter).ToListAsync();
     }
 
     public virtual async Task<IReadOnlyList<TDocument>> FindAsync(Expression<Func<TDocument, bool>> predicate)
     {
-        return await _collection.Find(predicate).ToListAsync();
+        var filterBuilder = Builders<TDocument>.Filter;
+        var predFilter = filterBuilder.Where(predicate);
+        var baseFilter = GetBaseFilter();
+        var combined = baseFilter != filterBuilder.Empty ? (baseFilter & predFilter) : predFilter;
+        return await _collection.Find(combined).ToListAsync();
     }
 
     public virtual async Task AddAsync(TDocument document, CancellationToken cancellationToken = default)
     {
+        if (_tenantProvider?.IsMultiTenancyEnabled == true &&
+            _tenantProvider.CurrentTenantId != Guid.Empty &&
+            document is ITenantEntity tenantDoc &&
+            tenantDoc.TenantId == Guid.Empty)
+        {
+            tenantDoc.TenantId = _tenantProvider.CurrentTenantId;
+        }
+
+        var userIdProp = typeof(TDocument).GetProperty("UserId");
+        if (userIdProp != null && userIdProp.CanWrite && _tenantProvider != null && _tenantProvider.RealUserId != Guid.Empty)
+        {
+            if (userIdProp.GetValue(document) is Guid currentUserId && currentUserId == Guid.Empty)
+            {
+                userIdProp.SetValue(document, _tenantProvider.RealUserId);
+            }
+        }
+
         await _collection.InsertOneAsync(document, cancellationToken: cancellationToken);
     }
 
@@ -82,6 +148,13 @@ public class DocumentRepository<TDocument> : IDocumentRepository<TDocument> wher
             {
                 filter = filterBuilder.And(filter, filterBuilder.Eq("IsDeleted", false));
             }
+        }
+
+        if (_tenantProvider?.IsMultiTenancyEnabled == true &&
+            _tenantProvider.CurrentTenantId != Guid.Empty &&
+            typeof(AzureTest.Domain.Primitives.ITenantEntity).IsAssignableFrom(typeof(TDocument)))
+        {
+            filter = filterBuilder.And(filter, filterBuilder.Eq("TenantId", _tenantProvider.CurrentTenantId));
         }
 
         var totalCount = (int)await _collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
@@ -144,6 +217,13 @@ public class DocumentRepository<TDocument> : IDocumentRepository<TDocument> wher
             {
                 filtersList.Add(filterBuilder.Eq("IsDeleted", false));
             }
+        }
+
+        if (_tenantProvider?.IsMultiTenancyEnabled == true &&
+            _tenantProvider.CurrentTenantId != Guid.Empty &&
+            typeof(AzureTest.Domain.Primitives.ITenantEntity).IsAssignableFrom(typeof(TDocument)))
+        {
+            filtersList.Add(filterBuilder.Eq("TenantId", _tenantProvider.CurrentTenantId));
         }
 
         if (predicate != null)

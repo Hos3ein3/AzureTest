@@ -5,7 +5,7 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Entities;
 
-public class TaskItem : AggregateRoot, ISoftDelete, IAudit
+public class TaskItem : AggregateRoot, ISoftDelete, IAudit, ITenantEntity
 {
     public string Title { get; private set; } = string.Empty;
     public string? Description { get; private set; }
@@ -14,6 +14,7 @@ public class TaskItem : AggregateRoot, ISoftDelete, IAudit
     public bool IsCompleted { get; private set; }
     public string? Priority { get; private set; }
     public Guid UserId { get; private set; }
+    public Guid TenantId { get; set; }
 
     // ISoftDelete
     public bool IsDeleted { get; set; }
@@ -28,7 +29,7 @@ public class TaskItem : AggregateRoot, ISoftDelete, IAudit
 
     private TaskItem() { }
 
-    public static TaskItem Create(string title, string? description, DateTime? startDate, DateTime? endDate, string? priority, Guid userId)
+    public static TaskItem Create(string title, string? description, DateTime? startDate, DateTime? endDate, string? priority, Guid userId, Guid? tenantId = null)
     {
         return new TaskItem
         {
@@ -39,7 +40,8 @@ public class TaskItem : AggregateRoot, ISoftDelete, IAudit
             EndDate = endDate,
             Priority = priority,
             IsCompleted = false,
-            UserId = userId
+            UserId = userId,
+            TenantId = tenantId.HasValue && tenantId.Value != Guid.Empty ? tenantId.Value : userId
         };
     }
 

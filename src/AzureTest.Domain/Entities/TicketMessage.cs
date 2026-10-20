@@ -5,10 +5,11 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Entities;
 
-public class TicketMessage : BaseEntity, IAudit, ISoftDelete
+public class TicketMessage : BaseEntity, IAudit, ISoftDelete, ITenantEntity
 {
     public Guid TicketId { get; private set; }
     public Guid UserId { get; private set; }
+    public Guid TenantId { get; set; }
     public string Content { get; private set; } = string.Empty;
     public bool IsReadByCreator { get; private set; }
 
@@ -27,13 +28,14 @@ public class TicketMessage : BaseEntity, IAudit, ISoftDelete
 
     private TicketMessage() { }
 
-    public static TicketMessage Create(Guid ticketId, Guid userId, string content)
+    public static TicketMessage Create(Guid ticketId, Guid userId, string content, Guid? tenantId = null)
     {
         return new TicketMessage
         {
             Id = Guid.NewGuid(),
             TicketId = ticketId,
             UserId = userId,
+            TenantId = tenantId.HasValue && tenantId.Value != Guid.Empty ? tenantId.Value : userId,
             Content = content,
             IsReadByCreator = false
         };

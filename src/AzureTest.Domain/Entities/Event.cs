@@ -5,7 +5,7 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Entities;
 
-public class Event : AggregateRoot, ISoftDelete, IAudit
+public class Event : AggregateRoot, ISoftDelete, IAudit, ITenantEntity
 {
     public string Title { get; private set; } = string.Empty;
     public string? Description { get; private set; }
@@ -14,6 +14,7 @@ public class Event : AggregateRoot, ISoftDelete, IAudit
     public bool IsAllDay { get; private set; }
     public string? Color { get; private set; }
     public Guid UserId { get; private set; }
+    public Guid TenantId { get; set; }
 
     // ISoftDelete
     public bool IsDeleted { get; set; }
@@ -28,7 +29,7 @@ public class Event : AggregateRoot, ISoftDelete, IAudit
 
     private Event() { }
 
-    public static Event Create(string title, string? description, DateTime startDate, DateTime endDate, bool isAllDay, string? color, Guid userId)
+    public static Event Create(string title, string? description, DateTime startDate, DateTime endDate, bool isAllDay, string? color, Guid userId, Guid? tenantId = null)
     {
         return new Event
         {
@@ -39,7 +40,8 @@ public class Event : AggregateRoot, ISoftDelete, IAudit
             EndDate = endDate,
             IsAllDay = isAllDay,
             Color = color,
-            UserId = userId
+            UserId = userId,
+            TenantId = tenantId.HasValue && tenantId.Value != Guid.Empty ? tenantId.Value : userId
         };
     }
 

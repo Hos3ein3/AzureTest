@@ -16,11 +16,16 @@ public class CurrentUser : ICurrentUser
 
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ITenantProvider? _tenantProvider;
 
-    public CurrentUser(IHttpContextAccessor httpContextAccessor, IServiceProvider serviceProvider)
+    public CurrentUser(
+        IHttpContextAccessor httpContextAccessor, 
+        IServiceProvider serviceProvider,
+        ITenantProvider? tenantProvider = null)
     {
         _httpContextAccessor = httpContextAccessor;
         _serviceProvider = serviceProvider;
+        _tenantProvider = tenantProvider;
     }
 
     private ClaimsPrincipal? User => _httpContextAccessor.HttpContext?.User;
@@ -114,6 +119,10 @@ public class CurrentUser : ICurrentUser
         }
     }
 
+    public Guid TenantId => _tenantProvider?.IsMultiTenancyEnabled == true
+        ? _tenantProvider.CurrentTenantId
+        : Id;
+
     // ─── HasAccess overloads ────────────────────────────────────────────────────
 
     /// <inheritdoc/>
@@ -127,10 +136,17 @@ public class CurrentUser : ICurrentUser
         => CheckAccess(httpContextAccessor, url);
 
     public bool BelongToCurrentUser(string entityUserId)
-    => Id.Equals(entityUserId);
+    {
+        if (string.IsNullOrWhiteSpace(entityUserId)) return false;
+        var effectiveId = _tenantProvider?.IsMultiTenancyEnabled == true ? TenantId : Id;
+        return Guid.TryParse(entityUserId, out var parsed) && effectiveId.Equals(parsed);
+    }
 
     public bool BelongToCurrentUser(Guid entityUserId)
-    => Id.Equals(entityUserId);
+    {
+        var effectiveId = _tenantProvider?.IsMultiTenancyEnabled == true ? TenantId : Id;
+        return effectiveId.Equals(entityUserId);
+    }
 
     // ─── Core logic ─────────────────────────────────────────────────────────────
 

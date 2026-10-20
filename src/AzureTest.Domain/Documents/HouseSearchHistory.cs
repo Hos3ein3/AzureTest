@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Documents;
 
-public class HouseSearchHistory
+public class HouseSearchHistory : ITenantEntity
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
+    public Guid TenantId { get; set; }
     public Guid UserId { get; set; }
     public string City { get; set; } = string.Empty;
     public string MinPrice { get; set; } = string.Empty;

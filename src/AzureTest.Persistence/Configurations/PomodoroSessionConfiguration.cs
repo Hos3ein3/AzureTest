@@ -49,9 +49,9 @@ public sealed class PomodoroSessionConfiguration : IEntityTypeConfiguration<Pomo
             .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(x => x.UserId);
+        builder.HasIndex(x => x.TenantId);
         builder.HasIndex(x => x.TaskItemId);
         builder.HasIndex(x => new { x.UserId, x.StartedAtUtc });
         builder.HasIndex(x => new { x.UserId, x.Status });
-        builder.HasQueryFilter(x => !x.IsDeleted);
     }
 }

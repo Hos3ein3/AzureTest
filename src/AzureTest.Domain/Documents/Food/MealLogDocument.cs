@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using AzureTest.Domain.Documents.Food.Enums;
 
+using AzureTest.Domain.Primitives;
+
 namespace AzureTest.Domain.Documents.Food;
 
 public class MealLogItem
@@ -24,7 +26,7 @@ public class MealLogItem
     public double Sodium { get; set; }
 }
 
-public class MealLogDocument
+public class MealLogDocument : ITenantEntity
 {
     public static class Rules
     {
@@ -35,6 +37,7 @@ public class MealLogDocument
 
     public Guid Id { get; init; } = Guid.CreateVersion7();
     public Guid UserId { get; set; }
+    public Guid TenantId { get; set; }
     public DateTime Date { get; set; } = DateTime.UtcNow.Date;
     public MealType MealType { get; set; } = MealType.Breakfast;
     public List<MealLogItem> Items { get; set; } = new();

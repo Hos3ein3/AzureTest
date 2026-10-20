@@ -4,7 +4,7 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Entities.Pomodoro;
 
-public sealed class PomodoroSetting : BaseEntity, IAudit
+public sealed class PomodoroSetting : BaseEntity, IAudit, ITenantEntity
 {
     public static class Rules
     {
@@ -28,6 +28,7 @@ public sealed class PomodoroSetting : BaseEntity, IAudit
     private PomodoroSetting() { }
 
     public Guid UserId { get; private set; }
+    public Guid TenantId { get; set; }
     public int WorkDurationMinutes { get; private set; } = Rules.DefaultWorkDurationMinutes;
     public int ShortBreakMinutes { get; private set; } = Rules.DefaultShortBreakMinutes;
     public int LongBreakMinutes { get; private set; } = Rules.DefaultLongBreakMinutes;
@@ -43,11 +44,12 @@ public sealed class PomodoroSetting : BaseEntity, IAudit
     public DateTime? ModifiedOn { get; set; }
     public string? ModifiedBy { get; set; }
 
-    public static PomodoroSetting CreateDefault(Guid userId)
+    public static PomodoroSetting CreateDefault(Guid userId, Guid? tenantId = null)
     {
         return new PomodoroSetting
         {
             UserId = userId,
+            TenantId = tenantId.HasValue && tenantId.Value != Guid.Empty ? tenantId.Value : userId,
             WorkDurationMinutes = Rules.DefaultWorkDurationMinutes,
             ShortBreakMinutes = Rules.DefaultShortBreakMinutes,
             LongBreakMinutes = Rules.DefaultLongBreakMinutes,

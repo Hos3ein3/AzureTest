@@ -1,11 +1,13 @@
 using System;
 using AzureTest.Domain.Enums;
+using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Documents;
 
-public class HouseCrawlerCredential
+public class HouseCrawlerCredential : ITenantEntity
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
+    public Guid TenantId { get; set; }
     public Guid UserId { get; set; }
     public HouseWebsite Website { get; set; }
     public string Username { get; set; } = string.Empty;

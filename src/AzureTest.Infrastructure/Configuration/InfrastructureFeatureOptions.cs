@@ -27,4 +27,10 @@ public class InfrastructureFeatureOptions
     public bool EnableAzureMonitorOpenTelemetry { get; set; } = true;
     public bool UseJWT { get; set; } = false;
     public bool UseSeq { get; set; } = false;
+
+    // Multi-Tenancy Features
+    public bool EnableMultiTenancy { get; set; } = false;
+
+    // Background Jobs Features
+    public bool EnableHangfire { get; set; } = true;
 }

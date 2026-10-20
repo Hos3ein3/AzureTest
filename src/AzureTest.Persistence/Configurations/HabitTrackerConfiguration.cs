@@ -24,6 +24,7 @@ public class HabitTrackerConfiguration : IEntityTypeConfiguration<HabitTracker>
         builder.Ignore(h => h.Goal);
 
         builder.HasIndex(h => h.UserId);
+        builder.HasIndex(h => h.TenantId);
         builder.HasIndex(h => new { h.UserId, h.IsArchived });
 
         builder.HasMany(h => h.Logs)

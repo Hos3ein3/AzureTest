@@ -484,6 +484,9 @@ var userUserEmail = "mohammadhosein.behzadifard@gmail.com";
 
             await _noSqlUnitOfWork.SaveChangesAsync();
             _logger.LogInformation("Default Pages (Subscription Plans & Player Valuation Rules) seeded successfully.");
+
+            // 3. Seed Version Release Documentation Pages (v1.0 to v2.1)
+            await VersionReleasePagesSeeder.SeedAsync(_noSqlUnitOfWork, _logger);
         }
         catch (Exception ex)
         {

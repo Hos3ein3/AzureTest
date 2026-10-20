@@ -1,6 +1,7 @@
 @using AzureTest.Application.Interfaces.Services
 @using AzureTest.Infrastructure.Services
 @inject  ICurrentUser _CurrentUser
+@inject  ITenantProvider _TenantProvider
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment _HostEnv
 @inject AzureTest.Application.Messaging.IQueryHandler<AzureTest.Application.UserPreferences.Queries.GetUserPreferenceQuery, AzureTest.Domain.Documents.UserPreference> _PrefQuery
 @{
@@ -140,6 +141,17 @@
                     <i class="fab fa-windows text-lg"></i>
                 </a>
                 
+                @if (_CurrentUser?.IsAdmin == true && _TenantProvider != null && _TenantProvider.IsMultiTenancyEnabled)
+                {
+                    <a asp-action="Index" asp-controller="Tenant" class="text-slate-400 hover:text-brand-500 transition-colors relative flex items-center" title="Tenant Management@(_TenantProvider.IsAdminImpersonating ? " (Impersonating)" : "")">
+                        <i class="fa-solid fa-building-user text-lg @(_TenantProvider.IsAdminImpersonating ? "text-amber-500 animate-pulse" : "")"></i>
+                        @if (_TenantProvider.IsAdminImpersonating)
+                        {
+                            <span class="absolute -top-1 -right-1 bg-amber-500 rounded-full h-2 w-2"></span>
+                        }
+                    </a>
+                }
+
                 <a asp-action="Index" asp-controller="Profile" class="text-slate-400 hover:text-brand-500 transition-colors flex items-center" title="My Profile">
                     @if(!string.IsNullOrEmpty(_CurrentUser.ProfileImage)){
                         <img src="@_CurrentUser.ProfileImage" class="w-7 h-7 rounded-full object-cover border border-slate-200" />
@@ -155,6 +167,30 @@
                 </form>
             </div>
         </header>
+
+        @if (_TenantProvider != null && _TenantProvider.IsAdminImpersonating)
+        {
+            <div class="bg-amber-600 text-white px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-md z-20 border-b border-amber-700">
+                <div class="flex items-center space-x-2 text-sm font-medium">
+                    <i class="fa-solid fa-user-secret text-amber-200 text-base"></i>
+                    <span>
+                        <strong>Tenant Impersonation Active:</strong> Managing workspace as Tenant <code class="bg-amber-700/80 px-2 py-0.5 rounded text-xs font-mono">@_TenantProvider.CurrentTenantId</code>
+                    </span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <a asp-controller="Tenant" asp-action="Index" class="inline-flex items-center px-3 py-1 bg-white text-amber-900 hover:bg-amber-50 text-xs font-bold rounded shadow-sm transition">
+                        <i class="fa-solid fa-users-gear mr-1"></i> Switch Tenant
+                    </a>
+                    <form asp-controller="Tenant" asp-action="ResetTenant" method="post" class="inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                        <button type="submit" class="inline-flex items-center px-3 py-1 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded shadow-sm transition">
+                            <i class="fa-solid fa-arrow-rotate-left mr-1"></i> Exit Impersonation
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
 
         <!-- Main Scrollable Area -->
         <main class="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-50">

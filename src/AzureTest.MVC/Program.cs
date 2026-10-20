@@ -405,7 +405,26 @@ if (builder.Configuration.GetValue<bool>("FeatureManagement:EnableHealthCheck"))
 app.MapPrometheusScrapingEndpoint().AllowAnonymous();
 if (builder.Configuration.GetValue<bool>("FeatureManagement:EnableHangfire"))
 {
-    app.UseHangfireDashboard("/hangfire");
+    app.UseHangfireDashboard("/hangfire", new Hangfire.DashboardOptions
+    {
+        Authorization = new[] { new AzureTest.Infrastructure.Configuration.HangfireAdminAuthorizationFilter() },
+        DashboardTitle = "TrackerPro Background Jobs"
+    });
+
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var recurringJobManager = scope.ServiceProvider.GetService<Hangfire.IRecurringJobManager>();
+        recurringJobManager?.AddOrUpdate<AzureTest.Application.Interfaces.Services.ITenantBackfillJob>(
+            "tenant-id-backfill-sync",
+            job => job.ExecuteAsync(CancellationToken.None),
+            Hangfire.Cron.Daily(2)); // Runs daily at 02:00 UTC, or trigger manually from Dashboard
+    }
+    catch (Exception ex)
+    {
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        logger.LogWarning(ex, "Failed to register recurring Hangfire jobs.");
+    }
 }
 
 app.Run();

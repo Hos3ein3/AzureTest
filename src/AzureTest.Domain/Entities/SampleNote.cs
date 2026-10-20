@@ -3,8 +3,9 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Entities;
 
-public class SampleNote : BaseEntity
+public class SampleNote : BaseEntity, ITenantEntity
 {
+    public Guid TenantId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public NoteCategory Category { get; set; } = NoteCategory.General;

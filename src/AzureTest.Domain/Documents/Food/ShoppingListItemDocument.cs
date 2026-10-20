@@ -1,9 +1,11 @@
 using System;
 using AzureTest.Domain.Documents.Food.Enums;
 
+using AzureTest.Domain.Primitives;
+
 namespace AzureTest.Domain.Documents.Food;
 
-public class ShoppingListItemDocument
+public class ShoppingListItemDocument : ITenantEntity
 {
     public static class Rules
     {
@@ -18,6 +20,7 @@ public class ShoppingListItemDocument
 
     public Guid Id { get; init; } = Guid.CreateVersion7();
     public Guid UserId { get; set; }
+    public Guid TenantId { get; set; }
     public Guid? IngredientId { get; set; }
     public string Name { get; set; } = string.Empty;
     public double Quantity { get; set; } = 1.0;

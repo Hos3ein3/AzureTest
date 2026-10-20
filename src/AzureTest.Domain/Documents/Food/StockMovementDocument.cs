@@ -3,7 +3,7 @@ using AzureTest.Domain.Documents.Food.Enums;
 
 namespace AzureTest.Domain.Documents.Food;
 
-public class StockMovementDocument
+public class StockMovementDocument : AzureTest.Domain.Primitives.ITenantEntity
 {
     public static class Rules
     {
@@ -15,6 +15,7 @@ public class StockMovementDocument
 
     public Guid Id { get; init; } = Guid.CreateVersion7();
     public Guid UserId { get; set; }
+    public Guid TenantId { get; set; }
     public Guid? StockItemId { get; set; }
     public Guid IngredientId { get; set; }
     public string IngredientName { get; set; } = string.Empty;

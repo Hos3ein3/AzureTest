@@ -6,7 +6,7 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Entities;
 
-public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
+public sealed class Resume : AggregateRoot, IAudit, ISoftDelete, ITenantEntity
 {
     public string PositionTitle { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
@@ -33,8 +33,7 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
     public Guid? CompanyId { get; set; }
 
     public Guid UserId { get; private set; }
-
-
+    public Guid TenantId { get; set; }
 
     // Parameterless constructor for EF Core
     private Resume() { }
@@ -50,7 +49,8 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         Guid userId,
         ResumeSource source, 
         ResumeStatus status,
-        int? atsScore = null)
+        int? atsScore = null,
+        Guid? tenantId = null)
     {
         PositionTitle = positionTitle;
         Description = description;
@@ -62,6 +62,7 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         ChatUrl = chatUrl;
         CompanyId = companyId;
         UserId = userId;
+        TenantId = tenantId.HasValue && tenantId.Value != Guid.Empty ? tenantId.Value : userId;
         AtsScore = atsScore;
     }
 
@@ -76,7 +77,8 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
         Guid userId,
         ResumeSource source, 
         ResumeStatus status = ResumeStatus.Applied,
-        int? atsScore = null)
+        int? atsScore = null,
+        Guid? tenantId = null)
     {
         return new Resume(
             positionTitle,
@@ -89,7 +91,8 @@ public sealed class Resume : AggregateRoot, IAudit, ISoftDelete
             userId,
             source,
             status,
-            atsScore
+            atsScore,
+            tenantId
         );
     }
 

@@ -35,5 +35,6 @@ public sealed class PomodoroSettingConfiguration : IEntityTypeConfiguration<Pomo
             .IsRequired();
 
         builder.HasIndex(x => x.UserId).IsUnique();
+        builder.HasIndex(x => x.TenantId);
     }
 }

@@ -40,6 +40,8 @@ public class ResumeConfiguration : IEntityTypeConfiguration<Resume>
             .HasConversion<string>()
             .HasMaxLength(50);
             
+        builder.HasIndex(r => r.TenantId);
+
         // Ignore domain events from EF Core's perspective
         builder.Ignore(r => r.DomainEvents);
     }

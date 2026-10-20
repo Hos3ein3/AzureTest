@@ -2,12 +2,14 @@
 
 using System;
 using System.Collections.Generic;
+using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Documents;
 
-public class UserDashboard
+public class UserDashboard : ITenantEntity
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
+    public Guid TenantId { get; set; }
     public Guid UserId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;

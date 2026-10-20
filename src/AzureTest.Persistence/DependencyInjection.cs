@@ -29,6 +29,7 @@ public static class DependencyInjection
         // Registered as Scoped so they share the same lifetime as the DbContext
         services.AddScoped<AuditInterceptor>();
         services.AddScoped<DomainEventsInterceptor>();
+        services.AddScoped<TenantSaveChangesInterceptor>();
 
         // ── PostgreSQL / EF Core ──────────────────────────────────────────────
         var connectionString = configuration.GetConnectionString("DefaultConnection");
@@ -41,7 +42,8 @@ public static class DependencyInjection
             // Interceptors are injected via the service provider
             options.AddInterceptors(
                 sp.GetRequiredService<AuditInterceptor>(),
-                sp.GetRequiredService<DomainEventsInterceptor>());
+                sp.GetRequiredService<DomainEventsInterceptor>(),
+                sp.GetRequiredService<TenantSaveChangesInterceptor>());
         });
 
         // ── Read-Only DbContext for CQRS Read Scale-Out ───────────────────────

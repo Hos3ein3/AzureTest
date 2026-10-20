@@ -4,7 +4,7 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Entities.Pomodoro;
 
-public sealed class PomodoroSession : AggregateRoot, ISoftDelete, IAudit
+public sealed class PomodoroSession : AggregateRoot, ISoftDelete, IAudit, ITenantEntity
 {
     public static class Rules
     {
@@ -23,6 +23,7 @@ public sealed class PomodoroSession : AggregateRoot, ISoftDelete, IAudit
     private PomodoroSession() { }
 
     public Guid UserId { get; private set; }
+    public Guid TenantId { get; set; }
     public string Title { get; private set; } = string.Empty;
     public string? Category { get; private set; }
     public Guid? TaskItemId { get; private set; }
@@ -62,7 +63,8 @@ public sealed class PomodoroSession : AggregateRoot, ISoftDelete, IAudit
         int interruptionCount = 0,
         string? notes = null,
         TimerSkin usedSkin = TimerSkin.Digital,
-        Guid? taskItemId = null)
+        Guid? taskItemId = null,
+        Guid? tenantId = null)
     {
         var sanitizedTitle = string.IsNullOrWhiteSpace(title) ? "Focus Session" : title.Trim();
         if (sanitizedTitle.Length > Rules.TitleMaxLength)
@@ -89,6 +91,7 @@ public sealed class PomodoroSession : AggregateRoot, ISoftDelete, IAudit
         return new PomodoroSession
         {
             UserId = userId,
+            TenantId = tenantId.HasValue && tenantId.Value != Guid.Empty ? tenantId.Value : userId,
             Title = sanitizedTitle,
             Category = sanitizedCategory,
             TaskItemId = taskItemId,

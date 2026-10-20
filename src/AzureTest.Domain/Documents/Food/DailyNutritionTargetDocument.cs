@@ -38,7 +38,7 @@ public class WeeklyMealPlanSlot
     public string? Notes { get; set; }
 }
 
-public class DailyNutritionTargetDocument
+public class DailyNutritionTargetDocument : AzureTest.Domain.Primitives.ITenantEntity
 {
     public static class Rules
     {
@@ -54,6 +54,7 @@ public class DailyNutritionTargetDocument
 
     public Guid Id { get; init; } = Guid.CreateVersion7();
     public Guid UserId { get; set; }
+    public Guid TenantId { get; set; }
 
     // Core Daily Targets
     public int CalorieTarget { get; set; } = 2200;

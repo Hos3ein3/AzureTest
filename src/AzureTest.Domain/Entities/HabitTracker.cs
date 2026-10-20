@@ -5,7 +5,7 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Entities;
 
-public class HabitTracker : AggregateRoot, ISoftDelete, IAudit
+public class HabitTracker : AggregateRoot, ISoftDelete, IAudit, ITenantEntity
 {
     public string Name { get; private set; } = string.Empty;
     public string? Description { get; private set; }
@@ -20,6 +20,7 @@ public class HabitTracker : AggregateRoot, ISoftDelete, IAudit
     public bool IsPrivate { get; private set; }
     public string? TypeConfig { get; private set; }
     public Guid UserId { get; private set; }
+    public Guid TenantId { get; set; }
 
     public ICollection<HabitLog> Logs { get; private set; } = new List<HabitLog>();
 
@@ -47,7 +48,8 @@ public class HabitTracker : AggregateRoot, ISoftDelete, IAudit
         string? timeZone,
         bool isPrivate,
         string? typeConfig,
-        Guid userId)
+        Guid userId,
+        Guid? tenantId = null)
     {
         return new HabitTracker
         {
@@ -63,7 +65,8 @@ public class HabitTracker : AggregateRoot, ISoftDelete, IAudit
             IsArchived = false,
             IsPrivate = isPrivate,
             TypeConfig = typeConfig,
-            UserId = userId
+            UserId = userId,
+            TenantId = tenantId.HasValue && tenantId.Value != Guid.Empty ? tenantId.Value : userId
         };
     }
 

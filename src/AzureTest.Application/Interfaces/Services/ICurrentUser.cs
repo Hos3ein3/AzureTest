@@ -16,6 +16,7 @@ public interface ICurrentUser
     System.Collections.Generic.IReadOnlyList<string> Roles { get; }
     System.Collections.Generic.IReadOnlyList<string> Permissions { get; }
     public bool IsAdmin { get;  }
+    public Guid TenantId { get; }
 
     /// <summary>
     /// Checks if the current user has access to the current request URL using the internally injected HttpContext.

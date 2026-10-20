@@ -9,5 +9,6 @@ public class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
     public void Configure(EntityTypeBuilder<Expense> builder)
     {
         builder.HasKey(x => x.Id);
+        builder.HasIndex(x => x.TenantId);
     }
 }

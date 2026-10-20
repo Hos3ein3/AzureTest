@@ -1,18 +1,14 @@
 using System;
 using System.Collections.Generic;
-
 using AzureTest.Domain.Enums;
+using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Documents;
 
-
-
-
-
-
-public class Idea
+public class Idea : ITenantEntity
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
+    public Guid TenantId { get; set; }
     public Guid UserId { get; set; }
     public Guid? ParentId { get; set; } // Notion allows infinite nesting
     

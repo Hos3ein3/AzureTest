@@ -7,13 +7,14 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Entities;
 
-public class Ticket : AggregateRoot, ISoftDelete, IAudit
+public class Ticket : AggregateRoot, ISoftDelete, IAudit, ITenantEntity
 {
     public string Subject { get; private set; } = string.Empty;
     public string Content { get; private set; } = string.Empty;
     public TicketPriority Priority { get; private set; }
     public TicketStatus Status { get; private set; }
     public Guid UserId { get; private set; }
+    public Guid TenantId { get; set; }
 
     public ICollection<TicketMessage> Messages { get; private set; } = new List<TicketMessage>();
 
@@ -30,7 +31,7 @@ public class Ticket : AggregateRoot, ISoftDelete, IAudit
 
     private Ticket() { }
 
-    public static Ticket Create(string subject, string content, TicketPriority priority, Guid userId)
+    public static Ticket Create(string subject, string content, TicketPriority priority, Guid userId, Guid? tenantId = null)
     {
         return new Ticket
         {
@@ -39,7 +40,8 @@ public class Ticket : AggregateRoot, ISoftDelete, IAudit
             Content = content,
             Priority = priority,
             Status = TicketStatus.Open,
-            UserId = userId
+            UserId = userId,
+            TenantId = tenantId.HasValue && tenantId.Value != Guid.Empty ? tenantId.Value : userId
         };
     }
 

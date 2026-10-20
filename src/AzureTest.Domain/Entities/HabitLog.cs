@@ -4,10 +4,11 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Entities;
 
-public class HabitLog : BaseEntity, IAudit, ISoftDelete
+public class HabitLog : BaseEntity, IAudit, ISoftDelete, ITenantEntity
 {
     public Guid HabitTrackerId { get; private set; }
     public Guid UserId { get; private set; }
+    public Guid TenantId { get; set; }
     public DateOnly LocalDate { get; private set; }
     public DateTime LoggedAt { get; private set; }
     public string Value { get; private set; } = string.Empty;
@@ -42,13 +43,15 @@ public class HabitLog : BaseEntity, IAudit, ISoftDelete
         string value,
         double? numericValue,
         string? notes,
-        double? targetSnapshot)
+        double? targetSnapshot,
+        Guid? tenantId = null)
     {
         return new HabitLog
         {
             Id = Guid.NewGuid(),
             HabitTrackerId = habitTrackerId,
             UserId = userId,
+            TenantId = tenantId.HasValue && tenantId.Value != Guid.Empty ? tenantId.Value : userId,
             LocalDate = localDate,
             LoggedAt = loggedAt,
             Value = value,

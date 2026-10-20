@@ -1,10 +1,12 @@
 using System;
+using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Documents;
 
-public class IdeaSection
+public class IdeaSection : ITenantEntity
 {
     public Guid Id { get; init; } = Guid.CreateVersion7();
+    public Guid TenantId { get; set; }
     public Guid IdeaPageId { get; set; }
     
     public string Title { get; set; } = string.Empty;

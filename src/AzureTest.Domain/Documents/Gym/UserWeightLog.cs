@@ -1,8 +1,9 @@
 using System;
+using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Documents.Gym;
 
-public class UserWeightLog
+public class UserWeightLog : ITenantEntity
 {
     public static class Rules
     {
@@ -14,6 +15,7 @@ public class UserWeightLog
     }
 
     public Guid Id { get; init; } = Guid.CreateVersion7();
+    public Guid TenantId { get; set; }
     public Guid UserId { get; set; }
     public double WeightKg { get; set; }
     public double HeightCm { get; set; }
