@@ -174,6 +174,17 @@ public class MediaController : Controller
 
     // ── Form POST Actions ──────────────────────────────────────────────────────
 
+    private IActionResult RedirectBack(string? returnUrl, string fallbackAction, object? routeValues = null)
+    {
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+        return routeValues != null
+            ? RedirectToAction(fallbackAction, routeValues)
+            : RedirectToAction(fallbackAction);
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     [DisplayName("Add to Watchlist")]
@@ -181,16 +192,47 @@ public class MediaController : Controller
     public async Task<IActionResult> Add(AddWatchItemCommand command, string? returnUrl, CancellationToken ct)
     {
         var cmd = command with { UserId = _currentUser.Id, TenantId = _currentUser.TenantId };
+        if (string.IsNullOrWhiteSpace(cmd.Title) && cmd.TmdbId > 0)
+        {
+            var detailsResult = await _queries.GetMediaDetailsAsync(new GetMediaDetailsQuery(cmd.TmdbId, cmd.Type, cmd.UserId), ct);
+            if (detailsResult.IsSuccess && detailsResult.Value != null)
+            {
+                var details = detailsResult.Value;
+                cmd = cmd with
+                {
+                    Title = details.Title,
+                    OriginalTitle = cmd.OriginalTitle ?? details.OriginalTitle,
+                    PosterPath = cmd.PosterPath ?? details.PosterPath,
+                    BackdropPath = cmd.BackdropPath ?? details.BackdropPath,
+                    Overview = cmd.Overview ?? details.Overview,
+                    ReleaseDate = cmd.ReleaseDate ?? details.ReleaseDate,
+                    TmdbVoteAverage = cmd.TmdbVoteAverage ?? details.VoteAverage,
+                    TotalSeasons = cmd.TotalSeasons > 1 ? cmd.TotalSeasons : (details.Seasons?.Count > 0 ? details.Seasons.Count : 1),
+                    TotalEpisodes = cmd.TotalEpisodes > 1 ? cmd.TotalEpisodes : (details.Seasons?.Count > 0 ? details.Seasons.Sum(s => s.EpisodeCount) : 1),
+                    RuntimeMinutes = cmd.RuntimeMinutes ?? details.RuntimeMinutes,
+                    Genres = cmd.Genres ?? details.Genres
+                };
+            }
+        }
+
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
-            return validation.ToForm(this, nameof(Index));
+        {
+            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to add title to watchlist.";
+            return RedirectBack(returnUrl, nameof(Index));
+        }
 
         var result = await _commands.AddWatchItemAsync(cmd, ct);
-        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        if (result.IsSuccess)
         {
-            return Redirect(returnUrl);
+            TempData["SuccessMessage"] = $"Saved to your watchlist.";
         }
-        return result.ToForm(this, nameof(Index));
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to add title to watchlist.";
+        }
+
+        return RedirectBack(returnUrl, nameof(Index));
     }
 
     [HttpPost]
@@ -202,14 +244,22 @@ public class MediaController : Controller
         var cmd = command with { UserId = _currentUser.Id };
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
-            return validation.ToForm(this, nameof(Index));
+        {
+            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to update watch progress.";
+            return RedirectBack(returnUrl, nameof(Index));
+        }
 
         var result = await _commands.UpdateWatchProgressAsync(cmd, ct);
-        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        if (result.IsSuccess)
         {
-            return Redirect(returnUrl);
+            TempData["SuccessMessage"] = "Watch progress updated.";
         }
-        return result.ToForm(this, nameof(Index));
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to update watch progress.";
+        }
+
+        return RedirectBack(returnUrl, nameof(Index));
     }
 
     [HttpPost]
@@ -221,14 +271,22 @@ public class MediaController : Controller
         var cmd = command with { UserId = _currentUser.Id };
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
-            return validation.ToForm(this, nameof(Index));
+        {
+            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to change watch status.";
+            return RedirectBack(returnUrl, nameof(Index));
+        }
 
         var result = await _commands.ChangeWatchStatusAsync(cmd, ct);
-        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        if (result.IsSuccess)
         {
-            return Redirect(returnUrl);
+            TempData["SuccessMessage"] = "Watch status updated.";
         }
-        return result.ToForm(this, nameof(Index));
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to change watch status.";
+        }
+
+        return RedirectBack(returnUrl, nameof(Index));
     }
 
     [HttpPost]
@@ -240,14 +298,22 @@ public class MediaController : Controller
         var cmd = command with { UserId = _currentUser.Id };
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
-            return validation.ToForm(this, nameof(Index));
+        {
+            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to save rating.";
+            return RedirectBack(returnUrl, nameof(Index));
+        }
 
         var result = await _commands.RateWatchItemAsync(cmd, ct);
-        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        if (result.IsSuccess)
         {
-            return Redirect(returnUrl);
+            TempData["SuccessMessage"] = "Rating and review saved.";
         }
-        return result.ToForm(this, nameof(Index));
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to save rating.";
+        }
+
+        return RedirectBack(returnUrl, nameof(Index));
     }
 
     [HttpPost]
@@ -259,14 +325,22 @@ public class MediaController : Controller
         var cmd = command with { UserId = _currentUser.Id };
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
-            return validation.ToForm(this, nameof(Index));
+        {
+            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to remove title.";
+            return RedirectBack(returnUrl, nameof(Index));
+        }
 
         var result = await _commands.DeleteWatchItemAsync(cmd, ct);
-        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        if (result.IsSuccess)
         {
-            return Redirect(returnUrl);
+            TempData["SuccessMessage"] = "Removed from watchlist.";
         }
-        return result.ToForm(this, nameof(Index));
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to remove title.";
+        }
+
+        return RedirectBack(returnUrl, nameof(Index));
     }
 
     [HttpPost]
@@ -278,14 +352,22 @@ public class MediaController : Controller
         var cmd = command with { UserId = _currentUser.Id, TenantId = _currentUser.TenantId };
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
-            return validation.ToForm(this, nameof(People));
+        {
+            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to follow person.";
+            return RedirectBack(returnUrl, nameof(People));
+        }
 
         var result = await _commands.FollowPersonAsync(cmd, ct);
-        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        if (result.IsSuccess)
         {
-            return Redirect(returnUrl);
+            TempData["SuccessMessage"] = $"Now following {cmd.Name}.";
         }
-        return result.ToForm(this, nameof(People));
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to follow person.";
+        }
+
+        return RedirectBack(returnUrl, nameof(People));
     }
 
     [HttpPost]
@@ -297,14 +379,22 @@ public class MediaController : Controller
         var cmd = command with { UserId = _currentUser.Id };
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
-            return validation.ToForm(this, nameof(People));
+        {
+            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to unfollow person.";
+            return RedirectBack(returnUrl, nameof(People));
+        }
 
         var result = await _commands.UnfollowPersonAsync(cmd, ct);
-        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        if (result.IsSuccess)
         {
-            return Redirect(returnUrl);
+            TempData["SuccessMessage"] = "Unfollowed successfully.";
         }
-        return result.ToForm(this, nameof(People));
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to unfollow person.";
+        }
+
+        return RedirectBack(returnUrl, nameof(People));
     }
 
     [HttpPost]
@@ -316,14 +406,22 @@ public class MediaController : Controller
         var cmd = command with { UserId = _currentUser.Id };
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
-            return validation.ToForm(this, nameof(People));
+        {
+            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to update notes.";
+            return RedirectBack(returnUrl, nameof(People));
+        }
 
         var result = await _commands.UpdateFollowedPersonNotesAsync(cmd, ct);
-        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        if (result.IsSuccess)
         {
-            return Redirect(returnUrl);
+            TempData["SuccessMessage"] = "Notes updated.";
         }
-        return result.ToForm(this, nameof(People));
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to update notes.";
+        }
+
+        return RedirectBack(returnUrl, nameof(People));
     }
 
     [HttpPost]
@@ -335,10 +433,22 @@ public class MediaController : Controller
         var cmd = command with { UserId = _currentUser.Id, TenantId = _currentUser.TenantId };
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
-            return validation.ToForm(this, nameof(Lists));
+        {
+            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to create playlist.";
+            return RedirectToAction(nameof(Lists));
+        }
 
         var result = await _commands.CreateCustomListAsync(cmd, ct);
-        return result.ToForm(this, nameof(Lists));
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = $"Playlist \"{cmd.Title}\" created.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to create playlist.";
+        }
+
+        return RedirectToAction(nameof(Lists));
     }
 
     [HttpPost]
@@ -350,14 +460,22 @@ public class MediaController : Controller
         var cmd = command with { UserId = _currentUser.Id };
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
-            return validation.ToForm(this, nameof(Lists));
+        {
+            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to add title to playlist.";
+            return RedirectBack(returnUrl, nameof(ListDetails), new { id = command.ListId });
+        }
 
         var result = await _commands.AddItemToCustomListAsync(cmd, ct);
-        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+        if (result.IsSuccess)
         {
-            return Redirect(returnUrl);
+            TempData["SuccessMessage"] = $"Added \"{cmd.Title}\" to playlist.";
         }
-        return result.ToForm(this, nameof(Lists));
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to add title to playlist.";
+        }
+
+        return RedirectBack(returnUrl, nameof(ListDetails), new { id = command.ListId });
     }
 
     [HttpPost]
@@ -369,9 +487,21 @@ public class MediaController : Controller
         var cmd = command with { UserId = _currentUser.Id };
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
-            return validation.ToForm(this, nameof(Lists));
+        {
+            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to remove item from playlist.";
+            return RedirectToAction(nameof(ListDetails), new { id = command.ListId });
+        }
 
         var result = await _commands.RemoveItemFromCustomListAsync(cmd, ct);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "Removed title from playlist.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to remove item from playlist.";
+        }
+
         return RedirectToAction(nameof(ListDetails), new { id = command.ListId });
     }
 
@@ -384,10 +514,22 @@ public class MediaController : Controller
         var cmd = command with { UserId = _currentUser.Id };
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
-            return validation.ToForm(this, nameof(Lists));
+        {
+            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to delete playlist.";
+            return RedirectToAction(nameof(Lists));
+        }
 
         var result = await _commands.DeleteCustomListAsync(cmd, ct);
-        return result.ToForm(this, nameof(Lists));
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "Playlist deleted.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to delete playlist.";
+        }
+
+        return RedirectToAction(nameof(Lists));
     }
 
     [HttpGet]

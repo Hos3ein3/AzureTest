@@ -150,7 +150,9 @@
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="TmdbId" value="@proj.Id" />
                             <input type="hidden" name="Type" value="@proj.Type" />
-                            <input type="hidden" name="InitialStatus" value="@WatchStatus.PlanToWatch" />
+                            <input type="hidden" name="Title" value="@proj.Title" />
+                            <input type="hidden" name="PosterPath" value="@proj.PosterPath" />
+                            <input type="hidden" name="Status" value="@WatchStatus.PlanToWatch" />
                             <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
                             <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-3xs font-bold transition-colors" title="Add to Wishlist">
                                 <i class="fa-solid fa-bookmark mr-1"></i> Wishlist
@@ -230,7 +232,9 @@
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="TmdbId" value="@credit.Id" />
                                     <input type="hidden" name="Type" value="@credit.Type" />
-                                    <input type="hidden" name="InitialStatus" value="@WatchStatus.PlanToWatch" />
+                                    <input type="hidden" name="Title" value="@credit.Title" />
+                                    <input type="hidden" name="PosterPath" value="@credit.PosterPath" />
+                                    <input type="hidden" name="Status" value="@WatchStatus.PlanToWatch" />
                                     <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
                                     <button type="submit" class="w-full py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-3xs font-bold transition-colors">
                                         <i class="fa-solid fa-plus mr-1"></i> Add

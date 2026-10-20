@@ -227,7 +227,9 @@
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="TmdbId" value="@Model.Id" />
                                 <input type="hidden" name="Type" value="@Model.Type" />
-                                <input type="hidden" name="InitialStatus" value="@WatchStatus.PlanToWatch" />
+                                <input type="hidden" name="Title" value="@Model.Title" />
+                                <input type="hidden" name="PosterPath" value="@Model.PosterPath" />
+                                <input type="hidden" name="Status" value="@WatchStatus.PlanToWatch" />
                                 <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
                                 <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
                                     <i class="fa-solid fa-bookmark text-2xs"></i> Add to Wishlist
@@ -238,7 +240,9 @@
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="TmdbId" value="@Model.Id" />
                                 <input type="hidden" name="Type" value="@Model.Type" />
-                                <input type="hidden" name="InitialStatus" value="@WatchStatus.Watching" />
+                                <input type="hidden" name="Title" value="@Model.Title" />
+                                <input type="hidden" name="PosterPath" value="@Model.PosterPath" />
+                                <input type="hidden" name="Status" value="@WatchStatus.Watching" />
                                 <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
                                 <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
                                     <i class="fa-solid fa-play text-2xs"></i> Start Watching
@@ -249,7 +253,9 @@
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="TmdbId" value="@Model.Id" />
                                 <input type="hidden" name="Type" value="@Model.Type" />
-                                <input type="hidden" name="InitialStatus" value="@WatchStatus.Completed" />
+                                <input type="hidden" name="Title" value="@Model.Title" />
+                                <input type="hidden" name="PosterPath" value="@Model.PosterPath" />
+                                <input type="hidden" name="Status" value="@WatchStatus.Completed" />
                                 <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
                                 <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
                                     <i class="fa-solid fa-check text-2xs"></i> Mark Finished
@@ -487,11 +493,12 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" id="modalTmdbId" name="TmdbId" value="" />
                 <input type="hidden" id="modalType" name="Type" value="" />
+                <input type="hidden" id="modalTitle" name="Title" value="" />
                 <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
 
                 <div class="space-y-1.5">
                     <label class="text-xs font-semibold text-slate-700">Choose Status</label>
-                    <select name="InitialStatus" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                    <select name="Status" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
                         <option value="@WatchStatus.PlanToWatch" selected>Want to Watch (Wishlist)</option>
                         <option value="@WatchStatus.Watching">Currently Watching</option>
                         <option value="@WatchStatus.Completed">Finished</option>
@@ -516,6 +523,7 @@
     function openQuickAddModal(id, type, title) {
         document.getElementById('modalTmdbId').value = id;
         document.getElementById('modalType').value = type;
+        document.getElementById('modalTitle').value = title || '';
         document.getElementById('modalItemTitle').innerText = title;
         document.getElementById('quickAddModal').classList.remove('hidden');
     }

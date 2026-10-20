@@ -84,10 +84,12 @@ public sealed class AddWatchItemCommandValidator : AbstractValidator<AddWatchIte
 public sealed class AddWatchItemCommandHandler : ICommandHandler<AddWatchItemCommand, Result<Guid>>
 {
     private readonly INoSqlUnitOfWork _uow;
+    private readonly ITmdbService _tmdbService;
 
-    public AddWatchItemCommandHandler(INoSqlUnitOfWork uow)
+    public AddWatchItemCommandHandler(INoSqlUnitOfWork uow, ITmdbService tmdbService)
     {
         _uow = uow;
+        _tmdbService = tmdbService;
     }
 
     public async Task<Result<Guid>> HandleAsync(AddWatchItemCommand cmd, CancellationToken ct = default)
@@ -101,7 +103,37 @@ public sealed class AddWatchItemCommandHandler : ICommandHandler<AddWatchItemCom
             return Result.Success(existing.Id);
         }
 
-        var document = AddWatchItemCommand.Mapping.ToDomain(cmd);
+        var effectiveCmd = cmd;
+        if (string.IsNullOrWhiteSpace(effectiveCmd.Title) || string.IsNullOrWhiteSpace(effectiveCmd.PosterPath))
+        {
+            var details = effectiveCmd.Type == MediaType.Movie
+                ? await _tmdbService.GetMovieDetailsAsync(effectiveCmd.TmdbId, ct)
+                : await _tmdbService.GetTvShowDetailsAsync(effectiveCmd.TmdbId, ct);
+
+            if (details != null)
+            {
+                effectiveCmd = effectiveCmd with
+                {
+                    Title = string.IsNullOrWhiteSpace(effectiveCmd.Title) ? details.Title : effectiveCmd.Title,
+                    OriginalTitle = details.OriginalTitle,
+                    PosterPath = effectiveCmd.PosterPath ?? details.PosterPath,
+                    BackdropPath = effectiveCmd.BackdropPath ?? details.BackdropPath,
+                    Overview = effectiveCmd.Overview ?? details.Overview,
+                    ReleaseDate = effectiveCmd.ReleaseDate ?? details.ReleaseDate,
+                    TmdbVoteAverage = effectiveCmd.TmdbVoteAverage ?? details.VoteAverage,
+                    RuntimeMinutes = effectiveCmd.RuntimeMinutes ?? details.RuntimeMinutes,
+                    TotalSeasons = details.Seasons?.Count ?? effectiveCmd.TotalSeasons,
+                    Genres = details.Genres ?? effectiveCmd.Genres
+                };
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(effectiveCmd.Title))
+        {
+            effectiveCmd = effectiveCmd with { Title = "Untitled Media" };
+        }
+
+        var document = AddWatchItemCommand.Mapping.ToDomain(effectiveCmd);
         await _uow.WatchItems.AddAsync(document, ct);
         return Result.Success(document.Id);
     }
