@@ -15,7 +15,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   unit-tests:
     name: Unit Tests
-    if: false # Skipped for now
+    if: true # Skipped for now
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
