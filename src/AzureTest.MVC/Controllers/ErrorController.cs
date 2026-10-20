@@ -35,4 +35,14 @@ namespace AzureTest.MVC.Controllers;
             _ => View("Error")
         };
     }
+
+    [HttpGet]
+    [Route("read-only-impersonation")]
+    [DisplayName("Read-Only Impersonation Warning")]
+    [Description("Displays read-only impersonation warning when administrative write operations are restricted.")]
+    public IActionResult ReadOnlyImpersonation(string? returnUrl)
+    {
+        ViewData["ReturnUrl"] = string.IsNullOrWhiteSpace(returnUrl) ? "/" : returnUrl;
+        return View("ReadOnlyImpersonation");
+    }
 }

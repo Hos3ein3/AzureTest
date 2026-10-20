@@ -110,6 +110,9 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
 
     public IIdentitySettingRepository IdentitySettings => _identitySettings ??= new IdentitySettingRepository(_database);
 
+    private IAuditLogRepository? _auditLogs;
+    public IAuditLogRepository AuditLogs => _auditLogs ??= new AuditLogRepository(_database);
+
     public void Dispose()
     {
         _session?.Dispose();

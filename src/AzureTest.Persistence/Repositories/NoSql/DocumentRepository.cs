@@ -106,12 +106,17 @@ public class DocumentRepository<TDocument> : IDocumentRepository<TDocument> wher
             tenantDoc.TenantId = _tenantProvider.CurrentTenantId;
         }
 
+        var effectiveUserId = _tenantProvider?.IsAdminImpersonating == true
+            ? _tenantProvider.CurrentTenantId
+            : (_tenantProvider?.RealUserId ?? Guid.Empty);
+
         var userIdProp = typeof(TDocument).GetProperty("UserId");
-        if (userIdProp != null && userIdProp.CanWrite && _tenantProvider != null && _tenantProvider.RealUserId != Guid.Empty)
+        if (userIdProp != null && userIdProp.CanWrite && effectiveUserId != Guid.Empty)
         {
-            if (userIdProp.GetValue(document) is Guid currentUserId && currentUserId == Guid.Empty)
+            var currentUserId = userIdProp.GetValue(document) as Guid?;
+            if (!currentUserId.HasValue || currentUserId.Value == Guid.Empty || (_tenantProvider?.IsAdminImpersonating == true && currentUserId.Value == _tenantProvider.RealUserId))
             {
-                userIdProp.SetValue(document, _tenantProvider.RealUserId);
+                userIdProp.SetValue(document, effectiveUserId);
             }
         }
 

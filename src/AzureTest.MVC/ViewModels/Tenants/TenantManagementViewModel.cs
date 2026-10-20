@@ -9,6 +9,8 @@ public class TenantManagementViewModel
     public Guid CurrentTenantId { get; set; }
     public Guid RealAdminUserId { get; set; }
     public bool IsAdminImpersonating { get; set; }
+    public bool AllowImpersonationWrites { get; set; }
+    public bool ImmutableAuditLog { get; set; }
     public string? CurrentTenantName { get; set; }
     public string? CurrentTenantEmail { get; set; }
 

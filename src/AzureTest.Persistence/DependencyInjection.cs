@@ -98,6 +98,7 @@ public static class DependencyInjection
             services.AddScoped<IUserGymCourseRepository, UserGymCourseRepository>();
             services.AddScoped<IUserTrainingSessionRepository, UserTrainingSessionRepository>();
             services.AddScoped<IUserWeightLogRepository, UserWeightLogRepository>();
+            services.AddScoped<IAuditLogRepository, AuditLogRepository>();
             services.AddScoped<INoSqlUnitOfWork, NoSqlUnitOfWork>();
             services.AddScoped<AzureTest.Persistence.Seeding.CompanyDataSeeder>();
         }
@@ -110,6 +111,7 @@ public static class DependencyInjection
             services.AddScoped<IDebtPersonRepository, NullDebtPersonRepository>();
             services.AddScoped<IExpenseCategoryRepository, NullExpenseCategoryRepository>();
             services.AddScoped<IUserPreferenceRepository, NullUserPreferenceRepository>();
+            services.AddScoped<IAuditLogRepository, NullAuditLogRepository>();
         }
 
         return services;

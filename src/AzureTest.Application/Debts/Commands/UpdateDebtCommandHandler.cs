@@ -86,7 +86,7 @@ public sealed class UpdateDebtCommandHandler : BaseCommandHandler<UpdateDebtComm
             {
                 var newDebtPerson = new DebtPerson
                 {
-                    UserId = _currentUser.Id,
+                    UserId = _currentUser.TenantId,
                     FullName = command.NewDebtPersonName.Trim()
                 };
                 await _noSqlUnitOfWork.DebtPersons.AddAsync(newDebtPerson);

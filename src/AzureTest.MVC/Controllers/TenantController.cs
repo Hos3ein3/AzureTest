@@ -15,10 +15,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using AzureTest.MVC.Filters;
 
 namespace AzureTest.MVC.Controllers;
 
 [Authorize(Roles = "Admin")]
+[AllowImpersonationWrite]
 [DisplayName("Tenant Management")]
 [Description("Switch active tenant workspace for administrative oversight.")]
 public class TenantController : Controller
@@ -113,6 +115,8 @@ public class TenantController : Controller
             CurrentTenantId = currentTenantId,
             RealAdminUserId = realAdminId,
             IsAdminImpersonating = isImpersonating,
+            AllowImpersonationWrites = _featureOptions.AllowImpersonationWrites,
+            ImmutableAuditLog = _featureOptions.ImmutableAuditLog,
             CurrentTenantName = currentTenantName,
             CurrentTenantEmail = currentTenantEmail,
             SearchTerm = searchTerm,

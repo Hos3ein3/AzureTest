@@ -48,10 +48,10 @@ public sealed class GetAllDebtsQueryHandler : BaseQueryHandler<GetAllDebtsQuery,
         var filters = query.Filters ?? new GetAllDebtsFilters();
         var isAdmin = _currentUser.IsAdmin || _currentUser.Roles.Contains("Admin");
 
-        // Security: Non-admin users are restricted to their own userId
+        // Security: Non-admin users are restricted to their own tenant workspace
         if (!isAdmin)
         {
-            filters.UserIds = new List<Guid> { _currentUser.Id };
+            filters.UserIds = new List<Guid> { _currentUser.TenantId };
         }
         else if (filters.UserIds == null || !filters.UserIds.Any())
         {

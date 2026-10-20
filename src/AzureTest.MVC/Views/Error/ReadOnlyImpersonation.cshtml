@@ -1,0 +1,77 @@
+@using AzureTest.Application.Interfaces.Services
+@inject ITenantProvider _TenantProvider
+@{
+    ViewData["Title"] = "Read-Only Impersonation";
+    var returnUrl = ViewData["ReturnUrl"] as string ?? "/";
+}
+
+<div class="flex flex-col items-center justify-center min-h-[70vh] px-4 py-8 text-center">
+    <div class="mb-6 relative inline-block">
+        <div class="absolute inset-0 bg-amber-200 blur-2xl rounded-full opacity-60"></div>
+        <div class="w-24 h-24 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center shadow-lg relative z-10">
+            <i class="fa-solid fa-lock text-5xl text-amber-600"></i>
+        </div>
+    </div>
+
+    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 mb-3">
+        <i class="fa-solid fa-user-secret text-amber-700"></i> Impersonation Mode Active
+    </div>
+
+    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 mb-3">
+        Workspace is Read-Only
+    </h1>
+
+    <p class="text-slate-600 mb-6 max-w-lg text-sm sm:text-base leading-relaxed">
+        Administrative write operations (creating, updating, or deleting data) are prohibited while impersonating another tenant workspace. This policy protects tenant data integrity.
+    </p>
+
+    <!-- Context Details Box -->
+    <div class="mb-8 w-full max-w-md bg-white border border-slate-200 rounded-xl p-5 shadow-sm text-left">
+        <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-indigo-500"></i> Active Security Context
+        </div>
+        <div class="space-y-2.5 text-xs text-slate-700">
+            <div class="flex justify-between items-center py-1 border-b border-slate-100">
+                <span class="text-slate-500 font-medium">Impersonated Tenant ID:</span>
+                <span class="font-mono font-semibold text-slate-900 break-all">@(_TenantProvider?.CurrentTenantId.ToString() ?? "Unknown")</span>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(_TenantProvider?.ImpersonatedTenantName))
+            {
+                <div class="flex justify-between items-center py-1 border-b border-slate-100">
+                    <span class="text-slate-500 font-medium">Tenant Owner:</span>
+                    <span class="font-semibold text-slate-900">@_TenantProvider.ImpersonatedTenantName</span>
+                </div>
+            }
+            <div class="flex justify-between items-center py-1 border-b border-slate-100">
+                <span class="text-slate-500 font-medium">Admin User ID:</span>
+                <span class="font-mono text-slate-700">@(_TenantProvider?.RealUserId.ToString() ?? "Unknown")</span>
+            </div>
+            <div class="flex justify-between items-center py-1">
+                <span class="text-slate-500 font-medium">Policy Setting:</span>
+                <span class="font-mono font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">AllowImpersonationWrites: false</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap items-center justify-center gap-3">
+        <button type="button" onclick="if(window.history.length > 1) { window.history.back(); } else { window.location.href='@returnUrl'; }" class="inline-flex items-center px-5 py-2.5 rounded-lg bg-slate-900 text-white text-sm font-semibold shadow hover:bg-slate-800 transition-colors">
+            <i class="fa-solid fa-arrow-left mr-2"></i> Go Back
+        </button>
+
+        <a asp-controller="Tenant" asp-action="Index" class="inline-flex items-center px-5 py-2.5 rounded-lg bg-white border border-slate-300 text-slate-700 text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors">
+            <i class="fa-solid fa-building-user mr-2 text-indigo-600"></i> Manage Tenants
+        </a>
+
+        @if (_TenantProvider?.IsAdminImpersonating == true)
+        {
+            <form asp-controller="Tenant" asp-action="ResetTenant" method="post" class="inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                <button type="submit" class="inline-flex items-center px-5 py-2.5 rounded-lg bg-amber-600 text-white text-sm font-semibold shadow hover:bg-amber-700 transition-colors">
+                    <i class="fa-solid fa-arrow-rotate-left mr-2"></i> Exit Impersonation
+                </button>
+            </form>
+        }
+    </div>
+</div>

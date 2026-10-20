@@ -28,8 +28,11 @@ public class InfrastructureFeatureOptions
     public bool UseJWT { get; set; } = false;
     public bool UseSeq { get; set; } = false;
 
-    // Multi-Tenancy Features
+    // Multi-Tenancy & Impersonation Features
     public bool EnableMultiTenancy { get; set; } = false;
+    public bool AllowImpersonationWrites { get; set; } = false;
+    public bool ImmutableAuditLog { get; set; } = false;
+    public bool EnableImmutableAuditLog { get => ImmutableAuditLog; set => ImmutableAuditLog = value; }
 
     // Background Jobs Features
     public bool EnableHangfire { get; set; } = true;

@@ -18,6 +18,7 @@ using AzureTest.Application.Users.Commands.RefreshToken;
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Contracts.DTOs.Users;
+using AzureTest.MVC.Filters;
 
 namespace AzureTest.MVC.Controllers;
 
@@ -223,6 +224,7 @@ namespace AzureTest.MVC.Controllers;
     }
 
     [HttpPost]
+    [AllowImpersonationWrite]
     [DisplayName("Logout")]
     [Description("Execute Logout operation for Auth.")]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)

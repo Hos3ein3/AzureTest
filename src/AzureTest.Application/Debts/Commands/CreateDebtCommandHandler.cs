@@ -81,7 +81,7 @@ public sealed class CreateDebtCommandHandler : BaseCommandHandler<CreateDebtComm
             {
                 var newDebtPerson = new DebtPerson
                 {
-                    UserId = _currentUser.Id,
+                    UserId = _currentUser.TenantId,
                     FullName = command.NewDebtPersonName.Trim()
                 };
                 await _noSqlUnitOfWork.DebtPersons.AddAsync(newDebtPerson);
@@ -91,7 +91,7 @@ public sealed class CreateDebtCommandHandler : BaseCommandHandler<CreateDebtComm
 
         var debt = new Debt
         {
-            UserId = _currentUser.Id,
+            UserId = _currentUser.TenantId,
             Amount = command.Amount,
             DateOfBorrow = command.DateOfBorrow.ToUniversalTime(),
             DateOfReturn = command.DateOfReturn?.ToUniversalTime(),

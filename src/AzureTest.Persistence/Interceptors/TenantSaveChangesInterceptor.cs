@@ -63,6 +63,31 @@ public sealed class TenantSaveChangesInterceptor : SaveChangesInterceptor
                 {
                     entry.Entity.TenantId = tenantId;
                 }
+
+                // If Admin is impersonating another tenant:
+                // Align UserId with the active tenant workspace so the tenant owner can see and own the data!
+                if (_tenantProvider.IsAdminImpersonating)
+                {
+                    var userIdProp = entry.Metadata.FindProperty("UserId");
+                    if (userIdProp != null && userIdProp.ClrType == typeof(Guid))
+                    {
+                        var currentUserId = (Guid?)entry.Property("UserId").CurrentValue;
+                        if (currentUserId == null || currentUserId == Guid.Empty || currentUserId == _tenantProvider.RealUserId)
+                        {
+                            entry.Property("UserId").CurrentValue = tenantId;
+                        }
+                    }
+
+                    var createdByProp = entry.Metadata.FindProperty("CreatedBy");
+                    if (createdByProp != null && createdByProp.ClrType == typeof(string))
+                    {
+                        var currentCreatedBy = (string?)entry.Property("CreatedBy").CurrentValue;
+                        if (string.IsNullOrWhiteSpace(currentCreatedBy) || currentCreatedBy == tenantId.ToString())
+                        {
+                            entry.Property("CreatedBy").CurrentValue = _tenantProvider.RealUserId.ToString();
+                        }
+                    }
+                }
             }
         }
     }

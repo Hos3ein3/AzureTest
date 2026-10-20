@@ -134,6 +134,7 @@ builder.Services.AddControllersWithViews(options =>
         .Build();
     options.Filters.Add(new Microsoft.AspNetCore.Mvc.Authorization.AuthorizeFilter(policy));
     options.Filters.Add(typeof(AzureTest.MVC.Filters.DynamicAuthorizationFilter));
+    options.Filters.Add(typeof(AzureTest.MVC.Filters.ImpersonationReadOnlyFilter));
 })
     .AddRazorRuntimeCompilation(options =>
     {
@@ -154,6 +155,7 @@ builder.Services.AddControllersWithViews(options =>
 builder.Services.AddScoped<AzureTest.MVC.Services.IDashboardDataLoader, AzureTest.MVC.Services.DashboardDataLoader>();
 builder.Services.AddScoped<AzureTest.Application.Interfaces.Services.IPermissionScanner, AzureTest.MVC.Services.PermissionScanner>();
 builder.Services.AddScoped<AzureTest.MVC.Filters.DynamicAuthorizationFilter>();
+builder.Services.AddScoped<AzureTest.MVC.Filters.ImpersonationReadOnlyFilter>();
 
 // Add HealthChecks UI with In-Memory Storage
 if (builder.Configuration.GetValue<bool>("FeatureManagement:EnableHealthCheck") &&

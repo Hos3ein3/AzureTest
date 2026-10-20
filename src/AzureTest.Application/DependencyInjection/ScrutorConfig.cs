@@ -22,6 +22,11 @@ public static class ScrutorConfig
                 .WithScopedLifetime()
         );
 
+        // Decorate all CommandHandlers and QueryHandlers with automatic Audit Logging
+        services.TryDecorate(typeof(ICommandHandler<>), typeof(AzureTest.Application.Behaviors.AuditCommandHandlerDecorator<>));
+        services.TryDecorate(typeof(ICommandHandler<,>), typeof(AzureTest.Application.Behaviors.AuditCommandHandlerDecorator<,>));
+        services.TryDecorate(typeof(IQueryHandler<,>), typeof(AzureTest.Application.Behaviors.AuditQueryHandlerDecorator<,>));
+
         return services;
     }
 }

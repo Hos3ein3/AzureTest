@@ -71,6 +71,7 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
         services.AddScoped<ITenantProvider, TenantProvider>();
         services.AddScoped<ICurrentUser, CurrentUser>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<ITenantBackfillJob, AzureTest.Infrastructure.Jobs.TenantBackfillJob>();
         services.AddScoped<AzureTest.Application.Interfaces.Services.IValidationService, AzureTest.Infrastructure.Services.ValidationService>();
         services.AddSingleton<AzureTest.Application.Interfaces.Services.ISampleNoteStore, AzureTest.Infrastructure.Services.SampleNoteStore>();

@@ -314,6 +314,11 @@
                     <i class="fa-solid fa-shapes w-6 text-center text-lg transition-colors @GetActiveIconClasses("UiComponents")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">UI Components</span>
                 </a>
+
+                <a asp-area="" asp-controller="AuditLog" asp-action="Index" data-title="Audit Trail" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("AuditLog")">
+                    <i class="fa-solid fa-clock-rotate-left w-6 text-center text-lg transition-colors @GetActiveIconClasses("AuditLog")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Audit Trail</span>
+                </a>
                 
                 @if (_CurrentUser.IsAdmin)
                 {

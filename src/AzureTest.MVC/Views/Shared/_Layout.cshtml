@@ -3,6 +3,7 @@
 @inject  ICurrentUser _CurrentUser
 @inject  ITenantProvider _TenantProvider
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment _HostEnv
+@inject Microsoft.Extensions.Options.IOptions<AzureTest.Infrastructure.Configuration.InfrastructureFeatureOptions> _FeatureOptionsAccessor
 @inject AzureTest.Application.Messaging.IQueryHandler<AzureTest.Application.UserPreferences.Queries.GetUserPreferenceQuery, AzureTest.Domain.Documents.UserPreference> _PrefQuery
 @{
     bool isDarkMode = false;
@@ -189,12 +190,29 @@
 
         @if (_TenantProvider != null && _TenantProvider.IsAdminImpersonating)
         {
+            var isReadOnly = !(_FeatureOptionsAccessor?.Value?.AllowImpersonationWrites ?? false);
             <div class="bg-amber-600 text-white px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-md z-20 border-b border-amber-700">
                 <div class="flex items-center space-x-2 text-sm font-medium">
                     <i class="fa-solid fa-user-secret text-amber-200 text-base"></i>
                     <span>
                         <strong>Tenant Impersonation Active:</strong> Managing workspace as Tenant <code class="bg-amber-700/80 px-2 py-0.5 rounded text-xs font-mono">@_TenantProvider.CurrentTenantId</code>
+                        @if (!string.IsNullOrWhiteSpace(_TenantProvider.ImpersonatedTenantName))
+                        {
+                            <span class="text-amber-100 font-semibold ml-1">(@_TenantProvider.ImpersonatedTenantName)</span>
+                        }
                     </span>
+                    @if (isReadOnly)
+                    {
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-900/70 text-amber-100 border border-amber-400/50 ml-2" title="Modifications are restricted while impersonating">
+                            <i class="fa-solid fa-lock mr-1 text-xs"></i> Read-Only Mode
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-800/80 text-emerald-100 border border-emerald-400/50 ml-2">
+                            <i class="fa-solid fa-pen mr-1 text-xs"></i> Read/Write Mode
+                        </span>
+                    }
                 </div>
                 <div class="flex items-center space-x-2">
                     <a asp-controller="Tenant" asp-action="Index" class="inline-flex items-center px-3 py-1 bg-white text-amber-900 hover:bg-amber-50 text-xs font-bold rounded shadow-sm transition">

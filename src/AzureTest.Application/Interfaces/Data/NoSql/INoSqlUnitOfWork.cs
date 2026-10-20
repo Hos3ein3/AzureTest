@@ -44,5 +44,6 @@ public interface INoSqlUnitOfWork : IDisposable
     IShoppingListItemRepository ShoppingListItems { get; }
 
     IIdentitySettingRepository IdentitySettings { get; }
+    IAuditLogRepository AuditLogs { get; }
     Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
