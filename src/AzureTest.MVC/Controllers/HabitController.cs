@@ -37,6 +37,19 @@ public class HabitController : Controller
         return View(habits);
     }
 
+    [HttpGet]
+    [DisplayName("Details")]
+    [Description("View details, visual charts and logs for a Habit.")]
+    public async Task<IActionResult> Details(Guid id)
+    {
+        var habit = await _habitQuery.GetHabitById.HandleAsync(new GetHabitByIdQuery(id, _currentUser.Id), default);
+        if (habit == null)
+        {
+            return NotFound();
+        }
+        return View(habit);
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     [DisplayName("Create")]
@@ -131,7 +144,8 @@ public class HabitController : Controller
         string? value,
         bool? booleanValue,
         double? numericValue,
-        string? notes)
+        string? notes,
+        string? returnUrl = null)
     {
         var targetId = habitId ?? id;
         DateOnly? parsedDate = null;
@@ -150,6 +164,12 @@ public class HabitController : Controller
         );
 
         await _habitCommand.LogHabit.HandleAsync(command, default);
+
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+
         return RedirectToAction(nameof(Index));
     }
 
@@ -157,7 +177,7 @@ public class HabitController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Undo")]
     [Description("Undo the latest log entry for a habit (e.g. counter).")]
-    public async Task<IActionResult> Undo(Guid id, Guid? habitId, string? logDate)
+    public async Task<IActionResult> Undo(Guid id, Guid? habitId, string? logDate, string? returnUrl = null)
     {
         var targetId = habitId ?? id;
         DateOnly? parsedDate = null;
@@ -167,6 +187,12 @@ public class HabitController : Controller
         }
 
         await _habitCommand.UndoHabitLog.HandleAsync(new UndoHabitLogCommand(targetId, parsedDate), default);
+
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+
         return RedirectToAction(nameof(Index));
     }
 

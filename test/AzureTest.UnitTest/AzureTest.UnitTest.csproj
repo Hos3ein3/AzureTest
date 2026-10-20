@@ -21,6 +21,7 @@
         <ProjectReference Include="..\..\src\AzureTest.Domain\AzureTest.Domain.csproj" />
         <ProjectReference Include="..\..\src\AzureTest.Contracts\AzureTest.Contracts.csproj" />
         <ProjectReference Include="..\..\src\AzureTest.Infrastructure\AzureTest.Infrastructure.csproj" />
+        <ProjectReference Include="..\..\src\AzureTest.MVC\AzureTest.MVC.csproj" />
     </ItemGroup>
 
     <ItemGroup>

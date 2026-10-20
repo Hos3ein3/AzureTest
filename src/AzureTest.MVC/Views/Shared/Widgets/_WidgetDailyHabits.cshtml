@@ -3,8 +3,16 @@
 <!-- Habits Widget -->
 <div class="col-span-1 bg-white rounded-xl shadow-sm border border-slate-100 h-full flex flex-col">
     <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-        <h5 class="text-lg font-semibold text-slate-800 m-0">Daily Habits</h5>
-        <a asp-controller="Habit" asp-action="Index" class="text-xs text-brand-600 hover:text-brand-500 font-medium">Track &rarr;</a>
+        <div class="flex items-center gap-2">
+            <h5 class="text-lg font-semibold text-slate-800 m-0">Habits</h5>
+            @if (Model.RecentHabits.Any())
+            {
+                <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">@Model.RecentHabits.Count()</span>
+            }
+        </div>
+        <a asp-controller="Habit" asp-action="Index" class="inline-flex items-center text-xs text-brand-600 hover:text-brand-700 font-semibold transition-colors">
+            View All <i class="fa-solid fa-arrow-right ml-1"></i>
+        </a>
     </div>
     <div class="p-6 flex-1 overflow-y-auto custom-scrollbar">
         @if (!Model.RecentHabits.Any())
@@ -25,7 +33,9 @@
                     <div class="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2">
-                                <p class="text-sm font-medium text-slate-700 truncate">@h.Name</p>
+                                <a asp-controller="Habit" asp-action="Details" asp-route-id="@h.Id" class="text-sm font-medium text-slate-700 hover:text-brand-600 truncate transition-colors" title="View details & charts">
+                                    @h.Name
+                                </a>
                                 @if (h.CurrentStreak > 0)
                                 {
                                     <span class="inline-flex items-center text-xs font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded" title="Current streak">
@@ -126,5 +136,10 @@
                 }
             </div>
         }
+    </div>
+    <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 rounded-b-xl text-center">
+        <a asp-controller="Habit" asp-action="Index" class="inline-flex items-center justify-center w-full text-xs font-semibold text-slate-700 hover:text-brand-600 transition-colors">
+            View All Habits & Full Analytics &rarr;
+        </a>
     </div>
 </div>

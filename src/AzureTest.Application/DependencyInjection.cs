@@ -74,6 +74,10 @@ public static class DependencyInjection
 
 
 
+        // Pomodoro
+        services.AddScoped<AzureTest.Application.Pomodoro.IPomodoroCommandUnit, AzureTest.Application.Pomodoro.PomodoroCommandUnit>();
+        services.AddScoped<AzureTest.Application.Pomodoro.IPomodoroQueryUnit, AzureTest.Application.Pomodoro.PomodoroQueryUnit>();
+
         // Football Fantasy
         services.AddScoped<AzureTest.Application.FootballFantasy.IFootballFantasyQueryUnit, AzureTest.Application.FootballFantasy.FootballFantasyQueryUnit>();
         services.AddScoped<AzureTest.Application.FootballFantasy.IFootballFantasyCommandUnit, AzureTest.Application.FootballFantasy.FootballFantasyCommandUnit>();

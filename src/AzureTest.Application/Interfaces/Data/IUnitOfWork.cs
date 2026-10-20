@@ -19,6 +19,7 @@ public interface IUnitOfWork : IDisposable
     IExpenseRepository Expenses { get; }
     IPermissionRepository Permissions { get; }
     IRolePermissionRepository RolePermissions { get; }
+    IPomodoroRepository Pomodoros { get; }
 
     // Football Fantasy
     ICountryRepository Countries { get; }

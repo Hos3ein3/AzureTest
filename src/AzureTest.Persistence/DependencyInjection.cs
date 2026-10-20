@@ -64,6 +64,7 @@ public static class DependencyInjection
         services.AddScoped<ITicketMessageRepository, TicketMessageRepository>();
         services.AddScoped<IDebtRepository, DebtRepository>();
         services.AddScoped<IExpenseRepository, ExpenseRepository>();
+        services.AddScoped<IPomodoroRepository, PomodoroRepository>();
 
         // ── Factories ─────────────────────────────────────────────────────────
         services.AddScoped<IDatabaseFactory, DatabaseFactory>();

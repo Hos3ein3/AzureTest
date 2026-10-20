@@ -1,0 +1,381 @@
+@model AzureTest.MVC.Models.PomodoroAnalyticsViewModel
+@using AzureTest.Domain.Enums.Pomodoro
+@using AzureTest.MVC.Extensions
+@{
+    ViewData["Title"] = "Pomodoro Analytics & History";
+
+    var dailyLabelsJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.DailyTrend.Select(d => d.DateLabel));
+    var dailyMinutesJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.DailyTrend.Select(d => d.FocusMinutes));
+    var dailyCountsJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.DailyTrend.Select(d => d.SessionCount));
+
+    var typeLabelsJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.SessionTypeDistribution.Select(t => t.TypeLabel));
+    var typeMinutesJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.SessionTypeDistribution.Select(t => t.TotalMinutes));
+
+    var catLabelsJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.CategoryDistribution.Select(c => c.Category));
+    var catMinutesJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.CategoryDistribution.Select(c => c.FocusMinutes));
+
+    var hourlyLabelsJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.HourlyDistribution.Select(h => $"{h.Hour:D2}:00"));
+    var hourlyMinutesJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.HourlyDistribution.Select(h => h.FocusMinutes));
+}
+
+<nav aria-label="breadcrumb" class="mb-6">
+    <ol class="flex items-center space-x-2 text-sm text-slate-500">
+        <li><a asp-action="Index" class="hover:text-brand-600 transition-colors">Pomodoro Timer</a></li>
+        <li><span class="text-slate-400">/</span></li>
+        <li class="font-medium text-slate-800" aria-current="page">Productivity Analytics</li>
+    </ol>
+</nav>
+
+<div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+        <h1 class="text-3xl font-bold text-slate-900">Pomodoro Analytics & Logs</h1>
+        <p class="text-slate-500 text-sm mt-1">Deep insights into your concentration cycles, category distribution, and focus streaks.</p>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <a asp-action="Index" class="inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm">
+            <i class="fa-solid fa-play mr-2"></i> Launch Timer
+        </a>
+    </div>
+</div>
+
+<!-- Primary Metric Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Focus Time</span>
+            <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-brain"></i>
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="text-3xl font-extrabold text-slate-900">
+                @Math.Round(Model.Analytics.TotalFocusMinutesAllTime / 60.0, 1) <span class="text-sm font-medium text-slate-400">hrs</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+                @Model.Analytics.TotalFocusMinutesThisMonth mins this month
+            </p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Completed Sessions</span>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="text-3xl font-extrabold text-slate-900">
+                @Model.Analytics.TotalCompletedSessions
+            </div>
+            <p class="text-xs text-emerald-600 font-medium mt-1">
+                @Model.Analytics.CompletionRatePercentage% completion rate
+            </p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Current Daily Streak</span>
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center text-lg">
+                🔥
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="text-3xl font-extrabold text-slate-900">
+                @Model.Analytics.CurrentDailyStreak <span class="text-sm font-medium text-slate-400">days</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+                @Model.Analytics.CompletedTodayCount focus sessions today
+            </p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Abandoned Sessions</span>
+            <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-circle-xmark"></i>
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="text-3xl font-extrabold text-slate-900">
+                @Model.Analytics.TotalAbandonedSessions
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+                Ended or stopped early
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Grid: 1. Daily Trend & 2. Type Breakdown -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+    <!-- Daily Focus Minutes Trend -->
+    <div class="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-base font-bold text-slate-900">14-Day Focus Trend</h3>
+                <p class="text-xs text-slate-500">Daily focus minutes and completed intervals</p>
+            </div>
+            <span class="text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-semibold">
+                This Week: @Model.Analytics.TotalFocusMinutesThisWeek mins
+            </span>
+        </div>
+        <div class="h-64 relative">
+            <canvas id="dailyTrendChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Session Type Distribution Donut -->
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div>
+            <h3 class="text-base font-bold text-slate-900 mb-1">Time Distribution</h3>
+            <p class="text-xs text-slate-500 mb-4">Work focus vs Rest breaks</p>
+            <div class="h-48 relative flex items-center justify-center">
+                <canvas id="typeDonutChart"></canvas>
+            </div>
+        </div>
+        <div class="space-y-2 pt-4 border-t border-slate-100 mt-4 text-xs text-slate-600">
+            @foreach (var item in Model.Analytics.SessionTypeDistribution)
+            {
+                <div class="flex justify-between items-center">
+                    <span>@item.TypeLabel (@item.SessionCount sessions)</span>
+                    <strong class="text-slate-800">@item.TotalMinutes min</strong>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Charts Grid: 3. Category Breakdown & 4. Hourly Productivity Heatmap -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Category Distribution Horizontal Bar -->
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <h3 class="text-base font-bold text-slate-900 mb-1">Focus by Category</h3>
+        <p class="text-xs text-slate-500 mb-4">Where your concentration was invested</p>
+        <div class="h-60 relative">
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 24-Hour Productivity Heatmap / Curve -->
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <h3 class="text-base font-bold text-slate-900 mb-1">Hourly Productivity Pattern</h3>
+        <p class="text-xs text-slate-500 mb-4">Peak hours of high concentration (00:00 to 23:00 UTC)</p>
+        <div class="h-60 relative">
+            <canvas id="hourlyChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Session History Log Table with Filter -->
+<div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm mb-8">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+            <h3 class="text-lg font-bold text-slate-900">Session History Log</h3>
+            <p class="text-xs text-slate-500">Audit trail of completed, abandoned, and rest intervals</p>
+        </div>
+
+        <!-- Filter Form -->
+        <form method="get" class="flex flex-wrap items-center gap-2">
+            <select name="SessionType" class="rounded-xl border-slate-200 text-xs py-1.5 px-3 focus:border-brand-500 focus:ring-brand-500">
+                <option value="">All Session Types</option>
+                @foreach (var typeItem in EnumExtensions.ToSelectList<PomodoroSessionType>(Model.Filter.SessionType))
+                {
+                    <option value="@typeItem.Value" selected="@typeItem.Selected">@typeItem.Text</option>
+                }
+            </select>
+
+            <select name="Status" class="rounded-xl border-slate-200 text-xs py-1.5 px-3 focus:border-brand-500 focus:ring-brand-500">
+                <option value="">All Statuses</option>
+                @foreach (var statusItem in EnumExtensions.ToSelectList<PomodoroStatus>(Model.Filter.Status))
+                {
+                    <option value="@statusItem.Value" selected="@statusItem.Selected">@statusItem.Text</option>
+                }
+            </select>
+
+            <button type="submit" class="px-4 py-1.5 rounded-xl bg-slate-800 text-white text-xs font-semibold hover:bg-slate-700 transition-colors">
+                Filter
+            </button>
+        </form>
+    </div>
+
+    @if (!Model.RecentSessions.Any())
+    {
+        <div class="text-center py-12 text-slate-400">
+            <i class="fa-solid fa-hourglass-empty text-3xl mb-2 block"></i>
+            <p class="text-sm">No pomodoro sessions found.</p>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        <th class="py-3 px-4">Session Title</th>
+                        <th class="py-3 px-4">Category</th>
+                        <th class="py-3 px-4">Type</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4">Duration</th>
+                        <th class="py-3 px-4">Started At</th>
+                        <th class="py-3 px-4">Skin Used</th>
+                        <th class="py-3 px-4 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-sm">
+                    @foreach (var s in Model.RecentSessions)
+                    {
+                        var mins = Math.Round(s.ActualDurationSeconds / 60.0, 1);
+                        var isSuccess = s.Status == PomodoroStatus.Completed;
+
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="py-3 px-4 font-semibold text-slate-800">
+                                @s.Title
+                            </td>
+                            <td class="py-3 px-4">
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+                                    @(string.IsNullOrWhiteSpace(s.Category) ? "General" : s.Category)
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-xs font-medium text-slate-600">
+                                @s.SessionType
+                            </td>
+                            <td class="py-3 px-4">
+                                <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold @(isSuccess ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700")">
+                                    @s.Status
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 font-medium text-slate-700 text-xs">
+                                @mins min <span class="text-slate-400 font-normal">(@s.ActualDurationSeconds s)</span>
+                            </td>
+                            <td class="py-3 px-4 text-slate-500 text-xs">
+                                @s.StartedAtUtc.ToString("yyyy-MM-dd HH:mm")
+                            </td>
+                            <td class="py-3 px-4 text-slate-500 text-xs">
+                                @s.UsedSkin
+                            </td>
+                            <td class="py-3 px-4 text-right">
+                                <form asp-action="Delete" method="post" class="inline" onsubmit="return confirm('Delete this session record?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@s.Id" />
+                                    <button type="submit" class="text-slate-400 hover:text-rose-600 transition-colors p-1" title="Delete record">
+                                        <i class="fa-solid fa-trash-can text-xs"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // 1. Daily Trend Bar Chart
+            const ctxDaily = document.getElementById('dailyTrendChart').getContext('2d');
+            new Chart(ctxDaily, {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(dailyLabelsJson),
+                    datasets: [{
+                        label: 'Focus Minutes',
+                        data: @Html.Raw(dailyMinutesJson),
+                        backgroundColor: 'rgba(244, 63, 94, 0.75)',
+                        borderColor: '#f43f5e',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(241, 245, 249, 1)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // 2. Session Type Donut Chart
+            const ctxType = document.getElementById('typeDonutChart').getContext('2d');
+            new Chart(ctxType, {
+                type: 'doughnut',
+                data: {
+                    labels: @Html.Raw(typeLabelsJson),
+                    datasets: [{
+                        data: @Html.Raw(typeMinutesJson),
+                        backgroundColor: ['#f43f5e', '#10b981', '#6366f1'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            // 3. Category Horizontal Bar Chart
+            const ctxCat = document.getElementById('categoryChart').getContext('2d');
+            new Chart(ctxCat, {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(catLabelsJson),
+                    datasets: [{
+                        label: 'Minutes',
+                        data: @Html.Raw(catMinutesJson),
+                        backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: 'rgba(241, 245, 249, 1)' } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // 4. Hourly Productivity Pattern
+            const ctxHourly = document.getElementById('hourlyChart').getContext('2d');
+            new Chart(ctxHourly, {
+                type: 'line',
+                data: {
+                    labels: @Html.Raw(hourlyLabelsJson),
+                    datasets: [{
+                        label: 'Minutes Focused',
+                        data: @Html.Raw(hourlyMinutesJson),
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.15)',
+                        fill: true,
+                        tension: 0.35,
+                        borderWidth: 2,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(241, 245, 249, 1)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        });
+    </script>
+}

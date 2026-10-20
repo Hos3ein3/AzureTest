@@ -1,3 +1,6 @@
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+
 namespace AzureTest.Domain.Enums;
 
 public enum HabitType

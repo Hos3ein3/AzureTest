@@ -156,6 +156,12 @@
                 </a>
             </li>
             <li>
+                <a asp-area="" asp-controller="Pomodoro" asp-action="Index" data-title="Pomodoro" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Pomodoro")">
+                    <i class="fa-solid fa-stopwatch w-6 text-center text-lg transition-colors @GetActiveIconClasses("Pomodoro")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Pomodoro</span>
+                </a>
+            </li>
+            <li>
                 <a asp-area="" asp-controller="Ticket" asp-action="Index" data-title="Support Tickets" class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Ticket")">
                     <i class="fa-solid fa-ticket w-6 text-center text-lg transition-colors @GetActiveIconClasses("Ticket")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Support Tickets</span>
