@@ -99,11 +99,6 @@ public class ForexTradeController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-using AzureTest.Application.Forex.Commands.ActivateKillSwitch;
-using AzureTest.Application.Forex.Commands.MoveToBreakEven;
-using AzureTest.Application.Forex.Commands.PartialCloseTrade;
-using AzureTest.Application.Forex.Commands.ProcessTradingViewWebhook;
-
     [HttpPost]
     [ValidateAntiForgeryToken]
     [DisplayName("Partial Close Position")]
