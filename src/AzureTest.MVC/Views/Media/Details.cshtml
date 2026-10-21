@@ -326,23 +326,24 @@
                 </div>
             </div>
 
-            <!-- Seasons and Episodes Accordion List -->
+            <!-- Seasons Accordion List -->
             <div class="space-y-3" id="seasonsAccordionContainer">
                 @foreach (var s in validSeasons)
                 {
                     var isExpanded = s.SeasonNumber == initialSeasonNumber;
-                    var isSeasonWatched = userItem != null && (userItem.CurrentSeason > s.SeasonNumber || (userItem.CurrentSeason == s.SeasonNumber && userItem.CurrentEpisode >= s.EpisodeCount) || userItem.Status == WatchStatus.Completed);
+                    var isSeasonWatched = userItem != null && (userItem.CurrentSeason > s.SeasonNumber || (userItem.CurrentSeason == s.SeasonNumber && s.EpisodeCount > 0 && userItem.CurrentEpisode >= s.EpisodeCount) || userItem.Status == WatchStatus.Completed);
+                    var isSeasonWatching = !isSeasonWatched && userItem != null && userItem.Status == WatchStatus.Watching && userItem.CurrentSeason == s.SeasonNumber;
                     var seasonContentId = $"season-episodes-{s.SeasonNumber}";
 
                     <div class="accordion-item rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden transition-all shadow-2xs" id="season-accordion-@s.SeasonNumber">
                         <button type="button" onclick="toggleSeasonAccordion(@s.SeasonNumber, this)"
-                                class="w-full p-3.5 sm:p-4 text-left flex items-center justify-between gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50/80 dark:hover:bg-slate-750 transition-colors">
-                            <div class="flex items-center gap-3 min-w-0">
+                                class="w-full p-3.5 sm:p-4 text-left flex items-center justify-between gap-2 sm:gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50/80 dark:hover:bg-slate-750 transition-colors">
+                            <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
                                 <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xs font-bold shrink-0">
                                     S@(s.SeasonNumber)
                                 </div>
                                 <div class="min-w-0">
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
                                         <span class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">@s.Name</span>
                                         @if (isSeasonWatched)
                                         {
@@ -350,18 +351,49 @@
                                                 <i class="fa-solid fa-circle-check text-2xs"></i> Watched
                                             </span>
                                         }
+                                        else if (isSeasonWatching)
+                                        {
+                                            <span class="px-2 py-0.5 rounded-full text-3xs font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 shrink-0 flex items-center gap-1">
+                                                <i class="fa-solid fa-play text-2xs"></i> Watching
+                                            </span>
+                                        }
                                     </div>
-                                    <span class="text-3xs text-slate-400 block">@s.EpisodeCount Episodes</span>
+                                    <span class="text-3xs text-slate-400 block">@s.EpisodeCount Episodes @(s.AirDate.HasValue ? $"• {s.AirDate.Value:yyyy}" : "")</span>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2 shrink-0">
-                                @if (!isSeasonWatched)
+                            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                                @if (isSeasonWatched)
                                 {
                                     <button type="button"
-                                            onclick="event.stopPropagation(); markSeasonWatchedDirect(@s.SeasonNumber, @s.EpisodeCount, event)"
-                                            class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-600 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-3xs sm:text-xs font-semibold transition-colors flex items-center gap-1">
+                                            onclick="event.stopPropagation(); markSeasonStatusDirect(@s.SeasonNumber, 0, 'watching', event)"
+                                            class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-3xs sm:text-xs font-semibold transition-colors flex items-center gap-1">
+                                        <i class="fa-solid fa-play text-3xs"></i>
+                                        <span>Watching</span>
+                                    </button>
+                                }
+                                else if (isSeasonWatching)
+                                {
+                                    <button type="button"
+                                            onclick="event.stopPropagation(); markSeasonStatusDirect(@s.SeasonNumber, @s.EpisodeCount, 'watched', event)"
+                                            class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-3xs sm:text-xs font-semibold transition-colors flex items-center gap-1">
                                         <i class="fa-solid fa-check text-3xs"></i>
-                                        <span class="hidden sm:inline">Mark Season Watched</span>
+                                        <span class="hidden sm:inline">Mark Watched</span>
+                                        <span class="sm:hidden">Watched</span>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button"
+                                            onclick="event.stopPropagation(); markSeasonStatusDirect(@s.SeasonNumber, 0, 'watching', event)"
+                                            class="px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-3xs sm:text-xs font-semibold transition-colors flex items-center gap-1">
+                                        <i class="fa-solid fa-play text-3xs"></i>
+                                        <span>Watching</span>
+                                    </button>
+                                    <button type="button"
+                                            onclick="event.stopPropagation(); markSeasonStatusDirect(@s.SeasonNumber, @s.EpisodeCount, 'watched', event)"
+                                            class="px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-600 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-3xs sm:text-xs font-semibold transition-colors flex items-center gap-1">
+                                        <i class="fa-solid fa-check text-3xs"></i>
+                                        <span class="hidden sm:inline">Mark Watched</span>
                                         <span class="sm:hidden">Watched</span>
                                     </button>
                                 }
@@ -378,13 +410,14 @@
                                 <div class="space-y-2.5 pt-3">
                                     @foreach (var ep in s.Episodes)
                                     {
-                                        var isEpWatched = isSeasonWatched || (userItem != null && userItem.CurrentSeason == s.SeasonNumber && userItem.CurrentEpisode >= ep.EpisodeNumber);
+                                        var isEpWatched = isSeasonWatched || (userItem != null && (userItem.CurrentSeason > s.SeasonNumber || (userItem.CurrentSeason == s.SeasonNumber && userItem.CurrentEpisode >= ep.EpisodeNumber)));
+                                        var isEpWatching = !isEpWatched && userItem != null && userItem.Status == WatchStatus.Watching && userItem.CurrentSeason == s.SeasonNumber && ep.EpisodeNumber == userItem.CurrentEpisode + 1;
                                         var stillUrl = !string.IsNullOrEmpty(ep.StillPath)
                                             ? $"https://image.tmdb.org/t/p/w300{ep.StillPath}"
                                             : "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=300&q=80";
                                         var airDateStr = ep.AirDate.HasValue ? ep.AirDate.Value.ToString("MMM d, yyyy") : "";
 
-                                        <div class="p-3 sm:p-3.5 rounded-2xl border @(isEpWatched ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50" : "bg-slate-50 dark:bg-slate-750 border-slate-200 dark:border-slate-700") flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all">
+                                        <div class="p-3 sm:p-3.5 rounded-2xl border @(isEpWatched ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50" : isEpWatching ? "bg-blue-50/40 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/50" : "bg-slate-50 dark:bg-slate-750 border-slate-200 dark:border-slate-700") flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all">
                                             <div class="flex items-start gap-3 flex-1 min-w-0">
                                                 <div class="w-20 sm:w-28 aspect-video rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 shrink-0 relative">
                                                     <img src="@stillUrl" alt="@ep.Name" class="w-full h-full object-cover" loading="lazy" />
@@ -414,17 +447,35 @@
                                                 </div>
                                             </div>
 
-                                            <div class="shrink-0 flex items-center gap-2 justify-end self-end sm:self-center">
+                                            <div class="shrink-0 flex items-center gap-1.5 sm:gap-2 justify-end self-end sm:self-center">
                                                 @if (isEpWatched)
                                                 {
-                                                    <span class="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5">
+                                                    <span class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-3xs sm:text-xs font-bold flex items-center gap-1">
                                                         <i class="fa-solid fa-check text-2xs"></i> Watched
                                                     </span>
+                                                    <button type="button" onclick="markSingleEpisodeStatus(@s.SeasonNumber, @ep.EpisodeNumber, 'watching', @s.EpisodeCount)"
+                                                            class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-white dark:bg-slate-700 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 text-3xs sm:text-xs font-semibold transition-all shadow-2xs flex items-center gap-1">
+                                                        <i class="fa-solid fa-play text-2xs"></i> Watching
+                                                    </button>
+                                                }
+                                                else if (isEpWatching)
+                                                {
+                                                    <span class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-3xs sm:text-xs font-bold flex items-center gap-1">
+                                                        <i class="fa-solid fa-play text-2xs"></i> Watching
+                                                    </span>
+                                                    <button type="button" onclick="markSingleEpisodeStatus(@s.SeasonNumber, @ep.EpisodeNumber, 'watched', @s.EpisodeCount)"
+                                                            class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-3xs sm:text-xs font-semibold transition-all shadow-2xs flex items-center gap-1">
+                                                        <i class="fa-solid fa-check text-2xs"></i> Mark Watched
+                                                    </button>
                                                 }
                                                 else
                                                 {
-                                                    <button type="button" onclick="markSingleEpisodeWatched(@s.SeasonNumber, @ep.EpisodeNumber)"
-                                                            class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-700 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 text-xs font-semibold transition-all shadow-2xs flex items-center gap-1.5">
+                                                    <button type="button" onclick="markSingleEpisodeStatus(@s.SeasonNumber, @ep.EpisodeNumber, 'watching', @s.EpisodeCount)"
+                                                            class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-white dark:bg-slate-700 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 text-3xs sm:text-xs font-semibold transition-all shadow-2xs flex items-center gap-1">
+                                                        <i class="fa-solid fa-play text-2xs"></i> Watching
+                                                    </button>
+                                                    <button type="button" onclick="markSingleEpisodeStatus(@s.SeasonNumber, @ep.EpisodeNumber, 'watched', @s.EpisodeCount)"
+                                                            class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-white dark:bg-slate-700 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 text-3xs sm:text-xs font-semibold transition-all shadow-2xs flex items-center gap-1">
                                                         <i class="fa-solid fa-check text-2xs"></i> Mark Watched
                                                     </button>
                                                 }
@@ -896,10 +947,12 @@
             return;
         }
 
+        const totalEpisodesInSeason = episodes.length;
         let html = '<div class="space-y-2.5 pt-3">';
         episodes.forEach(ep => {
             const epNum = ep.episodeNumber;
-            const isWatched = isCompleted || (userCurrentSeason > seasonNumber) || (userCurrentSeason === seasonNumber && userCurrentEpisode >= epNum);
+            const isEpWatched = isCompleted || (userCurrentSeason > seasonNumber) || (userCurrentSeason === seasonNumber && userCurrentEpisode >= epNum);
+            const isEpWatching = !isEpWatched && (userWatchStatus === @((int)WatchStatus.Watching)) && (userCurrentSeason === seasonNumber && epNum === (userCurrentEpisode + 1));
             const stillUrl = ep.stillPath
                 ? `https://image.tmdb.org/t/p/w300${ep.stillPath}`
                 : 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=300&q=80';
@@ -907,8 +960,48 @@
             const epName = ep.name || `Episode ${epNum}`;
             const epOverview = ep.overview || 'No synopsis provided.';
 
+            const borderBgClass = isEpWatched
+                ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50'
+                : isEpWatching
+                    ? 'bg-blue-50/40 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/50'
+                    : 'bg-slate-50 dark:bg-slate-750 border-slate-200 dark:border-slate-700';
+
+            let actionsHtml = '';
+            if (isEpWatched) {
+                actionsHtml = `
+                    <span class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-3xs sm:text-xs font-bold flex items-center gap-1">
+                        <i class="fa-solid fa-check text-2xs"></i> Watched
+                    </span>
+                    <button type="button" onclick="markSingleEpisodeStatus(${seasonNumber}, ${epNum}, 'watching', ${totalEpisodesInSeason})"
+                            class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-white dark:bg-slate-700 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 text-3xs sm:text-xs font-semibold transition-all shadow-2xs flex items-center gap-1">
+                        <i class="fa-solid fa-play text-2xs"></i> Watching
+                    </button>
+                `;
+            } else if (isEpWatching) {
+                actionsHtml = `
+                    <span class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-3xs sm:text-xs font-bold flex items-center gap-1">
+                        <i class="fa-solid fa-play text-2xs"></i> Watching
+                    </span>
+                    <button type="button" onclick="markSingleEpisodeStatus(${seasonNumber}, ${epNum}, 'watched', ${totalEpisodesInSeason})"
+                            class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-3xs sm:text-xs font-semibold transition-all shadow-2xs flex items-center gap-1">
+                        <i class="fa-solid fa-check text-2xs"></i> Mark Watched
+                    </button>
+                `;
+            } else {
+                actionsHtml = `
+                    <button type="button" onclick="markSingleEpisodeStatus(${seasonNumber}, ${epNum}, 'watching', ${totalEpisodesInSeason})"
+                            class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-white dark:bg-slate-700 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 text-3xs sm:text-xs font-semibold transition-all shadow-2xs flex items-center gap-1">
+                        <i class="fa-solid fa-play text-2xs"></i> Watching
+                    </button>
+                    <button type="button" onclick="markSingleEpisodeStatus(${seasonNumber}, ${epNum}, 'watched', ${totalEpisodesInSeason})"
+                            class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-white dark:bg-slate-700 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 text-3xs sm:text-xs font-semibold transition-all shadow-2xs flex items-center gap-1">
+                        <i class="fa-solid fa-check text-2xs"></i> Mark Watched
+                    </button>
+                `;
+            }
+
             html += `
-                <div class="p-3 sm:p-3.5 rounded-2xl border ${isWatched ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50' : 'bg-slate-50 dark:bg-slate-750 border-slate-200 dark:border-slate-700'} flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all">
+                <div class="p-3 sm:p-3.5 rounded-2xl border ${borderBgClass} flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all">
                     <div class="flex items-start gap-3 flex-1 min-w-0">
                         <div class="w-20 sm:w-28 aspect-video rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 shrink-0 relative">
                             <img src="${stillUrl}" alt="${epName}" class="w-full h-full object-cover" loading="lazy" />
@@ -930,16 +1023,8 @@
                         </div>
                     </div>
 
-                    <div class="shrink-0 flex items-center gap-2 justify-end self-end sm:self-center">
-                        ${isWatched
-                            ? `<span class="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5">
-                                 <i class="fa-solid fa-check text-2xs"></i> Watched
-                               </span>`
-                            : `<button type="button" onclick="markSingleEpisodeWatched(${seasonNumber}, ${epNum})"
-                                       class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-700 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 text-xs font-semibold transition-all shadow-2xs flex items-center gap-1.5">
-                                 <i class="fa-solid fa-check text-2xs"></i> Mark Watched
-                               </button>`
-                        }
+                    <div class="shrink-0 flex items-center gap-1.5 sm:gap-2 justify-end self-end sm:self-center">
+                        ${actionsHtml}
                     </div>
                 </div>
             `;
@@ -948,16 +1033,25 @@
         content.innerHTML = html;
     }
 
-    function markSingleEpisodeWatched(season, episode) {
+    function markSingleEpisodeStatus(season, episode, statusType, totalEpisodesInSeason) {
+        const isWatched = statusType === 'watched';
+        const totalSeasons = @validSeasons.Count;
+        const isLastSeason = season >= totalSeasons;
+        const isLastEpisode = isLastSeason && totalEpisodesInSeason && episode >= totalEpisodesInSeason;
+
+        const targetEpisode = isWatched ? episode : Math.max(0, episode - 1);
+        const targetStatus = (isWatched && isLastEpisode) ? '@WatchStatus.Completed' : '@WatchStatus.Watching';
+
         const formData = new FormData();
         formData.append('TmdbId', mediaId);
         formData.append('Type', mediaType);
         formData.append('Title', mediaTitle);
         formData.append('PosterPath', mediaPoster);
         formData.append('CurrentSeason', season);
-        formData.append('CurrentEpisode', episode);
-        formData.append('Status', '@WatchStatus.Watching');
-        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+        formData.append('CurrentEpisode', targetEpisode);
+        formData.append('Status', targetStatus);
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        if (token) formData.append('__RequestVerificationToken', token);
 
         fetch('/Media/Add', {
             method: 'POST',
@@ -975,10 +1069,14 @@
         .catch(() => window.location.reload());
     }
 
-    function markSeasonWatchedDirect(seasonNumber, totalEpisodesInSeason, evt) {
+    function markSeasonStatusDirect(seasonNumber, totalEpisodesInSeason, statusType, evt) {
         if (evt) evt.stopPropagation();
+        const isWatched = statusType === 'watched';
         const totalSeasons = @validSeasons.Count;
         const isLastSeason = seasonNumber >= totalSeasons;
+
+        const targetEpisode = isWatched ? totalEpisodesInSeason : 0;
+        const targetStatus = (isWatched && isLastSeason) ? '@WatchStatus.Completed' : '@WatchStatus.Watching';
 
         const formData = new FormData();
         formData.append('TmdbId', mediaId);
@@ -986,9 +1084,10 @@
         formData.append('Title', mediaTitle);
         formData.append('PosterPath', mediaPoster);
         formData.append('CurrentSeason', seasonNumber);
-        formData.append('CurrentEpisode', totalEpisodesInSeason);
-        formData.append('Status', isLastSeason ? '@WatchStatus.Completed' : '@WatchStatus.Watching');
-        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+        formData.append('CurrentEpisode', targetEpisode);
+        formData.append('Status', targetStatus);
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        if (token) formData.append('__RequestVerificationToken', token);
 
         fetch('/Media/Add', {
             method: 'POST',

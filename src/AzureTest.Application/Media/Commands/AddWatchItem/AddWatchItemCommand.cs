@@ -107,7 +107,7 @@ public sealed class AddWatchItemCommandHandler : ICommandHandler<AddWatchItemCom
             {
                 existing.ChangeStatus(cmd.Status);
             }
-            if (cmd.CurrentSeason > 1 || cmd.CurrentEpisode > 0)
+            if (cmd.Status != WatchStatus.PlanToWatch || cmd.CurrentSeason > 1 || cmd.CurrentEpisode > 0)
             {
                 existing.UpdateProgress(cmd.CurrentSeason, cmd.CurrentEpisode, cmd.TotalSeasons, cmd.TotalEpisodes);
             }
