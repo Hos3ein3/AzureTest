@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AzureTest.Domain.Media.Enums;
 
 namespace AzureTest.Contracts.DTOs.Media;
 
@@ -26,6 +27,16 @@ public record TypeCountDto(
     int HoursWatched
 );
 
+public record RewatchedTitleDto(
+    int TmdbId,
+    MediaType Type,
+    string Title,
+    string? PosterPath,
+    int RewatchCount,
+    int TotalWatches,
+    int EstimatedHours
+);
+
 public record MediaStatsDto(
     int TotalItemsWatched,
     int TotalEstimatedMinutesWatched,
@@ -39,5 +50,9 @@ public record MediaStatsDto(
     List<PersonStatDto> TopActors,
     List<StatusCountDto> StatusBreakdown,
     List<TypeCountDto> TypeBreakdown,
-    Dictionary<int, int> RatingDistribution // rating 1-10 -> count
+    Dictionary<int, int> RatingDistribution, // rating 1-10 -> count
+    int TotalRewatchCount = 0,
+    int TotalRewatchedTitles = 0,
+    int TotalRewatchHours = 0,
+    List<RewatchedTitleDto>? MostRewatchedTitles = null
 );

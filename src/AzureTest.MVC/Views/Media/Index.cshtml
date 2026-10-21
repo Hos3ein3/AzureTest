@@ -141,13 +141,20 @@
                         <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30 pointer-events-none"></div>
 
                         <!-- Type & Status Badges -->
-                        <div class="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                        <div class="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap">
                             <span class="px-2 py-0.5 rounded-lg text-2xs font-bold border backdrop-blur-xs @typeBadgeColor">
                                 @item.Type
                             </span>
                             <span class="px-2 py-0.5 rounded-lg text-2xs font-bold border backdrop-blur-xs @statusBadgeColor">
                                 @item.Status
                             </span>
+                            @if (item.RewatchCount > 0)
+                            {
+                                <span class="px-2 py-0.5 rounded-lg text-2xs font-bold bg-purple-600/90 text-white border border-purple-400/40 backdrop-blur-xs flex items-center gap-1 shadow-xs" title="Rewatched @item.RewatchCount time(s) (Watched @(item.RewatchCount + 1)x)">
+                                    <i class="fa-solid fa-rotate-right text-3xs"></i>
+                                    <span>@(item.RewatchCount + 1)x</span>
+                                </span>
+                            }
                         </div>
 
                         <!-- Rating Badge -->
@@ -206,6 +213,14 @@
                         {
                             <div class="text-xs text-slate-600 italic line-clamp-2 bg-slate-50/60 p-2 rounded-lg border border-slate-100">
                                 "@item.UserReview"
+                            </div>
+                        }
+
+                        @if (item.RewatchCount > 0)
+                        {
+                            <div class="flex items-center gap-1.5 text-3xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-1 rounded-lg border border-purple-100 dark:border-purple-900/40">
+                                <i class="fa-solid fa-rotate-right text-3xs"></i>
+                                <span>Watched @(item.RewatchCount + 1)x total (@item.RewatchCount rewatches)</span>
                             </div>
                         }
 

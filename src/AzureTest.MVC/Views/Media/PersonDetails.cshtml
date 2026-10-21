@@ -203,6 +203,7 @@
             {
                 var creditSlug = Slugify(credit.Title);
                 <div class="credit-card group relative bg-white dark:bg-slate-800 rounded-2xl border @(credit.IsWatched ? "border-emerald-300 dark:border-emerald-600 ring-2 ring-emerald-500/20" : "border-slate-200 dark:border-slate-700") overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
+                     data-id="@credit.Id"
                      data-watched="@credit.IsWatched.ToString().ToLower()"
                      data-title="@credit.Title.ToLower()">
                     <div class="relative aspect-2/3 bg-slate-900 overflow-hidden">
@@ -329,6 +330,41 @@
         currentSearchQuery = query;
         applyCreditFilters();
     }
+
+    // Dynamic UI update when title added via QuickAdd modal without reload
+    window.addEventListener('quickMediaAdded', function (e) {
+        if (!e.detail || !e.detail.id) return;
+        const tmdbId = e.detail.id;
+        const status = e.detail.status;
+
+        const card = document.querySelector(`.credit-card[data-id="${tmdbId}"]`);
+        if (card) {
+            const isCompleted = status === 'Completed' || status === '2';
+            if (isCompleted) {
+                card.dataset.watched = 'true';
+                card.className = 'credit-card group relative bg-white dark:bg-slate-800 rounded-2xl border border-emerald-300 dark:border-emerald-600 ring-2 ring-emerald-500/20 overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between';
+
+                const badgesContainer = card.querySelector('.absolute.top-2.left-2');
+                if (badgesContainer && !badgesContainer.querySelector('.fa-check')) {
+                    badgesContainer.innerHTML = `
+                        <span class="px-2 py-0.5 rounded-lg text-3xs font-bold bg-emerald-600 text-white flex items-center gap-1 shadow-xs">
+                            <i class="fa-solid fa-check text-3xs"></i> Watched
+                        </span>
+                    `;
+                }
+
+                const addBtn = card.querySelector('button[onclick*="openQuickAddModal"]');
+                if (addBtn) addBtn.remove();
+            } else {
+                const addBtn = card.querySelector('button[onclick*="openQuickAddModal"]');
+                if (addBtn) {
+                    addBtn.className = 'w-full py-1.5 rounded-xl bg-amber-600 text-white text-3xs font-bold transition-colors shadow-xs flex items-center justify-center gap-1';
+                    addBtn.innerHTML = '<i class="fa-solid fa-bookmark text-3xs"></i> In Watchlist';
+                }
+            }
+            applyCreditFilters();
+        }
+    });
 </script>
 
 <partial name="_QuickAddModal" />

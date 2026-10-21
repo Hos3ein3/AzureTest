@@ -92,8 +92,54 @@
     </div>
 </div>
 
+<!-- Feedback Modal (replaces browser alerts) -->
+<div id="quickAddFeedbackModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeQuickAddFeedbackModal()"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 text-center space-y-4 border border-slate-100 dark:border-slate-700">
+            <div id="quickAddFeedbackIcon" class="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center text-xl">
+            </div>
+            <div class="space-y-1">
+                <h3 id="quickAddFeedbackTitle" class="text-sm font-bold text-slate-900 dark:text-white"></h3>
+                <p id="quickAddFeedbackMessage" class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed"></p>
+            </div>
+            <div class="pt-2">
+                <button type="button" onclick="closeQuickAddFeedbackModal()" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-650 text-white text-xs font-bold transition-colors shadow-2xs">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     let userPlaylistsCache = null;
+
+    function showQuickAddFeedbackModal(title, message, isSuccess) {
+        const modal = document.getElementById('quickAddFeedbackModal');
+        const iconEl = document.getElementById('quickAddFeedbackIcon');
+        const titleEl = document.getElementById('quickAddFeedbackTitle');
+        const msgEl = document.getElementById('quickAddFeedbackMessage');
+        if (!modal) return;
+
+        titleEl.innerText = title;
+        msgEl.innerText = message;
+
+        if (isSuccess) {
+            iconEl.className = 'w-12 h-12 rounded-2xl mx-auto flex items-center justify-center text-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400';
+            iconEl.innerHTML = '<i class="fa-solid fa-check"></i>';
+        } else {
+            iconEl.className = 'w-12 h-12 rounded-2xl mx-auto flex items-center justify-center text-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400';
+            iconEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    function closeQuickAddFeedbackModal() {
+        const modal = document.getElementById('quickAddFeedbackModal');
+        if (modal) modal.classList.add('hidden');
+    }
 
     function openQuickAddModal(id, type, title, posterPath) {
         document.getElementById('modalTmdbId').value = id;
@@ -138,8 +184,6 @@
 
     function loadUserPlaylists() {
         const select = document.getElementById('modalPlaylistSelect');
-        const noMsg = document.getElementById('noPlaylistsMsg');
-        const submitBtn = document.getElementById('modalPlaylistSubmitBtn');
         if (userPlaylistsCache) {
             populatePlaylistsSelect(userPlaylistsCache);
             return;
@@ -194,15 +238,23 @@
             submitBtn.innerHTML = originalText;
             if (data.success) {
                 closeQuickAddModal();
-                window.location.reload();
+                showQuickAddFeedbackModal('Saved to Watchlist', data.message || 'Saved to your watchlist.', true);
+                window.dispatchEvent(new CustomEvent('quickMediaAdded', {
+                    detail: {
+                        id: formData.get('TmdbId'),
+                        type: formData.get('Type'),
+                        status: formData.get('Status'),
+                        title: formData.get('Title')
+                    }
+                }));
             } else {
-                alert(data.message || 'Failed to save to watchlist.');
+                showQuickAddFeedbackModal('Error', data.message || 'Failed to save to watchlist.', false);
             }
         })
         .catch(() => {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalText;
-            window.location.reload();
+            showQuickAddFeedbackModal('Error', 'An unexpected error occurred while saving.', false);
         });
     }
 
@@ -226,15 +278,15 @@
             submitBtn.innerHTML = originalText;
             if (data.success) {
                 closeQuickAddModal();
-                alert(data.message || 'Added to playlist successfully.');
+                showQuickAddFeedbackModal('Playlist Updated', data.message || 'Added to playlist successfully.', true);
             } else {
-                alert(data.message || 'Failed to add to playlist.');
+                showQuickAddFeedbackModal('Error', data.message || 'Failed to add to playlist.', false);
             }
         })
         .catch(() => {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalText;
-            alert('Failed to add to playlist.');
+            showQuickAddFeedbackModal('Error', 'Failed to add to playlist.', false);
         });
     }
 </script>

@@ -32,7 +32,7 @@ public class GetAllExpenseCategoriesQueryHandler : IQueryHandler<GetAllExpenseCa
             return cached;
         }
 
-        var all = await _noSqlUnitOfWork.ExpenseCategories.GetAllAsync();
+        var all = await _noSqlUnitOfWork.ExpenseCategories.GetAllAvailableAsync();
         var userCategories = all.Where(c => c.UserId == request.UserId).ToList();
 
         await _redisService.SetAsync(cacheKey, userCategories, TimeSpan.FromHours(1));

@@ -19,6 +19,33 @@
             }
         } catch {}
     }
+
+    var isMobileFloating = _FeatureOptionsAccessor?.Value?.MobileFloatingNavigation ?? true;
+    var isTabletFloating = _FeatureOptionsAccessor?.Value?.TabletFloatingNavigation ?? true;
+    var enableFloatingNav = isMobileFloating || isTabletFloating;
+    var isImpersonating = _TenantProvider != null && _TenantProvider.IsAdminImpersonating;
+
+    string floatingNavBreakpointClass = "";
+    if (isMobileFloating && isTabletFloating)
+    {
+        floatingNavBreakpointClass = "flex lg:hidden";
+    }
+    else if (isMobileFloating)
+    {
+        floatingNavBreakpointClass = "flex md:hidden";
+    }
+    else if (isTabletFloating)
+    {
+        floatingNavBreakpointClass = "hidden md:flex lg:hidden";
+    }
+    else
+    {
+        floatingNavBreakpointClass = "hidden";
+    }
+
+    var headerVisibilityClass = enableFloatingNav
+        ? (isTabletFloating ? "hidden lg:flex" : "hidden md:flex")
+        : "flex";
 }
 <!DOCTYPE html>
 <html lang="en" data-theme="@userTheme" class="h-full bg-gray-50 @(isDarkMode ? "dark" : "")">
@@ -92,12 +119,53 @@
     <partial name="_Sidebar" />
 
     <!-- Main Content wrapper -->
-    <div class="flex-1 flex flex-col h-full overflow-hidden">
-        
+    <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+
+        @if (enableFloatingNav)
+        {
+            <!-- Mobile & Tablet Floating Top-Right Controls -->
+            <div class="@floatingNavBreakpointClass fixed top-3 right-3 z-50 items-center gap-2">
+                <!-- Floating Notification Dropdown Container -->
+                <div class="relative" id="floatingNotificationDropdownContainer">
+                    <button type="button"
+                            id="floatingNotificationBtn"
+                            onclick="toggleFloatingNotificationDropdown(event)"
+                            class="w-10 h-10 rounded-xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-md text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700 shadow-md hover:shadow-lg flex items-center justify-center transition-all relative active:scale-95"
+                            title="Notifications" aria-label="Notifications">
+                        <i class="fa-regular fa-bell text-base"></i>
+                        <span id="floatingNotificationBadge" class="notification-badge-target absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center hidden">0</span>
+                    </button>
+
+                    <!-- Floating Notification Dropdown -->
+                    <div id="floatingNotificationDropdown" class="hidden absolute right-0 mt-2 w-80 max-w-[calc(100vw-24px)] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden">
+                        <div class="p-3 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700 font-semibold text-sm text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                            <span>Notifications</span>
+                            <span class="text-xs text-slate-400">Live</span>
+                        </div>
+                        <div id="floatingNotificationList" class="max-h-72 overflow-y-auto p-2 space-y-1">
+                            <div class="text-xs text-slate-400 dark:text-slate-500 text-center py-6" id="floatingNoNotifications">
+                                <i class="fa-regular fa-bell-slash text-base mb-1 block text-slate-300"></i>
+                                No new notifications
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Floating Burger / Sandwich Button (Orange background only in impersonation) -->
+                <button type="button"
+                        id="floatingBurgerBtn"
+                        onclick="window.openMobileSidebar ? window.openMobileSidebar() : document.getElementById('sidebar')?.classList.remove('-translate-x-full')"
+                        class="w-10 h-10 rounded-xl @(isImpersonating ? "bg-amber-500 hover:bg-amber-600 text-white border border-amber-600 shadow-lg shadow-amber-500/40 animate-pulse" : "bg-white/95 dark:bg-slate-800/95 backdrop-blur-md text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700 shadow-md hover:shadow-lg") flex items-center justify-center transition-all active:scale-95"
+                        title="@(isImpersonating ? "Impersonation Active - Open Menu" : "Open Menu")" aria-label="Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+            </div>
+        }
+
         <!-- Top Navbar -->
-        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
-            <!-- Mobile Menu Button (hidden on md) -->
-            <button id="mobileMenuBtn" class="md:hidden text-slate-500 hover:text-slate-700 focus:outline-none">
+        <header class="h-16 bg-white shadow-sm @headerVisibilityClass items-center justify-between px-6 z-10">
+            <!-- Mobile Menu Button (hidden on md or lg) -->
+            <button id="mobileMenuBtn" class="@(isTabletFloating ? "lg:hidden" : "md:hidden") text-slate-500 hover:text-slate-700 focus:outline-none">
                 <i class="fa-solid fa-bars text-xl"></i>
             </button>
             
@@ -237,7 +305,7 @@
         }
 
         <!-- Main Scrollable Area -->
-        <main class="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-50">
+        <main class="flex-1 overflow-y-auto p-6 md:p-8 @(enableFloatingNav ? "pb-24 lg:pb-8" : "") bg-slate-50">
             <div class="max-w-7xl mx-auto">
                 @RenderBody()
             </div>
@@ -707,17 +775,38 @@
 
             // Update UI
             document.getElementById('noNotifications')?.remove();
+            document.getElementById('floatingNoNotifications')?.remove();
             unreadCount++;
+
             const badge = document.getElementById('notificationBadge');
-            badge.innerText = unreadCount;
-            badge.classList.remove('hidden');
+            if (badge) {
+                badge.innerText = unreadCount;
+                badge.classList.remove('hidden');
+            }
+
+            const fBadge = document.getElementById('floatingNotificationBadge');
+            if (fBadge) {
+                fBadge.innerText = unreadCount;
+                fBadge.classList.remove('hidden');
+            }
 
             const list = document.getElementById('notificationList');
-            const item = document.createElement('div');
-            item.className = "p-2 rounded bg-blue-50 dark:bg-blue-900/30 text-sm border-l-4 border-blue-500 mb-1 cursor-pointer";
-            item.innerHTML = `<p class="font-semibold text-blue-700 dark:text-blue-300">${title}</p><p class="text-slate-600 dark:text-slate-400 text-xs">${message}</p>`;
-            item.onclick = () => { window.location.href = '/Ticket'; };
-            list.prepend(item);
+            if (list) {
+                const item = document.createElement('div');
+                item.className = "p-2 rounded bg-blue-50 dark:bg-blue-900/30 text-sm border-l-4 border-blue-500 mb-1 cursor-pointer";
+                item.innerHTML = `<p class="font-semibold text-blue-700 dark:text-blue-300">${title}</p><p class="text-slate-600 dark:text-slate-400 text-xs">${message}</p>`;
+                item.onclick = () => { window.location.href = '/Ticket'; };
+                list.prepend(item);
+            }
+
+            const fList = document.getElementById('floatingNotificationList');
+            if (fList) {
+                const fItem = document.createElement('div');
+                fItem.className = "p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-sm border-l-4 border-blue-500 mb-1.5 cursor-pointer hover:bg-blue-100 transition-colors";
+                fItem.innerHTML = `<p class="font-semibold text-blue-700 dark:text-blue-300 text-xs">${title}</p><p class="text-slate-600 dark:text-slate-400 text-[11px] mt-0.5">${message}</p>`;
+                fItem.onclick = () => { window.location.href = '/Ticket'; };
+                fList.prepend(fItem);
+            }
         });
 
         connection.on("UpdateOnlineUsersCount", (count) => {
@@ -733,11 +822,25 @@
 
         connection.start().catch(err => console.error(err.toString()));
 
-        // Hide dropdown when clicking outside
+        // Toggle Floating Notification Dropdown
+        function toggleFloatingNotificationDropdown(e) {
+            if (e) e.stopPropagation();
+            const dd = document.getElementById('floatingNotificationDropdown');
+            if (dd) dd.classList.toggle('hidden');
+        }
+        window.toggleFloatingNotificationDropdown = toggleFloatingNotificationDropdown;
+
+        // Hide dropdowns when clicking outside
         document.addEventListener('click', function(e) {
             const container = document.getElementById('notificationDropdownContainer');
             if (container && !container.contains(e.target)) {
-                document.getElementById('notificationDropdown').classList.add('hidden');
+                document.getElementById('notificationDropdown')?.classList.add('hidden');
+            }
+
+            const fContainer = document.getElementById('floatingNotificationDropdownContainer');
+            const fDropdown = document.getElementById('floatingNotificationDropdown');
+            if (fContainer && fDropdown && !fContainer.contains(e.target)) {
+                fDropdown.classList.add('hidden');
             }
         });
 

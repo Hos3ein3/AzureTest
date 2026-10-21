@@ -36,4 +36,9 @@ public class InfrastructureFeatureOptions
 
     // Background Jobs Features
     public bool EnableHangfire { get; set; } = true;
+
+    // Mobile & Tablet Floating Navigation Features
+    public bool MobileFloatingNavigation { get; set; } = true;
+    public bool MobileFlaotingNavigation { get => MobileFloatingNavigation; set => MobileFloatingNavigation = value; }
+    public bool TabletFloatingNavigation { get; set; } = true;
 }

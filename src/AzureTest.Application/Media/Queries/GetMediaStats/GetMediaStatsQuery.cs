@@ -136,6 +136,50 @@ public sealed class GetMediaStatsQueryHandler : IQueryHandler<GetMediaStatsQuery
             new("Anime", totalAnime, animeMinutes / 60)
         };
 
+        // Rewatch Analytics
+        var rewatchedItems = allItems.Where(i => i.RewatchCount > 0).ToList();
+        var totalRewatchedTitles = rewatchedItems.Count;
+        var totalRewatchCount = rewatchedItems.Sum(i => i.RewatchCount);
+        int totalRewatchMinutes = 0;
+
+        foreach (var item in rewatchedItems)
+        {
+            if (item.Type == MediaType.Movie)
+            {
+                var duration = (item.RuntimeMinutes.HasValue && item.RuntimeMinutes.Value > 0)
+                    ? item.RuntimeMinutes.Value
+                    : AzureTest.Domain.Documents.Media.WatchItemDocument.Rules.DefaultMovieDurationMinutes;
+                totalRewatchMinutes += duration * item.RewatchCount;
+            }
+            else
+            {
+                var epDuration = (item.RuntimeMinutes.HasValue && item.RuntimeMinutes.Value > 0)
+                    ? item.RuntimeMinutes.Value
+                    : (item.Type == MediaType.Anime
+                        ? AzureTest.Domain.Documents.Media.WatchItemDocument.Rules.DefaultAnimeEpisodeDurationMinutes
+                        : AzureTest.Domain.Documents.Media.WatchItemDocument.Rules.DefaultEpisodeDurationMinutes);
+                var fullEpisodes = item.TotalEpisodes > 0 ? item.TotalEpisodes : item.CurrentEpisode;
+                totalRewatchMinutes += (fullEpisodes * item.RewatchCount) * epDuration;
+            }
+        }
+
+        var mostRewatchedTitles = rewatchedItems
+            .OrderByDescending(i => i.RewatchCount)
+            .Take(8)
+            .Select(i => {
+                var estMinutes = i.GetEstimatedWatchedMinutes();
+                return new RewatchedTitleDto(
+                    i.TmdbId,
+                    i.Type,
+                    i.Title,
+                    i.PosterPath,
+                    i.RewatchCount,
+                    i.RewatchCount + 1,
+                    estMinutes / 60
+                );
+            })
+            .ToList();
+
         var stats = new MediaStatsDto(
             totalItemsWatched,
             totalWatchedMinutes,
@@ -149,7 +193,11 @@ public sealed class GetMediaStatsQueryHandler : IQueryHandler<GetMediaStatsQuery
             topActors,
             statusBreakdown,
             typeBreakdown,
-            ratingDistribution
+            ratingDistribution,
+            totalRewatchCount,
+            totalRewatchedTitles,
+            totalRewatchMinutes / 60,
+            mostRewatchedTitles
         );
 
         return Result.Success(stats);
