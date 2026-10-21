@@ -1,0 +1,229 @@
+@model CryptoRiskOverviewDto
+@{
+    ViewData["Title"] = "Crypto Risk Management & Capital Preservation";
+    var acc = Model.Account;
+    var dailyLoss = acc.DailyLoss;
+    var dailyLossPercent = dailyLoss != null && dailyLoss.LimitPercent > 0 
+        ? Math.Min(100f, (float)(dailyLoss.Percent / dailyLoss.LimitPercent) * 100f) 
+        : 0f;
+}
+
+<div class="space-y-6">
+    <!-- Feedback Alerts -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
+                <span>@TempData["SuccessMessage"]</span>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-emerald-600">&times;</button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-center justify-between text-xs text-rose-800 dark:text-rose-200">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-exclamation text-rose-500 text-sm"></i>
+                <span>@TempData["ErrorMessage"]</span>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-rose-400 hover:text-rose-600">&times;</button>
+        </div>
+    }
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Risk Controls &amp; Capital Preservation</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Position sizing calculator, daily drawdown limits, and emergency kill switch</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Emergency Kill Switch Trigger -->
+            <button type="button" onclick="document.getElementById('killSwitchModal').classList.remove('hidden')" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-power-off"></i> EMERGENCY KILL SWITCH
+            </button>
+        </div>
+    </div>
+
+    <!-- Regulatory Notice (Dutch AFM / ESMA / MiCA) -->
+    <div class="p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 flex items-start gap-4">
+        <div class="p-2 rounded-xl bg-amber-500/20 text-amber-600 text-lg shrink-0">
+            <i class="fa-solid fa-scale-balanced"></i>
+        </div>
+        <div class="space-y-1">
+            <h3 class="text-xs font-bold text-amber-900 dark:text-amber-200 uppercase tracking-wider">
+                Regulatory Disclosure: Dutch AFM &amp; EU MiCA Compliance
+            </h3>
+            <p class="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                @Model.DutchAfmWarningNote
+            </p>
+            <div class="text-[11px] text-amber-700 dark:text-amber-400 pt-1">
+                <strong>Leverage Warning:</strong> Cryptocurrency derivatives carry high risk of total loss due to abrupt liquidation cascades. High leverage amplifies volatility drag and exchange latency slippage.
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Account Balance & Margin -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500">Account Equity</span>
+                <span class="p-2 rounded-xl bg-blue-500/10 text-blue-500 text-xs"><i class="fa-solid fa-wallet"></i></span>
+            </div>
+            <div class="mt-2 text-xl font-bold font-mono text-slate-800 dark:text-white">$@acc.Equity.ToString("N2")</div>
+            <div class="mt-1 text-2xs text-slate-400">
+                Cash: $@acc.CashBalance.ToString("N2") | Margin: $@acc.MarginUsed.ToString("N2")
+            </div>
+        </div>
+
+        <!-- Daily Loss Buffer -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500">Daily Loss Limit</span>
+                <span class="p-2 rounded-xl bg-rose-500/10 text-rose-500 text-xs"><i class="fa-solid fa-chart-line-down"></i></span>
+            </div>
+            <div class="mt-2 text-xl font-bold font-mono @(dailyLoss != null && dailyLoss.IsBreached ? "text-rose-500" : "text-slate-800 dark:text-white")">
+                $@(dailyLoss?.Amount.ToString("N2") ?? "0.00") / @(dailyLoss?.LimitPercent.ToString("F1") ?? "5.0")%
+            </div>
+            <div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div class="h-full rounded-full @(dailyLoss != null && dailyLoss.IsBreached ? "bg-rose-500" : "bg-emerald-500")" style="width: @(dailyLossPercent)%"></div>
+            </div>
+        </div>
+
+        <!-- Open Positions Exposure -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500">Open Positions Exposure</span>
+                <span class="p-2 rounded-xl bg-purple-500/10 text-purple-500 text-xs"><i class="fa-solid fa-layer-group"></i></span>
+            </div>
+            <div class="mt-2 text-xl font-bold font-mono text-slate-800 dark:text-white">
+                @Model.OpenPositionsCount / @Model.MaxAllowedPositions Max
+            </div>
+            <div class="mt-1 text-2xs text-slate-400">Prevents portfolio overconcentration</div>
+        </div>
+
+        <!-- Recommended Risk Per Trade -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500">Risk Per Trade Rule</span>
+                <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 text-xs"><i class="fa-solid fa-percent"></i></span>
+            </div>
+            <div class="mt-2 text-xl font-bold font-mono text-emerald-500">
+                @acc.RiskPercentagePerTrade.ToString("F1")% of Capital
+            </div>
+            <div class="mt-1 text-2xs text-slate-400">Max risk: $@((acc.Equity * (acc.RiskPercentagePerTrade / 100m)).ToString("N2")) per position</div>
+        </div>
+    </div>
+
+    <!-- Position Sizing Interactive Calculator -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-5">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
+            <div>
+                <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-calculator text-brand-500"></i> Mathematical Position Sizing Calculator
+                </h3>
+                <p class="text-2xs text-slate-400 mt-0.5">Calculates maximum allowed position size based on dollar risk and Stop Loss distance</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Account Balance ($)</label>
+                <input type="number" id="calcBalance" value="@acc.Equity" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" oninput="calculateSize()" />
+            </div>
+            <div>
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Risk % Per Trade</label>
+                <input type="number" step="0.25" id="calcRiskPct" value="@acc.RiskPercentagePerTrade" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" oninput="calculateSize()" />
+            </div>
+            <div>
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Entry Price ($)</label>
+                <input type="number" step="0.01" id="calcEntry" value="67500" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" oninput="calculateSize()" />
+            </div>
+            <div>
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Stop Loss Price ($)</label>
+                <input type="number" step="0.01" id="calcStop" value="66000" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" oninput="calculateSize()" />
+            </div>
+        </div>
+
+        <!-- Calculator Result Strip -->
+        <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div>
+                <span class="text-2xs text-slate-400 uppercase font-semibold block">Max Dollar Risk</span>
+                <span id="resDollarRisk" class="text-base font-bold font-mono text-rose-500 mt-1">$100.00</span>
+            </div>
+            <div>
+                <span class="text-2xs text-slate-400 uppercase font-semibold block">Recommended Position (Coins)</span>
+                <span id="resCoins" class="text-base font-bold font-mono text-emerald-500 mt-1">0.0667 BTC</span>
+            </div>
+            <div>
+                <span class="text-2xs text-slate-400 uppercase font-semibold block">Total Notional Position Value</span>
+                <span id="resNotional" class="text-base font-bold font-mono text-slate-800 dark:text-white mt-1">$4,500.00</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Kill Switch Confirmation Modal -->
+<div id="killSwitchModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 max-w-md w-full p-6 shadow-xl space-y-4">
+        <div class="flex items-center gap-3 text-rose-600">
+            <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800 dark:text-white">Activate Emergency Kill Switch?</h3>
+        </div>
+
+        <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            This action will <strong>immediately market-close all open cryptocurrency positions</strong> and <strong>cancel every active limit and stop order</strong>. Live trading will be paused until manually reset.
+        </p>
+
+        <form asp-action="KillSwitch" method="post" class="space-y-3">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="accountId" value="@acc.Id" />
+            <input type="hidden" name="reason" value="Manual emergency halt triggered by operator" />
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('killSwitchModal').classList.add('hidden')" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold hover:bg-slate-200">
+                    Cancel
+                </button>
+                <button type="submit" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors">
+                    CONFIRM KILL SWITCH
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function calculateSize() {
+    const bal = parseFloat(document.getElementById('calcBalance').value) || 0;
+    const riskPct = parseFloat(document.getElementById('calcRiskPct').value) || 0;
+    const entry = parseFloat(document.getElementById('calcEntry').value) || 0;
+    const stop = parseFloat(document.getElementById('calcStop').value) || 0;
+
+    const dollarRisk = bal * (riskPct / 100);
+    const stopDistance = Math.abs(entry - stop);
+
+    document.getElementById('resDollarRisk').innerText = '$' + dollarRisk.toFixed(2);
+
+    if (stopDistance > 0 && entry > 0) {
+        const coins = dollarRisk / stopDistance;
+        const notional = coins * entry;
+        document.getElementById('resCoins').innerText = coins.toFixed(4) + ' Coins';
+        document.getElementById('resNotional').innerText = '$' + notional.toFixed(2);
+    } else {
+        document.getElementById('resCoins').innerText = '0.0000 Coins';
+        document.getElementById('resNotional').innerText = '$0.00';
+    }
+}
+document.addEventListener('DOMContentLoaded', calculateSize);
+</script>

@@ -85,5 +85,25 @@ public interface IUnitOfWork : IDisposable
     IPlayerProfileRepository PlayerProfiles { get; }
     IPlayerTeamHistoryRepository PlayerTeamHistories { get; }
 
+    // Forex Trading & Market Analysis
+    AzureTest.Application.Interfaces.Data.Forex.IForexAccountRepository ForexAccounts { get; }
+    AzureTest.Application.Interfaces.Data.Forex.IForexOrderRepository ForexOrders { get; }
+    AzureTest.Application.Interfaces.Data.Forex.IForexTradeRepository ForexTrades { get; }
+    AzureTest.Application.Interfaces.Data.Forex.IForexStrategyRepository ForexStrategies { get; }
+    AzureTest.Application.Interfaces.Data.Forex.IForexBacktestRepository ForexBacktests { get; }
+    AzureTest.Application.Interfaces.Data.Forex.IForexEconomicAlertRepository ForexEconomicAlerts { get; }
+    AzureTest.Application.Interfaces.Data.Forex.IForexJournalEntryRepository ForexJournalEntries { get; }
+    AzureTest.Application.Interfaces.Data.Forex.IForexApiSettingRepository ForexApiSettings { get; }
+
+    // Crypto Trading & Market Analysis
+    AzureTest.Application.Interfaces.Data.Crypto.ICryptoAccountRepository CryptoAccounts { get; }
+    AzureTest.Application.Interfaces.Data.Crypto.ICryptoOrderRepository CryptoOrders { get; }
+    AzureTest.Application.Interfaces.Data.Crypto.ICryptoPositionRepository CryptoPositions { get; }
+    AzureTest.Application.Interfaces.Data.Crypto.ICryptoStrategyRepository CryptoStrategies { get; }
+    AzureTest.Application.Interfaces.Data.Crypto.ICryptoBacktestRepository CryptoBacktests { get; }
+    AzureTest.Application.Interfaces.Data.Crypto.ICryptoAlertRepository CryptoAlerts { get; }
+    AzureTest.Application.Interfaces.Data.Crypto.ICryptoJournalEntryRepository CryptoJournalEntries { get; }
+    AzureTest.Application.Interfaces.Data.Crypto.ICryptoApiSettingRepository CryptoApiSettings { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

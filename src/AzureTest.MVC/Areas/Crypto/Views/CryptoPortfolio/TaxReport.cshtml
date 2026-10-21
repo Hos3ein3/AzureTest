@@ -1,0 +1,157 @@
+@model CryptoTaxReportDto
+@{
+    ViewData["Title"] = $"Dutch Box 3 & MiCA Tax Report ({Model?.TaxYear ?? 2026})";
+    var year = Model?.TaxYear ?? 2026;
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Dutch Box 3 &amp; EU MiCA Tax Valuation</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Belastingdienst compliant crypto asset valuation pegged to January 1 reference date</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Year selector -->
+            <form method="get" asp-action="TaxReport" class="flex items-center gap-2">
+                <select name="taxYear" onchange="this.form.submit()" class="text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2">
+                    @for (int y = 2026; y >= 2022; y--)
+                    {
+                        <option value="@y" selected="@(y == year)">Tax Year @y</option>
+                    }
+                </select>
+            </form>
+
+            <button type="button" onclick="window.print()" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-print"></i> Export / Print
+            </button>
+        </div>
+    </div>
+
+    <!-- Dutch Tax Authority (Belastingdienst) Guidance Alert -->
+    <div class="p-5 rounded-2xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/50 flex items-start gap-4">
+        <div class="p-2 rounded-xl bg-blue-500/20 text-blue-600 text-lg shrink-0">
+            <i class="fa-solid fa-landmark"></i>
+        </div>
+        <div class="space-y-1">
+            <h3 class="text-xs font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wider">
+                Belastingdienst Netherlands: Box 3 Wealth Tax Rules
+            </h3>
+            <p class="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+                In the Netherlands, cryptocurrencies are treated as "overige bezittingen" (other assets) in <strong>Box 3</strong>. You must declare the fair market value in EUR of all cryptocurrencies held on <strong>January 1st, 00:00:00 AM CET</strong> of the tax year. Capital gains and day trading profits are generally not taxed separately in Box 1 unless trading exceeds normal asset management.
+            </p>
+            <div class="text-[11px] text-blue-700 dark:text-blue-400 pt-1">
+                @Model?.DutchTaxBox3Guidance
+            </div>
+        </div>
+    </div>
+
+    <!-- Box 3 Summary Breakdown Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500">Jan 1 Valuation (EUR)</span>
+                <span class="p-2 rounded-xl bg-blue-500/10 text-blue-500 text-xs"><i class="fa-solid fa-euro-sign"></i></span>
+            </div>
+            <div class="mt-2 text-2xl font-bold font-mono text-slate-800 dark:text-white">
+                €@(Model?.EstimatedBox3ValuationJan1stEur.ToString("N2") ?? "0.00")
+            </div>
+            <div class="mt-1 text-2xs text-slate-400">Peildatum 1 januari 00:00 uur</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500">Total Realized P&amp;L</span>
+                <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 text-xs"><i class="fa-solid fa-chart-line"></i></span>
+            </div>
+            <div class="mt-2 text-2xl font-bold font-mono text-slate-800 dark:text-white">
+                €@(Model?.TotalRealizedPnlEur.ToString("N2") ?? "0.00")
+            </div>
+            <div class="mt-1 text-2xs text-slate-400">Box 3 deemed return model applies</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500">Total Trading Volume</span>
+                <span class="p-2 rounded-xl bg-purple-500/10 text-purple-500 text-xs"><i class="fa-solid fa-arrows-rotate"></i></span>
+            </div>
+            <div class="mt-2 text-2xl font-bold font-mono text-slate-800 dark:text-white">
+                €@(Model?.TotalVolumeEur.ToString("N2") ?? "0.00")
+            </div>
+            <div class="mt-1 text-2xs text-slate-400">Across @(Model?.TotalTradesCount ?? 0) completed fills</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500">MiCA Ledger Compliance</span>
+                <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 text-xs"><i class="fa-solid fa-shield-check"></i></span>
+            </div>
+            <div class="mt-2 text-sm font-bold text-emerald-600">EU MiCA Compliant</div>
+            <div class="mt-1 text-2xs text-slate-400">Complete audit trail recorded</div>
+        </div>
+    </div>
+
+    <!-- Transaction Ledger Table -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-blue-500"></i> MiCA Transaction Audit Ledger (@(Model?.Items?.Count ?? 0) Records)
+            </h3>
+            <span class="text-2xs text-slate-400">Belastingdienst Verifiable Report</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-bold uppercase">
+                        <th class="py-3 px-4">Date</th>
+                        <th class="py-3 px-4">Symbol</th>
+                        <th class="py-3 px-4 text-center">Action</th>
+                        <th class="py-3 px-4 text-right">Quantity</th>
+                        <th class="py-3 px-4 text-right">Price (EUR)</th>
+                        <th class="py-3 px-4 text-right">Total Fair Value (EUR)</th>
+                        <th class="py-3 px-4 text-right">Realized Gain/Loss (EUR)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 font-mono">
+                    @if (Model?.Items != null && Model.Items.Any())
+                    {
+                        foreach (var it in Model.Items)
+                        {
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors">
+                                <td class="py-3 px-4 text-slate-500 font-sans">@it.Date.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td class="py-3 px-4 font-bold text-slate-800 dark:text-white font-sans">@it.Symbol</td>
+                                <td class="py-3 px-4 text-center font-sans">
+                                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold @(it.Action == "BUY" ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")">
+                                        @it.Action
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-right text-slate-700 dark:text-slate-300">@it.Quantity.ToString("F4")</td>
+                                <td class="py-3 px-4 text-right text-slate-700 dark:text-slate-300">€@it.PriceEur.ToString("N2")</td>
+                                <td class="py-3 px-4 text-right font-bold text-slate-800 dark:text-white">€@it.TotalValueEur.ToString("N2")</td>
+                                <td class="py-3 px-4 text-right font-bold @(it.RealizedGainLossEur >= 0 ? "text-emerald-600" : "text-rose-600")">
+                                    @(it.RealizedGainLossEur >= 0 ? "+" : "")€@it.RealizedGainLossEur.ToString("N2")
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="py-6 text-center text-slate-400 font-sans">
+                                No taxable transactions recorded for tax year @year.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,126 @@
+@model CryptoMarketOverviewDto
+@{
+    ViewData["Title"] = "On-Chain & Whale Activity";
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-lg font-bold">
+                    <i class="fa-solid fa-water"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">On-Chain & Whale Activity Tracker</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Large transfers, whale wallet movements, and exchange inflow/outflow surveillance</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a asp-action="Index" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors">
+                <i class="fa-solid fa-chart-line"></i> Technicals
+            </a>
+            <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors">
+                <i class="fa-solid fa-bolt"></i> Trade
+            </a>
+        </div>
+    </div>
+
+    <!-- On-Chain Surveillance Overview -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500">24h Large Whale Transfers</span>
+                <span class="p-2 rounded-xl bg-blue-500/10 text-blue-500 text-xs"><i class="fa-solid fa-whale"></i></span>
+            </div>
+            <div class="mt-2 text-2xl font-bold font-mono text-slate-800 dark:text-white">1,482</div>
+            <div class="mt-1 text-2xs text-slate-400">Transactions &gt; $100,000 USD</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500">Exchange Netflow (BTC)</span>
+                <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 text-xs"><i class="fa-solid fa-arrow-right-arrow-left"></i></span>
+            </div>
+            <div class="mt-2 text-2xl font-bold font-mono text-emerald-500">-4,210 BTC</div>
+            <div class="mt-1 text-2xs text-emerald-600 dark:text-emerald-400 font-semibold">Net Outflow (Spot Accumulation)</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500">Free Blockchain Explorers</span>
+                <span class="p-2 rounded-xl bg-purple-500/10 text-purple-500 text-xs"><i class="fa-solid fa-cubes"></i></span>
+            </div>
+            <div class="mt-2 text-sm font-bold text-slate-800 dark:text-white">Etherscan & Blockchair</div>
+            <div class="mt-1 text-2xs text-slate-400">Public transparent verification</div>
+        </div>
+    </div>
+
+    <!-- Whale Transactions Stream -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-radar text-blue-500"></i> Real-Time Whale Transaction Feed
+            </h3>
+            <span class="text-2xs text-slate-400">Public Mempool & Block Scanners</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-bold uppercase">
+                        <th class="py-3 px-4">Time</th>
+                        <th class="py-3 px-4">Asset</th>
+                        <th class="py-3 px-4 text-right">Amount</th>
+                        <th class="py-3 px-4 text-right">Value (USD)</th>
+                        <th class="py-3 px-4">From</th>
+                        <th class="py-3 px-4">To</th>
+                        <th class="py-3 px-4 text-center">Transfer Type</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 font-mono">
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors">
+                        <td class="py-3 px-4 text-slate-500 font-sans">12m ago</td>
+                        <td class="py-3 px-4 font-bold text-slate-800 dark:text-white font-sans">BTC</td>
+                        <td class="py-3 px-4 text-right font-bold text-slate-800 dark:text-white">1,250 BTC</td>
+                        <td class="py-3 px-4 text-right text-emerald-600 font-bold">$84,375,000</td>
+                        <td class="py-3 px-4 text-slate-600 dark:text-slate-300">Unknown Cold Wallet</td>
+                        <td class="py-3 px-4 text-slate-600 dark:text-slate-300">Coinbase Institutional</td>
+                        <td class="py-3 px-4 text-center font-sans">
+                            <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-600">
+                                Inflow to Exchange
+                            </span>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors">
+                        <td class="py-3 px-4 text-slate-500 font-sans">28m ago</td>
+                        <td class="py-3 px-4 font-bold text-slate-800 dark:text-white font-sans">ETH</td>
+                        <td class="py-3 px-4 text-right font-bold text-slate-800 dark:text-white">15,000 ETH</td>
+                        <td class="py-3 px-4 text-right text-emerald-600 font-bold">$39,450,000</td>
+                        <td class="py-3 px-4 text-slate-600 dark:text-slate-300">Binance Hot Wallet</td>
+                        <td class="py-3 px-4 text-slate-600 dark:text-slate-300">Unknown Whale Wallet</td>
+                        <td class="py-3 px-4 text-center font-sans">
+                            <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-600">
+                                Outflow to Cold Storage
+                            </span>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors">
+                        <td class="py-3 px-4 text-slate-500 font-sans">45m ago</td>
+                        <td class="py-3 px-4 font-bold text-slate-800 dark:text-white font-sans">USDT</td>
+                        <td class="py-3 px-4 text-right font-bold text-slate-800 dark:text-white">50,000,000 USDT</td>
+                        <td class="py-3 px-4 text-right text-blue-600 font-bold">$50,000,000</td>
+                        <td class="py-3 px-4 text-slate-600 dark:text-slate-300">Tether Treasury</td>
+                        <td class="py-3 px-4 text-slate-600 dark:text-slate-300">Kraken Exchange</td>
+                        <td class="py-3 px-4 text-center font-sans">
+                            <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-blue-100 dark:bg-blue-950 text-blue-600">
+                                Stablecoin Liquidity Injection
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

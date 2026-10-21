@@ -1,0 +1,170 @@
+@model AzureTest.Contracts.DTOs.Forex.MarketOverviewDto
+@{
+    ViewData["Title"] = "Global Forex Market Sessions";
+    var nowUtc = DateTime.UtcNow;
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-earth-americas"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Forex Market Sessions & Overlaps</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Track 24-hour interbank liquidity across Sydney, Tokyo, London, and New York</p>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="px-4 py-2 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-mono">
+                <span class="text-slate-400">Current UTC:</span>
+                <span class="font-bold text-slate-800 dark:text-white ml-1">@nowUtc.ToString("HH:mm:ss")</span>
+            </div>
+            <a asp-action="Index" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl">
+                Back to Rates
+            </a>
+        </div>
+    </div>
+
+    <!-- Active Sessions Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        @foreach (var s in Model.Sessions)
+        {
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border @(s.IsOpen ? "border-emerald-500 shadow-md ring-2 ring-emerald-500/20" : "border-slate-200 dark:border-slate-700") p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base font-bold text-slate-800 dark:text-white">@s.City</span>
+                            <span class="text-2xs text-slate-400">(@s.Session)</span>
+                        </div>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold @(s.IsOpen ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400")">
+                            <span class="w-2 h-2 rounded-full @(s.IsOpen ? "bg-emerald-500 animate-pulse" : "bg-slate-400")"></span>
+                            @(s.IsOpen ? "ACTIVE" : "CLOSED")
+                        </span>
+                    </div>
+
+                    <div class="space-y-2 mt-4 text-xs">
+                        <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-700">
+                            <span class="text-slate-400">UTC Trading Hours</span>
+                            <span class="font-mono font-medium text-slate-700 dark:text-slate-300">@s.OpenUtc.ToString(@"hh\:mm") - @s.CloseUtc.ToString(@"hh\:mm")</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-700">
+                            <span class="text-slate-400">Timezone</span>
+                            <span class="font-medium text-slate-700 dark:text-slate-300">@s.TimeZone</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-700">
+                            <span class="text-slate-400">Status Counter</span>
+                            <span class="font-semibold text-brand-600 dark:text-brand-400">
+                                @(s.IsOpen ? $"Closes in {s.TimeUntilNextState.Hours}h {s.TimeUntilNextState.Minutes}m" : $"Opens in {s.TimeUntilNextState.Hours}h {s.TimeUntilNextState.Minutes}m")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700">
+                    <div class="text-2xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Key Currencies</div>
+                    <div class="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        @switch (s.Session)
+                        {
+                            case ForexMarketSession.Sydney:
+                                <span>AUD, NZD (Commodity flows)</span>
+                                break;
+                            case ForexMarketSession.Tokyo:
+                                <span>JPY, AUD, NZD (Asian liquidity)</span>
+                                break;
+                            case ForexMarketSession.London:
+                                <span>EUR, GBP, CHF (38% global volume)</span>
+                                break;
+                            case ForexMarketSession.NewYork:
+                                <span>USD, CAD (Highest volatility)</span>
+                                break;
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Market Overlaps & Volatility Profile -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Major Session Overlaps -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <h2 class="text-base font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-arrows-split-up-and-left text-brand-500"></i> Critical Session Overlaps
+            </h2>
+            <div class="space-y-4">
+                <div class="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-amber-700 dark:text-amber-400">London - New York Overlap (13:00 - 17:00 UTC)</span>
+                        <span class="px-2 py-0.5 rounded text-2xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">MAX LIQUIDITY</span>
+                    </div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                        Over 70% of total daily global forex turnover happens during these 4 hours. Highest volatility, tightest spreads on EUR/USD and GBP/USD. Optimal time for breakout and trend-following strategies.
+                    </p>
+                </div>
+
+                <div class="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-blue-700 dark:text-blue-400">Tokyo - London Overlap (08:00 - 09:00 UTC)</span>
+                        <span class="px-2 py-0.5 rounded text-2xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">MODERATE</span>
+                    </div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                        The Asian session winds down as European institutions open. Often triggers the initial trend direction of the European day.
+                    </p>
+                </div>
+
+                <div class="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-purple-700 dark:text-purple-400">Sydney - Tokyo Overlap (00:00 - 07:00 UTC)</span>
+                        <span class="px-2 py-0.5 rounded text-2xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">CONSOLIDATION</span>
+                    </div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                        Typically a calmer range-bound period unless Chinese macroeconomic data or Bank of Japan policy announcements are released.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Strategy Implications & Best Practices -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between">
+            <div>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb text-amber-500"></i> Session Strategy Guide
+                </h2>
+                <div class="space-y-3 text-xs text-slate-600 dark:text-slate-400">
+                    <div class="flex items-start gap-3">
+                        <div class="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 font-bold text-2xs">1</div>
+                        <div>
+                            <strong class="text-slate-800 dark:text-white">Asian Range Box (00:00 - 07:00 UTC):</strong>
+                            Mark the high and low of the Asian range on EUR/USD and GBP/USD. This creates clear breakout boundary levels for London Open.
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="w-6 h-6 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 font-bold text-2xs">2</div>
+                        <div>
+                            <strong class="text-slate-800 dark:text-white">London Breakout (07:00 - 09:00 UTC):</strong>
+                            European traders enter the market, creating momentum breakouts beyond Asian levels or liquidity sweeps (Judas swing).
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="w-6 h-6 rounded-full bg-indigo-500/10 text-indigo-600 flex items-center justify-center shrink-0 font-bold text-2xs">3</div>
+                        <div>
+                            <strong class="text-slate-800 dark:text-white">US Economic Releases (12:30 - 14:00 UTC):</strong>
+                            High-impact news (CPI, Non-Farm Payrolls, FOMC) causes severe spreads widening and slippage. Safe traders avoid opening new market orders 15 minutes before and after.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                <a asp-area="Forex" asp-controller="ForexStrategy" asp-action="Index" class="inline-flex items-center gap-2 text-xs font-bold text-brand-600 hover:text-brand-700">
+                    Test London Breakout Strategy <i class="fa-solid fa-arrow-right"></i>
+                </a>
+                <span class="text-2xs text-slate-400">All session times synchronized in UTC</span>
+            </div>
+        </div>
+    </div>
+</div>

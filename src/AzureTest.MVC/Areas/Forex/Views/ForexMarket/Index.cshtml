@@ -1,0 +1,161 @@
+@model AzureTest.Contracts.DTOs.Forex.MarketOverviewDto
+@{
+    ViewData["Title"] = "Forex Market Overview";
+    var filter = ViewBag.Filter as AzureTest.Contracts.DTOs.Forex.ForexMarketFilter;
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-600 flex items-center justify-center text-lg font-bold">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Forex Market Rates & Quotes</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Live ECB rates via Frankfurter (No API Key Required) & real-time spreads</p>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <a asp-area="Forex" asp-controller="ForexTrade" asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors">
+                <i class="fa-solid fa-bolt"></i> Trade Terminal
+            </a>
+            <a asp-area="Forex" asp-controller="ForexMarket" asp-action="Sessions" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors">
+                <i class="fa-solid fa-clock"></i> Global Sessions
+            </a>
+        </div>
+    </div>
+
+    <!-- Global Market Sessions Ticker -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        @foreach (var s in Model.Sessions)
+        {
+            <div class="p-4 rounded-xl border @(s.IsOpen ? "bg-emerald-500/5 border-emerald-500/30 dark:bg-emerald-950/20" : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700")">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">@s.City</span>
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold @(s.IsOpen ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300" : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400")">
+                        <span class="w-1.5 h-1.5 rounded-full @(s.IsOpen ? "bg-emerald-500 animate-pulse" : "bg-slate-400")"></span>
+                        @(s.IsOpen ? "OPEN" : "CLOSED")
+                    </span>
+                </div>
+                <div class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+                    UTC @s.OpenUtc.ToString(@"hh\:mm") - @s.CloseUtc.ToString(@"hh\:mm")
+                </div>
+                <div class="mt-1 text-2xs font-medium text-slate-400">
+                    @(s.IsOpen ? $"Closes in {s.TimeUntilNextState.Hours}h {s.TimeUntilNextState.Minutes}m" : $"Opens in {s.TimeUntilNextState.Hours}h {s.TimeUntilNextState.Minutes}m")
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex items-center gap-2">
+            <a asp-action="Index" asp-route-category="All" class="px-3 py-1.5 rounded-lg text-xs font-medium @(string.IsNullOrEmpty(filter?.Category) || filter.Category == "All" ? "bg-brand-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200")">All Pairs</a>
+            <a asp-action="Index" asp-route-category="Major" class="px-3 py-1.5 rounded-lg text-xs font-medium @(filter?.Category == "Major" ? "bg-brand-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200")">Majors</a>
+            <a asp-action="Index" asp-route-category="Minor" class="px-3 py-1.5 rounded-lg text-xs font-medium @(filter?.Category == "Minor" ? "bg-brand-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200")">Minors / Crosses</a>
+            <a asp-action="Index" asp-route-category="Metals" class="px-3 py-1.5 rounded-lg text-xs font-medium @(filter?.Category == "Metals" ? "bg-brand-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200")">Metals & Gold</a>
+        </div>
+        <form method="get" class="flex items-center gap-2">
+            <input type="text" name="search" value="@filter?.Search" placeholder="Search EUR/USD, GBP..." class="px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+            <button type="submit" class="px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-xs font-medium">Search</button>
+        </form>
+    </div>
+
+    <!-- Currency Pairs Grid / Table -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-xs">
+        <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <h2 class="text-sm font-bold text-slate-800 dark:text-white">Forex Rates & Spreads</h2>
+            <span class="text-xs text-slate-400">Refreshed live</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 font-semibold uppercase text-2xs tracking-wider border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                        <th class="px-4 py-3">Symbol / Pair</th>
+                        <th class="px-4 py-3">Bid Price</th>
+                        <th class="px-4 py-3">Ask Price</th>
+                        <th class="px-4 py-3">Spread (pips)</th>
+                        <th class="px-4 py-3">24h Change</th>
+                        <th class="px-4 py-3">24h High / Low</th>
+                        <th class="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @foreach (var q in Model.Quotes)
+                    {
+                        var isPositive = q.ChangePercent >= 0;
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
+                            <td class="px-4 py-3 font-semibold text-slate-800 dark:text-white">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full @(q.Category == "Major" ? "bg-blue-500" : "bg-purple-500")"></span>
+                                    <span>@q.Symbol</span>
+                                    <span class="text-2xs text-slate-400 font-normal hidden sm:inline">(@q.DisplayName)</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 font-mono font-medium text-slate-700 dark:text-slate-300">@q.Bid</td>
+                            <td class="px-4 py-3 font-mono font-medium text-slate-700 dark:text-slate-300">@q.Ask</td>
+                            <td class="px-4 py-3 font-mono">
+                                <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-2xs font-semibold">@q.SpreadPips</span>
+                            </td>
+                            <td class="px-4 py-3 font-semibold @(isPositive ? "text-emerald-600" : "text-rose-600")">
+                                <span class="flex items-center gap-1">
+                                    <i class="fa-solid @(isPositive ? "fa-arrow-up" : "fa-arrow-down") text-2xs"></i>
+                                    @q.ChangePercent%
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-2xs text-slate-500 dark:text-slate-400 font-mono">
+                                <span class="text-emerald-600">H: @q.High24h</span> / <span class="text-rose-600">L: @q.Low24h</span>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <a asp-action="Chart" asp-route-symbol="@q.Symbol" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-2xs font-medium" title="Chart">
+                                        <i class="fa-solid fa-chart-candlestick"></i> Chart
+                                    </a>
+                                    <a asp-area="Forex" asp-controller="ForexAnalysis" asp-action="Index" asp-route-symbol="@q.Symbol" class="px-2.5 py-1 bg-brand-50 hover:bg-brand-100 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 rounded-lg text-2xs font-medium" title="Analysis">
+                                        <i class="fa-solid fa-microscope"></i> Analysis
+                                    </a>
+                                    <a asp-area="Forex" asp-controller="ForexTrade" asp-action="Index" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg text-2xs font-semibold" title="Trade">
+                                        <i class="fa-solid fa-bolt"></i> Trade
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Metals & Commodities (Gold, Silver, DXY) -->
+    @if (Model.MetalsAndIndices.Any())
+    {
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-xs">
+            <h2 class="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-gem text-amber-500"></i> Metals & Dollar Index (DXY)
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                @foreach (var m in Model.MetalsAndIndices)
+                {
+                    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between">
+                        <div>
+                            <div class="text-xs font-bold text-slate-800 dark:text-white">@m.DisplayName</div>
+                            <div class="text-base font-black font-mono mt-1 text-slate-900 dark:text-white">@m.Bid</div>
+                            <div class="text-2xs text-slate-400 mt-0.5">Spread: @m.SpreadPips pips</div>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-block px-2 py-0.5 rounded text-xs font-bold @(m.ChangePercent >= 0 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" : "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300")">
+                                @(m.ChangePercent >= 0 ? "+" : "")@m.ChangePercent%
+                            </span>
+                            <div class="mt-2">
+                                <a asp-action="Chart" asp-route-symbol="@m.Symbol" class="text-2xs text-brand-600 dark:text-brand-400 font-semibold hover:underline">View Chart &rarr;</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>

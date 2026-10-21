@@ -1,0 +1,226 @@
+@model (AzureTest.Contracts.DTOs.Forex.TechnicalOverviewDto Technical, AzureTest.Contracts.DTOs.Forex.FundamentalOverviewDto Fundamental)
+@{
+    ViewData["Title"] = "Forex Fundamental Analysis";
+    var f = Model.Fundamental;
+    var highImpacts = f.UpcomingEvents.Where(e => e.Impact == ForexImpactLevel.High).ToList();
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-landmark"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Macro Fundamentals, Economic Calendar & COT</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Institutional positioning, interest rate differentials, and market-moving macroeconomic events</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a asp-action="Index" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl">
+                Hub Overview
+            </a>
+            <a asp-area="Forex" asp-controller="ForexRisk" asp-action="Index" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl shadow-xs flex items-center gap-2">
+                <i class="fa-solid fa-ban"></i> News No-Trade Filter
+            </a>
+        </div>
+    </div>
+
+    <!-- High Impact Event Warning Alert -->
+    @if (highImpacts.Count > 0)
+    {
+        <div class="bg-rose-500/10 border border-rose-500/30 p-4 rounded-2xl flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center font-bold text-lg shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-rose-800 dark:text-rose-300">
+                        @highImpacts.Count High-Impact Economic Releases Ahead
+                    </h2>
+                    <p class="text-xs text-rose-700 dark:text-rose-400 mt-0.5">
+                        High volatility, severe slippage, and spread widening expected during CPI, Non-Farm Payrolls, and Central Bank decisions. Ensure risk buffers or active news filters.
+                    </p>
+                </div>
+            </div>
+            <a asp-area="Forex" asp-controller="ForexRisk" asp-action="Index" class="hidden sm:inline-flex px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shrink-0">
+                Configure News Filter
+            </a>
+        </div>
+    }
+
+    <!-- Central Bank Policy Rates & Carry Trade Differentials -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-building-columns text-emerald-500"></i> Central Bank Benchmark Interest Rates
+                </h2>
+                <p class="text-xs text-slate-400">Yield differentials dictate long-term currency capital flows and swap rates</p>
+            </div>
+            <span class="text-xs font-mono text-slate-400">ECB / FRED reference data</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            @foreach (var cb in f.CentralBankRates)
+            {
+                <div class="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-800 dark:text-white">@cb.Currency</span>
+                        <span class="px-2 py-0.5 rounded text-2xs font-bold @(cb.Trend == "Hawkish" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : cb.Trend == "Dovish" ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300")">
+                            @cb.Trend
+                        </span>
+                    </div>
+                    <div class="text-2xl font-bold font-mono text-slate-900 dark:text-white mt-2">
+                        @cb.InterestRate.ToString("F2")%
+                    </div>
+                    <div class="text-2xs text-slate-400 mt-1">@cb.CentralBank (@cb.Country)</div>
+                    <div class="text-3xs text-slate-400 mt-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                        Updated @cb.LastChangeDate.ToString("yyyy-MM-dd")
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Economic Calendar Table -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-xs">
+        <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <div>
+                <h2 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-days text-brand-500"></i> Forex Economic Calendar
+                </h2>
+                <p class="text-2xs text-slate-400">Real-time scheduled macroeconomic event releases</p>
+            </div>
+            <span class="text-xs text-slate-400">All times UTC</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 font-semibold uppercase text-2xs border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                        <th class="px-4 py-3">Time (UTC)</th>
+                        <th class="px-4 py-3">Currency</th>
+                        <th class="px-4 py-3">Impact</th>
+                        <th class="px-4 py-3">Event / Metric</th>
+                        <th class="px-4 py-3">Actual</th>
+                        <th class="px-4 py-3">Forecast</th>
+                        <th class="px-4 py-3">Previous</th>
+                        <th class="px-4 py-3 text-right">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @foreach (var ev in f.UpcomingEvents)
+                    {
+                        var impactBadge = ev.Impact switch
+                        {
+                            ForexImpactLevel.High => "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300",
+                            ForexImpactLevel.Medium => "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+                            _ => "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                        };
+
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-750">
+                            <td class="px-4 py-3 font-mono text-slate-600 dark:text-slate-400">@ev.EventTimeUtc.ToString("HH:mm")</td>
+                            <td class="px-4 py-3 font-bold text-slate-800 dark:text-white">
+                                <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-2xs">@ev.Currency</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-0.5 rounded text-2xs font-bold @impactBadge">
+                                    @ev.Impact
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 font-medium text-slate-800 dark:text-white">
+                                @ev.Title
+                                <span class="text-2xs text-slate-400 block">@ev.Country</span>
+                            </td>
+                            <td class="px-4 py-3 font-mono font-bold text-slate-900 dark:text-white">@ev.Actual</td>
+                            <td class="px-4 py-3 font-mono text-slate-500">@ev.Forecast</td>
+                            <td class="px-4 py-3 font-mono text-slate-400">@ev.Previous</td>
+                            <td class="px-4 py-3 text-right">
+                                <span class="px-2 py-0.5 rounded text-2xs font-semibold @(ev.IsPending ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300" : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300")">
+                                    @(ev.IsPending ? "Pending" : "Released")
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- CFTC COT Reports & Market News -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- CFTC Commitments of Traders (COT) -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-file-invoice text-indigo-500"></i> CFTC COT Institutional Positioning
+                    </h2>
+                    <p class="text-xs text-slate-400">Weekly non-commercial speculative positioning from the CFTC</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                @foreach (var cot in f.CotReports)
+                {
+                    var isNetLong = cot.NetPositions >= 0;
+                    <div class="p-3.5 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-bold text-slate-800 dark:text-white">@cot.Currency</span>
+                                <span class="text-2xs font-mono text-slate-400">(@cot.Symbol)</span>
+                            </div>
+                            <div class="text-2xs text-slate-500 mt-1 font-mono">
+                                Longs: @cot.NonCommercialLong.ToString("N0") | Shorts: @cot.NonCommercialShort.ToString("N0")
+                            </div>
+                        </div>
+                        <div class="text-right font-mono">
+                            <span class="text-sm font-bold @(isNetLong ? "text-emerald-600" : "text-rose-600")">
+                                @(isNetLong ? "+" : "")@cot.NetPositions.ToString("N0") Net
+                            </span>
+                            <div class="text-2xs text-slate-400">
+                                WoW Change: <span class="@(cot.ChangeFromPreviousWeek >= 0 ? "text-emerald-600" : "text-rose-600")">@(cot.ChangeFromPreviousWeek >= 0 ? "+" : "")@cot.ChangeFromPreviousWeek.ToString("N0")</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Forex News Feed -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-newspaper text-cyan-500"></i> Forex Market News & Sentiment
+                </h2>
+                <span class="text-xs text-slate-400">Live feeds</span>
+            </div>
+
+            <div class="space-y-3">
+                @foreach (var n in f.NewsFeed)
+                {
+                    <div class="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center justify-between text-2xs mb-1">
+                            <span class="font-bold text-slate-500">@n.Source</span>
+                            <span class="px-2 py-0.5 rounded font-semibold @(n.Sentiment == "Bullish" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : n.Sentiment == "Bearish" ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300")">
+                                @n.Sentiment
+                            </span>
+                        </div>
+                        <a href="@n.Url" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-slate-800 dark:text-white hover:text-brand-600 line-clamp-2">
+                            @n.Headline
+                        </a>
+                        <div class="flex items-center justify-between text-3xs text-slate-400 mt-2">
+                            <span>Currencies: @n.RelatedCurrencies</span>
+                            <span>@n.PublishedUtc.ToString("yyyy-MM-dd HH:mm") UTC</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

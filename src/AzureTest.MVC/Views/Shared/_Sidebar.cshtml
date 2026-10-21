@@ -345,6 +345,138 @@
                 </a>
             </li>
 
+            <!-- Forex Trading Section -->
+            <li class="pt-4 mt-4 border-t border-slate-100">
+                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sidebar-text transition-all duration-300">
+                    Forex Trading</p>
+
+                <a asp-area="Forex" asp-controller="ForexMarket" asp-action="Index" data-title="Forex Rates"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "ForexMarket" && currentAction == "Index" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-chart-line w-6 text-center text-lg transition-colors @(currentController == "ForexMarket" && currentAction == "Index" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Market Rates</span>
+                </a>
+
+                <a asp-area="Forex" asp-controller="ForexMarket" asp-action="Chart" data-title="Candlestick Chart"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "ForexMarket" && currentAction == "Chart" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-chart-candlestick w-6 text-center text-lg transition-colors @(currentController == "ForexMarket" && currentAction == "Chart" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Live Chart</span>
+                </a>
+
+                <a asp-area="Forex" asp-controller="ForexMarket" asp-action="Sessions" data-title="Global Sessions"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "ForexMarket" && currentAction == "Sessions" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-earth-americas w-6 text-center text-lg transition-colors @(currentController == "ForexMarket" && currentAction == "Sessions" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Market Sessions</span>
+                </a>
+
+                <a asp-area="Forex" asp-controller="ForexAnalysis" asp-action="Index" data-title="Analysis Hub"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "ForexAnalysis" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-compass-drafting w-6 text-center text-lg transition-colors @(currentController == "ForexAnalysis" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Analysis Hub</span>
+                </a>
+
+                <a asp-area="Forex" asp-controller="ForexStrategy" asp-action="Index" data-title="Strategy Lab"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "ForexStrategy" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-microchip w-6 text-center text-lg transition-colors @(currentController == "ForexStrategy" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Backtest Lab</span>
+                </a>
+
+                <a asp-area="Forex" asp-controller="ForexTrade" asp-action="Index" data-title="Trading Terminal"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "ForexTrade" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-bolt w-6 text-center text-lg transition-colors @(currentController == "ForexTrade" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Demo Terminal</span>
+                </a>
+
+                <a asp-area="Forex" asp-controller="ForexRisk" asp-action="Index" data-title="Risk & ESMA"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "ForexRisk" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-shield-halved w-6 text-center text-lg transition-colors @(currentController == "ForexRisk" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Risk & ESMA</span>
+                </a>
+
+                <a asp-area="Forex" asp-controller="ForexJournal" asp-action="Index" data-title="Trade Journal"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "ForexJournal" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-book-journal-whills w-6 text-center text-lg transition-colors @(currentController == "ForexJournal" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Journal & Tax</span>
+                </a>
+
+                <a asp-area="Forex" asp-controller="ForexSettings" asp-action="Index" data-title="Forex Settings"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "ForexSettings" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-sliders w-6 text-center text-lg transition-colors @(currentController == "ForexSettings" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Settings & Keys</span>
+                </a>
+            </li>
+
+            <!-- Crypto Markets & Trading Section -->
+            <li class="pt-4 mt-4 border-t border-slate-100">
+                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sidebar-text transition-all duration-300">
+                    Crypto Trading</p>
+
+                <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="Index" data-title="Crypto Markets"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoMarket" && currentAction == "Index" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-brands fa-bitcoin w-6 text-center text-lg transition-colors @(currentController == "CryptoMarket" && currentAction == "Index" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Market Rates</span>
+                </a>
+
+                <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="Chart" data-title="Candlestick Chart"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoMarket" && currentAction == "Chart" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-chart-candlestick w-6 text-center text-lg transition-colors @(currentController == "CryptoMarket" && currentAction == "Chart" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Kline Chart</span>
+                </a>
+
+                <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="OrderBook" data-title="Order Book Depth"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoMarket" && currentAction == "OrderBook" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-layer-group w-6 text-center text-lg transition-colors @(currentController == "CryptoMarket" && currentAction == "OrderBook" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Order Book</span>
+                </a>
+
+                <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="Futures" data-title="Futures Funding"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoMarket" && currentAction == "Futures" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-scale-balanced w-6 text-center text-lg transition-colors @(currentController == "CryptoMarket" && currentAction == "Futures" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Futures Funding</span>
+                </a>
+
+                <a asp-area="Crypto" asp-controller="CryptoAnalysis" asp-action="Index" data-title="Technical Analysis"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoAnalysis" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-compass-drafting w-6 text-center text-lg transition-colors @(currentController == "CryptoAnalysis" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Analysis Hub</span>
+                </a>
+
+                <a asp-area="Crypto" asp-controller="CryptoStrategy" asp-action="Index" data-title="Strategies & Backtest"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoStrategy" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-flask w-6 text-center text-lg transition-colors @(currentController == "CryptoStrategy" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Backtest Lab</span>
+                </a>
+
+                <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" data-title="Trading Terminal"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoTrade" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-bolt w-6 text-center text-lg transition-colors @(currentController == "CryptoTrade" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Trading Console</span>
+                </a>
+
+                <a asp-area="Crypto" asp-controller="CryptoRisk" asp-action="Index" data-title="Risk & Kill Switch"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoRisk" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-shield-halved w-6 text-center text-lg transition-colors @(currentController == "CryptoRisk" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Risk & Kill Switch</span>
+                </a>
+
+                <a asp-area="Crypto" asp-controller="CryptoPortfolio" asp-action="Index" data-title="Portfolio & Tax"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoPortfolio" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-pie-chart w-6 text-center text-lg transition-colors @(currentController == "CryptoPortfolio" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Portfolio & Tax</span>
+                </a>
+
+                <a asp-area="Crypto" asp-controller="CryptoAlerts" asp-action="Index" data-title="Automated Alerts"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoAlerts" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-bell w-6 text-center text-lg transition-colors @(currentController == "CryptoAlerts" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Alerts</span>
+                </a>
+
+                <a asp-area="Crypto" asp-controller="CryptoSettings" asp-action="Index" data-title="API & Security"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoSettings" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-key w-6 text-center text-lg transition-colors @(currentController == "CryptoSettings" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Settings & Keys</span>
+                </a>
+            </li>
+
             <!-- Entertainment & Media Section -->
             <li class="pt-4 mt-4 border-t border-slate-100">
                 <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sidebar-text transition-all duration-300">
@@ -642,6 +774,20 @@
                 <i class="fa-solid fa-wallet text-base"></i>
             </button>
 
+            <!-- Forex Trading -->
+            <button type="button" onclick="openFloatingSection('forex')"
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 @(currentController != null && currentController.StartsWith("Forex") ? "bg-brand-50 text-brand-600 dark:bg-brand-950/40 font-bold border border-brand-200 dark:border-brand-800" : "text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-800") active:scale-95 transition-all"
+                    title="Forex Trading" aria-label="Forex Trading">
+                <i class="fa-solid fa-chart-line text-base"></i>
+            </button>
+
+            <!-- Crypto Trading -->
+            <button type="button" onclick="openFloatingSection('crypto')"
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 @(currentController != null && currentController.StartsWith("Crypto") ? "bg-brand-50 text-brand-600 dark:bg-brand-950/40 font-bold border border-brand-200 dark:border-brand-800" : "text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-800") active:scale-95 transition-all"
+                    title="Crypto Trading" aria-label="Crypto Trading">
+                <i class="fa-brands fa-bitcoin text-base"></i>
+            </button>
+
             <!-- 7. Entertainment & Media -->
             <button type="button" onclick="openFloatingSection('media')"
                     class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 @(currentController == "Media" ? "bg-brand-50 text-brand-600 dark:bg-brand-950/40 font-bold border border-brand-200 dark:border-brand-800" : "text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-800") active:scale-95 transition-all"
@@ -795,6 +941,74 @@
                     </a>
                     <a asp-controller="DebtPerson" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "DebtPerson" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Debt Persons">
                         <i class="fa-solid fa-users-line text-base"></i>
+                    </a>
+                </div>
+
+                <!-- Sub-Section: Forex Trading -->
+                <div id="subSection_forex" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide">
+                    <a asp-area="Forex" asp-controller="ForexMarket" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "ForexMarket" && currentAction == "Index" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Market Rates">
+                        <i class="fa-solid fa-chart-line text-base"></i>
+                    </a>
+                    <a asp-area="Forex" asp-controller="ForexMarket" asp-action="Chart" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "ForexMarket" && currentAction == "Chart" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Live Chart">
+                        <i class="fa-solid fa-chart-candlestick text-base"></i>
+                    </a>
+                    <a asp-area="Forex" asp-controller="ForexMarket" asp-action="Sessions" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "ForexMarket" && currentAction == "Sessions" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Market Sessions">
+                        <i class="fa-solid fa-earth-americas text-base"></i>
+                    </a>
+                    <a asp-area="Forex" asp-controller="ForexAnalysis" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "ForexAnalysis" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Analysis Hub">
+                        <i class="fa-solid fa-compass-drafting text-base"></i>
+                    </a>
+                    <a asp-area="Forex" asp-controller="ForexStrategy" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "ForexStrategy" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Strategy Lab">
+                        <i class="fa-solid fa-microchip text-base"></i>
+                    </a>
+                    <a asp-area="Forex" asp-controller="ForexTrade" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "ForexTrade" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Demo Terminal">
+                        <i class="fa-solid fa-bolt text-base"></i>
+                    </a>
+                    <a asp-area="Forex" asp-controller="ForexRisk" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "ForexRisk" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Risk & ESMA">
+                        <i class="fa-solid fa-shield-halved text-base"></i>
+                    </a>
+                    <a asp-area="Forex" asp-controller="ForexJournal" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "ForexJournal" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Trade Journal">
+                        <i class="fa-solid fa-book-journal-whills text-base"></i>
+                    </a>
+                    <a asp-area="Forex" asp-controller="ForexSettings" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "ForexSettings" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Forex Settings">
+                        <i class="fa-solid fa-sliders text-base"></i>
+                    </a>
+                </div>
+
+                <!-- Sub-Section: Crypto Trading -->
+                <div id="subSection_crypto" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide">
+                    <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoMarket" && currentAction == "Index" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Market Rates">
+                        <i class="fa-brands fa-bitcoin text-base"></i>
+                    </a>
+                    <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="Chart" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoMarket" && currentAction == "Chart" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Kline Chart">
+                        <i class="fa-solid fa-chart-candlestick text-base"></i>
+                    </a>
+                    <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="OrderBook" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoMarket" && currentAction == "OrderBook" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Order Book">
+                        <i class="fa-solid fa-layer-group text-base"></i>
+                    </a>
+                    <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="Futures" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoMarket" && currentAction == "Futures" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Futures Funding">
+                        <i class="fa-solid fa-scale-balanced text-base"></i>
+                    </a>
+                    <a asp-area="Crypto" asp-controller="CryptoAnalysis" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoAnalysis" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Technical Analysis">
+                        <i class="fa-solid fa-compass-drafting text-base"></i>
+                    </a>
+                    <a asp-area="Crypto" asp-controller="CryptoStrategy" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoStrategy" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Strategy Lab">
+                        <i class="fa-solid fa-flask text-base"></i>
+                    </a>
+                    <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoTrade" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Trading Terminal">
+                        <i class="fa-solid fa-bolt text-base"></i>
+                    </a>
+                    <a asp-area="Crypto" asp-controller="CryptoRisk" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoRisk" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Risk & Kill Switch">
+                        <i class="fa-solid fa-shield-halved text-base"></i>
+                    </a>
+                    <a asp-area="Crypto" asp-controller="CryptoPortfolio" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoPortfolio" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Portfolio & Balances">
+                        <i class="fa-solid fa-pie-chart text-base"></i>
+                    </a>
+                    <a asp-area="Crypto" asp-controller="CryptoAlerts" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoAlerts" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Automated Alerts">
+                        <i class="fa-solid fa-bell text-base"></i>
+                    </a>
+                    <a asp-area="Crypto" asp-controller="CryptoSettings" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoSettings" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Crypto Settings">
+                        <i class="fa-solid fa-key text-base"></i>
                     </a>
                 </div>
 

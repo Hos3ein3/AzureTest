@@ -1,0 +1,196 @@
+@model IReadOnlyList<CryptoCandleDto>
+@{
+    ViewData["Title"] = $"{ViewBag.Symbol} Candlestick Chart";
+    var symbol = ViewBag.Symbol as string ?? "BTCUSDT";
+    var timeframe = ViewBag.Timeframe is CryptoTimeframe tf ? tf : CryptoTimeframe.H1;
+    var lastCandle = Model != null && Model.Any() ? Model.Last() : null;
+    var firstCandle = Model != null && Model.Any() ? Model.First() : null;
+    var periodChange = lastCandle != null && firstCandle != null && firstCandle.Open > 0 
+        ? ((lastCandle.Close - firstCandle.Open) / firstCandle.Open) * 100m 
+        : 0m;
+}
+
+<div class="space-y-6">
+    <!-- Header with Symbol & Timeframe Switchers -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <a asp-action="Index" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-bold text-slate-800 dark:text-white">@symbol</h1>
+                        <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-brand-500/10 text-brand-600">@timeframe</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Historical Kline candlestick series from Binance Spot Free API</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Symbols -->
+        <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-2xs font-semibold text-slate-400 mr-1">Pairs:</span>
+            @foreach (var s in new[] { "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT" })
+            {
+                <a asp-action="Chart" asp-route-symbol="@s" asp-route-timeframe="@timeframe" class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors @(s == symbol ? "bg-brand-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200")">
+                    @s.Replace("USDT", "")
+                </a>
+            }
+        </div>
+
+        <!-- Timeframe Toolbar -->
+        <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl">
+            @foreach (CryptoTimeframe t in Enum.GetValues(typeof(CryptoTimeframe)))
+            {
+                <a asp-action="Chart" asp-route-symbol="@symbol" asp-route-timeframe="@t" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors @(t == timeframe ? "bg-white dark:bg-slate-800 text-brand-600 shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800")">
+                    @t
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Live Candle Stat Banner -->
+    @if (lastCandle != null)
+    {
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div class="text-2xs text-slate-400">Last Close</div>
+                <div class="text-base font-bold font-mono text-slate-800 dark:text-white mt-1">$@lastCandle.Close.ToString("N2")</div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div class="text-2xs text-slate-400">Open Price</div>
+                <div class="text-base font-bold font-mono text-slate-800 dark:text-white mt-1">$@lastCandle.Open.ToString("N2")</div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div class="text-2xs text-slate-400">High</div>
+                <div class="text-base font-bold font-mono text-emerald-600 mt-1">$@lastCandle.High.ToString("N2")</div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div class="text-2xs text-slate-400">Low</div>
+                <div class="text-base font-bold font-mono text-rose-600 mt-1">$@lastCandle.Low.ToString("N2")</div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div class="text-2xs text-slate-400">Period Trend</div>
+                <div class="text-base font-bold font-mono mt-1 @(periodChange >= 0 ? "text-emerald-600" : "text-rose-600")">
+                    @(periodChange >= 0 ? "+" : "")@periodChange.ToString("F2")%
+                </div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div class="text-2xs text-slate-400">Volume</div>
+                <div class="text-base font-bold font-mono text-slate-800 dark:text-white mt-1">@lastCandle.Volume.ToString("N1")</div>
+            </div>
+        </div>
+    }
+
+    <!-- Candlestick Visualizer Panel -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-chart-simple text-brand-500"></i>
+                Price Action & Volatility Profile (Last 120 Bars)
+            </h3>
+            <div class="flex items-center gap-2">
+                <a asp-area="Crypto" asp-controller="CryptoAnalysis" asp-action="Index" asp-route-symbol="@symbol" class="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-200">
+                    <i class="fa-solid fa-chart-line"></i> View Indicators
+                </a>
+                <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" asp-route-symbol="@symbol" class="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700">
+                    <i class="fa-solid fa-bolt"></i> Trade @symbol
+                </a>
+            </div>
+        </div>
+
+        <!-- Render Candlestick SVG Bars Chart -->
+        @{
+            var candles = Model != null ? Model.TakeLast(60).ToList() : new List<CryptoCandleDto>();
+            var minPrice = candles.Any() ? candles.Min(c => c.Low) * 0.998m : 1m;
+            var maxPrice = candles.Any() ? candles.Max(c => c.High) * 1.002m : 100m;
+            var priceRange = maxPrice - minPrice;
+            if (priceRange <= 0) priceRange = 1m;
+        }
+
+        <div class="w-full bg-slate-900 rounded-xl p-4 overflow-x-auto">
+            <div style="min-width: 720px; height: 320px;" class="relative flex items-end justify-between gap-1 pt-6 pb-6">
+                <!-- Grid Lines and Price Markers -->
+                <div class="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20 border-b border-slate-700">
+                    <div class="border-b border-dashed border-slate-500 flex justify-between px-2 text-[10px] text-slate-300">
+                        <span>$@maxPrice.ToString("N2")</span>
+                    </div>
+                    <div class="border-b border-dashed border-slate-500 flex justify-between px-2 text-[10px] text-slate-300">
+                        <span>$@((minPrice + priceRange * 0.5m).ToString("N2"))</span>
+                    </div>
+                    <div class="flex justify-between px-2 text-[10px] text-slate-300">
+                        <span>$@minPrice.ToString("N2")</span>
+                    </div>
+                </div>
+
+                <!-- Candles -->
+                @for (int i = 0; i < candles.Count; i++)
+                {
+                    var c = candles[i];
+                    var isUp = c.Close >= c.Open;
+                    var bodyHigh = Math.Max(c.Open, c.Close);
+                    var bodyLow = Math.Min(c.Open, c.Close);
+
+                    var topPercent = (float)((maxPrice - c.High) / priceRange) * 100f;
+                    var bottomPercent = (float)((c.Low - minPrice) / priceRange) * 100f;
+                    var bodyTopPercent = (float)((maxPrice - bodyHigh) / priceRange) * 100f;
+                    var bodyHeightPercent = Math.Max(1.5f, (float)((bodyHigh - bodyLow) / priceRange) * 100f);
+
+                    <div class="relative flex-1 h-full flex flex-col items-center group cursor-pointer" title="@c.Time.ToString("yyyy-MM-dd HH:mm")&#10;O: $@c.Open.ToString("F2")&#10;H: $@c.High.ToString("F2")&#10;L: $@c.Low.ToString("F2")&#10;C: $@c.Close.ToString("F2")&#10;Vol: @c.Volume.ToString("N1")">
+                        <!-- Wick -->
+                        <div class="absolute w-[1.5px] @(isUp ? "bg-emerald-400" : "bg-rose-400")"
+                             style="top: @(topPercent)%; bottom: @(bottomPercent)%;"></div>
+                        <!-- Body -->
+                        <div class="absolute w-full max-w-[8px] rounded-[1px] @(isUp ? "bg-emerald-400 group-hover:bg-emerald-300" : "bg-rose-500 group-hover:bg-rose-400") transition-colors"
+                             style="top: @(bodyTopPercent)%; height: @(bodyHeightPercent)%;"></div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Historical Data Table -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Recent Candle Data</h3>
+            <span class="text-2xs text-slate-400">Total bars: @(Model?.Count ?? 0)</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-bold uppercase">
+                        <th class="py-3 px-4">Open Time (UTC)</th>
+                        <th class="py-3 px-4 text-right">Open</th>
+                        <th class="py-3 px-4 text-right">High</th>
+                        <th class="py-3 px-4 text-right">Low</th>
+                        <th class="py-3 px-4 text-right">Close</th>
+                        <th class="py-3 px-4 text-right">Change</th>
+                        <th class="py-3 px-4 text-right">Volume</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 font-mono">
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var candle in Model.TakeLast(20).Reverse())
+                        {
+                            var chg = candle.Open > 0 ? ((candle.Close - candle.Open) / candle.Open) * 100m : 0m;
+                            var up = candle.Close >= candle.Open;
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors">
+                                <td class="py-2.5 px-4 text-slate-500">@candle.Time.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td class="py-2.5 px-4 text-right text-slate-700 dark:text-slate-300">$@candle.Open.ToString("N2")</td>
+                                <td class="py-2.5 px-4 text-right text-emerald-600">$@candle.High.ToString("N2")</td>
+                                <td class="py-2.5 px-4 text-right text-rose-600">$@candle.Low.ToString("N2")</td>
+                                <td class="py-2.5 px-4 text-right font-bold text-slate-800 dark:text-white">$@candle.Close.ToString("N2")</td>
+                                <td class="py-2.5 px-4 text-right font-bold @(up ? "text-emerald-600" : "text-rose-600")">
+                                    @(up ? "+" : "")@chg.ToString("F2")%
+                                </td>
+                                <td class="py-2.5 px-4 text-right text-slate-500">@candle.Volume.ToString("N1")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

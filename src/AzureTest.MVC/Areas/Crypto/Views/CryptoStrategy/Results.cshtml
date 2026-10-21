@@ -1,0 +1,229 @@
+@model BacktestResultDto
+@{
+    ViewData["Title"] = $"{Model.StrategyName} Backtest Results";
+    var isProfitable = Model.NetProfit >= 0;
+    var wf = Model.WalkForward;
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <a asp-action="Index" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-bold text-slate-800 dark:text-white">@Model.StrategyName</h1>
+                        <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-indigo-500/10 text-indigo-600">@Model.Symbol • @Model.Timeframe</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Backtest report with 0.075% fees, 0.05% slippage, and walk-forward verification</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a asp-action="Backtest" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors">
+                <i class="fa-solid fa-rotate-left"></i> Re-test
+            </a>
+            <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" asp-route-symbol="@Model.Symbol" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors">
+                <i class="fa-solid fa-bolt"></i> Deploy to Paper
+            </a>
+        </div>
+    </div>
+
+    <!-- Walk-Forward Cross Validation Banner -->
+    @if (wf != null)
+    {
+        <div class="p-5 rounded-2xl border @(wf.IsRobust ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800" : "bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800")">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-start gap-3">
+                    <div class="p-2.5 rounded-xl @(wf.IsRobust ? "bg-emerald-500/20 text-emerald-600" : "bg-rose-500/20 text-rose-600") text-lg">
+                        <i class="fa-solid @(wf.IsRobust ? "fa-shield-check" : "fa-triangle-exclamation")"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm font-bold @(wf.IsRobust ? "text-emerald-900 dark:text-emerald-200" : "text-rose-900 dark:text-rose-200")">
+                                Walk-Forward Overfitting Status: @(wf.IsRobust ? "Robust (Out-of-Sample Validated)" : "High Overfitting Risk Detected")
+                            </h3>
+                            <span class="px-2 py-0.5 rounded-md text-2xs font-bold @(wf.IsRobust ? "bg-emerald-200/60 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200" : "bg-rose-200/60 dark:bg-rose-900 text-rose-800 dark:text-rose-200")">
+                                Risk: @wf.OverfittingRisk
+                            </span>
+                        </div>
+                        <p class="text-xs @(wf.IsRobust ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300") mt-1 leading-relaxed">
+                            @wf.Recommendation
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4 text-xs font-mono shrink-0">
+                    <div>
+                        <span class="text-slate-400 block text-[10px]">In-Sample Sharpe</span>
+                        <span class="font-bold text-slate-800 dark:text-white">@wf.InSampleSharpe.ToString("F2")</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[10px]">Out-of-Sample Sharpe</span>
+                        <span class="font-bold text-slate-800 dark:text-white">@wf.OutOfSampleSharpe.ToString("F2")</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[10px]">Degradation</span>
+                        <span class="font-bold @(wf.DegradationPercent > 35m ? "text-rose-500" : "text-emerald-500")">
+                            @wf.DegradationPercent.ToString("F1")%
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Performance Summary Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div class="text-2xs text-slate-400 font-semibold uppercase">Net Return</div>
+            <div class="text-base font-bold font-mono mt-1 @(isProfitable ? "text-emerald-500" : "text-rose-500")">
+                @(isProfitable ? "+" : "")$@Model.NetProfit.ToString("N2")
+            </div>
+            <div class="text-2xs font-mono text-slate-400 mt-0.5">
+                @(isProfitable ? "+" : "")@Model.ReturnPercent.ToString("F2")%
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div class="text-2xs text-slate-400 font-semibold uppercase">Win Rate</div>
+            <div class="text-base font-bold font-mono text-slate-800 dark:text-white mt-1">
+                @Model.WinRate.ToString("F1")%
+            </div>
+            <div class="text-2xs text-slate-400 mt-0.5">
+                @Model.WinningTrades W / @Model.LosingTrades L
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div class="text-2xs text-slate-400 font-semibold uppercase">Profit Factor</div>
+            <div class="text-base font-bold font-mono text-slate-800 dark:text-white mt-1">
+                @Model.ProfitFactor.ToString("F2")
+            </div>
+            <div class="text-2xs text-slate-400 mt-0.5">Gross Win / Loss</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div class="text-2xs text-slate-400 font-semibold uppercase">Max Drawdown</div>
+            <div class="text-base font-bold font-mono text-rose-500 mt-1">
+                -@Model.MaxDrawdownPercent.ToString("F2")%
+            </div>
+            <div class="text-2xs text-slate-400 mt-0.5">Peak-to-trough decline</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div class="text-2xs text-slate-400 font-semibold uppercase">Sharpe Ratio</div>
+            <div class="text-base font-bold font-mono text-slate-800 dark:text-white mt-1">
+                @Model.SharpeRatio.ToString("F2")
+            </div>
+            <div class="text-2xs text-slate-400 mt-0.5">Risk-adjusted return</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div class="text-2xs text-slate-400 font-semibold uppercase">Fees & Slippage</div>
+            <div class="text-base font-bold font-mono text-slate-800 dark:text-white mt-1">
+                $@Model.TotalFeesPaid.ToString("N2")
+            </div>
+            <div class="text-2xs text-slate-400 mt-0.5">Realized cost drag</div>
+        </div>
+    </div>
+
+    <!-- Equity Curve Summary Bar -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-indigo-500"></i> Equity Curve Trajectory
+            </h3>
+            <div class="text-xs font-mono text-slate-500">
+                Initial: $@Model.InitialCapital.ToString("N0") → Final: <span class="font-bold @(isProfitable ? "text-emerald-500" : "text-rose-500")">$@Model.FinalCapital.ToString("N2")</span>
+            </div>
+        </div>
+
+        @if (Model.EquityCurve != null && Model.EquityCurve.Any())
+        {
+            var eqMin = Model.EquityCurve.Min(e => e.Equity);
+            var eqMax = Model.EquityCurve.Max(e => e.Equity);
+            var eqRange = eqMax - eqMin;
+            if (eqRange <= 0) eqRange = 1m;
+
+            <div class="w-full bg-slate-900 rounded-xl p-4">
+                <div style="height: 180px;" class="flex items-end justify-between gap-1">
+                    @foreach (var pt in Model.EquityCurve.TakeLast(50))
+                    {
+                        var barHeight = Math.Max(5f, (float)((pt.Equity - eqMin) / eqRange) * 100f);
+                        <div class="flex-1 bg-indigo-500/80 hover:bg-indigo-400 rounded-t-xs transition-colors"
+                             style="height: @(barHeight)%;"
+                             title="@pt.Time.ToString("yyyy-MM-dd HH:mm"): $@pt.Equity.ToString("N2") (Drawdown: @pt.DrawdownPercent.ToString("F1")%)"></div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Trade Execution Log -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">
+                Simulated Trade Log (@Model.TotalTrades Trades)
+            </h3>
+            <span class="text-2xs text-slate-400">Order Fills with Fees</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-bold uppercase">
+                        <th class="py-3 px-4">Entry Time</th>
+                        <th class="py-3 px-4">Exit Time</th>
+                        <th class="py-3 px-4 text-center">Side</th>
+                        <th class="py-3 px-4 text-right">Entry Price</th>
+                        <th class="py-3 px-4 text-right">Exit Price</th>
+                        <th class="py-3 px-4 text-right">Size</th>
+                        <th class="py-3 px-4 text-right">P&L ($)</th>
+                        <th class="py-3 px-4 text-right">P&L (%)</th>
+                        <th class="py-3 px-4 text-right">Fee</th>
+                        <th class="py-3 px-4 text-center">Exit Reason</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 font-mono">
+                    @if (Model.Trades != null && Model.Trades.Any())
+                    {
+                        foreach (var tr in Model.Trades)
+                        {
+                            var win = tr.Pnl >= 0;
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors">
+                                <td class="py-2.5 px-4 text-slate-500">@tr.EntryTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td class="py-2.5 px-4 text-slate-500">@tr.ExitTime.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td class="py-2.5 px-4 text-center font-sans">
+                                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold @(tr.Side == "Buy" ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")">
+                                        @tr.Side
+                                    </span>
+                                </td>
+                                <td class="py-2.5 px-4 text-right text-slate-700 dark:text-slate-300">$@tr.EntryPrice.ToString("N2")</td>
+                                <td class="py-2.5 px-4 text-right text-slate-700 dark:text-slate-300">$@tr.ExitPrice.ToString("N2")</td>
+                                <td class="py-2.5 px-4 text-right text-slate-500">@tr.Quantity.ToString("F4")</td>
+                                <td class="py-2.5 px-4 text-right font-bold @(win ? "text-emerald-600" : "text-rose-600")">
+                                    @(win ? "+" : "")$@tr.Pnl.ToString("N2")
+                                </td>
+                                <td class="py-2.5 px-4 text-right font-bold @(win ? "text-emerald-600" : "text-rose-600")">
+                                    @(win ? "+" : "")@tr.PnlPercent.ToString("F2")%
+                                </td>
+                                <td class="py-2.5 px-4 text-right text-slate-400">$@tr.FeePaid.ToString("F2")</td>
+                                <td class="py-2.5 px-4 text-center font-sans text-2xs text-slate-500">@tr.ExitReason</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="10" class="py-6 text-center text-slate-400 font-sans">No trades triggered during simulation window.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

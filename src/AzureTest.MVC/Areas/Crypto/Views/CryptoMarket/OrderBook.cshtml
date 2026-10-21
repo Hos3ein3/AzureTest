@@ -1,0 +1,153 @@
+@model CryptoOrderBookDto
+@{
+    ViewData["Title"] = $"{Model?.Symbol ?? "BTCUSDT"} Order Book & Depth";
+    var symbol = Model?.Symbol ?? "BTCUSDT";
+    var maxBidTotal = Model?.Bids != null && Model.Bids.Any() ? Model.Bids.Max(b => b.Total) : 1m;
+    var maxAskTotal = Model?.Asks != null && Model.Asks.Any() ? Model.Asks.Max(a => a.Total) : 1m;
+    var maxTotal = Math.Max(maxBidTotal, maxAskTotal);
+    if (maxTotal <= 0) maxTotal = 1m;
+    var bestBid = Model?.Bids != null && Model.Bids.Any() ? Model.Bids.First().Price : 0m;
+    var bestAsk = Model?.Asks != null && Model.Asks.Any() ? Model.Asks.First().Price : 0m;
+    var midPrice = bestBid > 0 && bestAsk > 0 ? (bestBid + bestAsk) / 2m : (bestBid > 0 ? bestBid : bestAsk);
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <a asp-action="Index" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-bold text-slate-800 dark:text-white">@symbol Order Book Depth</h1>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Live Depth
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Real-time Level 2 depth ladder directly from Binance public market stream</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" asp-route-symbol="@symbol" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors">
+                <i class="fa-solid fa-bolt"></i> Trade @symbol
+            </a>
+            <a asp-action="Chart" asp-route-symbol="@symbol" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 rounded-xl text-xs font-semibold transition-colors">
+                <i class="fa-solid fa-chart-candlestick"></i> Kline Chart
+            </a>
+        </div>
+    </div>
+
+    <!-- Spread & Mid Price Summary Strip -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
+            <div class="text-2xs text-slate-400">Mid Market Price</div>
+            <div class="text-lg font-bold font-mono text-slate-800 dark:text-white mt-1">
+                $@midPrice.ToString("N2")
+            </div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
+            <div class="text-2xs text-slate-400">Bid-Ask Spread</div>
+            <div class="text-lg font-bold font-mono text-amber-500 mt-1">
+                $@(Model?.Spread.ToString("N2") ?? "0.00")
+            </div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
+            <div class="text-2xs text-slate-400">Spread Percentage</div>
+            <div class="text-lg font-bold font-mono text-slate-800 dark:text-white mt-1">
+                @(Model?.SpreadPercent.ToString("F4") ?? "0.0000")%
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Book Ladder Columns -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Bids (Buy Orders) -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+            <div class="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 border-b border-emerald-100 dark:border-emerald-900/40 flex items-center justify-between">
+                <h3 class="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-down text-emerald-500"></i> Bids (Buy Depth)
+                </h3>
+                <span class="text-2xs text-slate-500">Cumulative Volume</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs font-mono border-collapse">
+                    <thead>
+                        <tr class="text-[10px] text-slate-400 uppercase border-b border-slate-100 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-900/30">
+                            <th class="py-2.5 px-4 text-left">Price (USD)</th>
+                            <th class="py-2.5 px-4 text-right">Size</th>
+                            <th class="py-2.5 px-4 text-right">Total (USD)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700/40">
+                        @if (Model?.Bids != null)
+                        {
+                            foreach (var bid in Model.Bids)
+                            {
+                                var depthPct = Math.Min(100f, (float)(bid.Total / maxTotal) * 100f);
+                                <tr class="relative hover:bg-emerald-500/5 transition-colors">
+                                    <td class="py-2 px-4 font-bold text-emerald-600 relative z-10">
+                                        $@bid.Price.ToString("N2")
+                                    </td>
+                                    <td class="py-2 px-4 text-right text-slate-700 dark:text-slate-300 relative z-10">
+                                        @bid.Quantity.ToString("F4")
+                                    </td>
+                                    <td class="py-2 px-4 text-right text-slate-500 relative z-10">
+                                        $@bid.Total.ToString("N0")
+                                        <div class="absolute inset-y-0 left-0 bg-emerald-500/10 pointer-events-none -z-0" style="width: @(depthPct)%"></div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Asks (Sell Orders) -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+            <div class="p-4 bg-rose-50/50 dark:bg-rose-950/20 border-b border-rose-100 dark:border-rose-900/40 flex items-center justify-between">
+                <h3 class="text-xs font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-up text-rose-500"></i> Asks (Sell Depth)
+                </h3>
+                <span class="text-2xs text-slate-500">Cumulative Volume</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs font-mono border-collapse">
+                    <thead>
+                        <tr class="text-[10px] text-slate-400 uppercase border-b border-slate-100 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-900/30">
+                            <th class="py-2.5 px-4 text-left">Price (USD)</th>
+                            <th class="py-2.5 px-4 text-right">Size</th>
+                            <th class="py-2.5 px-4 text-right">Total (USD)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700/40">
+                        @if (Model?.Asks != null)
+                        {
+                            foreach (var ask in Model.Asks)
+                            {
+                                var depthPct = Math.Min(100f, (float)(ask.Total / maxTotal) * 100f);
+                                <tr class="relative hover:bg-rose-500/5 transition-colors">
+                                    <td class="py-2 px-4 font-bold text-rose-600 relative z-10">
+                                        $@ask.Price.ToString("N2")
+                                    </td>
+                                    <td class="py-2 px-4 text-right text-slate-700 dark:text-slate-300 relative z-10">
+                                        @ask.Quantity.ToString("F4")
+                                    </td>
+                                    <td class="py-2 px-4 text-right text-slate-500 relative z-10">
+                                        $@ask.Total.ToString("N0")
+                                        <div class="absolute inset-y-0 right-0 bg-rose-500/10 pointer-events-none -z-0" style="width: @(depthPct)%"></div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

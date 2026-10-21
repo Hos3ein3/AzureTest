@@ -1,0 +1,211 @@
+@model (AzureTest.Contracts.DTOs.Forex.TechnicalOverviewDto Technical, AzureTest.Contracts.DTOs.Forex.FundamentalOverviewDto Fundamental)
+@{
+    ViewData["Title"] = "Currency Strength & Pair Correlation";
+    var strengths = Model.Technical.CurrencyStrength.OrderByDescending(s => s.StrengthScore).ToList();
+    var correlations = Model.Technical.Correlations;
+    var strongest = strengths.FirstOrDefault();
+    var weakest = strengths.LastOrDefault();
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-gauge-high"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Currency Strength & Correlation Matrix</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Identify divergent currency pairs and prevent hidden double-risk exposure</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a asp-action="Index" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl">
+                Analysis Hub
+            </a>
+            <a asp-area="Forex" asp-controller="ForexRisk" asp-action="Index" class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold rounded-xl shadow-xs">
+                Check Exposure Limits
+            </a>
+        </div>
+    </div>
+
+    <!-- Strongest vs Weakest Highlight Strategy Box -->
+    @if (strongest != null && weakest != null)
+    {
+        <div class="bg-gradient-to-r from-emerald-500/10 via-brand-500/10 to-rose-500/10 p-6 rounded-2xl border border-emerald-500/20 shadow-xs">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-bolt-lightning"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xs font-bold uppercase tracking-wider text-slate-500">Highest Momentum Divergence</div>
+                        <h2 class="text-lg font-bold text-slate-800 dark:text-white">
+                            Strongest: <span class="text-emerald-600">@strongest.Currency (@strongest.StrengthScore.ToString("F0"))</span> vs Weakest: <span class="text-rose-600">@weakest.Currency (@weakest.StrengthScore.ToString("F0"))</span>
+                        </h2>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                            Trade high probability trend continuation by longing the strongest currency against the weakest currency: 
+                            <strong class="text-slate-800 dark:text-white">BUY @strongest.Currency/@weakest.Currency</strong>
+                        </p>
+                    </div>
+                </div>
+                <div>
+                    <a asp-area="Forex" asp-controller="ForexTrade" asp-action="Index" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs inline-flex items-center gap-2">
+                        Execute Pair Trade <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Currency Strength Leaderboard -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <h2 class="text-base font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-ranking-star text-amber-500"></i> Currency Strength Rankings (0 - 100)
+        </h2>
+        <div class="space-y-4">
+            @for (int i = 0; i < strengths.Count; i++)
+            {
+                var item = strengths[i];
+                var score = (float)item.StrengthScore;
+                var isTop = i < 2;
+                var isBottom = i >= strengths.Count - 2;
+
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center gap-3 w-48">
+                        <span class="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
+                            @(i + 1)
+                        </span>
+                        <div>
+                            <span class="text-sm font-bold text-slate-800 dark:text-white">@item.Currency</span>
+                            <span class="text-2xs text-slate-400 block">@item.Status</span>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="flex-1 mx-4">
+                        <div class="flex items-center justify-between text-2xs mb-1">
+                            <span class="text-slate-400">Relative Power</span>
+                            <span class="font-mono font-bold @(isTop ? "text-emerald-600" : isBottom ? "text-rose-600" : "text-slate-700 dark:text-slate-300")">
+                                @item.StrengthScore.ToString("F1") / 100
+                            </span>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500 @(isTop ? "bg-emerald-500" : isBottom ? "bg-rose-500" : "bg-blue-500")"
+                                 style="width: @Math.Min(100f, Math.Max(5f, score))%"></div>
+                        </div>
+                    </div>
+
+                    <div class="w-28 text-right font-mono text-xs">
+                        <span class="font-bold @(item.DailyChangePercent >= 0 ? "text-emerald-600" : "text-rose-600")">
+                            @(item.DailyChangePercent >= 0 ? "+" : "")@item.DailyChangePercent.ToString("F2")%
+                        </span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Pair Correlation Matrix & Portfolio Risk Guide -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Correlation Heatmap / Table -->
+        <div class="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-table-cells text-brand-500"></i> Pair Correlation Matrix (-1.00 to +1.00)
+                </h2>
+                <span class="text-2xs text-slate-400 font-medium">Coefficients calculated on H1 timeframe</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 font-sans text-2xs uppercase border-b border-slate-200 dark:border-slate-700">
+                        <tr>
+                            <th class="px-3 py-2.5">Pair A</th>
+                            <th class="px-3 py-2.5">Pair B</th>
+                            <th class="px-3 py-2.5">Coefficient</th>
+                            <th class="px-3 py-2.5">Correlation Type</th>
+                            <th class="px-3 py-2.5 text-right font-sans">Risk Implication</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                        @foreach (var c in correlations)
+                        {
+                            var coeff = c.CorrelationCoefficient;
+                            var isStrongPos = coeff >= 0.70m;
+                            var isStrongNeg = coeff <= -0.70m;
+                            <tr>
+                                <td class="px-3 py-2.5 font-bold text-slate-800 dark:text-white font-sans">@c.PairA</td>
+                                <td class="px-3 py-2.5 font-bold text-slate-800 dark:text-white font-sans">@c.PairB</td>
+                                <td class="px-3 py-2.5 font-bold @(isStrongPos ? "text-emerald-600" : isStrongNeg ? "text-rose-600" : "text-slate-600 dark:text-slate-400")">
+                                    @(coeff >= 0 ? "+" : "")@coeff.ToString("F2")
+                                </td>
+                                <td class="px-3 py-2.5 font-sans">
+                                    @if (isStrongPos)
+                                    {
+                                        <span class="px-2 py-0.5 rounded text-2xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">Strong Positive</span>
+                                    }
+                                    else if (isStrongNeg)
+                                    {
+                                        <span class="px-2 py-0.5 rounded text-2xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">Strong Inverse</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="px-2 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">Weak / Independent</span>
+                                    }
+                                </td>
+                                <td class="px-3 py-2.5 text-right font-sans text-2xs text-slate-500">
+                                    @if (isStrongPos)
+                                    {
+                                        <span>Same directional risk</span>
+                                    }
+                                    else if (isStrongNeg)
+                                    {
+                                        <span>Natural hedge / Opposite move</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Uncorrelated diversification</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Risk Diversification Guide -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between space-y-4">
+            <div>
+                <h2 class="text-sm font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-rose-500"></i> Correlation Risk Rules
+                </h2>
+                <div class="space-y-3 text-xs text-slate-600 dark:text-slate-400">
+                    <div class="p-3 bg-rose-500/5 rounded-xl border border-rose-500/20">
+                        <strong class="text-rose-700 dark:text-rose-400 block mb-1">Avoid Doubling Risk:</strong>
+                        Going Long EUR/USD and Long GBP/USD simultaneously is NOT two independent trades. Because correlation is +0.88, if USD rallies on news, both trades will hit Stop Loss at the exact same moment.
+                    </div>
+                    <div class="p-3 bg-emerald-500/5 rounded-xl border border-emerald-500/20">
+                        <strong class="text-emerald-700 dark:text-emerald-400 block mb-1">Inverse Pairs as Hedges:</strong>
+                        EUR/USD and USD/CHF have a -0.92 correlation. Going Long both effectively cancels profit and loss while generating double broker commission and spread costs.
+                    </div>
+                    <div class="p-3 bg-blue-500/5 rounded-xl border border-blue-500/20">
+                        <strong class="text-blue-700 dark:text-blue-400 block mb-1">True Diversification:</strong>
+                        Pair EUR/USD with AUD/JPY or NZD/CAD to trade different macro economic drivers without overlapping currency exposure.
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
+                <a asp-area="Forex" asp-controller="ForexRisk" asp-action="Index" class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center justify-between">
+                    <span>Manage Currency Exposure Limits</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

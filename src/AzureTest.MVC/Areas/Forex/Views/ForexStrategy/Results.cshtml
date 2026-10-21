@@ -1,0 +1,226 @@
+@model AzureTest.Contracts.DTOs.Forex.BacktestResultDto
+@{
+    ViewData["Title"] = $"Backtest Results: {Model.StrategyName}";
+    var isProfit = Model.NetProfit >= 0;
+
+    // Equity curve calculations for SVG
+    var equityPoints = Model.EquityCurve.ToList();
+    var minEquity = equityPoints.Count > 0 ? equityPoints.Min() : Model.InitialBalance;
+    var maxEquity = equityPoints.Count > 0 ? equityPoints.Max() : Model.InitialBalance;
+    var eqRange = (maxEquity - minEquity) == 0 ? 100m : (maxEquity - minEquity);
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl @(isProfit ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600") flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-square-poll-vertical"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-bold text-slate-800 dark:text-white">@Model.StrategyName</h1>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300">
+                            @Model.Symbol / @Model.Timeframe
+                        </span>
+                        @if (Model.IsWalkForward)
+                        {
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                Walk-Forward Validated
+                            </span>
+                        }
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Period: @Model.StartDate.ToString("yyyy-MM-dd") to @Model.EndDate.ToString("yyyy-MM-dd") | Friction: @Model.SpreadPips pips spread, @Model.SlippagePips pips slippage
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a asp-action="Index" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl">
+                &larr; Back to Catalog
+            </a>
+            <a asp-area="Forex" asp-controller="ForexTrade" asp-action="Index" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs">
+                Deploy to Demo Account
+            </a>
+        </div>
+    </div>
+
+    <!-- Performance Metric Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <!-- Net Profit -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <span class="text-2xs font-semibold text-slate-400 uppercase">Net Realized P&L</span>
+            <div class="text-xl font-bold font-mono mt-1 @(isProfit ? "text-emerald-600" : "text-rose-600")">
+                @(isProfit ? "+$" : "-$")@Math.Abs(Model.NetProfit).ToString("N2")
+            </div>
+            <span class="text-2xs font-medium @(isProfit ? "text-emerald-600" : "text-rose-600")">
+                @(isProfit ? "+" : "")@Model.ReturnPercent.ToString("F2")% Return
+            </span>
+        </div>
+
+        <!-- Profit Factor -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <span class="text-2xs font-semibold text-slate-400 uppercase">Profit Factor</span>
+            <div class="text-xl font-bold font-mono mt-1 @(Model.ProfitFactor >= 1.5m ? "text-emerald-600" : Model.ProfitFactor >= 1.0m ? "text-slate-800 dark:text-white" : "text-rose-600")">
+                @Model.ProfitFactor.ToString("F2")
+            </div>
+            <span class="text-2xs text-slate-400">Gross Wins / Gross Losses</span>
+        </div>
+
+        <!-- Win Rate -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <span class="text-2xs font-semibold text-slate-400 uppercase">Win Rate</span>
+            <div class="text-xl font-bold font-mono mt-1 text-slate-800 dark:text-white">
+                @Model.WinRatePercent.ToString("F1")%
+            </div>
+            <span class="text-2xs text-slate-400">@Model.WinningTrades W / @Model.LosingTrades L (@Model.TotalTrades total)</span>
+        </div>
+
+        <!-- Max Drawdown -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <span class="text-2xs font-semibold text-slate-400 uppercase">Max Drawdown</span>
+            <div class="text-xl font-bold font-mono mt-1 text-rose-600">
+                @Model.MaxDrawdownPercent.ToString("F2")%
+            </div>
+            <span class="text-2xs text-slate-400">Peak-to-trough decline</span>
+        </div>
+
+        <!-- Expectancy -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <span class="text-2xs font-semibold text-slate-400 uppercase">Expectancy</span>
+            <div class="text-xl font-bold font-mono mt-1 @(Model.ExpectancyPips >= 0 ? "text-emerald-600" : "text-rose-600")">
+                @(Model.ExpectancyPips >= 0 ? "+" : "")@Model.ExpectancyPips.ToString("F1") pips
+            </div>
+            <span class="text-2xs text-slate-400">Average edge per trade</span>
+        </div>
+
+        <!-- Sharpe Ratio -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <span class="text-2xs font-semibold text-slate-400 uppercase">Sharpe Ratio</span>
+            <div class="text-xl font-bold font-mono mt-1 text-slate-800 dark:text-white">
+                @Model.SharpeRatio.ToString("F2")
+            </div>
+            <span class="text-2xs text-slate-400">Risk-adjusted return</span>
+        </div>
+    </div>
+
+    <!-- Walk-Forward Testing Diagnostics (If enabled) -->
+    @if (Model.IsWalkForward)
+    {
+        <div class="bg-blue-500/10 border border-blue-500/20 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-500 text-white flex items-center justify-center font-bold text-lg">
+                    <i class="fa-solid fa-stethoscope"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-slate-800 dark:text-white">
+                        Walk-Forward Optimization (WFA) Efficiency: @Model.OutOfSampleEfficiency.ToString("F1")%
+                    </h3>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">
+                        Measures out-of-sample forward stability vs in-sample curve fitting. An efficiency &gt; 50% confirms the strategy holds robust non-overfitted edge.
+                    </p>
+                </div>
+            </div>
+            <div class="text-right shrink-0">
+                <span class="px-3 py-1 rounded-full text-xs font-bold @(Model.OutOfSampleEfficiency >= 60 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300")">
+                    @(Model.OutOfSampleEfficiency >= 60 ? "ROBUST STRATEGY" : "MODERATE OVERFITTING RISK")
+                </span>
+            </div>
+        </div>
+    }
+
+    <!-- Equity Curve Visualization -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-brand-500"></i> Account Equity Trajectory ($)
+                </h2>
+                <p class="text-xs text-slate-400">Starting Capital: $@Model.InitialBalance.ToString("N2") | Final Equity: $@Model.FinalBalance.ToString("N2")</p>
+            </div>
+            <div class="text-xs font-mono text-slate-400">
+                Peak: <strong class="text-emerald-600">$@maxEquity.ToString("N2")</strong> | Trough: <strong class="text-rose-600">$@minEquity.ToString("N2")</strong>
+            </div>
+        </div>
+
+        <div class="w-full bg-slate-950 rounded-xl p-4">
+            <svg class="w-full h-48" viewBox="0 0 @Math.Max(600, equityPoints.Count * 20) 180" preserveAspectRatio="none">
+                <!-- Zero/Initial capital line -->
+                <line x1="0" y1="90" x2="@Math.Max(600, equityPoints.Count * 20)" y2="90" stroke="#334155" stroke-dasharray="3" />
+
+                <!-- Polyline for equity -->
+                @{
+                    var pts = new System.Text.StringBuilder();
+                    for (int i = 0; i < equityPoints.Count; i++)
+                    {
+                        var val = equityPoints[i];
+                        var y = 160 - (float)((val - minEquity) / eqRange) * 140;
+                        var x = i * 20 + 10;
+                        pts.Append($"{x},{y:F1} ");
+                    }
+                }
+                <polyline fill="none" stroke="@(isProfit ? "#10b981" : "#f43f5e")" stroke-width="2.5" points="@pts.ToString()" />
+            </svg>
+        </div>
+    </div>
+
+    <!-- Trade Logs Table -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-xs">
+        <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <h2 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-brand-500"></i> Detailed Trade Log (@Model.TradeLogs.Count trades)
+            </h2>
+            <span class="text-xs text-slate-400">Chronological execution order</span>
+        </div>
+
+        <div class="overflow-x-auto max-h-96">
+            <table class="w-full text-left text-xs font-mono">
+                <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 font-sans text-2xs uppercase sticky top-0 border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                        <th class="px-4 py-2.5">Entry Time</th>
+                        <th class="px-4 py-2.5">Exit Time</th>
+                        <th class="px-4 py-2.5">Direction</th>
+                        <th class="px-4 py-2.5">Lots</th>
+                        <th class="px-4 py-2.5">Entry Price</th>
+                        <th class="px-4 py-2.5">Exit Price</th>
+                        <th class="px-4 py-2.5">Pips</th>
+                        <th class="px-4 py-2.5">Net P&L ($)</th>
+                        <th class="px-4 py-2.5 font-sans text-right">Exit Trigger</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @foreach (var trade in Model.TradeLogs)
+                    {
+                        var isWin = trade.NetProfit >= 0;
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-750">
+                            <td class="px-4 py-2 text-slate-500">@trade.EntryTime.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td class="px-4 py-2 text-slate-500">@trade.ExitTime.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td class="px-4 py-2">
+                                <span class="px-2 py-0.5 rounded text-3xs font-bold @(trade.Direction == ForexTradeDirection.Buy ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300")">
+                                    @trade.Direction
+                                </span>
+                            </td>
+                            <td class="px-4 py-2">@trade.LotSize.ToString("F2")</td>
+                            <td class="px-4 py-2 text-slate-700 dark:text-slate-300">@trade.EntryPrice.ToString("F5")</td>
+                            <td class="px-4 py-2 text-slate-700 dark:text-slate-300">@trade.ExitPrice.ToString("F5")</td>
+                            <td class="px-4 py-2 font-bold @(trade.Pips >= 0 ? "text-emerald-600" : "text-rose-600")">
+                                @(trade.Pips >= 0 ? "+" : "")@trade.Pips.ToString("F1")
+                            </td>
+                            <td class="px-4 py-2 font-bold @(isWin ? "text-emerald-600" : "text-rose-600")">
+                                @(isWin ? "+$" : "-$")@Math.Abs(trade.NetProfit).ToString("F2")
+                            </td>
+                            <td class="px-4 py-2 font-sans text-right">
+                                <span class="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                                    @trade.Reason
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

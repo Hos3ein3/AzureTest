@@ -1,0 +1,172 @@
+@model IReadOnlyList<AzureTest.Contracts.DTOs.Forex.ForexCandleDto>
+@{
+    var symbol = ViewBag.Symbol as string ?? "EUR/USD";
+    var timeframe = (ForexTimeframe)(ViewBag.Timeframe ?? ForexTimeframe.H1);
+    ViewData["Title"] = $"{symbol} Chart ({timeframe})";
+
+    var latest = Model.LastOrDefault();
+    var first = Model.FirstOrDefault();
+    var minPrice = Model.Count > 0 ? Model.Min(c => c.Low) : 1.0m;
+    var maxPrice = Model.Count > 0 ? Model.Max(c => c.High) : 1.1m;
+    var priceRange = (maxPrice - minPrice) == 0 ? 0.0001m : (maxPrice - minPrice);
+}
+
+<div class="space-y-6">
+    <!-- Header with Symbol & Timeframe Switchers -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-xl font-bold">
+                <i class="fa-solid fa-chart-candlestick"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">@symbol</h1>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">@timeframe</span>
+                    @if (latest != null)
+                    {
+                        var isUp = latest.Close >= latest.Open;
+                        <span class="text-sm font-mono font-bold @(isUp ? "text-emerald-600" : "text-rose-600")">
+                            @latest.Close.ToString("F5")
+                        </span>
+                    }
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">High: @maxPrice.ToString("F5") | Low: @minPrice.ToString("F5") | Candles: @Model.Count</p>
+            </div>
+        </div>
+
+        <!-- Controls: Pair Selector & Timeframes -->
+        <div class="flex flex-wrap items-center gap-3">
+            <form method="get" asp-action="Chart" class="flex items-center gap-2">
+                <select name="symbol" onchange="this.form.submit()" class="px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200">
+                    @foreach (var s in new[] { "EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "NZD/USD", "EUR/GBP", "EUR/JPY", "GBP/JPY", "XAU/USD", "DXY" })
+                    {
+                        <option value="@s" selected="@(s == symbol)">@s</option>
+                    }
+                </select>
+                <input type="hidden" name="timeframe" value="@timeframe" />
+            </form>
+
+            <!-- Timeframe buttons -->
+            <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-xl text-xs">
+                @foreach (ForexTimeframe tf in Enum.GetValues(typeof(ForexTimeframe)))
+                {
+                    <a asp-action="Chart" asp-route-symbol="@symbol" asp-route-timeframe="@tf"
+                       class="px-2.5 py-1 rounded-lg font-medium transition-colors @(tf == timeframe ? "bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-2xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900")">
+                        @tf
+                    </a>
+                }
+            </div>
+
+            <a asp-area="Forex" asp-controller="ForexTrade" asp-action="Index" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-2">
+                <i class="fa-solid fa-arrow-up-right-dots"></i> Trade @symbol
+            </a>
+        </div>
+    </div>
+
+    <!-- Candlestick Visual Display (SVG Engine) -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+            <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                OHLC Candlestick View (Synthetic Real-time Feed & Historic Range)
+            </div>
+            <div class="flex items-center gap-4 text-xs font-mono">
+                @if (latest != null)
+                {
+                    <span>O: <strong class="text-slate-700 dark:text-slate-300">@latest.Open.ToString("F5")</strong></span>
+                    <span>H: <strong class="text-emerald-600">@latest.High.ToString("F5")</strong></span>
+                    <span>L: <strong class="text-rose-600">@latest.Low.ToString("F5")</strong></span>
+                    <span>C: <strong class="text-slate-700 dark:text-slate-300">@latest.Close.ToString("F5")</strong></span>
+                    <span>Vol: <strong class="text-slate-500">@latest.Volume</strong></span>
+                }
+            </div>
+        </div>
+
+        <div class="w-full overflow-x-auto">
+            <div class="min-w-[800px] h-[360px] relative bg-slate-950 rounded-xl p-4 flex flex-col justify-between">
+                <!-- SVG Chart -->
+                <svg class="w-full h-[280px]" viewBox="0 0 @(Math.Max(800, Model.Count * 12)) 280" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="gridLine" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stop-color="#334155" stop-opacity="0.3" />
+                            <stop offset="100%" stop-color="#334155" stop-opacity="0.3" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Horizontal Grid lines -->
+                    <line x1="0" y1="20" x2="@(Math.Max(800, Model.Count * 12))" y2="20" stroke="#1e293b" stroke-dasharray="4" />
+                    <line x1="0" y1="90" x2="@(Math.Max(800, Model.Count * 12))" y2="90" stroke="#1e293b" stroke-dasharray="4" />
+                    <line x1="0" y1="160" x2="@(Math.Max(800, Model.Count * 12))" y2="160" stroke="#1e293b" stroke-dasharray="4" />
+                    <line x1="0" y1="230" x2="@(Math.Max(800, Model.Count * 12))" y2="230" stroke="#1e293b" stroke-dasharray="4" />
+
+                    @for (int i = 0; i < Model.Count; i++)
+                    {
+                        var c = Model[i];
+                        var isBull = c.Close >= c.Open;
+                        var color = isBull ? "#10b981" : "#f43f5e";
+
+                        // Scale price to Y (20 to 250)
+                        var yHigh = 250 - (float)((c.High - minPrice) / priceRange) * 230;
+                        var yLow = 250 - (float)((c.Low - minPrice) / priceRange) * 230;
+                        var yOpen = 250 - (float)((c.Open - minPrice) / priceRange) * 230;
+                        var yClose = 250 - (float)((c.Close - minPrice) / priceRange) * 230;
+
+                        var bodyTop = Math.Min(yOpen, yClose);
+                        var bodyHeight = Math.Max(2, Math.Abs(yClose - yOpen));
+                        var x = i * 12 + 6;
+
+                        <!-- Wick -->
+                        <line x1="@x" y1="@yHigh.ToString("F1")" x2="@x" y2="@yLow.ToString("F1")" stroke="@color" stroke-width="1.2" />
+                        <!-- Body -->
+                        <rect x="@(x - 3.5)" y="@bodyTop.ToString("F1")" width="7" height="@bodyHeight.ToString("F1")" fill="@color" rx="1" />
+                    }
+                </svg>
+
+                <!-- Time Axis / Volume bar area -->
+                <div class="h-12 border-t border-slate-800 flex items-center justify-between text-3xs font-mono text-slate-500 px-2">
+                    <span>@first?.Time.ToString("yyyy-MM-dd HH:mm") UTC</span>
+                    <span>Range: @minPrice.ToString("F5") - @maxPrice.ToString("F5")</span>
+                    <span>@latest?.Time.ToString("yyyy-MM-dd HH:mm") UTC</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Candle Historical Data Table -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-xs">
+        <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <h2 class="text-sm font-bold text-slate-800 dark:text-white">Recent Candle Data Log (@Model.Count bars)</h2>
+            <span class="text-xs text-slate-400">Timestamp in UTC</span>
+        </div>
+        <div class="overflow-x-auto max-h-80">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 font-semibold uppercase text-2xs sticky top-0 border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                        <th class="px-4 py-2.5">Time (UTC)</th>
+                        <th class="px-4 py-2.5">Open</th>
+                        <th class="px-4 py-2.5">High</th>
+                        <th class="px-4 py-2.5">Low</th>
+                        <th class="px-4 py-2.5">Close</th>
+                        <th class="px-4 py-2.5">Change</th>
+                        <th class="px-4 py-2.5">Volume</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700 font-mono">
+                    @foreach (var c in Model.OrderByDescending(x => x.Time).Take(30))
+                    {
+                        var isBull = c.Close >= c.Open;
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-750">
+                            <td class="px-4 py-2 text-slate-500">@c.Time.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td class="px-4 py-2 text-slate-700 dark:text-slate-300">@c.Open.ToString("F5")</td>
+                            <td class="px-4 py-2 text-emerald-600">@c.High.ToString("F5")</td>
+                            <td class="px-4 py-2 text-rose-600">@c.Low.ToString("F5")</td>
+                            <td class="px-4 py-2 font-bold @(isBull ? "text-emerald-600" : "text-rose-600")">@c.Close.ToString("F5")</td>
+                            <td class="px-4 py-2 @(isBull ? "text-emerald-600" : "text-rose-600")">
+                                @((c.Close - c.Open >= 0 ? "+" : ""))@((c.Close - c.Open).ToString("F5"))
+                            </td>
+                            <td class="px-4 py-2 text-slate-400">@c.Volume</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

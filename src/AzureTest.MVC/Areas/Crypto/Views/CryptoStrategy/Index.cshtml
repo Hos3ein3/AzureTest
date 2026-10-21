@@ -1,0 +1,182 @@
+@model (IReadOnlyList<CryptoStrategyDto> Strategies, IReadOnlyList<BacktestResultDto> RecentBacktests)
+@{
+    ViewData["Title"] = "Algorithmic Strategies & Backtest Engine";
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center text-lg font-bold">
+                    <i class="fa-solid fa-flask"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Quantitative Strategy Catalog</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Rule-based algorithmic models with built-in walk-forward parameter testing without overfitting</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a asp-action="Backtest" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors">
+                <i class="fa-solid fa-play"></i> Run New Backtest
+            </a>
+            <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors">
+                <i class="fa-solid fa-bolt"></i> Paper Trading
+            </a>
+        </div>
+    </div>
+
+    <!-- Strategy Rule Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Strategy 1: Trend Following -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 text-sm"><i class="fa-solid fa-arrow-trend-up"></i></span>
+                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-600">Active Model</span>
+                </div>
+                <h3 class="text-base font-bold text-slate-800 dark:text-white">Dual EMA Trend Following</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                    Trades in the direction of strong macro momentum. Enters Long when fast EMA (9) crosses above slow EMA (21) above EMA 50, with ATR-based dynamic trailing stop.
+                </p>
+                <div class="mt-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-2xs font-mono text-slate-600 dark:text-slate-300 space-y-1">
+                    <div>Entry: EMA(9) &gt; EMA(21)</div>
+                    <div>Stop Loss: 1.5 * ATR(14)</div>
+                    <div>Take Profit: 3.0 * ATR(14)</div>
+                </div>
+            </div>
+            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                <span class="text-2xs text-slate-400">Fees & Slippage modeled</span>
+                <a asp-action="Backtest" asp-route-strategy="@CryptoStrategyType.TrendFollowing" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                    Test Strategy <i class="fa-solid fa-arrow-right text-2xs"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Strategy 2: Mean Reversion -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <span class="p-2 rounded-xl bg-purple-500/10 text-purple-600 text-sm"><i class="fa-solid fa-arrows-left-right"></i></span>
+                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-purple-100 dark:bg-purple-950 text-purple-600">Active Model</span>
+                </div>
+                <h3 class="text-base font-bold text-slate-800 dark:text-white">RSI Mean Reversion & Bollinger</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                    Exploits temporary price overextensions. Enters Long when RSI(14) drops below 30 and touches the Lower Bollinger Band (-2σ), aiming for mid-band reversion.
+                </p>
+                <div class="mt-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-2xs font-mono text-slate-600 dark:text-slate-300 space-y-1">
+                    <div>Entry: RSI &lt; 30 &amp; Price &lt;= LowerBB</div>
+                    <div>Target: Middle Band (SMA 20)</div>
+                    <div>Stop: 2.0 * ATR(14)</div>
+                </div>
+            </div>
+            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                <span class="text-2xs text-slate-400">Fees & Slippage modeled</span>
+                <a asp-action="Backtest" asp-route-strategy="@CryptoStrategyType.MeanReversion" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                    Test Strategy <i class="fa-solid fa-arrow-right text-2xs"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Strategy 3: Breakout -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <span class="p-2 rounded-xl bg-amber-500/10 text-amber-600 text-sm"><i class="fa-solid fa-bolt"></i></span>
+                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-600">Active Model</span>
+                </div>
+                <h3 class="text-base font-bold text-slate-800 dark:text-white">Volatility Band Breakout</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                    Identifies periods of extreme volatility contraction (Bollinger squeeze) followed by expansion and volume surge above resistance pivot levels.
+                </p>
+                <div class="mt-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 text-2xs font-mono text-slate-600 dark:text-slate-300 space-y-1">
+                    <div>Entry: Close &gt; 20-bar High &amp; Vol &gt; 1.5x</div>
+                    <div>Stop Loss: 20-bar Low</div>
+                    <div>Target: 2:1 Reward to Risk</div>
+                </div>
+            </div>
+            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                <span class="text-2xs text-slate-400">Fees & Slippage modeled</span>
+                <a asp-action="Backtest" asp-route-strategy="@CryptoStrategyType.Breakout" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                    Test Strategy <i class="fa-solid fa-arrow-right text-2xs"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Backtest Simulation Reports -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> Backtest Evaluation History
+            </h3>
+            <span class="text-2xs text-slate-400">Walk-Forward Overfitting Analysis</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-bold uppercase">
+                        <th class="py-3 px-4">Strategy</th>
+                        <th class="py-3 px-4">Pair</th>
+                        <th class="py-3 px-4 text-center">Timeframe</th>
+                        <th class="py-3 px-4 text-right">Trades</th>
+                        <th class="py-3 px-4 text-right">Win Rate</th>
+                        <th class="py-3 px-4 text-right">Profit Factor</th>
+                        <th class="py-3 px-4 text-right">Max Drawdown</th>
+                        <th class="py-3 px-4 text-right">Sharpe</th>
+                        <th class="py-3 px-4 text-right">Net Return</th>
+                        <th class="py-3 px-4 text-center">Walk-Forward</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 font-mono">
+                    @if (Model.RecentBacktests != null && Model.RecentBacktests.Any())
+                    {
+                        foreach (var b in Model.RecentBacktests)
+                        {
+                            var pos = b.NetProfit >= 0;
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors">
+                                <td class="py-3 px-4 font-sans font-bold text-slate-800 dark:text-white">@b.StrategyName</td>
+                                <td class="py-3 px-4 font-sans font-bold text-slate-700 dark:text-slate-300">@b.Symbol</td>
+                                <td class="py-3 px-4 text-center font-sans">
+                                    <span class="px-2 py-0.5 rounded-md text-2xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
+                                        @b.Timeframe
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-right text-slate-700 dark:text-slate-300">@b.TotalTrades</td>
+                                <td class="py-3 px-4 text-right font-bold text-slate-800 dark:text-white">@b.WinRate.ToString("F1")%</td>
+                                <td class="py-3 px-4 text-right text-slate-800 dark:text-white">@b.ProfitFactor.ToString("F2")</td>
+                                <td class="py-3 px-4 text-right text-rose-500 font-bold">-@b.MaxDrawdownPercent.ToString("F2")%</td>
+                                <td class="py-3 px-4 text-right text-slate-800 dark:text-white">@b.SharpeRatio.ToString("F2")</td>
+                                <td class="py-3 px-4 text-right font-bold @(pos ? "text-emerald-600" : "text-rose-600")">
+                                    @(pos ? "+" : "")$@b.NetProfit.ToString("N2") (@(pos ? "+" : "")@b.ReturnPercent.ToString("F1")%)
+                                </td>
+                                <td class="py-3 px-4 text-center font-sans">
+                                    @if (b.WalkForward != null)
+                                    {
+                                        <span class="px-2 py-0.5 rounded-md text-2xs font-bold @(b.WalkForward.IsRobust ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")">
+                                            @(b.WalkForward.IsRobust ? "Robust (Valid)" : "Overfit Alert")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-2xs text-slate-400">Standard</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="10" class="py-8 text-center text-slate-400 font-sans">
+                                No backtest simulations recorded yet. Click "Run New Backtest" above to test any strategy.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

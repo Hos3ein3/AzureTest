@@ -1,0 +1,126 @@
+@model CryptoFuturesFundingDto
+@{
+    ViewData["Title"] = $"{Model?.Symbol ?? "BTCUSDT"} Perpetual Futures & Funding";
+    var symbol = Model?.Symbol ?? "BTCUSDT";
+    var fundingRate = Model?.FundingRate ?? 0.0001m;
+    var isPositiveFunding = fundingRate >= 0;
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <a asp-action="Index" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-bold text-slate-800 dark:text-white">Perpetual Futures Funding &amp; Open Interest</h1>
+                        <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-purple-500/10 text-purple-600">Binance Futures Free API</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">8-hour periodic funding rate settlement, basis divergence, and market open interest</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" asp-route-symbol="@symbol" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors">
+                <i class="fa-solid fa-bolt"></i> Trade Terminal
+            </a>
+            <a asp-area="Crypto" asp-controller="CryptoRisk" asp-action="Index" class="px-4 py-2 bg-rose-500/10 text-rose-600 hover:bg-rose-500 hover:text-white rounded-xl text-xs font-semibold transition-colors">
+                <i class="fa-solid fa-shield-halved"></i> Leverage Guardrails
+            </a>
+        </div>
+    </div>
+
+    <!-- Notice / Educational Alert -->
+    <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 flex items-start gap-3">
+        <i class="fa-solid fa-circle-exclamation text-amber-600 text-base mt-0.5"></i>
+        <div class="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+            <span class="font-bold">Understanding Perpetual Funding:</span> When the funding rate is <strong>positive</strong>, long position holders pay short position holders every 8 hours, signaling bullish leverage dominance. When <strong>negative</strong>, shorts pay longs. High annualized rates often precede leverage squeeze cascades.
+        </div>
+    </div>
+
+    <!-- Metric Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 8h Funding Rate -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Current 8h Funding Rate</span>
+                <span class="p-2 rounded-xl bg-purple-500/10 text-purple-500 text-xs"><i class="fa-solid fa-percent"></i></span>
+            </div>
+            <div class="mt-2 text-xl font-bold font-mono @(isPositiveFunding ? "text-emerald-500" : "text-rose-500")">
+                @(isPositiveFunding ? "+" : "")@((fundingRate * 100m).ToString("F4"))%
+            </div>
+            <div class="mt-1 text-2xs text-slate-400">
+                Next cycle: @(Model?.NextFundingTimeUtc.ToString("HH:mm:ss") ?? "--:--:--") UTC
+            </div>
+        </div>
+
+        <!-- Annualized Funding Yield -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Annualized Rate (APR)</span>
+                <span class="p-2 rounded-xl bg-blue-500/10 text-blue-500 text-xs"><i class="fa-solid fa-calendar-days"></i></span>
+            </div>
+            <div class="mt-2 text-xl font-bold font-mono text-slate-800 dark:text-white">
+                @(Model?.EstimatedAnnualRate.ToString("F2") ?? "10.95")%
+            </div>
+            <div class="mt-1 text-2xs text-slate-400">Compounded 3x daily (1095 cycles/yr)</div>
+        </div>
+
+        <!-- Open Interest USD -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Open Interest (USD)</span>
+                <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 text-xs"><i class="fa-solid fa-vault"></i></span>
+            </div>
+            <div class="mt-2 text-xl font-bold font-mono text-slate-800 dark:text-white">
+                $@(Model?.OpenInterestUsd.ToString("N0") ?? "0")
+            </div>
+            <div class="mt-1 text-2xs text-slate-400">
+                ~@(Model?.OpenInterest.ToString("N1") ?? "0") @symbol.Replace("USDT", "")
+            </div>
+        </div>
+
+        <!-- Mark vs Index Price -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Mark / Index Price</span>
+                <span class="p-2 rounded-xl bg-amber-500/10 text-amber-500 text-xs"><i class="fa-solid fa-balance-scale"></i></span>
+            </div>
+            <div class="mt-2 text-base font-bold font-mono text-slate-800 dark:text-white">
+                $@(Model?.MarkPrice.ToString("N2") ?? "0.00")
+            </div>
+            <div class="mt-1 text-2xs font-mono text-slate-400">
+                Index: $@(Model?.IndexPrice.ToString("N2") ?? "0.00")
+            </div>
+        </div>
+    </div>
+
+    <!-- Contract Details Panel -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs p-6">
+        <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-brand-500"></i> Contract Specification &amp; Basis Overview
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
+            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                <span class="text-[10px] text-slate-400 uppercase font-semibold block font-sans">Symbol Contract</span>
+                <span class="text-sm font-bold text-slate-800 dark:text-white">@symbol Perpetual</span>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                <span class="text-[10px] text-slate-400 uppercase font-semibold block font-sans">Basis Premium</span>
+                <span class="text-sm font-bold text-slate-800 dark:text-white">$@((Model != null ? Model.MarkPrice - Model.IndexPrice : 0m).ToString("F2"))</span>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                <span class="text-[10px] text-slate-400 uppercase font-semibold block font-sans">24h Contract Volume</span>
+                <span class="text-sm font-bold text-slate-800 dark:text-white">$@(Model?.Volume24h.ToString("N0") ?? "0")</span>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                <span class="text-[10px] text-slate-400 uppercase font-semibold block font-sans">Settlement Asset</span>
+                <span class="text-sm font-bold text-emerald-500">USDT Stablecoin</span>
+            </div>
+        </div>
+    </div>
+</div>

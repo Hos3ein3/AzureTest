@@ -1,0 +1,259 @@
+@model CryptoAnalysisDto
+@{
+    var symbol = ViewBag.Symbol as string ?? "BTCUSDT";
+    var timeframe = ViewBag.Timeframe is CryptoTimeframe tf ? tf : CryptoTimeframe.H1;
+    ViewData["Title"] = $"{symbol} Technical Analysis";
+    var t = Model?.Technical;
+    var sr = Model?.SupportResistance;
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-600 flex items-center justify-center text-lg font-bold">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-bold text-slate-800 dark:text-white">@symbol Technical Analysis</h1>
+                        <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-brand-500/10 text-brand-600">@timeframe</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Moving averages, oscillators, volatility bands, and classical pivot points</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeframe Toolbar -->
+        <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl">
+            @foreach (CryptoTimeframe tfVal in Enum.GetValues(typeof(CryptoTimeframe)))
+            {
+                <a asp-action="Index" asp-route-symbol="@symbol" asp-route-timeframe="@tfVal" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors @(tfVal == timeframe ? "bg-white dark:bg-slate-800 text-brand-600 shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800")">
+                    @tfVal
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- Summary Signal Gauge Card -->
+    @if (t != null)
+    {
+        var isBullish = t.OverallSignal.Contains("Buy");
+        var isBearish = t.OverallSignal.Contains("Sell");
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <div class="text-2xs uppercase tracking-wider font-bold text-slate-400">Consensus Technical Signal</div>
+                    <div class="mt-1 flex items-center gap-3">
+                        <span class="text-2xl font-black uppercase @(isBullish ? "text-emerald-500" : isBearish ? "text-rose-500" : "text-amber-500")">
+                            @t.OverallSignal
+                        </span>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold @(isBullish ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-600" : isBearish ? "bg-rose-100 dark:bg-rose-950 text-rose-600" : "bg-amber-100 dark:bg-amber-950 text-amber-600")">
+                            Price: $@t.CurrentPrice.ToString("N2")
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" asp-route-symbol="@symbol" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-colors">
+                        <i class="fa-solid fa-bolt"></i> Execute Trade
+                    </a>
+                    <a asp-area="Crypto" asp-controller="CryptoStrategy" asp-action="Backtest" asp-route-symbol="@symbol" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 rounded-xl text-xs font-semibold transition-colors">
+                        <i class="fa-solid fa-flask"></i> Backtest Strategy
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Core Indicators Grid -->
+    @if (t != null)
+    {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Moving Averages Card -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                <div class="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-700 pb-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-wave-square text-brand-500"></i> Moving Averages
+                    </h3>
+                    <span class="text-2xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400">Trend Alignment</span>
+                </div>
+                <div class="space-y-2.5 font-mono text-xs">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500">EMA 9 (Momentum):</span>
+                        <span class="font-bold text-slate-800 dark:text-white">$@t.Ema9.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500">EMA 21 (Short Trend):</span>
+                        <span class="font-bold text-slate-800 dark:text-white">$@t.Ema21.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500">SMA 20 (Mean):</span>
+                        <span class="font-bold text-slate-800 dark:text-white">$@t.Sma20.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500">EMA 50 (Intermediate):</span>
+                        <span class="font-bold text-slate-800 dark:text-white">$@t.Ema50.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500">EMA 200 (Long Macro):</span>
+                        <span class="font-bold text-slate-800 dark:text-white">$@t.Ema200.ToString("N2")</span>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 text-2xs text-slate-400">
+                    @(t.CurrentPrice > t.Ema200 ? "Bullish: Price trading comfortably above 200 EMA." : "Bearish: Price trading below long-term 200 EMA.")
+                </div>
+            </div>
+
+            <!-- Oscillators & Momentum (RSI & MACD) -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                <div class="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-700 pb-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-gauge text-purple-500"></i> Momentum & RSI
+                    </h3>
+                    <span class="text-2xs font-semibold px-2 py-0.5 rounded-md @(t.Rsi14 >= 70 ? "bg-rose-100 text-rose-600" : t.Rsi14 <= 30 ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-600")">
+                        @t.RsiSignal
+                    </span>
+                </div>
+                <div class="space-y-3 font-mono text-xs">
+                    <div>
+                        <div class="flex justify-between text-slate-500 mb-1">
+                            <span>RSI 14:</span>
+                            <span class="font-bold text-slate-800 dark:text-white">@t.Rsi14.ToString("F1")</span>
+                        </div>
+                        <div class="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full @(t.Rsi14 >= 70 ? "bg-rose-500" : t.Rsi14 <= 30 ? "bg-emerald-500" : "bg-brand-500")" style="width: @(Math.Clamp(t.Rsi14, 0m, 100m))%"></div>
+                        </div>
+                    </div>
+                    <div class="pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-slate-500">MACD Line:</span>
+                            <span class="font-bold text-slate-800 dark:text-white">@t.MacdLine.ToString("F2")</span>
+                        </div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-slate-500">Signal Line:</span>
+                            <span class="font-bold text-slate-800 dark:text-white">@t.SignalLine.ToString("F2")</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500">Histogram:</span>
+                            <span class="font-bold @(t.MacdHistogram >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                @(t.MacdHistogram >= 0 ? "+" : "")@t.MacdHistogram.ToString("F2")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 text-2xs text-slate-400">
+                    MACD Bias: <span class="font-bold text-slate-700 dark:text-slate-300">@t.MacdSignal</span>
+                </div>
+            </div>
+
+            <!-- Volatility & Bands (Bollinger & ATR) -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                <div class="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-700 pb-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                        <i class="fa-solid fa-arrows-left-right-to-line text-emerald-500"></i> Volatility Bands
+                    </h3>
+                    <span class="text-2xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400">ATR 14: $@t.Atr14.ToString("N2")</span>
+                </div>
+                <div class="space-y-2.5 font-mono text-xs">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500">Upper Band (+2σ):</span>
+                        <span class="font-bold text-rose-500">$@t.BollingerUpper.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500">Middle Band (SMA 20):</span>
+                        <span class="font-bold text-slate-800 dark:text-white">$@t.BollingerMiddle.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500">Lower Band (-2σ):</span>
+                        <span class="font-bold text-emerald-500">$@t.BollingerLower.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500">Bandwidth:</span>
+                        <span class="font-bold text-slate-800 dark:text-white">@t.BollingerBandwidth.ToString("F2")%</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500">24h Volume / MA:</span>
+                        <span class="font-bold text-slate-800 dark:text-white">@t.Volume24h.ToString("N0") / @t.VolumeMa.ToString("N0")</span>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 text-2xs text-slate-400">
+                    @(t.BollingerBandwidth < 5m ? "Bollinger Squeeze: High probability volatility breakout expected." : "Normal channel dispersion.")
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Support and Resistance Pivots Table -->
+    @if (sr != null)
+    {
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-blue-500"></i> Classical & Fibonacci Support / Resistance Pivots
+                </h3>
+                <span class="text-2xs text-slate-400 font-mono">Current: $@sr.CurrentPrice.ToString("N2")</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-700">
+                <!-- Classical Pivots -->
+                <div class="p-4 space-y-2 font-mono text-xs">
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 font-sans">Classical Floor Pivots</div>
+                    <div class="flex justify-between text-rose-500">
+                        <span>Resistance 3 (R3):</span>
+                        <span class="font-bold">$@sr.Resistance3.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between text-rose-500">
+                        <span>Resistance 2 (R2):</span>
+                        <span class="font-bold">$@sr.Resistance2.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between text-rose-400">
+                        <span>Resistance 1 (R1):</span>
+                        <span class="font-bold">$@sr.Resistance1.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between py-1 bg-amber-500/10 px-2 rounded-md text-amber-500 font-bold">
+                        <span>Pivot Point (P):</span>
+                        <span>$@sr.PivotPoint.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between text-emerald-400">
+                        <span>Support 1 (S1):</span>
+                        <span class="font-bold">$@sr.Support1.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between text-emerald-500">
+                        <span>Support 2 (S2):</span>
+                        <span class="font-bold">$@sr.Support2.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between text-emerald-600">
+                        <span>Support 3 (S3):</span>
+                        <span class="font-bold">$@sr.Support3.ToString("N2")</span>
+                    </div>
+                </div>
+
+                <!-- Fibonacci Retracement Levels -->
+                <div class="p-4 space-y-2 font-mono text-xs">
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 font-sans">Fibonacci Retracement Grid</div>
+                    <div class="flex justify-between text-slate-600 dark:text-slate-300">
+                        <span>Fib 23.6% Extension:</span>
+                        <span class="font-bold">$@sr.Fibonacci236.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between text-purple-500">
+                        <span>Fib 38.2% Retracement:</span>
+                        <span class="font-bold">$@sr.Fibonacci382.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between py-1 bg-purple-500/10 px-2 rounded-md text-purple-600 font-bold">
+                        <span>Fib 50.0% Equilibrium:</span>
+                        <span>$@sr.Fibonacci500.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between text-purple-500">
+                        <span>Fib 61.8% Golden Pocket:</span>
+                        <span class="font-bold">$@sr.Fibonacci618.ToString("N2")</span>
+                    </div>
+                    <div class="flex justify-between text-slate-600 dark:text-slate-300">
+                        <span>Fib 78.6% Deep Pullback:</span>
+                        <span class="font-bold">$@sr.Fibonacci786.ToString("N2")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

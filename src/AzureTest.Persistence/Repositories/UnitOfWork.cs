@@ -172,6 +172,44 @@ public class UnitOfWork : IUnitOfWork
     public IPlayerProfileRepository PlayerProfiles => _playerProfiles ??= new PlayerProfileRepository(_dbContext);
     public IPlayerTeamHistoryRepository PlayerTeamHistories => _playerTeamHistories ??= new PlayerTeamHistoryRepository(_dbContext);
 
+    // Forex Trading & Market Analysis
+    private AzureTest.Application.Interfaces.Data.Forex.IForexAccountRepository? _forexAccounts;
+    private AzureTest.Application.Interfaces.Data.Forex.IForexOrderRepository? _forexOrders;
+    private AzureTest.Application.Interfaces.Data.Forex.IForexTradeRepository? _forexTrades;
+    private AzureTest.Application.Interfaces.Data.Forex.IForexStrategyRepository? _forexStrategies;
+    private AzureTest.Application.Interfaces.Data.Forex.IForexBacktestRepository? _forexBacktests;
+    private AzureTest.Application.Interfaces.Data.Forex.IForexEconomicAlertRepository? _forexEconomicAlerts;
+    private AzureTest.Application.Interfaces.Data.Forex.IForexJournalEntryRepository? _forexJournalEntries;
+    private AzureTest.Application.Interfaces.Data.Forex.IForexApiSettingRepository? _forexApiSettings;
+
+    public AzureTest.Application.Interfaces.Data.Forex.IForexAccountRepository ForexAccounts => _forexAccounts ??= new Forex.ForexAccountRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Forex.IForexOrderRepository ForexOrders => _forexOrders ??= new Forex.ForexOrderRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Forex.IForexTradeRepository ForexTrades => _forexTrades ??= new Forex.ForexTradeRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Forex.IForexStrategyRepository ForexStrategies => _forexStrategies ??= new Forex.ForexStrategyRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Forex.IForexBacktestRepository ForexBacktests => _forexBacktests ??= new Forex.ForexBacktestRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Forex.IForexEconomicAlertRepository ForexEconomicAlerts => _forexEconomicAlerts ??= new Forex.ForexEconomicAlertRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Forex.IForexJournalEntryRepository ForexJournalEntries => _forexJournalEntries ??= new Forex.ForexJournalEntryRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Forex.IForexApiSettingRepository ForexApiSettings => _forexApiSettings ??= new Forex.ForexApiSettingRepository(_dbContext);
+
+    // Crypto Trading & Market Analysis
+    private AzureTest.Application.Interfaces.Data.Crypto.ICryptoAccountRepository? _cryptoAccounts;
+    private AzureTest.Application.Interfaces.Data.Crypto.ICryptoOrderRepository? _cryptoOrders;
+    private AzureTest.Application.Interfaces.Data.Crypto.ICryptoPositionRepository? _cryptoPositions;
+    private AzureTest.Application.Interfaces.Data.Crypto.ICryptoStrategyRepository? _cryptoStrategies;
+    private AzureTest.Application.Interfaces.Data.Crypto.ICryptoBacktestRepository? _cryptoBacktests;
+    private AzureTest.Application.Interfaces.Data.Crypto.ICryptoAlertRepository? _cryptoAlerts;
+    private AzureTest.Application.Interfaces.Data.Crypto.ICryptoJournalEntryRepository? _cryptoJournalEntries;
+    private AzureTest.Application.Interfaces.Data.Crypto.ICryptoApiSettingRepository? _cryptoApiSettings;
+
+    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoAccountRepository CryptoAccounts => _cryptoAccounts ??= new Crypto.CryptoAccountRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoOrderRepository CryptoOrders => _cryptoOrders ??= new Crypto.CryptoOrderRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoPositionRepository CryptoPositions => _cryptoPositions ??= new Crypto.CryptoPositionRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoStrategyRepository CryptoStrategies => _cryptoStrategies ??= new Crypto.CryptoStrategyRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoBacktestRepository CryptoBacktests => _cryptoBacktests ??= new Crypto.CryptoBacktestRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoAlertRepository CryptoAlerts => _cryptoAlerts ??= new Crypto.CryptoAlertRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoJournalEntryRepository CryptoJournalEntries => _cryptoJournalEntries ??= new Crypto.CryptoJournalEntryRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoApiSettingRepository CryptoApiSettings => _cryptoApiSettings ??= new Crypto.CryptoApiSettingRepository(_dbContext);
+
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         return await _dbContext.SaveChangesAsync(cancellationToken);

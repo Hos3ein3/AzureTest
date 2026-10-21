@@ -140,6 +140,26 @@ public class AzureTestDbContext : IdentityDbContext<ApplicationUser, Application
     public DbSet<AzureTest.Domain.Entities.FootballFantasy.MatchPrediction> MatchPredictions => Set<AzureTest.Domain.Entities.FootballFantasy.MatchPrediction>();
     public DbSet<AzureTest.Domain.Entities.FootballFantasy.TournamentPrediction> TournamentPredictions => Set<AzureTest.Domain.Entities.FootballFantasy.TournamentPrediction>();
 
+    // Forex Trading & Market Analysis
+    public DbSet<AzureTest.Domain.Entities.Forex.ForexAccount> ForexAccounts => Set<AzureTest.Domain.Entities.Forex.ForexAccount>();
+    public DbSet<AzureTest.Domain.Entities.Forex.ForexOrder> ForexOrders => Set<AzureTest.Domain.Entities.Forex.ForexOrder>();
+    public DbSet<AzureTest.Domain.Entities.Forex.ForexTrade> ForexTrades => Set<AzureTest.Domain.Entities.Forex.ForexTrade>();
+    public DbSet<AzureTest.Domain.Entities.Forex.ForexStrategy> ForexStrategies => Set<AzureTest.Domain.Entities.Forex.ForexStrategy>();
+    public DbSet<AzureTest.Domain.Entities.Forex.ForexBacktest> ForexBacktests => Set<AzureTest.Domain.Entities.Forex.ForexBacktest>();
+    public DbSet<AzureTest.Domain.Entities.Forex.ForexEconomicAlert> ForexEconomicAlerts => Set<AzureTest.Domain.Entities.Forex.ForexEconomicAlert>();
+    public DbSet<AzureTest.Domain.Entities.Forex.ForexJournalEntry> ForexJournalEntries => Set<AzureTest.Domain.Entities.Forex.ForexJournalEntry>();
+    public DbSet<AzureTest.Domain.Entities.Forex.ForexApiSetting> ForexApiSettings => Set<AzureTest.Domain.Entities.Forex.ForexApiSetting>();
+
+    // Crypto Trading & Market Analysis
+    public DbSet<AzureTest.Domain.Entities.Crypto.CryptoAccount> CryptoAccounts => Set<AzureTest.Domain.Entities.Crypto.CryptoAccount>();
+    public DbSet<AzureTest.Domain.Entities.Crypto.CryptoOrder> CryptoOrders => Set<AzureTest.Domain.Entities.Crypto.CryptoOrder>();
+    public DbSet<AzureTest.Domain.Entities.Crypto.CryptoPosition> CryptoPositions => Set<AzureTest.Domain.Entities.Crypto.CryptoPosition>();
+    public DbSet<AzureTest.Domain.Entities.Crypto.CryptoStrategy> CryptoStrategies => Set<AzureTest.Domain.Entities.Crypto.CryptoStrategy>();
+    public DbSet<AzureTest.Domain.Entities.Crypto.CryptoBacktest> CryptoBacktests => Set<AzureTest.Domain.Entities.Crypto.CryptoBacktest>();
+    public DbSet<AzureTest.Domain.Entities.Crypto.CryptoAlert> CryptoAlerts => Set<AzureTest.Domain.Entities.Crypto.CryptoAlert>();
+    public DbSet<AzureTest.Domain.Entities.Crypto.CryptoJournalEntry> CryptoJournalEntries => Set<AzureTest.Domain.Entities.Crypto.CryptoJournalEntry>();
+    public DbSet<AzureTest.Domain.Entities.Crypto.CryptoApiSetting> CryptoApiSettings => Set<AzureTest.Domain.Entities.Crypto.CryptoApiSetting>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

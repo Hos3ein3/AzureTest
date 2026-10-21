@@ -1,0 +1,154 @@
+@model (CryptoAccountDto Account, IReadOnlyList<CryptoPositionDto> OpenPositions, IReadOnlyList<CryptoPositionDto> ClosedTrades, IReadOnlyList<CryptoJournalEntryDto> JournalEntries)
+@{
+    ViewData["Title"] = "Crypto Trading Journal & Psychology";
+    var entries = Model.JournalEntries ?? new List<CryptoJournalEntryDto>();
+}
+
+<div class="space-y-6">
+    <!-- Feedback Alerts -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
+                <span>@TempData["SuccessMessage"]</span>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-emerald-600">&times;</button>
+        </div>
+    }
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-book-journal-whills"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Trading Journal &amp; Psychology</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Track emotional discipline, strategy adherence, cognitive biases, and lessons learned</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a asp-action="Index" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors">
+                <i class="fa-solid fa-arrow-left"></i> Portfolio
+            </a>
+            <a asp-action="TaxReport" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors">
+                <i class="fa-solid fa-file-invoice-dollar"></i> Tax Report
+            </a>
+        </div>
+    </div>
+
+    <!-- New Journal Entry Form -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-5">
+        <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
+            <i class="fa-solid fa-pen-to-square text-indigo-500"></i> Record Trade Reflection
+        </h3>
+
+        <form asp-action="SaveJournal" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Pair / Symbol</label>
+                    <input type="text" name="symbol" value="BTCUSDT" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
+                </div>
+
+                <div>
+                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Strategy Followed</label>
+                    <select name="strategyTag" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2">
+                        <option value="TrendFollowing">Dual EMA Trend Following</option>
+                        <option value="MeanReversion">RSI Mean Reversion</option>
+                        <option value="Breakout">Volatility Breakout</option>
+                        <option value="Discretionary">Discretionary / News Catalyst</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Emotional State</label>
+                    <select name="emotionTag" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2">
+                        <option value="Disciplined">Disciplined (Rules Followed)</option>
+                        <option value="FOMO">FOMO (Chased Market)</option>
+                        <option value="RevengeTrading">Revenge Trading</option>
+                        <option value="Anxious">Anxious / Sized Too Big</option>
+                        <option value="Patient">Patient / Sniper Entry</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Discipline Rating (1-5)</label>
+                    <select name="rating" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2">
+                        <option value="5">⭐⭐⭐⭐⭐ 5/5 Flawless Execution</option>
+                        <option value="4">⭐⭐⭐⭐ 4/5 Good Adherence</option>
+                        <option value="3">⭐⭐⭐ 3/5 Minor Deviations</option>
+                        <option value="2">⭐⭐ 2/5 Poor Emotional Control</option>
+                        <option value="1">⭐ 1/5 Severe Rule Breach</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Trade Rationale &amp; Context</label>
+                    <textarea name="notes" rows="3" placeholder="Describe the market setup, confluence signals, and execution timing..." class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white p-3"></textarea>
+                </div>
+                <div>
+                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Lessons Learned / Action Items</label>
+                    <textarea name="lessonsLearned" rows="3" placeholder="What worked? What mistake will you avoid next time?" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white p-3"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors">
+                    Save Journal Entry
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Journal History Feed -->
+    <div class="space-y-4">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Past Reflections (@entries.Count Entries)</h3>
+
+        @if (entries.Any())
+        {
+            foreach (var item in entries)
+            {
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-sm text-slate-800 dark:text-white">@item.Symbol</span>
+                            <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">@item.StrategyTag</span>
+                            <span class="px-2 py-0.5 rounded-md text-2xs font-bold @(item.EmotionTag == "Disciplined" || item.EmotionTag == "Patient" ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")">
+                                @item.EmotionTag
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-3 text-2xs text-slate-400">
+                            <span>Rating: @string.Concat(Enumerable.Repeat("⭐", Math.Clamp(item.Rating, 1, 5)))</span>
+                            <span>@item.CreatedOn.ToString("yyyy-MM-dd HH:mm") UTC</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        <div>
+                            <span class="text-2xs font-bold text-slate-400 uppercase block mb-1">Notes</span>
+                            <p class="text-slate-700 dark:text-slate-300 leading-relaxed">@item.Notes</p>
+                        </div>
+                        <div>
+                            <span class="text-2xs font-bold text-slate-400 uppercase block mb-1">Lessons Learned</span>
+                            <p class="text-indigo-600 dark:text-indigo-400 font-medium leading-relaxed">@item.LessonsLearned</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="p-8 text-center bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-400 text-xs">
+                No reflections logged yet. Record your first trade journal entry above.
+            </div>
+        }
+    </div>
+</div>

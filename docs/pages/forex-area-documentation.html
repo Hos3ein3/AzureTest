@@ -1,0 +1,153 @@
+<div class="py-6 px-4 max-w-4xl mx-auto font-sans leading-relaxed text-slate-800">
+  <div class="border-b border-slate-200 pb-6 mb-8">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="px-3 py-1 bg-blue-50 text-blue-700 font-bold text-xs rounded-full border border-blue-200">System Guide</span>
+      <span class="text-xs text-slate-500"><i class="fa-regular fa-clock mr-1"></i> 8 min read</span>
+    </div>
+    <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">How to Use the Forex Currency Markets &amp; Macro Trading System</h1>
+    <p class="text-base text-slate-600 mt-2">A comprehensive reference manual for international currency exchange rates, pip spread calculations, economic calendar macro event tracking, quantitative strategy backtesting, lot sizing risk controls, and automated performance journaling.</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+      <div class="text-xs font-bold text-slate-500 uppercase">Currency Pairs</div>
+      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-globe text-blue-600 mr-2"></i>Global FX Rates</div>
+      <p class="text-2xs text-slate-500 mt-1">Majors, minors, and exotics with live bid/ask spreads and fractional pip (pipette) precision.</p>
+    </div>
+    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+      <div class="text-xs font-bold text-slate-500 uppercase">Macroeconomics</div>
+      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-calendar-days text-purple-600 mr-2"></i>Economic Calendar</div>
+      <p class="text-2xs text-slate-500 mt-1">Real-time alerts for high-impact central bank interest rates, CPI inflation, and NFP employment data.</p>
+    </div>
+    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+      <div class="text-xs font-bold text-slate-500 uppercase">Risk &amp; Margin</div>
+      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-calculator text-emerald-600 mr-2"></i>Lot Size Sizing</div>
+      <p class="text-2xs text-slate-500 mt-1">Automated standard, mini, and micro lot computation with ESMA/AFM leverage compliance.</p>
+    </div>
+  </div>
+
+  <div class="space-y-8 text-sm">
+    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+        <i class="fa-solid fa-money-bill-transfer text-blue-600"></i> 1. Live Currency Rates, Pip Spreads &amp; Pip Calculators
+      </h3>
+      <p class="text-slate-600 leading-relaxed">
+        Access live currency pairs at <a href="/Forex/ForexMarket" class="text-blue-600 font-semibold hover:underline">/Forex/ForexMarket</a>:
+      </p>
+      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+        <li><strong>Major Currency Pairs:</strong> Continuous live rate streams for EUR/USD, GBP/USD, USD/JPY, USD/CHF, AUD/USD, USD/CAD, and NZD/USD.</li>
+        <li><strong>Bid/Ask Spread Tracking:</strong> Displays live spreads in pips. Alerts you when spreads widen beyond standard thresholds during market rollover (21:00 UTC) or news releases.</li>
+        <li><strong>Pip Calculator Engine:</strong> Computes the exact monetary value of 1 pip based on the counter currency and position size:
+          <div class="mt-2 p-3 bg-slate-50 rounded-xl text-xs font-mono text-slate-700">
+            &bull; 1.00 Standard Lot (100,000 units) = $10.00 / pip (EUR/USD)<br>
+            &bull; 0.10 Mini Lot (10,000 units) = $1.00 / pip<br>
+            &bull; 0.01 Micro Lot (1,000 units) = $0.10 / pip
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+        <i class="fa-solid fa-chart-simple text-indigo-600"></i> 2. Technical Indicators, Session Pivots &amp; Currency Strength
+      </h3>
+      <p class="text-slate-600 leading-relaxed">
+        Perform technical analysis at <a href="/Forex/ForexAnalysis" class="text-indigo-600 font-semibold hover:underline">/Forex/ForexAnalysis</a>:
+      </p>
+      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+        <li><strong>Multi-Timeframe Indicators:</strong> Exponential Moving Averages (EMA 20, 50, 200), RSI 14, MACD, Bollinger Bands, and Average True Range (ATR 14 in pips).</li>
+        <li><strong>Daily &amp; Session Pivot Points:</strong> Automatically calculates Floor Pivots (P, R1-R3, S1-S3) tailored to the London, New York, and Tokyo trading sessions.</li>
+        <li><strong>Relative Currency Strength Matrix:</strong> Evaluates the relative performance of individual currencies (USD, EUR, GBP, JPY, CHF, CAD, AUD, NZD) across all pairs to pair the strongest currency against the weakest for maximum directional momentum.</li>
+      </ul>
+    </div>
+
+    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+        <i class="fa-solid fa-newspaper text-purple-600"></i> 3. Economic Calendar &amp; Central Bank Macro Analysis
+      </h3>
+      <p class="text-slate-600 leading-relaxed">
+        Anticipate market-moving events with the integrated economic calendar:
+      </p>
+      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+        <li><strong>Tier-1 Economic Releases:</strong> Categorizes news events by impact level (Red = High, Orange = Medium, Yellow = Low), including US Non-Farm Payrolls (NFP), Consumer Price Index (CPI), and GDP data.</li>
+        <li><strong>Central Bank Policy Surveillance:</strong> Tracks interest rate decisions, policy statements, and press conferences from the Federal Reserve (FOMC), European Central Bank (ECB), Bank of England (BoE), and Bank of Japan (BoJ).</li>
+        <li><strong>News Trading Risk Filters:</strong> Automatic notifications recommending trading pauses 15 minutes before and after high-impact announcements to prevent extreme slippage.</li>
+      </ul>
+    </div>
+
+    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+        <i class="fa-solid fa-vial text-emerald-600"></i> 4. Algorithmic Strategy Engine &amp; Pip Backtester
+      </h3>
+      <p class="text-slate-600 leading-relaxed">
+        Backtest quantitative Forex strategies at <a href="/Forex/ForexStrategy" class="text-emerald-600 font-semibold hover:underline">/Forex/ForexStrategy</a>:
+      </p>
+      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+        <li><strong>Strategy Models:</strong> London Breakout (session high/low breakout), Moving Average Pullback (EMA 50/200 trend alignment with RSI dips), and Mean Reversion (Bollinger Band extremes).</li>
+        <li><strong>Spread &amp; Commission Modeling:</strong> Injects realistic broker spreads (1.2 to 2.5 pips) and round-turn lot commissions ($5.00/lot) into backtest simulations to ensure true net profitability.</li>
+        <li><strong>Institutional Metrics:</strong> Total Net Pip Gain, Win Rate %, Profit Factor, Maximum Drawdown (in % and pips), and Sharpe Ratio.</li>
+      </ul>
+    </div>
+
+    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+        <i class="fa-solid fa-sliders text-sky-600"></i> 5. Order Execution, Lot Sizing &amp; Paper Trading
+      </h3>
+      <p class="text-slate-600 leading-relaxed">
+        Place and manage FX positions at <a href="/Forex/ForexTrade" class="text-sky-600 font-semibold hover:underline">/Forex/ForexTrade</a>:
+      </p>
+      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+        <li><strong>Order Types:</strong> Market Execution (instant fill), Limit Entry (Buy Limit / Sell Limit), and Stop Entry (Buy Stop / Sell Stop).</li>
+        <li><strong>Automated Lot Sizing:</strong> Calculates allowable lots using the formula:
+          <div class="mt-2 p-2 bg-slate-50 rounded-lg text-xs font-mono text-slate-700">
+            Lots = (Account Balance &times; Risk %) / (Stop Loss in Pips &times; Pip Value)
+          </div>
+        </li>
+        <li><strong>Paper Trading Simulator:</strong> Test order entries, trailing stops, and multi-tier take-profits with zero financial exposure before executing on live broker accounts.</li>
+      </ul>
+    </div>
+
+    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+        <i class="fa-solid fa-shield-cat text-rose-600"></i> 6. Margin Control, Regulatory Leverage &amp; Emergency Kill Switch
+      </h3>
+      <p class="text-slate-600 leading-relaxed">
+        Enforce strict risk management at <a href="/Forex/ForexRisk" class="text-rose-600 font-semibold hover:underline">/Forex/ForexRisk</a>:
+      </p>
+      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+        <li><strong>European ESMA / Dutch AFM Retail Leverage Caps:</strong> Configured for maximum regulatory limits: 30:1 for major currency pairs, 20:1 for non-major pairs and gold, and 10:1 for other commodities.</li>
+        <li><strong>Margin Level Monitoring:</strong> Real-time margin level percentage tracking with warning thresholds at 100% margin and stop-out liquidation protections at 50%.</li>
+        <li><strong>Daily Loss Limit:</strong> Shuts down trade execution when cumulative daily losses breach user-defined parameters (e.g. 2.5% max daily drawdown).</li>
+        <li><strong>One-Click Kill Switch:</strong> Instantly flattens all open currency positions and cancels all pending limit/stop orders.</li>
+      </ul>
+    </div>
+
+    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+        <i class="fa-solid fa-book text-emerald-600"></i> 7. Performance Trade Journal &amp; Tax Audit Export
+      </h3>
+      <p class="text-slate-600 leading-relaxed">
+        Track trading performance at <a href="/Forex/ForexJournal" class="text-emerald-600 font-semibold hover:underline">/Forex/ForexJournal</a>:
+      </p>
+      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+        <li><strong>Detailed Journal Log:</strong> Records open time, close time, pair, lot size, entry price, exit price, pip gain/loss, swap fees, and gross/net dollar P&amp;L.</li>
+        <li><strong>Performance Breakdown:</strong> Analyzes win rate and average risk-to-reward ratio grouped by individual currency pair and trading session (London vs New York).</li>
+        <li><strong>Tax Report Export:</strong> Exports audit-ready CSV and PDF records summarizing net realized gains and deductible broker commissions for annual financial declarations.</li>
+      </ul>
+    </div>
+
+    <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+        <i class="fa-solid fa-gears text-slate-600"></i> 8. Broker Integration &amp; Operational Safety Checklist
+      </h3>
+      <p class="text-slate-600 leading-relaxed">
+        Configure broker connectivity at <a href="/Forex/ForexSettings" class="text-blue-600 font-semibold hover:underline">/Forex/ForexSettings</a>:
+      </p>
+      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+        <li><strong>Broker Connectors:</strong> Connect via REST or FIX APIs to supported brokers (e.g., OANDA, MetaTrader 4/5 bridges, Interactive Brokers).</li>
+        <li><strong>Environment Toggles:</strong> Switch seamlessly between Demo / Sandbox environments and Live accounts.</li>
+        <li><strong>Overnight Financing (Swap):</strong> Displays positive and negative rollover swap rates to prevent unexpected holding costs on multi-day positions.</li>
+      </ul>
+    </div>
+  </div>
+</div>

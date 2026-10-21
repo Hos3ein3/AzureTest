@@ -1,0 +1,248 @@
+@model (IReadOnlyList<AzureTest.Contracts.DTOs.Forex.ForexStrategyDto> Strategies, IReadOnlyList<AzureTest.Contracts.DTOs.Forex.BacktestResultDto> RecentBacktests)
+@{
+    ViewData["Title"] = "Forex Strategies & Quantitative Backtesting";
+    var defaultStartDate = DateTime.UtcNow.AddDays(-90).ToString("yyyy-MM-dd");
+    var defaultEndDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-violet-500/10 text-violet-600 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Strategy Lab & Backtesting Engine</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Model historical profitability with realistic spread, swap, slippage, and walk-forward verification</p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <a href="#backtest-form" class="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold rounded-xl shadow-xs inline-flex items-center gap-2">
+                <i class="fa-solid fa-play"></i> Launch Backtest
+            </a>
+        </div>
+    </div>
+
+    <!-- Strategy Catalog Cards -->
+    <div class="space-y-3">
+        <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-brand-500"></i> Prebuilt Rule-Based Forex Strategies
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            @foreach (var s in Model.Strategies)
+            {
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="px-2.5 py-1 rounded-full text-2xs font-bold bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+                                @s.StrategyType
+                            </span>
+                            <span class="text-xs font-mono font-semibold text-slate-500">@s.DefaultSymbol / @s.DefaultTimeframe</span>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-800 dark:text-white mb-2">@s.Name</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+                            @s.Description
+                        </p>
+
+                        <!-- Strategy Rules Parameter Badges -->
+                        <div class="grid grid-cols-2 gap-2 text-2xs font-mono p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 mb-4">
+                            <div>
+                                <span class="text-slate-400 font-sans block">Risk / Trade</span>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">@s.RiskPercent.ToString("F1")%</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 font-sans block">Stop Loss</span>
+                                <span class="font-bold text-rose-600">@s.StopLossPips.ToString("F0") pips</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 font-sans block">Take Profit</span>
+                                <span class="font-bold text-emerald-600">@s.TakeProfitPips.ToString("F0") pips</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 font-sans block">Trailing Stop</span>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">@(s.UseTrailingStop ? $"{s.TrailingStopPips:F0} p" : "Off")</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="selectStrategy('@s.Name', '@s.DefaultSymbol', '@s.DefaultTimeframe', '@s.StopLossPips', '@s.TakeProfitPips')" class="w-full py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition-colors">
+                        Configure This Strategy
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Backtest Configuration Form -->
+    <div id="backtest-form" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-600 flex items-center justify-center font-bold">
+                <i class="fa-solid fa-sliders"></i>
+            </div>
+            <div>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white">Configure Simulation & Frictions</h2>
+                <p class="text-xs text-slate-400">Simulate realistic order execution with broker spread, slippage, and overnight swap fees</p>
+            </div>
+        </div>
+
+        <form method="post" asp-action="Execute" class="space-y-6">
+            @Html.AntiForgeryToken()
+
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- Strategy Name -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Strategy</label>
+                    <input type="text" id="strategyNameInput" name="Request.StrategyName" value="London Breakout Strategy" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-white" />
+                </div>
+
+                <!-- Symbol -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Currency Pair</label>
+                    <select id="symbolSelect" name="Request.Symbol" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-white">
+                        <option value="EUR/USD">EUR/USD</option>
+                        <option value="GBP/USD" selected>GBP/USD</option>
+                        <option value="USD/JPY">USD/JPY</option>
+                        <option value="AUD/USD">AUD/USD</option>
+                        <option value="USD/CAD">USD/CAD</option>
+                        <option value="USD/CHF">USD/CHF</option>
+                        <option value="XAU/USD">XAU/USD</option>
+                    </select>
+                </div>
+
+                <!-- Timeframe -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Timeframe</label>
+                    <select id="timeframeSelect" name="Request.Timeframe" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-white">
+                        <option value="M15" selected>15-Minute (M15)</option>
+                        <option value="H1">1-Hour (H1)</option>
+                        <option value="H4">4-Hour (H4)</option>
+                        <option value="D1">Daily (D1)</option>
+                    </select>
+                </div>
+
+                <!-- Initial Balance -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Initial Capital ($)</label>
+                    <input type="number" step="1000" name="Request.InitialBalance" value="10000" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-800 dark:text-white" />
+                </div>
+
+                <!-- Date Range -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Start Date</label>
+                    <input type="date" name="Request.StartDate" value="@defaultStartDate" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-white" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">End Date</label>
+                    <input type="date" name="Request.EndDate" value="@defaultEndDate" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-white" />
+                </div>
+
+                <!-- Spread -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Broker Spread (pips)</label>
+                    <input type="number" step="0.1" name="Request.SpreadPips" value="1.2" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-800 dark:text-white" />
+                </div>
+
+                <!-- Slippage -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Execution Slippage (pips)</label>
+                    <input type="number" step="0.1" name="Request.SlippagePips" value="0.5" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-800 dark:text-white" />
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="walkForwardCheck" name="Request.IsWalkForward" value="true" class="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500" />
+                    <label for="walkForwardCheck" class="text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                        <strong class="text-slate-900 dark:text-white">Walk-Forward Testing:</strong> Split 70% in-sample optimization & 30% out-of-sample forward verification
+                    </label>
+                </div>
+
+                <button type="submit" class="px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-bolt"></i> Run Quantitative Backtest
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Recent Backtest Runs Table -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-xs">
+        <div class="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <h2 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-brand-500"></i> Historical Backtest Runs (@Model.RecentBacktests.Count)
+            </h2>
+            <span class="text-xs text-slate-400">All metrics adjusted for spread and slippage</span>
+        </div>
+
+        @if (Model.RecentBacktests.Count == 0)
+        {
+            <div class="p-8 text-center text-slate-400 text-xs">
+                No backtest runs found. Configure parameters above and launch your first backtest.
+            </div>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 font-sans text-2xs uppercase border-b border-slate-200 dark:border-slate-700">
+                        <tr>
+                            <th class="px-4 py-3">Strategy</th>
+                            <th class="px-4 py-3">Pair / TF</th>
+                            <th class="px-4 py-3">Net Profit</th>
+                            <th class="px-4 py-3">Return</th>
+                            <th class="px-4 py-3">Win Rate</th>
+                            <th class="px-4 py-3">Profit Factor</th>
+                            <th class="px-4 py-3">Max Drawdown</th>
+                            <th class="px-4 py-3">Trades</th>
+                            <th class="px-4 py-3 font-sans text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                        @foreach (var b in Model.RecentBacktests)
+                        {
+                            var isProfit = b.NetProfit >= 0;
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-750">
+                                <td class="px-4 py-3 font-sans font-bold text-slate-800 dark:text-white">
+                                    @b.StrategyName
+                                    @if (b.IsWalkForward)
+                                    {
+                                        <span class="ml-1 px-1.5 py-0.5 rounded text-3xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">WFA</span>
+                                    }
+                                </td>
+                                <td class="px-4 py-3 text-slate-600 dark:text-slate-400">@b.Symbol / @b.Timeframe</td>
+                                <td class="px-4 py-3 font-bold @(isProfit ? "text-emerald-600" : "text-rose-600")">
+                                    @(isProfit ? "+$" : "-$")@Math.Abs(b.NetProfit).ToString("N2")
+                                </td>
+                                <td class="px-4 py-3 font-bold @(isProfit ? "text-emerald-600" : "text-rose-600")">
+                                    @(isProfit ? "+" : "")@b.ReturnPercent.ToString("F2")%
+                                </td>
+                                <td class="px-4 py-3 text-slate-800 dark:text-white">@b.WinRatePercent.ToString("F1")%</td>
+                                <td class="px-4 py-3 font-bold text-slate-800 dark:text-white">@b.ProfitFactor.ToString("F2")</td>
+                                <td class="px-4 py-3 text-rose-600 font-bold">@b.MaxDrawdownPercent.ToString("F1")%</td>
+                                <td class="px-4 py-3 text-slate-500">@b.TotalTrades</td>
+                                <td class="px-4 py-3 font-sans text-right">
+                                    <a asp-action="Results" asp-route-id="@b.Id" class="px-3 py-1 bg-brand-50 hover:bg-brand-100 text-brand-600 dark:bg-brand-950 dark:text-brand-300 rounded-lg text-xs font-semibold">
+                                        View Report &rarr;
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    function selectStrategy(name, symbol, tf, sl, tp) {
+        document.getElementById('strategyNameInput').value = name;
+        document.getElementById('symbolSelect').value = symbol;
+        document.getElementById('timeframeSelect').value = tf;
+        window.location.hash = '#backtest-form';
+    }
+</script>

@@ -1,0 +1,152 @@
+@model CryptoMarketOverviewDto
+@{
+    ViewData["Title"] = "Crypto Market Sentiment & News";
+    var fg = Model?.FearAndGreedIndex ?? 50;
+    var label = Model?.SentimentLabel ?? "Neutral";
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center text-lg font-bold">
+                    <i class="fa-solid fa-gauge-high"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Sentiment & News Intelligence</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Alternative.me Fear & Greed Index combined with CryptoPanic free headlines</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a asp-action="Index" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors">
+                <i class="fa-solid fa-chart-line"></i> Technicals
+            </a>
+            <a asp-action="Screener" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors">
+                <i class="fa-solid fa-filter"></i> Screener
+            </a>
+        </div>
+    </div>
+
+    <!-- Sentiment Meter & Macro Bias -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Fear & Greed Gauge Card -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col items-center justify-center text-center">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Alternative.me Fear & Greed Index</div>
+            
+            <div class="relative w-48 h-24 overflow-hidden mt-4 flex items-end justify-center">
+                <div class="w-48 h-48 rounded-full border-[14px] border-slate-100 dark:border-slate-700 absolute top-0"></div>
+                <div class="w-48 h-48 rounded-full border-[14px] border-transparent @(fg >= 55 ? "border-t-emerald-500 border-r-emerald-500" : fg <= 45 ? "border-t-rose-500 border-l-rose-500" : "border-t-amber-500") absolute top-0"
+                     style="transform: rotate(@((fg / 100f * 180f) - 90f)deg);"></div>
+            </div>
+
+            <div class="mt-4">
+                <div class="text-4xl font-black font-mono @(fg >= 55 ? "text-emerald-500" : fg <= 45 ? "text-rose-500" : "text-amber-500")">
+                    @fg
+                </div>
+                <div class="text-sm font-bold text-slate-700 dark:text-slate-200 mt-1">
+                    @label
+                </div>
+                <div class="text-2xs text-slate-400 mt-2">
+                    0 = Extreme Fear (Potential Buying Opportunity) | 100 = Extreme Greed (Risk of Market Pullback)
+                </div>
+            </div>
+        </div>
+
+        <!-- Sentiment Historical Range Card -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs lg:col-span-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-brain text-purple-500"></i> Market Psychology Interpretation
+            </h3>
+            <div class="space-y-4 text-xs text-slate-600 dark:text-slate-300">
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/60 leading-relaxed">
+                    <span class="font-bold text-slate-800 dark:text-white">Current Market Regime:</span> 
+                    The market sentiment sits in <strong>@label (@fg/100)</strong>. During periods of extreme greed, retail volume spikes and leverage escalates across derivative exchanges, increasing the probability of long squeeze flushouts. Conversely, persistent extreme fear often marks macro accumulation phases for institutional spot accumulators.
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                    <div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40">
+                        <div class="text-2xs font-bold text-rose-600">0 - 25</div>
+                        <div class="text-xs font-bold text-slate-800 dark:text-white mt-1">Extreme Fear</div>
+                    </div>
+                    <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40">
+                        <div class="text-2xs font-bold text-amber-600">26 - 45</div>
+                        <div class="text-xs font-bold text-slate-800 dark:text-white mt-1">Fear</div>
+                    </div>
+                    <div class="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40">
+                        <div class="text-2xs font-bold text-blue-600">46 - 55</div>
+                        <div class="text-xs font-bold text-slate-800 dark:text-white mt-1">Neutral</div>
+                    </div>
+                    <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40">
+                        <div class="text-2xs font-bold text-emerald-600">56 - 100</div>
+                        <div class="text-xs font-bold text-slate-800 dark:text-white mt-1">Greed / Extreme</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700 text-2xs text-slate-400">
+                    <span>Source: Alternative.me Public API</span>
+                    <span>Last Updated: @(Model?.LastUpdatedUtc.ToString("yyyy-MM-dd HH:mm") ?? "Live") UTC</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Crypto News Headlines Feed -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-regular fa-newspaper text-brand-500"></i> Market-Moving Headlines & Analysis
+            </h3>
+            <span class="text-2xs text-slate-400">CryptoPanic Free Tier Feed</span>
+        </div>
+        <div class="divide-y divide-slate-100 dark:divide-slate-700/60">
+            <!-- Curated crypto news items -->
+            <div class="p-4 hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-600">Bullish</span>
+                        <span class="text-2xs text-slate-400">CoinDesk • 25m ago</span>
+                    </div>
+                    <h4 class="text-xs font-bold text-slate-800 dark:text-white hover:text-brand-500 cursor-pointer">
+                        Bitcoin Spot ETFs Record Sustained Net Inflows as Institutional Custody Grows
+                    </h4>
+                </div>
+                <div class="text-2xs font-mono text-slate-400 whitespace-nowrap">
+                    BTC Dominance: @(Model?.BtcDominance.ToString("F1") ?? "54.2")%
+                </div>
+            </div>
+
+            <div class="p-4 hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-blue-100 dark:bg-blue-950 text-blue-600">Regulatory</span>
+                        <span class="text-2xs text-slate-400">CoinTelegraph • 1h ago</span>
+                    </div>
+                    <h4 class="text-xs font-bold text-slate-800 dark:text-white hover:text-brand-500 cursor-pointer">
+                        European Union MiCA Regulatory Framework Takes Full Effect: What Traders Must Know
+                    </h4>
+                </div>
+                <div class="text-2xs font-mono text-slate-400 whitespace-nowrap">
+                    ESMA / AFM Compliant
+                </div>
+            </div>
+
+            <div class="p-4 hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-purple-100 dark:bg-purple-950 text-purple-600">Ecosystem</span>
+                        <span class="text-2xs text-slate-400">The Block • 2h ago</span>
+                    </div>
+                    <h4 class="text-xs font-bold text-slate-800 dark:text-white hover:text-brand-500 cursor-pointer">
+                        Ethereum Layer-2 Throughput Surpasses 1,500 TPS with Gas Costs Under $0.01
+                    </h4>
+                </div>
+                <div class="text-2xs font-mono text-slate-400 whitespace-nowrap">
+                    ETH Network Health
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -118,6 +118,12 @@ public static class DependencyInjection
         services.AddScoped<AzureTest.Application.Food.IFoodQueryUnit, AzureTest.Application.Food.FoodQueryUnit>();
         services.AddScoped<AzureTest.Application.Food.IFoodCommandUnit, AzureTest.Application.Food.FoodCommandUnit>();
 
+        // Forex Trading & Market Analysis
+        AzureTest.Application.Forex.ForexServiceRegistration.AddForexModule(services);
+
+        // Crypto Markets & Algorithmic Trading
+        AzureTest.Application.Crypto.CryptoServiceRegistration.AddCryptoModule(services);
+
         // Media (TMDb Movies, Series, Anime, Actors)
         
         // ── Command Handlers ──────────────────────────────────────────────────

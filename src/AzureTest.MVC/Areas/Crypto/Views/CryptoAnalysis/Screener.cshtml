@@ -1,0 +1,167 @@
+@model IReadOnlyList<CryptoScreenerItemDto>
+@{
+    ViewData["Title"] = "Crypto Market Screener";
+    var minVolume = ViewBag.MinVolume as decimal?;
+    var minRsi = ViewBag.MinRsi as decimal?;
+    var maxRsi = ViewBag.MaxRsi as decimal?;
+    var minChange = ViewBag.MinChange as decimal?;
+    var maxChange = ViewBag.MaxChange as decimal?;
+    var trend = ViewBag.Trend as string;
+}
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center text-lg font-bold">
+                    <i class="fa-solid fa-filter"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Cryptocurrency Screener</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Filter assets by 24h trading volume, volatility, RSI momentum, and technical breakout potential</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a asp-action="Index" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors">
+                <i class="fa-solid fa-chart-line"></i> Technicals
+            </a>
+            <a asp-action="Sentiment" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors">
+                <i class="fa-solid fa-gauge-high"></i> Sentiment
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Form Toolbar -->
+    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <form method="get" asp-action="Screener" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Min Volume ($)</label>
+                <input type="number" name="minVolume" value="@minVolume" placeholder="e.g. 50000000" class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white" />
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Min RSI</label>
+                <input type="number" name="minRsi" value="@minRsi" placeholder="e.g. 30" class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white" />
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Max RSI</label>
+                <input type="number" name="maxRsi" value="@maxRsi" placeholder="e.g. 70" class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white" />
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Min 24h Change %</label>
+                <input type="number" step="0.1" name="minChange" value="@minChange" placeholder="e.g. 2.0" class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white" />
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Technical Signal</label>
+                <select name="trend" class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white">
+                    <option value="">All Signals</option>
+                    <option value="Buy" selected="@(trend == "Buy")">Buy / Strong Buy</option>
+                    <option value="Sell" selected="@(trend == "Sell")">Sell / Strong Sell</option>
+                    <option value="Neutral" selected="@(trend == "Neutral")">Neutral</option>
+                </select>
+            </div>
+            <div class="flex items-end gap-2">
+                <button type="submit" class="w-full px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-xs">
+                    Run Screen
+                </button>
+                <a asp-action="Screener" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 rounded-lg text-xs font-medium">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Screener Results Table -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">
+                Screened Assets (@(Model?.Count ?? 0) Results)
+            </h3>
+            <span class="text-2xs text-slate-400">Scored by Momentum & Volume Health</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-bold uppercase">
+                        <th class="py-3 px-4">#</th>
+                        <th class="py-3 px-4">Coin</th>
+                        <th class="py-3 px-4 text-right">Price</th>
+                        <th class="py-3 px-4 text-right">24h Change</th>
+                        <th class="py-3 px-4 text-right">24h Volume</th>
+                        <th class="py-3 px-4 text-right">Volatility</th>
+                        <th class="py-3 px-4 text-right">RSI 14</th>
+                        <th class="py-3 px-4 text-center">MACD Bias</th>
+                        <th class="py-3 px-4 text-center">Momentum Score</th>
+                        <th class="py-3 px-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 font-mono">
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            var pos = item.Change24h >= 0;
+                            var isBuy = item.Recommendation.Contains("Buy");
+                            var isSell = item.Recommendation.Contains("Sell");
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors">
+                                <td class="py-3 px-4 text-slate-400 font-sans">@item.Rank</td>
+                                <td class="py-3 px-4 font-sans font-bold text-slate-800 dark:text-white">
+                                    <div class="flex items-center gap-2">
+                                        <span>@item.Name</span>
+                                        <span class="text-2xs font-normal text-slate-400">@item.Symbol</span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4 text-right font-bold text-slate-800 dark:text-white">
+                                    $@(item.Price > 1m ? item.Price.ToString("N2") : item.Price.ToString("0.0000"))
+                                </td>
+                                <td class="py-3 px-4 text-right font-bold @(pos ? "text-emerald-600" : "text-rose-600")">
+                                    @(pos ? "+" : "")@item.Change24h.ToString("F2")%
+                                </td>
+                                <td class="py-3 px-4 text-right text-slate-600 dark:text-slate-300">
+                                    $@item.Volume24h.ToString("N0")
+                                </td>
+                                <td class="py-3 px-4 text-right text-slate-600 dark:text-slate-300">
+                                    @item.VolatilityPercent.ToString("F2")%
+                                </td>
+                                <td class="py-3 px-4 text-right font-bold @(item.Rsi >= 70 ? "text-rose-500" : item.Rsi <= 30 ? "text-emerald-500" : "text-slate-700 dark:text-slate-300")">
+                                    @item.Rsi.ToString("F1")
+                                </td>
+                                <td class="py-3 px-4 text-center font-sans">
+                                    <span class="text-2xs font-semibold px-2 py-0.5 rounded-md @(item.MacdStatus.Contains("Bullish") ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-600" : "bg-rose-100 dark:bg-rose-950 text-rose-600")">
+                                        @item.MacdStatus
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-center">
+                                    <div class="inline-flex items-center gap-1.5">
+                                        <span class="font-bold text-slate-800 dark:text-white">@item.MomentumScore.ToString("F0")</span>
+                                        <span class="text-2xs text-slate-400">/100</span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4 text-center font-sans">
+                                    <div class="flex items-center justify-center gap-1.5">
+                                        <span class="px-2 py-0.5 rounded-md text-2xs font-bold @(isBuy ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-600" : isSell ? "bg-rose-100 dark:bg-rose-950 text-rose-600" : "bg-slate-100 dark:bg-slate-700 text-slate-600")">
+                                            @item.Recommendation
+                                        </span>
+                                        <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" asp-route-symbol="@item.Symbol" class="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40" title="Trade">
+                                            <i class="fa-solid fa-bolt"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="10" class="py-8 text-center text-slate-400 font-sans">
+                                No coins matching the screening filters.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

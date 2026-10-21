@@ -1179,6 +1179,340 @@ public static class VersionReleasePagesSeeder
                   </div>
                 </div>
                 """
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "How to Use the Crypto Trading & Market Analysis Platform",
+                Slug = "how-to-use-crypto-trading",
+                Status = PageStatus.Published,
+                CreatedAt = new DateTime(2026, 10, 21, 18, 0, 0, DateTimeKind.Utc),
+                Content = """
+                <div class="py-6 px-4 max-w-4xl mx-auto font-sans leading-relaxed text-slate-800">
+                  <div class="border-b border-slate-200 pb-6 mb-8">
+                    <div class="flex items-center gap-2 mb-3">
+                      <span class="px-3 py-1 bg-amber-50 text-amber-700 font-bold text-xs rounded-full border border-amber-200">System Guide</span>
+                      <span class="text-xs text-slate-500"><i class="fa-regular fa-clock mr-1"></i> 9 min read</span>
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">How to Use the Crypto Trading &amp; Market Analysis Platform</h1>
+                    <p class="text-base text-slate-600 mt-2">A complete operational guide to cryptocurrency market aggregation, technical indicator analysis, rule-based algorithmic backtesting with walk-forward validation, paper-first order execution, and institutional risk management.</p>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Market Intelligence</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-chart-line text-amber-600 mr-2"></i>Multi-Exchange Data</div>
+                      <p class="text-2xs text-slate-500 mt-1">Live prices, order books, and funding rates from CoinGecko, CoinLore, DIA, and Binance without mandatory keys.</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Quantitative Engine</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-brain text-purple-600 mr-2"></i>Walk-Forward Test</div>
+                      <p class="text-2xs text-slate-500 mt-1">Simulate strategies with realistic fees and detect curve-fitting using 60/40 in-sample/out-of-sample splits.</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Capital Preservation</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-shield-halved text-emerald-600 mr-2"></i>Institutional Risk</div>
+                      <p class="text-2xs text-slate-500 mt-1">Dynamic position sizing from risk % per trade, daily drawdown limits, and one-click emergency kill switch.</p>
+                    </div>
+                  </div>
+
+                  <div class="space-y-8 text-sm">
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-coins text-amber-500"></i> 1. Live Market Data, Order Depth &amp; Perpetuals Hub
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Access aggregated crypto markets at <a href="/Crypto/CryptoMarket" class="text-amber-600 font-semibold hover:underline">/Crypto/CryptoMarket</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Multi-Source Price Aggregation:</strong> Pulls real-time prices, 24h volume, price changes, and market capitalization across top cryptocurrency pairs from CoinGecko, CoinLore, DIA, Kraken, and Binance public endpoints.</li>
+                        <li><strong>Candlestick Charts (<a href="/Crypto/CryptoMarket/Chart" class="text-amber-600 hover:underline">/Crypto/CryptoMarket/Chart</a>):</strong> Inspect multi-timeframe candles (1m, 5m, 15m, 1h, 4h, 1d) with interactive volume histograms.</li>
+                        <li><strong>Level 2 Order Book &amp; Tape (<a href="/Crypto/CryptoMarket/OrderBook" class="text-amber-600 hover:underline">/Crypto/CryptoMarket/OrderBook</a>):</strong> Inspect real-time bid/ask depth distributions, spread percentages, and live transaction prints.</li>
+                        <li><strong>Perpetual Futures &amp; Funding Rates (<a href="/Crypto/CryptoMarket/Futures" class="text-amber-600 hover:underline">/Crypto/CryptoMarket/Futures</a>):</strong> Monitor 8-hour funding rates, annualized APR, and Open Interest (OI) metrics to gauge market leverage sentiment and squeeze risks.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-wave-square text-blue-600"></i> 2. Technical Indicators, Support/Resistance &amp; Fibonacci
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Explore technical analysis at <a href="/Crypto/CryptoAnalysis" class="text-blue-600 font-semibold hover:underline">/Crypto/CryptoAnalysis</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Moving Averages:</strong> Fast and slow trends with EMA 9, EMA 21, EMA 50, EMA 200, and SMA 20/50.</li>
+                        <li><strong>Oscillators &amp; Volatility:</strong> 14-period RSI with dynamic overbought (&ge; 70) and oversold (&le; 30) alerts, MACD (12, 26, 9) signal lines and histograms, Bollinger Bands (20, 2.0 std dev), and Average True Range (ATR 14).</li>
+                        <li><strong>Classical Floor Pivots:</strong> Automatic calculation of Daily Pivot (P), Resistances (R1, R2, R3), and Supports (S1, S2, S3).</li>
+                        <li><strong>Fibonacci Retracement Grid:</strong> High-precision Fibonacci levels (23.6%, 38.2%, 50.0% Equilibrium, 61.8% Golden Pocket, 78.6% Deep Pullback) mapped to recent price swings.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-magnifying-glass-chart text-purple-600"></i> 3. Market Sentiment, On-Chain Whales &amp; Screener
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Assess macro drivers and uncover opportunities with dedicated analytical tools:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Crypto Sentiment (<a href="/Crypto/CryptoAnalysis/Sentiment" class="text-purple-600 hover:underline">/Crypto/CryptoAnalysis/Sentiment</a>):</strong> Alternative.me Crypto Fear &amp; Greed index gauge, BTC dominance ratio, and live curated news feeds with bullish/bearish classification from CryptoPanic.</li>
+                        <li><strong>On-Chain Whale Radar (<a href="/Crypto/CryptoAnalysis/OnChain" class="text-purple-600 hover:underline">/Crypto/CryptoAnalysis/OnChain</a>):</strong> Live blockchain explorer feeds detecting large wallet transfers, exchange inflows (potential sell pressure), and exchange outflows (cold storage accumulation).</li>
+                        <li><strong>Quantitative Screener (<a href="/Crypto/CryptoAnalysis/Screener" class="text-purple-600 hover:underline">/Crypto/CryptoAnalysis/Screener</a>):</strong> Multi-variable screener identifying coins by 24h trading volume surges, ATR volatility expansion, and RSI momentum.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-flask text-emerald-600"></i> 4. Algorithmic Strategies &amp; Walk-Forward Backtesting
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Design and validate trading rules at <a href="/Crypto/CryptoStrategy" class="text-emerald-600 font-semibold hover:underline">/Crypto/CryptoStrategy</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Rule-Based Archetypes:</strong> Trend-Following (EMA crosses + ATR filters), Mean-Reversion (RSI oversold + lower Bollinger bounces), and Volatility Breakout (Bollinger squeeze breakouts).</li>
+                        <li><strong>Realistic Backtest Engine:</strong> Configures realistic taker/maker trading fees (0.10%) and dynamic execution slippage (0.05%) to prevent unrealistic profit projections.</li>
+                        <li><strong>Performance Reports:</strong> Evaluates Win Rate %, Profit Factor, Max Drawdown %, and Annualized Sharpe Ratio with cumulative equity curves.</li>
+                        <li><strong>Walk-Forward Cross Validation:</strong> Splits historical candles into 60% In-Sample (training) and 40% Out-of-Sample (validation). Calculates parameter stability and flags curve-fitted strategies before live deployment.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-rose-600"></i> 5. Position Sizing &amp; Institutional Risk Controls
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Protect your capital at <a href="/Crypto/CryptoRisk" class="text-rose-600 font-semibold hover:underline">/Crypto/CryptoRisk</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Formulaic Position Sizing:</strong> Automatically computes order quantity based on account balance, target risk percentage per trade (e.g. 1.0% &ndash; 2.0%), and stop-loss distance.</li>
+                        <li><strong>Strict Trade Exits:</strong> Mandates Stop-Loss, Take-Profit, and dynamic Trailing Stop rules on every trade before execution.</li>
+                        <li><strong>Daily Drawdown Circuit Breaker:</strong> Locks out new order submissions if daily losses exceed the configured limit (e.g. 3.0% daily cap).</li>
+                        <li><strong>Emergency Kill Switch:</strong> Instantly cancels all resting limit orders and liquidates all open positions into base currency with a single click.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-indigo-600"></i> 6. Order Execution &amp; Paper-to-Live Migration
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Execute spot and perpetual orders at <a href="/Crypto/CryptoTrade" class="text-indigo-600 font-semibold hover:underline">/Crypto/CryptoTrade</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Paper Trading Mode by Default:</strong> All accounts initialize in risk-free Paper Trading simulation mode with simulated cash balances.</li>
+                        <li><strong>Order Types:</strong> Market orders (immediate fill at market price), Limit orders (maker queue entry), and Stop-Market protective orders.</li>
+                        <li><strong>Idempotent Safe Retries:</strong> Every order generates a unique client idempotency key to prevent accidental duplicate fills during network timeouts.</li>
+                        <li><strong>Staged Migration Protocol:</strong> Live trading is strictly locked until you complete 50 paper trades and verify out-of-sample strategy robustness.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-briefcase text-sky-600"></i> 7. Portfolio Management, Trade Journal &amp; Tax Export
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Monitor assets and maintain audit trails at <a href="/Crypto/CryptoPortfolio" class="text-sky-600 font-semibold hover:underline">/Crypto/CryptoPortfolio</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Portfolio Overview:</strong> Asset balances, open position monitor, unrealized P&amp;L, and total account equity.</li>
+                        <li><strong>Structured Trade Journal (<a href="/Crypto/CryptoPortfolio/Journal" class="text-sky-600 hover:underline">/Crypto/CryptoPortfolio/Journal</a>):</strong> Record strategy rationale, setup tags, entry/exit screenshots, and psychological ratings for each trade.</li>
+                        <li><strong>Tax Report Exporter (<a href="/Crypto/CryptoPortfolio/TaxReport" class="text-sky-600 hover:underline">/Crypto/CryptoPortfolio/TaxReport</a>):</strong> Generates fiscal summaries with realized gains, transaction fees, and asset valuations on January 1st for Dutch Belastingdienst Box 3 filing.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-bell text-yellow-600"></i> 8. Real-Time Alerts &amp; API Key Vault Security
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Automate monitoring and protect credentials at <a href="/Crypto/CryptoAlerts" class="text-yellow-600 font-semibold hover:underline">/Crypto/CryptoAlerts</a> and <a href="/Crypto/CryptoSettings" class="text-yellow-600 font-semibold hover:underline">/Crypto/CryptoSettings</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Trigger Alerts:</strong> Create notifications for price crossings, RSI overbought/oversold levels, MACD crosses, and large whale transactions.</li>
+                        <li><strong>Encrypted Key Vault:</strong> Exchange API keys and secrets are encrypted at rest using AES-256.</li>
+                        <li><strong>Zero Withdrawal Privilege Enforcement:</strong> The platform explicitly rejects any exchange API keys that have withdrawal permissions enabled.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
+                      <h3 class="text-lg font-bold text-amber-900 flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> 9. Risk Warning &amp; Regulatory Disclaimers
+                      </h3>
+                      <p class="text-amber-800 leading-relaxed text-xs">
+                        <strong>Not Financial Advice:</strong> This software is an algorithmic trading tool and quantitative analytics dashboard. Cryptocurrency markets are highly volatile.
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-xs text-amber-800">
+                        <li><strong>Leverage &amp; Liquidation Cascades:</strong> Leveraged positions risk 100% loss of allocated margin. Cascading liquidations on centralized exchanges can cause catastrophic slippage during flash crashes.</li>
+                        <li><strong>Free Data Delay Latency:</strong> Free public API endpoints (CoinGecko, Binance REST) experience polling delays of 1 to 60 seconds compared to collocated HFT WebSockets. Never execute high-frequency scalping strategies on delayed public feeds.</li>
+                        <li><strong>EU MiCA &amp; Dutch AFM Compliance:</strong> The EU Markets in Crypto-Assets (MiCA) regulation and Dutch AFM enforce strict retail investor protections and restrictions on high-leverage derivatives. Operating algorithms with third-party funds requires MiFID II licensing.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                """
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "How to Use the Forex Currency Markets & Macro Trading System",
+                Slug = "how-to-use-forex-trading",
+                Status = PageStatus.Published,
+                CreatedAt = new DateTime(2026, 10, 21, 18, 0, 0, DateTimeKind.Utc),
+                Content = """
+                <div class="py-6 px-4 max-w-4xl mx-auto font-sans leading-relaxed text-slate-800">
+                  <div class="border-b border-slate-200 pb-6 mb-8">
+                    <div class="flex items-center gap-2 mb-3">
+                      <span class="px-3 py-1 bg-blue-50 text-blue-700 font-bold text-xs rounded-full border border-blue-200">System Guide</span>
+                      <span class="text-xs text-slate-500"><i class="fa-regular fa-clock mr-1"></i> 8 min read</span>
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">How to Use the Forex Currency Markets &amp; Macro Trading System</h1>
+                    <p class="text-base text-slate-600 mt-2">A comprehensive reference manual for international currency exchange rates, pip spread calculations, economic calendar macro event tracking, quantitative strategy backtesting, lot sizing risk controls, and automated performance journaling.</p>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Currency Pairs</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-globe text-blue-600 mr-2"></i>Global FX Rates</div>
+                      <p class="text-2xs text-slate-500 mt-1">Majors, minors, and exotics with live bid/ask spreads and fractional pip (pipette) precision.</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Macroeconomics</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-calendar-days text-purple-600 mr-2"></i>Economic Calendar</div>
+                      <p class="text-2xs text-slate-500 mt-1">Real-time alerts for high-impact central bank interest rates, CPI inflation, and NFP employment data.</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Risk &amp; Margin</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-calculator text-emerald-600 mr-2"></i>Lot Size Sizing</div>
+                      <p class="text-2xs text-slate-500 mt-1">Automated standard, mini, and micro lot computation with ESMA/AFM leverage compliance.</p>
+                    </div>
+                  </div>
+
+                  <div class="space-y-8 text-sm">
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-money-bill-transfer text-blue-600"></i> 1. Live Currency Rates, Pip Spreads &amp; Pip Calculators
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Access live currency pairs at <a href="/Forex/ForexMarket" class="text-blue-600 font-semibold hover:underline">/Forex/ForexMarket</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Major Currency Pairs:</strong> Continuous live rate streams for EUR/USD, GBP/USD, USD/JPY, USD/CHF, AUD/USD, USD/CAD, and NZD/USD.</li>
+                        <li><strong>Bid/Ask Spread Tracking:</strong> Displays live spreads in pips. Alerts you when spreads widen beyond standard thresholds during market rollover (21:00 UTC) or news releases.</li>
+                        <li><strong>Pip Calculator Engine:</strong> Computes the exact monetary value of 1 pip based on the counter currency and position size:
+                          <div class="mt-2 p-3 bg-slate-50 rounded-xl text-xs font-mono text-slate-700">
+                            &bull; 1.00 Standard Lot (100,000 units) = $10.00 / pip (EUR/USD)<br>
+                            &bull; 0.10 Mini Lot (10,000 units) = $1.00 / pip<br>
+                            &bull; 0.01 Micro Lot (1,000 units) = $0.10 / pip
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-simple text-indigo-600"></i> 2. Technical Indicators, Session Pivots &amp; Currency Strength
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Perform technical analysis at <a href="/Forex/ForexAnalysis" class="text-indigo-600 font-semibold hover:underline">/Forex/ForexAnalysis</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Multi-Timeframe Indicators:</strong> Exponential Moving Averages (EMA 20, 50, 200), RSI 14, MACD, Bollinger Bands, and Average True Range (ATR 14 in pips).</li>
+                        <li><strong>Daily &amp; Session Pivot Points:</strong> Automatically calculates Floor Pivots (P, R1-R3, S1-S3) tailored to the London, New York, and Tokyo trading sessions.</li>
+                        <li><strong>Relative Currency Strength Matrix:</strong> Evaluates the relative performance of individual currencies (USD, EUR, GBP, JPY, CHF, CAD, AUD, NZD) across all pairs to pair the strongest currency against the weakest for maximum directional momentum.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-newspaper text-purple-600"></i> 3. Economic Calendar &amp; Central Bank Macro Analysis
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Anticipate market-moving events with the integrated economic calendar:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Tier-1 Economic Releases:</strong> Categorizes news events by impact level (Red = High, Orange = Medium, Yellow = Low), including US Non-Farm Payrolls (NFP), Consumer Price Index (CPI), and GDP data.</li>
+                        <li><strong>Central Bank Policy Surveillance:</strong> Tracks interest rate decisions, policy statements, and press conferences from the Federal Reserve (FOMC), European Central Bank (ECB), Bank of England (BoE), and Bank of Japan (BoJ).</li>
+                        <li><strong>News Trading Risk Filters:</strong> Automatic notifications recommending trading pauses 15 minutes before and after high-impact announcements to prevent extreme slippage.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-vial text-emerald-600"></i> 4. Algorithmic Strategy Engine &amp; Pip Backtester
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Backtest quantitative Forex strategies at <a href="/Forex/ForexStrategy" class="text-emerald-600 font-semibold hover:underline">/Forex/ForexStrategy</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Strategy Models:</strong> London Breakout (session high/low breakout), Moving Average Pullback (EMA 50/200 trend alignment with RSI dips), and Mean Reversion (Bollinger Band extremes).</li>
+                        <li><strong>Spread &amp; Commission Modeling:</strong> Injects realistic broker spreads (1.2 to 2.5 pips) and round-turn lot commissions ($5.00/lot) into backtest simulations to ensure true net profitability.</li>
+                        <li><strong>Institutional Metrics:</strong> Total Net Pip Gain, Win Rate %, Profit Factor, Maximum Drawdown (in % and pips), and Sharpe Ratio.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-sky-600"></i> 5. Order Execution, Lot Sizing &amp; Paper Trading
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Place and manage FX positions at <a href="/Forex/ForexTrade" class="text-sky-600 font-semibold hover:underline">/Forex/ForexTrade</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Order Types:</strong> Market Execution (instant fill), Limit Entry (Buy Limit / Sell Limit), and Stop Entry (Buy Stop / Sell Stop).</li>
+                        <li><strong>Automated Lot Sizing:</strong> Calculates allowable lots using the formula:
+                          <div class="mt-2 p-2 bg-slate-50 rounded-lg text-xs font-mono text-slate-700">
+                            Lots = (Account Balance &times; Risk %) / (Stop Loss in Pips &times; Pip Value)
+                          </div>
+                        </li>
+                        <li><strong>Paper Trading Simulator:</strong> Test order entries, trailing stops, and multi-tier take-profits with zero financial exposure before executing on live broker accounts.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-shield-cat text-rose-600"></i> 6. Margin Control, Regulatory Leverage &amp; Emergency Kill Switch
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Enforce strict risk management at <a href="/Forex/ForexRisk" class="text-rose-600 font-semibold hover:underline">/Forex/ForexRisk</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>European ESMA / Dutch AFM Retail Leverage Caps:</strong> Configured for maximum regulatory limits: 30:1 for major currency pairs, 20:1 for non-major pairs and gold, and 10:1 for other commodities.</li>
+                        <li><strong>Margin Level Monitoring:</strong> Real-time margin level percentage tracking with warning thresholds at 100% margin and stop-out liquidation protections at 50%.</li>
+                        <li><strong>Daily Loss Limit:</strong> Shuts down trade execution when cumulative daily losses breach user-defined parameters (e.g. 2.5% max daily drawdown).</li>
+                        <li><strong>One-Click Kill Switch:</strong> Instantly flattens all open currency positions and cancels all pending limit/stop orders.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-book text-emerald-600"></i> 7. Performance Trade Journal &amp; Tax Audit Export
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Track trading performance at <a href="/Forex/ForexJournal" class="text-emerald-600 font-semibold hover:underline">/Forex/ForexJournal</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Detailed Journal Log:</strong> Records open time, close time, pair, lot size, entry price, exit price, pip gain/loss, swap fees, and gross/net dollar P&amp;L.</li>
+                        <li><strong>Performance Breakdown:</strong> Analyzes win rate and average risk-to-reward ratio grouped by individual currency pair and trading session (London vs New York).</li>
+                        <li><strong>Tax Report Export:</strong> Exports audit-ready CSV and PDF records summarizing net realized gains and deductible broker commissions for annual financial declarations.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-gears text-slate-600"></i> 8. Broker Integration &amp; Operational Safety Checklist
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Configure broker connectivity at <a href="/Forex/ForexSettings" class="text-blue-600 font-semibold hover:underline">/Forex/ForexSettings</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Broker Connectors:</strong> Connect via REST or FIX APIs to supported brokers (e.g., OANDA, MetaTrader 4/5 bridges, Interactive Brokers).</li>
+                        <li><strong>Environment Toggles:</strong> Switch seamlessly between Demo / Sandbox environments and Live accounts.</li>
+                        <li><strong>Overnight Financing (Swap):</strong> Displays positive and negative rollover swap rates to prevent unexpected holding costs on multi-day positions.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                """
             }
         };
     }

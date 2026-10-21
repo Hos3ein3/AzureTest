@@ -1,0 +1,123 @@
+@model BacktestRequestDto
+@{
+    ViewData["Title"] = "Configure Backtest Simulation";
+}
+
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center gap-3">
+            <a asp-action="Index" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 transition-colors">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="text-xl font-bold text-slate-800 dark:text-white">Run Strategy Backtest</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Historical simulation incorporating fees, slippage, and walk-forward cross validation</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backtest Configuration Form -->
+    <form asp-action="Backtest" method="post" class="space-y-6">
+        @Html.AntiForgeryToken()
+
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-6">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">1. Strategy & Market Selection</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Strategy Model</label>
+                    <select asp-for="StrategyType" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2.5">
+                        <option value="@CryptoStrategyType.TrendFollowing">Dual EMA Trend Following</option>
+                        <option value="@CryptoStrategyType.MeanReversion">RSI Mean Reversion & Bollinger</option>
+                        <option value="@CryptoStrategyType.Breakout">Volatility Breakout</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Trading Pair</label>
+                    <input asp-for="Symbol" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2.5" placeholder="BTCUSDT" />
+                    <span asp-validation-for="Symbol" class="text-2xs text-rose-500"></span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Candle Timeframe</label>
+                    <select asp-for="Timeframe" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2.5">
+                        <option value="@CryptoTimeframe.M15">15 Minutes (M15)</option>
+                        <option value="@CryptoTimeframe.H1" selected>1 Hour (H1)</option>
+                        <option value="@CryptoTimeframe.H4">4 Hours (H4)</option>
+                        <option value="@CryptoTimeframe.D1">1 Day (D1)</option>
+                    </select>
+                </div>
+            </div>
+
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 pt-4 border-t border-slate-100 dark:border-slate-700">2. Capital & Execution Realism</h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Initial Capital ($)</label>
+                    <input asp-for="InitialCapital" type="number" step="100" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2.5" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Backtest Period (Days)</label>
+                    <input asp-for="DaysBack" type="number" min="1" max="365" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2.5" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Exchange Fee %</label>
+                    <input asp-for="CommissionPercent" type="number" step="0.005" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2.5" />
+                    <span class="text-[10px] text-slate-400">0.075% standard taker</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Simulated Slippage %</label>
+                    <input asp-for="SlippagePercent" type="number" step="0.01" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2.5" />
+                    <span class="text-[10px] text-slate-400">0.05% order book drift</span>
+                </div>
+            </div>
+
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 pt-4 border-t border-slate-100 dark:border-slate-700">3. Parameter Optimization</h2>
+
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div>
+                    <label class="block text-2xs font-bold text-slate-600 dark:text-slate-400 mb-1">Fast EMA Period</label>
+                    <input asp-for="FastPeriod" type="number" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" />
+                </div>
+                <div>
+                    <label class="block text-2xs font-bold text-slate-600 dark:text-slate-400 mb-1">Slow EMA Period</label>
+                    <input asp-for="SlowPeriod" type="number" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" />
+                </div>
+                <div>
+                    <label class="block text-2xs font-bold text-slate-600 dark:text-slate-400 mb-1">RSI Period</label>
+                    <input asp-for="RsiPeriod" type="number" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" />
+                </div>
+                <div>
+                    <label class="block text-2xs font-bold text-slate-600 dark:text-slate-400 mb-1">Bollinger Period</label>
+                    <input asp-for="BbPeriod" type="number" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" />
+                </div>
+                <div>
+                    <label class="block text-2xs font-bold text-slate-600 dark:text-slate-400 mb-1">Bollinger StdDev</label>
+                    <input asp-for="BbStdDev" type="number" step="0.1" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" />
+                </div>
+            </div>
+
+            <!-- Walk Forward Note -->
+            <div class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-900/50 flex items-start gap-3">
+                <i class="fa-solid fa-shield-virus text-indigo-600 text-sm mt-0.5"></i>
+                <div class="text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed">
+                    <span class="font-bold">Overfitting Prevention Guard:</span> This simulation runs an automated <strong>Walk-Forward Cross-Validation</strong> (70% In-Sample training, 30% Out-of-Sample verification). If the out-of-sample Sharpe ratio degrades by more than 35%, the system will warn you of curve-fitting bias.
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <a asp-action="Index" class="px-5 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold hover:bg-slate-200 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-play"></i> Run Simulation
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

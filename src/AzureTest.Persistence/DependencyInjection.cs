@@ -68,6 +68,16 @@ public static class DependencyInjection
         services.AddScoped<IExpenseRepository, ExpenseRepository>();
         services.AddScoped<IPomodoroRepository, PomodoroRepository>();
 
+        // ── Crypto Repositories ───────────────────────────────────────────────
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Crypto.ICryptoAccountRepository, Repositories.Crypto.CryptoAccountRepository>();
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Crypto.ICryptoOrderRepository, Repositories.Crypto.CryptoOrderRepository>();
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Crypto.ICryptoPositionRepository, Repositories.Crypto.CryptoPositionRepository>();
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Crypto.ICryptoStrategyRepository, Repositories.Crypto.CryptoStrategyRepository>();
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Crypto.ICryptoBacktestRepository, Repositories.Crypto.CryptoBacktestRepository>();
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Crypto.ICryptoAlertRepository, Repositories.Crypto.CryptoAlertRepository>();
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Crypto.ICryptoJournalEntryRepository, Repositories.Crypto.CryptoJournalEntryRepository>();
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Crypto.ICryptoApiSettingRepository, Repositories.Crypto.CryptoApiSettingRepository>();
+
         // ── Factories ─────────────────────────────────────────────────────────
         services.AddScoped<IDatabaseFactory, DatabaseFactory>();
         services.AddScoped<IRepositoryFactory, RepositoryFactory>();
