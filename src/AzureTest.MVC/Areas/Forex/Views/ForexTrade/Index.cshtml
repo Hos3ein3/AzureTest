@@ -29,15 +29,10 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <!-- Reset Demo Balance Form -->
-            <form method="post" asp-action="ResetAccount" class="inline" onsubmit="return confirm('Reset demo account balance to $10,000? All open positions will be closed.');">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="InitialBalance" value="10000" />
-                <input type="hidden" name="Leverage" value="30" />
-                <button type="submit" class="px-3.5 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors flex items-center gap-2">
-                    <i class="fa-solid fa-rotate-left"></i> Reset Balance
-                </button>
-            </form>
+            <!-- Reset Demo Balance Button -->
+            <button type="button" onclick="document.getElementById('resetBalanceModal').classList.remove('hidden')" class="px-3.5 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-rotate-left"></i> Reset Balance
+            </button>
 
             <a asp-area="Forex" asp-controller="ForexRisk" asp-action="Index" class="px-3.5 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl">
                 <i class="fa-solid fa-calculator"></i> Risk & Margin
@@ -254,14 +249,9 @@
                                 </td>
                                 <td class="px-4 py-3 font-sans text-right">
                                     <div class="flex items-center justify-end gap-1">
-                                        <!-- Close Position Form -->
-                                        <form method="post" asp-action="Close" class="inline" onsubmit="return confirm('Close this position immediately at market price?');">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="tradeId" value="@tr.Id" />
-                                            <button type="submit" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-2xs font-semibold">
-                                                Close
-                                            </button>
-                                        </form>
+                                        <button type="button" onclick="openCloseModal('@tr.Id', '@tr.Symbol', '@tr.Direction', '@tr.LotSize.ToString("F2")')" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-2xs font-semibold transition-colors">
+                                            Close
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -336,11 +326,70 @@
             </div>
         }
     </div>
+
+    <!-- Reset Balance Confirmation Modal -->
+    <div id="resetBalanceModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700 shadow-xl space-y-4">
+            <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="text-center space-y-1">
+                <h3 class="text-base font-bold text-slate-800 dark:text-white">Reset Demo Account Balance</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Are you sure you want to reset your demo account balance to <strong>$10,000</strong>? All open positions will be closed immediately.
+                </p>
+            </div>
+            <form method="post" asp-action="ResetAccount" class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="InitialBalance" value="10000" />
+                <input type="hidden" name="Leverage" value="30" />
+                <button type="button" onclick="document.getElementById('resetBalanceModal').classList.add('hidden')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors">
+                    Yes, Reset Balance
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Close Position Confirmation Modal -->
+    <div id="closePositionModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700 shadow-xl space-y-4">
+            <div class="w-12 h-12 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </div>
+            <div class="text-center space-y-1">
+                <h3 class="text-base font-bold text-slate-800 dark:text-white">Close Trade Position</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Close <strong id="closeSymbol" class="text-slate-700 dark:text-slate-200"></strong> (<span id="closeDirection" class="font-semibold"></span>, <span id="closeLots"></span> lots) immediately at current market price?
+                </p>
+            </div>
+            <form method="post" asp-action="Close" class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="tradeId" id="closeTradeId" value="" />
+                <button type="button" onclick="document.getElementById('closePositionModal').classList.add('hidden')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors">
+                    Confirm Close
+                </button>
+            </form>
+        </div>
+    </div>
 </div>
 
 <script>
     function generateIdempotency() {
         var key = 'order_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         document.getElementById('idempotencyKeyInput').value = key;
+    }
+
+    function openCloseModal(tradeId, symbol, direction, lots) {
+        document.getElementById('closeTradeId').value = tradeId;
+        document.getElementById('closeSymbol').textContent = symbol;
+        document.getElementById('closeDirection').textContent = direction;
+        document.getElementById('closeLots').textContent = lots;
+        document.getElementById('closePositionModal').classList.remove('hidden');
     }
 </script>

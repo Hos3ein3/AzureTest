@@ -358,7 +358,7 @@
 
                 <a asp-area="Forex" asp-controller="ForexMarket" asp-action="Chart" data-title="Candlestick Chart"
                    class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "ForexMarket" && currentAction == "Chart" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
-                    <i class="fa-solid fa-chart-candlestick w-6 text-center text-lg transition-colors @(currentController == "ForexMarket" && currentAction == "Chart" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <i class="fa-solid fa-chart-simple w-6 text-center text-lg transition-colors @(currentController == "ForexMarket" && currentAction == "Chart" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Live Chart</span>
                 </a>
 
@@ -418,7 +418,7 @@
 
                 <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="Chart" data-title="Candlestick Chart"
                    class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoMarket" && currentAction == "Chart" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
-                    <i class="fa-solid fa-chart-candlestick w-6 text-center text-lg transition-colors @(currentController == "CryptoMarket" && currentAction == "Chart" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <i class="fa-solid fa-chart-simple w-6 text-center text-lg transition-colors @(currentController == "CryptoMarket" && currentAction == "Chart" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Kline Chart</span>
                 </a>
 
@@ -950,7 +950,7 @@
                         <i class="fa-solid fa-chart-line text-base"></i>
                     </a>
                     <a asp-area="Forex" asp-controller="ForexMarket" asp-action="Chart" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "ForexMarket" && currentAction == "Chart" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Live Chart">
-                        <i class="fa-solid fa-chart-candlestick text-base"></i>
+                        <i class="fa-solid fa-chart-simple text-base"></i>
                     </a>
                     <a asp-area="Forex" asp-controller="ForexMarket" asp-action="Sessions" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "ForexMarket" && currentAction == "Sessions" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Market Sessions">
                         <i class="fa-solid fa-earth-americas text-base"></i>
@@ -981,7 +981,7 @@
                         <i class="fa-brands fa-bitcoin text-base"></i>
                     </a>
                     <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="Chart" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoMarket" && currentAction == "Chart" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Kline Chart">
-                        <i class="fa-solid fa-chart-candlestick text-base"></i>
+                        <i class="fa-solid fa-chart-simple text-base"></i>
                     </a>
                     <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="OrderBook" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoMarket" && currentAction == "OrderBook" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Order Book">
                         <i class="fa-solid fa-layer-group text-base"></i>

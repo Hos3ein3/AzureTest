@@ -751,3 +751,82 @@ html.dark .file-item.selected {
     transform: scale(1.08);
     border-color: #fff;
 }
+
+/* --------------------------------------------------------------------------
+   Form Validation States (Matching UiComponents Catalog Design System)
+   -------------------------------------------------------------------------- */
+.input-validation-error,
+input.input-validation-error,
+select.input-validation-error,
+textarea.input-validation-error {
+    border-color: #f43f5e !important; /* Tailwind rose-500 */
+    background-color: rgba(255, 241, 242, 0.4) !important; /* rose-50/40 */
+    box-shadow: 0 0 0 3px rgba(254, 205, 211, 0.6) !important; /* rose-200 ring */
+    color: #881337 !important;
+}
+
+.dark .input-validation-error,
+.dark input.input-validation-error,
+.dark select.input-validation-error,
+.dark textarea.input-validation-error {
+    border-color: #f43f5e !important;
+    background-color: rgba(76, 5, 25, 0.3) !important;
+    box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.25) !important;
+    color: #fecdd3 !important;
+}
+
+.field-validation-error {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+    margin-top: 0.35rem !important;
+    font-size: 0.725rem !important;
+    font-weight: 500 !important;
+    color: #e11d48 !important; /* rose-600 */
+    line-height: 1.25 !important;
+}
+
+.dark .field-validation-error {
+    color: #fb7185 !important; /* rose-400 */
+}
+
+.field-validation-error::before {
+    content: "\f071"; /* fa-triangle-exclamation */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 0.75rem;
+    color: inherit;
+    flex-shrink: 0;
+}
+
+.field-validation-valid {
+    display: none !important;
+}
+
+.validation-summary-errors {
+    margin-bottom: 1.25rem !important;
+    padding: 0.85rem 1.15rem !important;
+    border-radius: 0.875rem !important;
+    border: 1px solid rgba(244, 63, 94, 0.35) !important;
+    background-color: rgba(255, 241, 242, 0.85) !important;
+    color: #9f1239 !important;
+    font-size: 0.75rem !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.dark .validation-summary-errors {
+    background-color: rgba(76, 5, 25, 0.45) !important;
+    border-color: rgba(244, 63, 94, 0.45) !important;
+    color: #fecdd3 !important;
+}
+
+.validation-summary-errors ul {
+    list-style-type: disc !important;
+    margin-left: 1.25rem !important;
+    margin-top: 0.35rem !important;
+    space-y: 0.25rem !important;
+}
+
+.validation-summary-valid {
+    display: none !important;
+}

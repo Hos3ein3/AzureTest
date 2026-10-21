@@ -491,9 +491,153 @@
         </div>
     </div>
 
+    <!-- Global App Confirmation Modal -->
+    <div id="appGlobalConfirmModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700 shadow-xl space-y-4">
+            <div id="appGlobalConfirmIcon" class="w-12 h-12 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="text-center space-y-1">
+                <h3 id="appGlobalConfirmTitle" class="text-base font-bold text-slate-800 dark:text-white">Confirm Action</h3>
+                <p id="appGlobalConfirmMessage" class="text-xs text-slate-500 dark:text-slate-400">Are you sure you want to proceed?</p>
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                <button type="button" id="appGlobalConfirmCancelBtn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors">
+                    Cancel
+                </button>
+                <button type="button" id="appGlobalConfirmActionBtn" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global App Alert Modal -->
+    <div id="appGlobalAlertModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700 shadow-xl space-y-4">
+            <div class="w-12 h-12 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-circle-info"></i>
+            </div>
+            <div class="text-center space-y-1">
+                <h3 id="appGlobalAlertTitle" class="text-base font-bold text-slate-800 dark:text-white">Notice</h3>
+                <p id="appGlobalAlertMessage" class="text-xs text-slate-500 dark:text-slate-400"></p>
+            </div>
+            <div class="flex items-center justify-center pt-3 border-t border-slate-100 dark:border-slate-700">
+                <button type="button" id="appGlobalAlertOkBtn" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
+    @{ Context.Items["ValidationScriptsIncluded"] = true; }
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script>
+        if (window.jQuery && $.validator) {
+            $.validator.setDefaults({
+                errorClass: 'input-validation-error',
+                validClass: 'valid',
+                highlight: function (element, errorClass, validClass) {
+                    $(element).addClass(errorClass).removeClass(validClass);
+                },
+                unhighlight: function (element, errorClass, validClass) {
+                    $(element).removeClass(errorClass).addClass(validClass);
+                }
+            });
+        }
+
+        // Global Modal Alert and Confirm implementation
+        (function () {
+            var confirmModal = document.getElementById('appGlobalConfirmModal');
+            var confirmTitle = document.getElementById('appGlobalConfirmTitle');
+            var confirmMsg = document.getElementById('appGlobalConfirmMessage');
+            var confirmBtn = document.getElementById('appGlobalConfirmActionBtn');
+            var cancelBtn = document.getElementById('appGlobalConfirmCancelBtn');
+            var alertModal = document.getElementById('appGlobalAlertModal');
+            var alertTitle = document.getElementById('appGlobalAlertTitle');
+            var alertMsg = document.getElementById('appGlobalAlertMessage');
+            var alertOkBtn = document.getElementById('appGlobalAlertOkBtn');
+
+            var currentOnConfirm = null;
+
+            window.showAppConfirm = function (opts) {
+                if (!confirmModal) return;
+                confirmTitle.textContent = opts.title || 'Confirm Action';
+                confirmMsg.textContent = opts.message || 'Are you sure you want to proceed?';
+                confirmBtn.textContent = opts.confirmBtnText || 'Confirm';
+                currentOnConfirm = opts.onConfirm;
+                confirmModal.classList.remove('hidden');
+            };
+
+            window.showAppAlert = function (opts) {
+                if (!alertModal) return;
+                var msg = typeof opts === 'string' ? opts : (opts.message || '');
+                var title = typeof opts === 'object' && opts.title ? opts.title : 'Notice';
+                alertTitle.textContent = title;
+                alertMsg.textContent = msg;
+                alertModal.classList.remove('hidden');
+            };
+
+            if (confirmBtn) {
+                confirmBtn.onclick = function () {
+                    confirmModal.classList.add('hidden');
+                    if (typeof currentOnConfirm === 'function') {
+                        currentOnConfirm();
+                    }
+                };
+            }
+
+            if (cancelBtn) {
+                cancelBtn.onclick = function () {
+                    confirmModal.classList.add('hidden');
+                    currentOnConfirm = null;
+                };
+            }
+
+            if (alertOkBtn) {
+                alertOkBtn.onclick = function () {
+                    alertModal.classList.add('hidden');
+                };
+            }
+
+            // Replace window.alert with styled Tailwind modal
+            window.alert = function (message) {
+                window.showAppAlert(message);
+            };
+
+            // Intercept all forms and buttons that have inline confirm(...)
+            document.addEventListener('DOMContentLoaded', function () {
+                document.querySelectorAll('form').forEach(function (form) {
+                    var onsubmitAttr = form.getAttribute('onsubmit');
+                    if (onsubmitAttr && onsubmitAttr.indexOf('confirm(') !== -1) {
+                        var match = onsubmitAttr.match(/confirm\s*\(\s*['"]([^'"]+)['"]\s*\)/);
+                        var message = match ? match[1] : 'Are you sure you want to proceed?';
+                        form.removeAttribute('onsubmit');
+                        form.addEventListener('submit', function (e) {
+                            if (form.dataset.globalConfirmed === 'true') {
+                                form.dataset.globalConfirmed = 'false';
+                                return true;
+                            }
+                            e.preventDefault();
+                            window.showAppConfirm({
+                                title: 'Confirm Action',
+                                message: message,
+                                onConfirm: function () {
+                                    form.dataset.globalConfirmed = 'true';
+                                    form.submit();
+                                }
+                            });
+                            return false;
+                        });
+                    }
+                });
+            });
+        })();
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 
     <!-- Global Page Loader and Setting Modal Scripts -->

@@ -52,12 +52,12 @@ public sealed class ForexJournalEntry : AggregateRoot, IAudit, ISoftDelete, ITen
         Guid? tradeId,
         string symbol,
         DateTime tradeDateUtc,
-        string marketSession,
-        string setupType,
-        string emotions,
-        string mistakes,
-        string lessonsLearned,
-        string detailedNotes,
+        string? marketSession,
+        string? setupType,
+        string? emotions,
+        string? mistakes,
+        string? lessonsLearned,
+        string? detailedNotes,
         string? screenshotUrl,
         int executionRating,
         bool followedPlan,
@@ -66,14 +66,14 @@ public sealed class ForexJournalEntry : AggregateRoot, IAudit, ISoftDelete, ITen
         UserId = userId;
         TenantId = tenantId.HasValue && tenantId.Value != Guid.Empty ? tenantId.Value : userId;
         TradeId = tradeId;
-        Symbol = symbol.ToUpperInvariant().Trim();
+        Symbol = string.IsNullOrWhiteSpace(symbol) ? "EUR/USD" : symbol.ToUpperInvariant().Trim();
         TradeDateUtc = tradeDateUtc;
-        MarketSession = marketSession.Trim();
-        SetupType = setupType.Trim();
-        Emotions = emotions.Trim();
-        Mistakes = mistakes.Trim();
-        LessonsLearned = lessonsLearned.Trim();
-        DetailedNotes = detailedNotes.Trim();
+        MarketSession = string.IsNullOrWhiteSpace(marketSession) ? "London" : marketSession.Trim();
+        SetupType = setupType?.Trim() ?? string.Empty;
+        Emotions = emotions?.Trim() ?? string.Empty;
+        Mistakes = mistakes?.Trim() ?? string.Empty;
+        LessonsLearned = lessonsLearned?.Trim() ?? string.Empty;
+        DetailedNotes = detailedNotes?.Trim() ?? string.Empty;
         ScreenshotUrl = screenshotUrl?.Trim();
         ExecutionRating = Math.Clamp(executionRating, Rules.RatingMin, Rules.RatingMax);
         FollowedPlan = followedPlan;
@@ -84,12 +84,12 @@ public sealed class ForexJournalEntry : AggregateRoot, IAudit, ISoftDelete, ITen
         Guid? tradeId,
         string symbol,
         DateTime tradeDateUtc,
-        string marketSession,
-        string setupType,
-        string emotions,
-        string mistakes,
-        string lessonsLearned,
-        string detailedNotes,
+        string? marketSession = null,
+        string? setupType = null,
+        string? emotions = null,
+        string? mistakes = null,
+        string? lessonsLearned = null,
+        string? detailedNotes = null,
         string? screenshotUrl = null,
         int executionRating = 3,
         bool followedPlan = true,
@@ -101,20 +101,20 @@ public sealed class ForexJournalEntry : AggregateRoot, IAudit, ISoftDelete, ITen
     }
 
     public void Update(
-        string setupType,
-        string emotions,
-        string mistakes,
-        string lessonsLearned,
-        string detailedNotes,
+        string? setupType,
+        string? emotions,
+        string? mistakes,
+        string? lessonsLearned,
+        string? detailedNotes,
         string? screenshotUrl,
         int executionRating,
         bool followedPlan)
     {
-        SetupType = setupType.Trim();
-        Emotions = emotions.Trim();
-        Mistakes = mistakes.Trim();
-        LessonsLearned = lessonsLearned.Trim();
-        DetailedNotes = detailedNotes.Trim();
+        SetupType = setupType?.Trim() ?? string.Empty;
+        Emotions = emotions?.Trim() ?? string.Empty;
+        Mistakes = mistakes?.Trim() ?? string.Empty;
+        LessonsLearned = lessonsLearned?.Trim() ?? string.Empty;
+        DetailedNotes = detailedNotes?.Trim() ?? string.Empty;
         ScreenshotUrl = screenshotUrl?.Trim();
         ExecutionRating = Math.Clamp(executionRating, Rules.RatingMin, Rules.RatingMax);
         FollowedPlan = followedPlan;

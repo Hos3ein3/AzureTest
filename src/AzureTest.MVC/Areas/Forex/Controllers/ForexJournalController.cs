@@ -24,15 +24,18 @@ public class ForexJournalController : Controller
     private readonly IForexQueryUnit _queries;
     private readonly IForexCommandUnit _commands;
     private readonly IValidationService _validator;
+    private readonly IBlobService _blobService;
 
     public ForexJournalController(
         IForexQueryUnit queries,
         IForexCommandUnit commands,
-        IValidationService validator)
+        IValidationService validator,
+        IBlobService blobService)
     {
         _queries = queries;
         _commands = commands;
         _validator = validator;
+        _blobService = blobService;
     }
 
     [HttpGet]
@@ -50,8 +53,17 @@ public class ForexJournalController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Save Journal Entry")]
     [Description("Record trade setup, mindset notes, mistakes, lessons learned, and screenshot link.")]
-    public async Task<IActionResult> Create(SaveJournalEntryCommand command, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(SaveJournalEntryCommand command, Microsoft.AspNetCore.Http.IFormFile? screenshotFile, CancellationToken cancellationToken)
     {
+        if (screenshotFile != null && screenshotFile.Length > 0)
+        {
+            var ext = Path.GetExtension(screenshotFile.FileName);
+            var blobName = $"{Guid.NewGuid()}{ext}";
+            await using var stream = screenshotFile.OpenReadStream();
+            var imageUrl = await _blobService.UploadFileAsync("forex-journal", blobName, stream, screenshotFile.ContentType, cancellationToken);
+            command = command with { ScreenshotUrl = imageUrl };
+        }
+
         var validation = await _validator.ValidateAsync(command, cancellationToken);
         if (validation.IsFailure)
         {

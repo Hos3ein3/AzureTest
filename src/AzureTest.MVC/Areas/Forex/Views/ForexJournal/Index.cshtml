@@ -145,9 +145,12 @@
 
                         @if (!string.IsNullOrEmpty(entry.ScreenshotUrl))
                         {
-                            <div class="pt-3 border-t border-slate-100 dark:border-slate-700">
-                                <a href="@entry.ScreenshotUrl" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-brand-600 hover:text-brand-700 inline-flex items-center gap-1">
+                            <div class="pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                <a href="@entry.ScreenshotUrl" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-brand-600 hover:text-brand-700 inline-flex items-center gap-1.5">
                                     <i class="fa-solid fa-image"></i> View Trade Chart Screenshot &rarr;
+                                </a>
+                                <a href="@entry.ScreenshotUrl" target="_blank" rel="noopener noreferrer" class="block w-16 h-10 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 hover:opacity-80 transition-opacity">
+                                    <img src="@entry.ScreenshotUrl" alt="Screenshot" class="w-full h-full object-cover" />
                                 </a>
                             </div>
                         }
@@ -169,7 +172,7 @@
                 </button>
             </div>
 
-            <form method="post" asp-action="Create" class="space-y-4 text-xs">
+            <form method="post" asp-action="Create" enctype="multipart/form-data" class="space-y-4 text-xs">
                 @Html.AntiForgeryToken()
 
                 <div class="grid grid-cols-2 gap-3">
@@ -234,8 +237,9 @@
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Chart Screenshot URL</label>
-                    <input type="url" name="ScreenshotUrl" placeholder="https://..." class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-white" />
+                    <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Upload Chart Screenshot</label>
+                    <input type="file" name="screenshotFile" accept="image/*" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-white text-xs file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 dark:file:bg-teal-900/30 dark:file:text-teal-300 hover:file:bg-teal-100" />
+                    <p class="mt-1 text-2xs text-slate-400">Upload trade chart image (PNG, JPG, WEBP). Stored directly in local storage.</p>
                 </div>
 
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">

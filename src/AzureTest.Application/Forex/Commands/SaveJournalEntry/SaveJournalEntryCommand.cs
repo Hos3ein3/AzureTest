@@ -16,11 +16,11 @@ public sealed record SaveJournalEntryCommand(
     DateTime TradeDateUtc,
     string MarketSession,
     string SetupType,
-    string Emotions,
-    string Mistakes,
-    string LessonsLearned,
-    string DetailedNotes,
-    string? ScreenshotUrl,
+    string? Emotions = null,
+    string? Mistakes = null,
+    string? LessonsLearned = null,
+    string? DetailedNotes = null,
+    string? ScreenshotUrl = null,
     int ExecutionRating = 3,
     bool FollowedPlan = true
 ) : ICommand<Result<Guid>>;
@@ -42,7 +42,20 @@ public sealed class SaveJournalEntryCommandValidator : AbstractValidator<SaveJou
             .MaximumLength(ForexJournalEntry.Rules.SessionMaxLength);
 
         RuleFor(x => x.DetailedNotes)
-            .MaximumLength(ForexJournalEntry.Rules.NotesMaxLength);
+            .MaximumLength(ForexJournalEntry.Rules.NotesMaxLength)
+            .When(x => !string.IsNullOrEmpty(x.DetailedNotes));
+
+        RuleFor(x => x.Mistakes)
+            .MaximumLength(ForexJournalEntry.Rules.MistakesMaxLength)
+            .When(x => !string.IsNullOrEmpty(x.Mistakes));
+
+        RuleFor(x => x.LessonsLearned)
+            .MaximumLength(ForexJournalEntry.Rules.LessonsMaxLength)
+            .When(x => !string.IsNullOrEmpty(x.LessonsLearned));
+
+        RuleFor(x => x.Emotions)
+            .MaximumLength(ForexJournalEntry.Rules.EmotionsMaxLength)
+            .When(x => !string.IsNullOrEmpty(x.Emotions));
 
         RuleFor(x => x.ExecutionRating)
             .InclusiveBetween(ForexJournalEntry.Rules.RatingMin, ForexJournalEntry.Rules.RatingMax);

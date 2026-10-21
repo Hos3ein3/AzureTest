@@ -174,7 +174,7 @@
                                 <td class="py-3.5 px-4 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
                                         <a asp-action="Chart" asp-route-symbol="@(coin.Symbol.EndsWith("USDT") ? coin.Symbol : coin.Symbol + "USDT")" title="View Candlestick Chart" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                                            <i class="fa-solid fa-chart-candlestick"></i>
+                                            <i class="fa-solid fa-chart-simple"></i>
                                         </a>
                                         <a asp-action="OrderBook" asp-route-symbol="@(coin.Symbol.EndsWith("USDT") ? coin.Symbol : coin.Symbol + "USDT")" title="View Order Book Ladder" class="p-1.5 rounded-lg text-slate-400 hover:text-purple-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                                             <i class="fa-solid fa-layer-group"></i>
