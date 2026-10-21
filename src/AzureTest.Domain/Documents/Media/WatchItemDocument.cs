@@ -71,7 +71,10 @@ public class WatchItemDocument : ITenantEntity
         int totalSeasons = 1,
         int totalEpisodes = 1,
         int? runtimeMinutes = null,
-        List<string>? genres = null)
+        List<string>? genres = null,
+        DateTime? watchedDate = null,
+        int? userRating = null,
+        string? userReview = null)
     {
         var item = new WatchItemDocument
         {
@@ -93,14 +96,12 @@ public class WatchItemDocument : ITenantEntity
             TotalEpisodes = Math.Max(0, totalEpisodes),
             RuntimeMinutes = runtimeMinutes,
             Genres = genres ?? new List<string>(),
+            WatchedDate = watchedDate ?? (status == WatchStatus.Completed ? DateTime.UtcNow : null),
+            LastWatchedAt = watchedDate ?? (status == WatchStatus.Completed ? DateTime.UtcNow : null),
+            UserRating = userRating.HasValue ? Math.Clamp(userRating.Value, Rules.MinRating, Rules.MaxRating) : null,
+            UserReview = !string.IsNullOrWhiteSpace(userReview) ? (userReview.Length > Rules.ReviewMaxLength ? userReview[..Rules.ReviewMaxLength] : userReview.Trim()) : null,
             CreatedAt = DateTime.UtcNow
         };
-
-        if (status == WatchStatus.Completed)
-        {
-            item.WatchedDate = DateTime.UtcNow;
-            item.LastWatchedAt = DateTime.UtcNow;
-        }
 
         return item;
     }

@@ -220,4 +220,50 @@ public class MediaTests
 
         result.ShouldHaveValidationErrorFor(x => x.Title);
     }
+
+    [Fact]
+    public void WatchItemDocument_Create_WithWatchedDateAndRating()
+    {
+        var userId = Guid.NewGuid();
+        var tenantId = Guid.NewGuid();
+        var watchedDate = DateTime.UtcNow.AddYears(-3);
+
+        var item = WatchItemDocument.Create(
+            userId: userId,
+            tenantId: tenantId,
+            tmdbId: 1429, // Attack on Titan
+            type: MediaType.Anime,
+            title: "Attack on Titan",
+            status: WatchStatus.Completed,
+            currentSeason: 4,
+            currentEpisode: 87,
+            totalSeasons: 4,
+            totalEpisodes: 87,
+            watchedDate: watchedDate,
+            userRating: 10,
+            userReview: "Watched 3 years ago, absolute masterpiece!");
+
+        Assert.Equal(WatchStatus.Completed, item.Status);
+        Assert.Equal(watchedDate, item.WatchedDate);
+        Assert.Equal(10, item.UserRating);
+        Assert.Equal("Watched 3 years ago, absolute masterpiece!", item.UserReview);
+        Assert.Equal(4, item.CurrentSeason);
+        Assert.Equal(87, item.CurrentEpisode);
+    }
+
+    [Fact]
+    public void GetSeasonEpisodesQueryValidator_Validates_Correctly()
+    {
+        var validator = new AzureTest.Application.Media.Queries.GetSeasonEpisodes.GetSeasonEpisodesQueryValidator();
+
+        var invalidCommand = new AzureTest.Application.Media.Queries.GetSeasonEpisodes.GetSeasonEpisodesQuery(0, -1);
+        var invalidResult = validator.TestValidate(invalidCommand);
+        invalidResult.ShouldHaveValidationErrorFor(x => x.TvShowId);
+        invalidResult.ShouldHaveValidationErrorFor(x => x.SeasonNumber);
+
+        var validCommand = new AzureTest.Application.Media.Queries.GetSeasonEpisodes.GetSeasonEpisodesQuery(1429, 1);
+        var validResult = validator.TestValidate(validCommand);
+        validResult.ShouldNotHaveAnyValidationErrors();
+    }
 }
+

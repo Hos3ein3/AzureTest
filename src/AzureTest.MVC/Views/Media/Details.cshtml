@@ -21,12 +21,16 @@
         ? ""
         : $"https://image.tmdb.org/t/p/w92{path}";
 
+    string Slugify(string? title) => string.IsNullOrWhiteSpace(title)
+        ? "title"
+        : System.Text.RegularExpressions.Regex.Replace(title.ToLowerInvariant(), @"[^a-z0-9]+", "-").Trim('-');
+
     string StatusBadgeClass(WatchStatus status) => status switch
     {
-        WatchStatus.Watching => "bg-blue-600 text-white",
-        WatchStatus.PlanToWatch => "bg-amber-600 text-white",
-        WatchStatus.Completed => "bg-emerald-600 text-white",
-        WatchStatus.Dropped => "bg-rose-600 text-white",
+        WatchStatus.Watching => "bg-blue-600 text-white shadow-2xs",
+        WatchStatus.PlanToWatch => "bg-amber-600 text-white shadow-2xs",
+        WatchStatus.Completed => "bg-emerald-600 text-white shadow-2xs",
+        WatchStatus.Dropped => "bg-rose-600 text-white shadow-2xs",
         _ => "bg-slate-600 text-white"
     };
 
@@ -39,12 +43,19 @@
         _ => status.ToString()
     };
 
+    var slug = Slugify(Model.Title);
     var breadcrumbs = new List<BreadcrumbItem>
     {
         new("Media", Url.Action("Index", "Media")),
         new("Discover", Url.Action("Discover", "Media")),
         new(Model.Title, null, IsActive: true)
     };
+
+    var validSeasons = Model.Seasons?.Where(s => s.SeasonNumber > 0).OrderBy(s => s.SeasonNumber).ToList() ?? new List<TvSeasonSummaryDto>();
+    var totalEpisodesCount = validSeasons.Sum(s => s.EpisodeCount);
+    var initialSeasonNumber = userItem?.CurrentSeason > 0 && validSeasons.Any(s => s.SeasonNumber == userItem.CurrentSeason)
+        ? userItem.CurrentSeason
+        : (validSeasons.FirstOrDefault()?.SeasonNumber ?? 1);
 }
 
 <div class="space-y-8">
@@ -93,6 +104,13 @@
                     {
                         <span class="text-xs text-slate-300 font-medium">
                             <i class="fa-regular fa-clock mr-1"></i> @Model.RuntimeMinutes mins
+                        </span>
+                    }
+
+                    @if (validSeasons.Any())
+                    {
+                        <span class="text-xs text-slate-300 font-medium">
+                            <i class="fa-solid fa-layer-group mr-1"></i> @validSeasons.Count Seasons (@totalEpisodesCount Ep)
                         </span>
                     }
                 </div>
@@ -147,11 +165,19 @@
 
                                     @if (Model.Type != MediaType.Movie)
                                     {
-                                        <span class="text-xs text-white font-medium">
+                                        <span class="text-xs text-white font-medium" id="headerProgressLabel">
                                             Season @userItem.CurrentSeason • Episode @userItem.CurrentEpisode
                                         </span>
                                         <span class="px-2.5 py-1 rounded-lg bg-brand-500/20 text-brand-300 border border-brand-500/30 text-3xs font-semibold">
                                             Next: @userItem.NextEpisodeLabel
+                                        </span>
+                                    }
+
+                                    @if (userItem.WatchedDate.HasValue)
+                                    {
+                                        <span class="text-xs text-slate-300 flex items-center gap-1">
+                                            <i class="fa-regular fa-calendar-check text-brand-400"></i>
+                                            Watched: @userItem.WatchedDate.Value.ToString("MMM yyyy")
                                         </span>
                                     }
                                 </div>
@@ -163,8 +189,9 @@
                                             <i class="fa-solid fa-star text-amber-400 text-2xs"></i> My Score: @userItem.UserRating/10
                                         </span>
                                     }
-                                    <button type="button" onclick="openRateModal()" class="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition-colors">
-                                        <i class="fa-solid fa-pen mr-1"></i> Rate & Review
+                                    <button type="button" onclick="openRateModal()" class="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition-colors flex items-center gap-1.5">
+                                        <i class="fa-solid fa-pen text-2xs"></i>
+                                        <span>Rate & Date</span>
                                     </button>
                                 </div>
                             </div>
@@ -188,9 +215,9 @@
 
                                         <div class="flex items-center gap-1.5 text-xs text-slate-300">
                                             <span>S:</span>
-                                            <input type="number" name="Season" value="@userItem.CurrentSeason" min="0" max="99" class="w-14 px-2 py-1 rounded-lg bg-white/10 border border-white/20 text-white text-xs focus:outline-none" />
+                                            <input type="number" id="currentSeasonInput" name="Season" value="@userItem.CurrentSeason" min="0" max="99" class="w-14 px-2 py-1 rounded-lg bg-white/10 border border-white/20 text-white text-xs focus:outline-none" />
                                             <span>E:</span>
-                                            <input type="number" name="Episode" value="@userItem.CurrentEpisode" min="0" max="999" class="w-16 px-2 py-1 rounded-lg bg-white/10 border border-white/20 text-white text-xs focus:outline-none" />
+                                            <input type="number" id="currentEpisodeInput" name="Episode" value="@userItem.CurrentEpisode" min="0" max="999" class="w-16 px-2 py-1 rounded-lg bg-white/10 border border-white/20 text-white text-xs focus:outline-none" />
                                         </div>
                                         <button type="submit" class="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-semibold transition-colors">
                                             Save Ep
@@ -222,7 +249,7 @@
                     else
                     {
                         <!-- Quick Add Buttons -->
-                        <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2.5">
                             <form asp-action="Add" asp-controller="Media" method="post" class="inline">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="TmdbId" value="@Model.Id" />
@@ -243,24 +270,20 @@
                                 <input type="hidden" name="Title" value="@Model.Title" />
                                 <input type="hidden" name="PosterPath" value="@Model.PosterPath" />
                                 <input type="hidden" name="Status" value="@WatchStatus.Watching" />
+                                <input type="hidden" name="CurrentSeason" value="1" />
+                                <input type="hidden" name="CurrentEpisode" value="1" />
                                 <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
                                 <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
                                     <i class="fa-solid fa-play text-2xs"></i> Start Watching
                                 </button>
                             </form>
 
-                            <form asp-action="Add" asp-controller="Media" method="post" class="inline">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="TmdbId" value="@Model.Id" />
-                                <input type="hidden" name="Type" value="@Model.Type" />
-                                <input type="hidden" name="Title" value="@Model.Title" />
-                                <input type="hidden" name="PosterPath" value="@Model.PosterPath" />
-                                <input type="hidden" name="Status" value="@WatchStatus.Completed" />
-                                <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
-                                <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
-                                    <i class="fa-solid fa-check text-2xs"></i> Mark Finished
-                                </button>
-                            </form>
+                            <!-- Direct Mark as Watched / Completed with Date -->
+                            <button type="button" onclick="openWatchedModal('@Model.Id', '@Model.Title', '@Model.Type', @(validSeasons.Count), @totalEpisodesCount)"
+                                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
+                                <i class="fa-solid fa-check text-2xs"></i>
+                                <span>I Watched This (Add Date)</span>
+                            </button>
                         </div>
                     }
                 </div>
@@ -268,23 +291,100 @@
         </div>
     </div>
 
+    <!-- Seasons & Episodes Section (For TV Series & Anime) -->
+    @if (validSeasons.Any())
+    {
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-6" id="seasonsSection">
+            <!-- Header & Action Bar -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center text-base">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 dark:text-white">Seasons & Episodes</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Select a season to view all episodes and track your watching progress.</p>
+                    </div>
+                </div>
+
+                <!-- Whole Anime / Series Action Button -->
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="openWatchedModal('@Model.Id', '@Model.Title', '@Model.Type', @(validSeasons.Count), @totalEpisodesCount)"
+                            class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-check-double text-2xs"></i>
+                        <span>Mark Entire @(Model.Type == MediaType.Anime ? "Anime" : "Series") Watched</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Season Selector Pill Tabs -->
+            <div class="flex flex-wrap items-center gap-2" id="seasonTabs">
+                @foreach (var s in validSeasons)
+                {
+                    var isCurrentActiveSeason = s.SeasonNumber == initialSeasonNumber;
+                    var isSeasonWatched = userItem != null && (userItem.CurrentSeason > s.SeasonNumber || (userItem.CurrentSeason == s.SeasonNumber && userItem.CurrentEpisode >= s.EpisodeCount) || userItem.Status == WatchStatus.Completed);
+
+                    <button type="button" onclick="selectSeason(@s.SeasonNumber)"
+                            id="seasonTab-@s.SeasonNumber"
+                            data-season="@s.SeasonNumber"
+                            data-episodes="@s.EpisodeCount"
+                            data-name="@s.Name"
+                            class="season-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 @(isCurrentActiveSeason ? "bg-slate-900 dark:bg-brand-600 text-white shadow-2xs" : "bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-650")">
+                        <span>@s.Name</span>
+                        <span class="px-2 py-0.5 rounded-lg text-3xs font-semibold @(isCurrentActiveSeason ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300")">
+                            @s.EpisodeCount Ep
+                        </span>
+                        @if (isSeasonWatched)
+                        {
+                            <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+                        }
+                    </button>
+                }
+            </div>
+
+            <!-- Active Season Details Banner -->
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-750 border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <h3 id="activeSeasonTitle" class="text-sm font-bold text-slate-900 dark:text-white">Season 1</h3>
+                    <p id="activeSeasonSubtitle" class="text-xs text-slate-500 dark:text-slate-400">Episodes list</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button type="button" id="markSeasonWatchedBtn" onclick="markCurrentSeasonWatched()"
+                            class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-check text-2xs"></i>
+                        <span id="markSeasonWatchedBtnText">Mark Season Watched</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Episodes Grid Container -->
+            <div id="episodesContainer" class="space-y-3">
+                <div class="flex items-center justify-center py-12 text-slate-400">
+                    <i class="fa-solid fa-circle-notch fa-spin text-2xl mr-3 text-brand-600"></i>
+                    <span class="text-xs font-semibold">Loading episodes...</span>
+                </div>
+            </div>
+        </div>
+    }
+
     <!-- Where to Watch Streaming Providers -->
     @if (Model.WatchProviders != null && (Model.WatchProviders.Flatrate.Any() || Model.WatchProviders.Rent.Any() || Model.WatchProviders.Buy.Any()))
     {
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-4">
             <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-sm">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300 flex items-center justify-center text-sm">
                         <i class="fa-solid fa-tv"></i>
                     </span>
                     <div>
-                        <h3 class="text-sm font-bold text-slate-900">Where to Watch</h3>
-                        <p class="text-xs text-slate-500">Streaming availability powered by JustWatch via TMDb.</p>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Where to Watch</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Streaming availability powered by JustWatch via TMDb.</p>
                     </div>
                 </div>
                 @if (!string.IsNullOrWhiteSpace(Model.WatchProviders.Link))
                 {
-                    <a href="@Model.WatchProviders.Link" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-brand-600 hover:underline flex items-center gap-1">
+                    <a href="@Model.WatchProviders.Link" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
                         View on JustWatch <i class="fa-solid fa-arrow-up-right-from-square text-2xs"></i>
                     </a>
                 }
@@ -294,18 +394,18 @@
                 @if (Model.WatchProviders.Flatrate.Any())
                 {
                     <div class="space-y-2">
-                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                             <i class="fa-solid fa-play text-blue-500 text-2xs"></i> Stream / Subscription
                         </span>
                         <div class="flex flex-wrap gap-2">
                             @foreach (var p in Model.WatchProviders.Flatrate)
                             {
-                                <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200" title="@p.ProviderName">
+                                <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600" title="@p.ProviderName">
                                     @if (!string.IsNullOrWhiteSpace(p.LogoPath))
                                     {
                                         <img src="@ProviderLogoUrl(p.LogoPath)" alt="@p.ProviderName" class="w-6 h-6 rounded-md object-cover" />
                                     }
-                                    <span class="text-xs font-semibold text-slate-800">@p.ProviderName</span>
+                                    <span class="text-xs font-semibold text-slate-800 dark:text-slate-200">@p.ProviderName</span>
                                 </div>
                             }
                         </div>
@@ -315,18 +415,18 @@
                 @if (Model.WatchProviders.Rent.Any())
                 {
                     <div class="space-y-2">
-                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                             <i class="fa-solid fa-tag text-amber-500 text-2xs"></i> Rent
                         </span>
                         <div class="flex flex-wrap gap-2">
                             @foreach (var p in Model.WatchProviders.Rent)
                             {
-                                <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200" title="@p.ProviderName">
+                                <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600" title="@p.ProviderName">
                                     @if (!string.IsNullOrWhiteSpace(p.LogoPath))
                                     {
                                         <img src="@ProviderLogoUrl(p.LogoPath)" alt="@p.ProviderName" class="w-6 h-6 rounded-md object-cover" />
                                     }
-                                    <span class="text-xs font-semibold text-slate-800">@p.ProviderName</span>
+                                    <span class="text-xs font-semibold text-slate-800 dark:text-slate-200">@p.ProviderName</span>
                                 </div>
                             }
                         </div>
@@ -336,18 +436,18 @@
                 @if (Model.WatchProviders.Buy.Any())
                 {
                     <div class="space-y-2">
-                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                             <i class="fa-solid fa-cart-shopping text-emerald-500 text-2xs"></i> Buy
                         </span>
                         <div class="flex flex-wrap gap-2">
                             @foreach (var p in Model.WatchProviders.Buy)
                             {
-                                <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200" title="@p.ProviderName">
+                                <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600" title="@p.ProviderName">
                                     @if (!string.IsNullOrWhiteSpace(p.LogoPath))
                                     {
                                         <img src="@ProviderLogoUrl(p.LogoPath)" alt="@p.ProviderName" class="w-6 h-6 rounded-md object-cover" />
                                     }
-                                    <span class="text-xs font-semibold text-slate-800">@p.ProviderName</span>
+                                    <span class="text-xs font-semibold text-slate-800 dark:text-slate-200">@p.ProviderName</span>
                                 </div>
                             }
                         </div>
@@ -360,14 +460,14 @@
     <!-- Trailer Embed -->
     @if (!string.IsNullOrWhiteSpace(Model.TrailerYouTubeKey))
     {
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
-            <div class="flex items-center gap-2">
-                <span class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-sm">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-3">
+            <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300 flex items-center justify-center text-sm">
                     <i class="fa-brands fa-youtube"></i>
                 </span>
-                <h3 class="text-sm font-bold text-slate-900">Official Trailer</h3>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">Official Trailer</h3>
             </div>
-            <div class="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-inner">
+            <div class="aspect-video w-full rounded-2xl overflow-hidden bg-black shadow-inner">
                 <iframe src="https://www.youtube.com/embed/@Model.TrailerYouTubeKey"
                         title="@Model.Title Trailer"
                         class="w-full h-full border-0"
@@ -377,55 +477,18 @@
         </div>
     }
 
-    <!-- TV Seasons List (If TV or Anime) -->
-    @if (Model.Seasons.Any())
-    {
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-sm">
-                        <i class="fa-solid fa-layer-group"></i>
-                    </span>
-                    <div>
-                        <h3 class="text-sm font-bold text-slate-900">Seasons & Episodes</h3>
-                        <p class="text-xs text-slate-500">@Model.Seasons.Count seasons total.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                @foreach (var season in Model.Seasons.Where(s => s.SeasonNumber > 0))
-                {
-                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-3">
-                        <div class="w-12 h-16 rounded-lg bg-slate-200 overflow-hidden flex-shrink-0">
-                            <img src="@PosterUrl(season.PosterPath)" alt="@season.Name" class="w-full h-full object-cover" />
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="text-xs font-bold text-slate-900 truncate">@season.Name</h4>
-                            <p class="text-3xs text-slate-500">@season.EpisodeCount episodes</p>
-                            @if (season.AirDate.HasValue)
-                            {
-                                <p class="text-3xs text-slate-400">@season.AirDate.Value.ToString("yyyy")</p>
-                            }
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-    }
-
     <!-- Cast Members Grid -->
     @if (Model.Cast.Any())
     {
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-4">
             <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 flex items-center justify-center text-sm">
                         <i class="fa-solid fa-users"></i>
                     </span>
                     <div>
-                        <h3 class="text-sm font-bold text-slate-900">Top Cast</h3>
-                        <p class="text-xs text-slate-500">Click any actor to view their full filmography.</p>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Top Cast</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Click any actor or creator to view their filmography.</p>
                     </div>
                 </div>
             </div>
@@ -433,12 +496,13 @@
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 @foreach (var actor in Model.Cast.Take(12))
                 {
-                    <a asp-action="PersonDetails" asp-route-id="@actor.PersonId"
-                       class="group p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-center transition-all flex flex-col items-center">
+                    var actorSlug = Slugify(actor.Name);
+                    <a asp-action="PersonDetails" asp-controller="Media" asp-route-id="@actor.PersonId" asp-route-slug="@actorSlug"
+                       class="group p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 text-center transition-all flex flex-col items-center">
                         <img src="@PosterUrl(actor.ProfilePath)" alt="@actor.Name"
-                             class="w-16 h-16 rounded-full object-cover mb-2 border border-slate-200 group-hover:scale-105 transition-transform" />
-                        <h4 class="text-xs font-bold text-slate-900 group-hover:text-brand-600 line-clamp-1 transition-colors">@actor.Name</h4>
-                        <p class="text-3xs text-slate-400 line-clamp-1">@actor.Character</p>
+                             class="w-16 h-16 rounded-full object-cover mb-2 border border-slate-200 dark:border-slate-600 group-hover:scale-105 transition-transform" />
+                        <h4 class="text-xs font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 line-clamp-1 transition-colors">@actor.Name</h4>
+                        <p class="text-3xs text-slate-500 dark:text-slate-400 line-clamp-1">@actor.Character</p>
                     </a>
                 }
             </div>
@@ -449,13 +513,13 @@
     @if (Model.SimilarTitles.Any())
     {
         <div class="space-y-4">
-            <div class="flex items-center gap-2">
-                <span class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-sm">
+            <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-xl bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300 flex items-center justify-center text-sm">
                     <i class="fa-solid fa-sparkles"></i>
                 </span>
                 <div>
-                    <h3 class="text-base font-bold text-slate-900">Titles Similar to This</h3>
-                    <p class="text-xs text-slate-500">Recommended based on genres, cast, and audience tastes.</p>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Titles Similar to This</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Recommended based on genres, cast, and audience tastes.</p>
                 </div>
             </div>
 
@@ -469,49 +533,113 @@
     }
 </div>
 
-<!-- Quick Add Modal for Similar Titles -->
-<div id="quickAddModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeQuickAddModal()"></div>
+<!-- Comprehensive "Mark as Watched" & Date Preset Modal -->
+<div id="watchedModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeWatchedModal()"></div>
     <div class="flex min-h-full items-center justify-center p-4">
-        <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 space-y-5 border border-slate-100">
+        <div class="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 border border-slate-100 dark:border-slate-700">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
-                        <i class="fa-solid fa-plus text-base"></i>
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 flex items-center justify-center">
+                        <i class="fa-solid fa-calendar-check text-lg"></i>
                     </div>
                     <div>
-                        <h3 class="text-base font-bold text-slate-900">Add to Watchlist</h3>
-                        <p id="modalItemTitle" class="text-xs text-slate-500 truncate max-w-[220px]">Title</p>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">Track as Watched</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">@Model.Title</p>
                     </div>
                 </div>
-                <button type="button" onclick="closeQuickAddModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                <button type="button" onclick="closeWatchedModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
-            <form asp-action="Add" asp-controller="Media" method="post" class="space-y-4">
+            <form asp-action="Add" asp-controller="Media" method="post" class="space-y-5">
                 @Html.AntiForgeryToken()
-                <input type="hidden" id="modalTmdbId" name="TmdbId" value="" />
-                <input type="hidden" id="modalType" name="Type" value="" />
-                <input type="hidden" id="modalTitle" name="Title" value="" />
+                <input type="hidden" name="TmdbId" value="@Model.Id" />
+                <input type="hidden" name="Type" value="@Model.Type" />
+                <input type="hidden" name="Title" value="@Model.Title" />
+                <input type="hidden" name="PosterPath" value="@Model.PosterPath" />
+                <input type="hidden" name="Status" value="@WatchStatus.Completed" />
+                <input type="hidden" id="modalTotalSeasons" name="TotalSeasons" value="@validSeasons.Count" />
+                <input type="hidden" id="modalTotalEpisodes" name="TotalEpisodes" value="@totalEpisodesCount" />
                 <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
 
+                <!-- Scope Selection (For Series / Anime) -->
+                @if (validSeasons.Any())
+                {
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300">What Did You Watch?</label>
+                        <select id="modalScope" name="CurrentSeason" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                            <option value="@validSeasons.Count" selected>Entire Series / All @validSeasons.Count Seasons (@totalEpisodesCount Ep)</option>
+                            @foreach (var s in validSeasons)
+                            {
+                                <option value="@s.SeasonNumber">Up to Season @s.SeasonNumber (@s.Name)</option>
+                            }
+                        </select>
+                        <input type="hidden" id="modalScopeEpisode" name="CurrentEpisode" value="@totalEpisodesCount" />
+                    </div>
+                }
+
+                <!-- Watched Date with One-Click Presets -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300">When Did You Watch It?</label>
+                        <span class="text-3xs text-slate-400">Select preset or pick date</span>
+                    </div>
+
+                    <!-- Preset Chips -->
+                    <div class="flex flex-wrap gap-2 text-xs">
+                        <button type="button" onclick="setWatchedDatePreset(0, this)" class="date-preset-btn px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 transition-colors">
+                            Today
+                        </button>
+                        <button type="button" onclick="setWatchedDatePreset(1, this)" class="date-preset-btn px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 transition-colors">
+                            1 year ago
+                        </button>
+                        <button type="button" onclick="setWatchedDatePreset(2, this)" class="date-preset-btn px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 transition-colors">
+                            2 years ago
+                        </button>
+                        <button type="button" onclick="setWatchedDatePreset(3, this)" class="date-preset-btn px-3 py-1 rounded-xl bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300 border border-brand-300 dark:border-brand-700 font-bold transition-colors">
+                            3 years ago
+                        </button>
+                        <button type="button" onclick="setWatchedDatePreset(5, this)" class="date-preset-btn px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 transition-colors">
+                            5 years ago
+                        </button>
+                    </div>
+
+                    <input type="date" id="watchedModalDateInput" name="WatchedDate"
+                           class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                </div>
+
+                <!-- Rating Score -->
                 <div class="space-y-1.5">
-                    <label class="text-xs font-semibold text-slate-700">Choose Status</label>
-                    <select name="Status" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
-                        <option value="@WatchStatus.PlanToWatch" selected>Want to Watch (Wishlist)</option>
-                        <option value="@WatchStatus.Watching">Currently Watching</option>
-                        <option value="@WatchStatus.Completed">Finished</option>
-                        <option value="@WatchStatus.Dropped">Stopped</option>
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Your Rating (Optional)</label>
+                    <select name="UserRating" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                        <option value="">No Score</option>
+                        <option value="10">10 / 10 - Masterpiece</option>
+                        <option value="9">9 / 10 - Great</option>
+                        <option value="8">8 / 10 - Very Good</option>
+                        <option value="7">7 / 10 - Good</option>
+                        <option value="6">6 / 10 - Fine</option>
+                        <option value="5">5 / 10 - Average</option>
+                        <option value="4">4 / 10 - Bad</option>
+                        <option value="3">3 / 10 - Very Bad</option>
                     </select>
                 </div>
 
-                <div class="flex items-center justify-end gap-2 pt-2">
-                    <button type="button" onclick="closeQuickAddModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
+                <!-- Short Review -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Short Review or Memories (Optional)</label>
+                    <textarea name="UserReview" rows="2" placeholder="Loved the plot twists, unforgettable music..."
+                              class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"></textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-2.5 pt-2">
+                    <button type="button" onclick="closeWatchedModal()" class="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                         Cancel
                     </button>
-                    <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-2xs">
-                        <i class="fa-solid fa-check mr-1.5 text-2xs"></i> Save to Watchlist
+                    <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Save as Watched</span>
                     </button>
                 </div>
             </form>
@@ -519,38 +647,24 @@
     </div>
 </div>
 
-<script>
-    function openQuickAddModal(id, type, title) {
-        document.getElementById('modalTmdbId').value = id;
-        document.getElementById('modalType').value = type;
-        document.getElementById('modalTitle').value = title || '';
-        document.getElementById('modalItemTitle').innerText = title;
-        document.getElementById('quickAddModal').classList.remove('hidden');
-    }
-
-    function closeQuickAddModal() {
-        document.getElementById('quickAddModal').classList.add('hidden');
-    }
-</script>
-
 <!-- Rate and Review Modal -->
 @if (isTracked && userItem != null)
 {
     <div id="rateModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
         <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeRateModal()"></div>
         <div class="flex min-h-full items-center justify-center p-4">
-            <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 space-y-5 border border-slate-100">
+            <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 md:p-8 space-y-5 border border-slate-100 dark:border-slate-700">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                        <div class="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300 flex items-center justify-center">
                             <i class="fa-solid fa-star text-base"></i>
                         </div>
                         <div>
-                            <h3 class="text-base font-bold text-slate-900">Rate & Review</h3>
-                            <p class="text-xs text-slate-500 truncate max-w-[220px]">@Model.Title</p>
+                            <h3 class="text-base font-bold text-slate-900 dark:text-white">Rate & Review</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[220px]">@Model.Title</p>
                         </div>
                     </div>
-                    <button type="button" onclick="closeRateModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <button type="button" onclick="closeRateModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
                         <i class="fa-solid fa-xmark text-lg"></i>
                     </button>
                 </div>
@@ -562,8 +676,8 @@
 
                     <!-- Rating Score (1 to 10) -->
                     <div class="space-y-1.5">
-                        <label class="text-xs font-semibold text-slate-700">Your Score (1 to 10)</label>
-                        <select name="Rating" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Your Score (1 to 10)</label>
+                        <select name="Rating" class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
                             <option value="">No Score</option>
                             @for (int score = 10; score >= 1; score--)
                             {
@@ -574,20 +688,20 @@
 
                     <!-- Short Review -->
                     <div class="space-y-1.5">
-                        <label class="text-xs font-semibold text-slate-700">Short Review</label>
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Short Review</label>
                         <textarea name="Review" rows="3" placeholder="What did you think of the story, acting, animation..."
-                                  class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">@userItem.UserReview</textarea>
+                                  class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">@userItem.UserReview</textarea>
                     </div>
 
-                    <!-- Watched Date -->
+                    <!-- Watched Date with presets -->
                     <div class="space-y-1.5">
-                        <label class="text-xs font-semibold text-slate-700">Date Watched</label>
-                        <input type="date" name="WatchedDate" value="@(userItem.WatchedDate?.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))"
-                               class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Date Watched</label>
+                        <input type="date" id="rateModalDateInput" name="WatchedDate" value="@(userItem.WatchedDate?.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.ToString("yyyy-MM-dd"))"
+                               class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
                     </div>
 
                     <div class="flex items-center justify-end gap-2 pt-2">
-                        <button type="button" onclick="closeRateModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
+                        <button type="button" onclick="closeRateModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                             Cancel
                         </button>
                         <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-2xs">
@@ -598,13 +712,230 @@
             </div>
         </div>
     </div>
-
-    <script>
-        function openRateModal() {
-            document.getElementById('rateModal').classList.remove('hidden');
-        }
-        function closeRateModal() {
-            document.getElementById('rateModal').classList.add('hidden');
-        }
-    </script>
 }
+
+<script>
+    const mediaId = @Model.Id;
+    const mediaType = @((int)Model.Type);
+    const mediaTitle = "@Html.Raw(Model.Title.Replace("\"", "\\\""))";
+    const mediaPoster = "@Html.Raw(Model.PosterPath ?? "")";
+    let userCurrentSeason = @(userItem?.CurrentSeason ?? 0);
+    let userCurrentEpisode = @(userItem?.CurrentEpisode ?? 0);
+    let userWatchStatus = @(userItem != null ? (int)userItem.Status : -1);
+    const isCompleted = userWatchStatus === @((int)WatchStatus.Completed);
+    let activeSeasonNumber = @initialSeasonNumber;
+    const episodesCache = {};
+
+    function selectSeason(seasonNumber) {
+        activeSeasonNumber = seasonNumber;
+        document.querySelectorAll('.season-tab-btn').forEach(btn => {
+            const sn = parseInt(btn.dataset.season);
+            if (sn === seasonNumber) {
+                btn.className = 'season-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 bg-slate-900 dark:bg-brand-600 text-white shadow-2xs';
+            } else {
+                btn.className = 'season-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-650';
+            }
+        });
+
+        const activeTab = document.getElementById(`seasonTab-${seasonNumber}`);
+        const seasonName = activeTab ? activeTab.dataset.name : `Season ${seasonNumber}`;
+        const epCount = activeTab ? activeTab.dataset.episodes : '';
+        document.getElementById('activeSeasonTitle').innerText = seasonName;
+        document.getElementById('activeSeasonSubtitle').innerText = `${epCount} episodes in this season`;
+        document.getElementById('markSeasonWatchedBtnText').innerText = `Mark ${seasonName} Watched`;
+
+        loadSeasonEpisodes(seasonNumber);
+    }
+
+    function loadSeasonEpisodes(seasonNumber) {
+        const container = document.getElementById('episodesContainer');
+        if (!container) return;
+
+        if (episodesCache[seasonNumber]) {
+            renderEpisodes(episodesCache[seasonNumber], seasonNumber);
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="flex items-center justify-center py-12 text-slate-400">
+                <i class="fa-solid fa-circle-notch fa-spin text-2xl mr-3 text-brand-600"></i>
+                <span class="text-xs font-semibold">Loading Season ${seasonNumber} episodes...</span>
+            </div>
+        `;
+
+        fetch(`/Media/SeasonEpisodes?id=${mediaId}&seasonNumber=${seasonNumber}`)
+            .then(res => res.json())
+            .then(data => {
+                episodesCache[seasonNumber] = data || [];
+                renderEpisodes(episodesCache[seasonNumber], seasonNumber);
+            })
+            .catch(err => {
+                container.innerHTML = `
+                    <div class="p-6 text-center text-rose-500 text-xs">
+                        Failed to load episodes. <button onclick="loadSeasonEpisodes(${seasonNumber})" class="underline font-bold ml-1">Retry</button>
+                    </div>
+                `;
+            });
+    }
+
+    function renderEpisodes(episodes, seasonNumber) {
+        const container = document.getElementById('episodesContainer');
+        if (!episodes || episodes.length === 0) {
+            container.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No episode information found for this season.</div>`;
+            return;
+        }
+
+        let html = '<div class="space-y-2.5">';
+        episodes.forEach(ep => {
+            const isWatched = isCompleted || (userCurrentSeason > seasonNumber) || (userCurrentSeason === seasonNumber && userCurrentEpisode >= ep.episodeNumber);
+            const stillUrl = ep.stillPath
+                ? `https://image.tmdb.org/t/p/w300${ep.stillPath}`
+                : 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=300&q=80';
+
+            const airDateStr = ep.airDate ? new Date(ep.airDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+
+            html += `
+                <div class="p-3.5 rounded-2xl border ${isWatched ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50' : 'bg-slate-50 dark:bg-slate-750 border-slate-200 dark:border-slate-700'} flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
+                    <div class="flex items-start gap-3.5 flex-1 min-w-0">
+                        <div class="w-20 sm:w-28 aspect-video rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 flex-shrink-0 relative">
+                            <img src="${stillUrl}" alt="${ep.name}" class="w-full h-full object-cover" loading="lazy" />
+                            <span class="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-slate-900/80 text-white font-mono text-3xs font-bold">
+                                E${ep.episodeNumber}
+                            </span>
+                        </div>
+                        <div class="flex-1 min-w-0 space-y-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                    ${ep.episodeNumber}. ${ep.name || `Episode ${ep.episodeNumber}`}
+                                </h4>
+                                ${ep.voteAverage ? `<span class="px-1.5 py-0.5 rounded text-3xs font-bold bg-amber-500/15 text-amber-500 flex items-center gap-1"><i class="fa-solid fa-star text-3xs"></i> ${ep.voteAverage.toFixed(1)}</span>` : ''}
+                                ${airDateStr ? `<span class="text-3xs text-slate-400">${airDateStr}</span>` : ''}
+                            </div>
+                            <p class="text-3xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                                ${ep.overview || 'No synopsis provided.'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex-shrink-0 flex items-center gap-2 justify-end">
+                        ${isWatched
+                            ? `<span class="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5">
+                                 <i class="fa-solid fa-check text-2xs"></i> Watched
+                               </span>`
+                            : `<button type="button" onclick="markSingleEpisodeWatched(${seasonNumber}, ${ep.episodeNumber})"
+                                       class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-700 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 text-xs font-semibold transition-all shadow-2xs flex items-center gap-1.5">
+                                 <i class="fa-solid fa-check text-2xs"></i> Mark Watched
+                               </button>`
+                        }
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function markSingleEpisodeWatched(season, episode) {
+        const formData = new FormData();
+        formData.append('TmdbId', mediaId);
+        formData.append('Type', mediaType);
+        formData.append('Title', mediaTitle);
+        formData.append('PosterPath', mediaPoster);
+        formData.append('CurrentSeason', season);
+        formData.append('CurrentEpisode', episode);
+        formData.append('Status', '@WatchStatus.Watching');
+        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+        fetch('/Media/Add', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                userCurrentSeason = season;
+                userCurrentEpisode = episode;
+                renderEpisodes(episodesCache[season], season);
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to update progress.');
+            }
+        })
+        .catch(() => window.location.reload());
+    }
+
+    function markCurrentSeasonWatched() {
+        const activeTab = document.getElementById(`seasonTab-${activeSeasonNumber}`);
+        const totalEpInSeason = activeTab ? parseInt(activeTab.dataset.episodes) : 1;
+        const totalSeasons = @validSeasons.Count;
+        const isLastSeason = activeSeasonNumber >= totalSeasons;
+
+        const formData = new FormData();
+        formData.append('TmdbId', mediaId);
+        formData.append('Type', mediaType);
+        formData.append('Title', mediaTitle);
+        formData.append('PosterPath', mediaPoster);
+        formData.append('CurrentSeason', activeSeasonNumber);
+        formData.append('CurrentEpisode', totalEpInSeason);
+        formData.append('Status', isLastSeason ? '@WatchStatus.Completed' : '@WatchStatus.Watching');
+        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+        fetch('/Media/Add', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            window.location.reload();
+        })
+        .catch(() => window.location.reload());
+    }
+
+    function openWatchedModal(tmdbId, title, type, totalSeasons, totalEpisodes) {
+        setWatchedDatePreset(3); // Default to 3 years ago preset as requested by user
+        document.getElementById('watchedModal').classList.remove('hidden');
+    }
+
+    function closeWatchedModal() {
+        document.getElementById('watchedModal').classList.add('hidden');
+    }
+
+    function setWatchedDatePreset(yearsAgo, btnElement) {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - yearsAgo);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+
+        const input = document.getElementById('watchedModalDateInput');
+        if (input) input.value = dateStr;
+
+        document.querySelectorAll('.date-preset-btn').forEach(b => {
+            b.className = 'date-preset-btn px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 transition-colors';
+        });
+
+        if (btnElement) {
+            btnElement.className = 'date-preset-btn px-3 py-1 rounded-xl bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300 border border-brand-300 dark:border-brand-700 font-bold transition-colors';
+        }
+    }
+
+    function openRateModal() {
+        const modal = document.getElementById('rateModal');
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeRateModal() {
+        const modal = document.getElementById('rateModal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    // Auto load initial season on DOM ready
+    document.addEventListener("DOMContentLoaded", function() {
+        if (@validSeasons.Count > 0) {
+            selectSeason(@initialSeasonNumber);
+        }
+    });
+</script>

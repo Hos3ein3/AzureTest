@@ -36,6 +36,7 @@ public sealed class MediaQueryUnit : IMediaQueryUnit
     private readonly IQueryHandler<GetCustomListByIdQuery, Result<CustomMediaListDto>> _getCustomListById;
     private readonly IQueryHandler<GetMediaStatsQuery, Result<MediaStatsDto>> _getStats;
     private readonly IQueryHandler<ExportMediaDataQuery, Result<MediaExportDto>> _exportData;
+    private readonly IQueryHandler<AzureTest.Application.Media.Queries.GetSeasonEpisodes.GetSeasonEpisodesQuery, Result<IReadOnlyList<TvEpisodeSummaryDto>>> _getSeasonEpisodes;
 
     public MediaQueryUnit(
         IQueryHandler<GetWatchListQuery, Result<PagedResult<WatchItemDto, WatchListFilter>>> getWatchList,
@@ -50,7 +51,8 @@ public sealed class MediaQueryUnit : IMediaQueryUnit
         IQueryHandler<GetCustomListsQuery, Result<IReadOnlyList<CustomMediaListDto>>> getCustomLists,
         IQueryHandler<GetCustomListByIdQuery, Result<CustomMediaListDto>> getCustomListById,
         IQueryHandler<GetMediaStatsQuery, Result<MediaStatsDto>> getStats,
-        IQueryHandler<ExportMediaDataQuery, Result<MediaExportDto>> exportData)
+        IQueryHandler<ExportMediaDataQuery, Result<MediaExportDto>> exportData,
+        IQueryHandler<AzureTest.Application.Media.Queries.GetSeasonEpisodes.GetSeasonEpisodesQuery, Result<IReadOnlyList<TvEpisodeSummaryDto>>> getSeasonEpisodes)
     {
         _getWatchList = getWatchList;
         _getWatchItemById = getWatchItemById;
@@ -65,6 +67,7 @@ public sealed class MediaQueryUnit : IMediaQueryUnit
         _getCustomListById = getCustomListById;
         _getStats = getStats;
         _exportData = exportData;
+        _getSeasonEpisodes = getSeasonEpisodes;
     }
 
     public Task<Result<PagedResult<WatchItemDto, WatchListFilter>>> GetWatchListAsync(GetWatchListQuery query, CancellationToken ct = default) =>
@@ -105,4 +108,7 @@ public sealed class MediaQueryUnit : IMediaQueryUnit
 
     public Task<Result<MediaExportDto>> ExportMediaDataAsync(ExportMediaDataQuery query, CancellationToken ct = default) =>
         _exportData.HandleAsync(query, ct);
+
+    public Task<Result<IReadOnlyList<TvEpisodeSummaryDto>>> GetSeasonEpisodesAsync(AzureTest.Application.Media.Queries.GetSeasonEpisodes.GetSeasonEpisodesQuery query, CancellationToken ct = default) =>
+        _getSeasonEpisodes.HandleAsync(query, ct);
 }

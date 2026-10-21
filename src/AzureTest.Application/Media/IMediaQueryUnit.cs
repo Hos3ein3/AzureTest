@@ -35,4 +35,5 @@ public interface IMediaQueryUnit
     Task<Result<CustomMediaListDto>> GetCustomListByIdAsync(GetCustomListByIdQuery query, CancellationToken ct = default);
     Task<Result<MediaStatsDto>> GetMediaStatsAsync(GetMediaStatsQuery query, CancellationToken ct = default);
     Task<Result<MediaExportDto>> ExportMediaDataAsync(ExportMediaDataQuery query, CancellationToken ct = default);
+    Task<Result<IReadOnlyList<TvEpisodeSummaryDto>>> GetSeasonEpisodesAsync(AzureTest.Application.Media.Queries.GetSeasonEpisodes.GetSeasonEpisodesQuery query, CancellationToken ct = default);
 }

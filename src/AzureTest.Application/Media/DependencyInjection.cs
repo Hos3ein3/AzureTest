@@ -83,6 +83,8 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetCustomListByIdQuery, Result<CustomMediaListDto>>, GetCustomListByIdQueryHandler>();
         services.AddScoped<IQueryHandler<GetMediaStatsQuery, Result<MediaStatsDto>>, GetMediaStatsQueryHandler>();
         services.AddScoped<IQueryHandler<ExportMediaDataQuery, Result<MediaExportDto>>, ExportMediaDataQueryHandler>();
+        services.AddScoped<IQueryHandler<AzureTest.Application.Media.Queries.GetSeasonEpisodes.GetSeasonEpisodesQuery, Result<IReadOnlyList<TvEpisodeSummaryDto>>>, AzureTest.Application.Media.Queries.GetSeasonEpisodes.GetSeasonEpisodesQueryHandler>();
+        services.AddScoped<IValidator<AzureTest.Application.Media.Queries.GetSeasonEpisodes.GetSeasonEpisodesQuery>, AzureTest.Application.Media.Queries.GetSeasonEpisodes.GetSeasonEpisodesQueryValidator>();
 
         // ── Units ─────────────────────────────────────────────────────────────
         services.AddScoped<IMediaCommandUnit, MediaCommandUnit>();

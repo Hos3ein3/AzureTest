@@ -31,7 +31,10 @@ public sealed record AddWatchItemCommand(
     int TotalSeasons = 1,
     int TotalEpisodes = 1,
     int? RuntimeMinutes = null,
-    List<string>? Genres = null) : ICommand<Result<Guid>>
+    List<string>? Genres = null,
+    DateTime? WatchedDate = null,
+    int? UserRating = null,
+    string? UserReview = null) : ICommand<Result<Guid>>
 {
     public static class Mapping
     {
@@ -54,7 +57,10 @@ public sealed record AddWatchItemCommand(
                 cmd.TotalSeasons,
                 cmd.TotalEpisodes,
                 cmd.RuntimeMinutes,
-                cmd.Genres
+                cmd.Genres,
+                cmd.WatchedDate,
+                cmd.UserRating,
+                cmd.UserReview
             );
     }
 }
@@ -97,8 +103,18 @@ public sealed class AddWatchItemCommandHandler : ICommandHandler<AddWatchItemCom
         var existing = await _uow.WatchItems.GetByUserAndTmdbAsync(cmd.UserId, cmd.TmdbId, cmd.Type, ct);
         if (existing != null)
         {
-            // Update status if already exists
-            existing.ChangeStatus(cmd.Status);
+            if (cmd.Status != existing.Status)
+            {
+                existing.ChangeStatus(cmd.Status);
+            }
+            if (cmd.CurrentSeason > 1 || cmd.CurrentEpisode > 0)
+            {
+                existing.UpdateProgress(cmd.CurrentSeason, cmd.CurrentEpisode, cmd.TotalSeasons, cmd.TotalEpisodes);
+            }
+            if (cmd.WatchedDate.HasValue || cmd.UserRating.HasValue || !string.IsNullOrWhiteSpace(cmd.UserReview))
+            {
+                existing.RateAndReview(cmd.UserRating ?? existing.UserRating, cmd.UserReview ?? existing.UserReview, cmd.WatchedDate ?? existing.WatchedDate);
+            }
             await _uow.WatchItems.UpdateAsync(existing.Id, existing, ct);
             return Result.Success(existing.Id);
         }

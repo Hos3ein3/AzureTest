@@ -101,12 +101,73 @@ public class MediaController : Controller
     }
 
     [HttpGet]
+    [Route("Media/Details/{id:int}/{slug?}")]
+    [Route("Media/Details/{idOrSlug}")]
     [DisplayName("Title Details")]
     [Description("View synopsis, cast, trailers, streaming providers, and update your watch status.")]
-    public async Task<IActionResult> Details(int id, MediaType type, CancellationToken ct)
+    public async Task<IActionResult> Details(string? idOrSlug, int? id, [FromQuery] MediaType type, CancellationToken ct)
     {
-        var result = await _queries.GetMediaDetailsAsync(new GetMediaDetailsQuery(id, type, _currentUser.Id), ct);
+        int tmdbId = id.HasValue && id.Value > 0 ? id.Value : 0;
+        MediaType effectiveType = type;
+
+        if (tmdbId <= 0 && !string.IsNullOrWhiteSpace(idOrSlug))
+        {
+            if (int.TryParse(idOrSlug, out var parsedInt))
+            {
+                tmdbId = parsedInt;
+            }
+            else
+            {
+                var matchLeading = System.Text.RegularExpressions.Regex.Match(idOrSlug, @"^(\d+)[-_]");
+                if (matchLeading.Success && int.TryParse(matchLeading.Groups[1].Value, out var leadingId))
+                {
+                    tmdbId = leadingId;
+                }
+                else
+                {
+                    var matchTrailing = System.Text.RegularExpressions.Regex.Match(idOrSlug, @"[-_](\d+)$");
+                    if (matchTrailing.Success && int.TryParse(matchTrailing.Groups[1].Value, out var trailingId))
+                    {
+                        tmdbId = trailingId;
+                    }
+                    else
+                    {
+                        var cleanQuery = idOrSlug.Replace("-", " ").Replace("_", " ");
+                        var searchResult = await _queries.SearchMediaAsync(new SearchMediaQuery(cleanQuery, "titles"), ct);
+                        if (searchResult.IsSuccess && searchResult.Value != null && searchResult.Value.Count > 0)
+                        {
+                            var bestMatch = searchResult.Value[0];
+                            tmdbId = bestMatch.Id;
+                            if (effectiveType == 0)
+                            {
+                                effectiveType = bestMatch.Type;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (tmdbId <= 0)
+        {
+            return NotFound("Media title not found.");
+        }
+
+        var result = await _queries.GetMediaDetailsAsync(new GetMediaDetailsQuery(tmdbId, effectiveType, _currentUser.Id), ct);
         return result.ToView(this);
+    }
+
+    [HttpGet]
+    [DisplayName("Season Episodes")]
+    [Description("Fetch all episodes of a TV show or anime season.")]
+    public async Task<IActionResult> SeasonEpisodes(int id, int seasonNumber, CancellationToken ct)
+    {
+        var result = await _queries.GetSeasonEpisodesAsync(new AzureTest.Application.Media.Queries.GetSeasonEpisodes.GetSeasonEpisodesQuery(id, seasonNumber), ct);
+        if (result.IsFailure || result.Value == null)
+        {
+            return Json(Array.Empty<TvEpisodeSummaryDto>());
+        }
+        return Json(result.Value);
     }
 
     [HttpGet]
@@ -119,11 +180,53 @@ public class MediaController : Controller
     }
 
     [HttpGet]
+    [Route("Media/PersonDetails/{id:int}/{slug?}")]
+    [Route("Media/PersonDetails/{idOrSlug}")]
     [DisplayName("Person Filmography")]
     [Description("View full filmography for an actor or director with watch progress indicators.")]
-    public async Task<IActionResult> PersonDetails(int id, CancellationToken ct)
+    public async Task<IActionResult> PersonDetails(string? idOrSlug, int? id, CancellationToken ct)
     {
-        var result = await _queries.GetPersonDetailsAsync(new GetPersonDetailsQuery(id, _currentUser.Id), ct);
+        int personId = id.HasValue && id.Value > 0 ? id.Value : 0;
+
+        if (personId <= 0 && !string.IsNullOrWhiteSpace(idOrSlug))
+        {
+            if (int.TryParse(idOrSlug, out var parsedInt))
+            {
+                personId = parsedInt;
+            }
+            else
+            {
+                var matchLeading = System.Text.RegularExpressions.Regex.Match(idOrSlug, @"^(\d+)[-_]");
+                if (matchLeading.Success && int.TryParse(matchLeading.Groups[1].Value, out var leadingId))
+                {
+                    personId = leadingId;
+                }
+                else
+                {
+                    var matchTrailing = System.Text.RegularExpressions.Regex.Match(idOrSlug, @"[-_](\d+)$");
+                    if (matchTrailing.Success && int.TryParse(matchTrailing.Groups[1].Value, out var trailingId))
+                    {
+                        personId = trailingId;
+                    }
+                    else
+                    {
+                        var cleanQuery = idOrSlug.Replace("-", " ").Replace("_", " ");
+                        var searchResult = await _queries.SearchMediaAsync(new SearchMediaQuery(cleanQuery, "people"), ct);
+                        if (searchResult.IsSuccess && searchResult.Value != null && searchResult.Value.Count > 0)
+                        {
+                            personId = searchResult.Value[0].Id;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (personId <= 0)
+        {
+            return NotFound("Person not found.");
+        }
+
+        var result = await _queries.GetPersonDetailsAsync(new GetPersonDetailsQuery(personId, _currentUser.Id), ct);
         return result.ToView(this);
     }
 
@@ -215,10 +318,14 @@ public class MediaController : Controller
             }
         }
 
+        var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
+
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
         {
-            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to add title to watchlist.";
+            var msg = validation.Message ?? validation.Error ?? "Failed to add title to watchlist.";
+            TempData["ErrorMessage"] = msg;
+            if (isAjax) return Json(new { success = false, message = msg });
             return RedirectBack(returnUrl, nameof(Index));
         }
 
@@ -226,10 +333,13 @@ public class MediaController : Controller
         if (result.IsSuccess)
         {
             TempData["SuccessMessage"] = $"Saved to your watchlist.";
+            if (isAjax) return Json(new { success = true, message = "Saved to your watchlist." });
         }
         else
         {
-            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to add title to watchlist.";
+            var msg = result.Message ?? result.Error ?? "Failed to add title to watchlist.";
+            TempData["ErrorMessage"] = msg;
+            if (isAjax) return Json(new { success = false, message = msg });
         }
 
         return RedirectBack(returnUrl, nameof(Index));
@@ -341,6 +451,53 @@ public class MediaController : Controller
         }
 
         return RedirectBack(returnUrl, nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Toggle Follow Person")]
+    [Description("Toggle follow or unfollow state for an actor or director.")]
+    public async Task<IActionResult> ToggleFollowPerson(int tmdbPersonId, string? name, string? department, string? profilePath, string? returnUrl, CancellationToken ct)
+    {
+        var followedPeopleResult = await _queries.GetFollowedPeopleAsync(new GetFollowedPeopleQuery(_currentUser.Id), ct);
+        bool isCurrentlyFollowed = followedPeopleResult.IsSuccess && followedPeopleResult.Value != null
+            && System.Linq.Enumerable.Any(followedPeopleResult.Value, f => f.TmdbPersonId == tmdbPersonId);
+
+        bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
+
+        if (isCurrentlyFollowed)
+        {
+            var unfollowResult = await _commands.UnfollowPersonAsync(new UnfollowPersonCommand(_currentUser.Id, tmdbPersonId), ct);
+            if (unfollowResult.IsSuccess)
+            {
+                TempData["SuccessMessage"] = $"Unfollowed {name ?? "person"}.";
+                if (isAjax) return Json(new { success = true, isFollowed = false, message = $"Unfollowed {name ?? "person"}." });
+            }
+            else
+            {
+                var msg = unfollowResult.Message ?? unfollowResult.Error ?? "Failed to unfollow person.";
+                TempData["ErrorMessage"] = msg;
+                if (isAjax) return Json(new { success = false, message = msg });
+            }
+        }
+        else
+        {
+            var cmd = new FollowPersonCommand(_currentUser.Id, _currentUser.TenantId, tmdbPersonId, name ?? "Unknown Person", department ?? "Acting", profilePath);
+            var followResult = await _commands.FollowPersonAsync(cmd, ct);
+            if (followResult.IsSuccess)
+            {
+                TempData["SuccessMessage"] = $"Now following {name ?? "person"}.";
+                if (isAjax) return Json(new { success = true, isFollowed = true, message = $"Now following {name ?? "person"}." });
+            }
+            else
+            {
+                var msg = followResult.Message ?? followResult.Error ?? "Failed to follow person.";
+                TempData["ErrorMessage"] = msg;
+                if (isAjax) return Json(new { success = false, message = msg });
+            }
+        }
+
+        return RedirectBack(returnUrl, nameof(People));
     }
 
     [HttpPost]
