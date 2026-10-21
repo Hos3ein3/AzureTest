@@ -3,6 +3,9 @@
     ViewData["Title"] = $"{Model.StrategyName} Backtest Results";
     var isProfitable = Model.NetProfit >= 0;
     var wf = Model.WalkForward;
+    var friction = Model.FrictionSummary;
+    var shield = Model.OverfittingShield;
+    var mc = Model.MonteCarlo;
 }
 
 <div class="space-y-6">
@@ -18,7 +21,7 @@
                         <h1 class="text-xl font-bold text-slate-800 dark:text-white">@Model.StrategyName</h1>
                         <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-indigo-500/10 text-indigo-600">@Model.Symbol • @Model.Timeframe</span>
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Backtest report with 0.075% fees, 0.05% slippage, and walk-forward verification</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Quantitative backtest report with tiered fees, dynamic slippage, WFA, and 10,000-path Monte Carlo</p>
                 </div>
             </div>
         </div>
@@ -32,50 +35,6 @@
             </a>
         </div>
     </div>
-
-    <!-- Walk-Forward Cross Validation Banner -->
-    @if (wf != null)
-    {
-        <div class="p-5 rounded-2xl border @(wf.IsRobust ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800" : "bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800")">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div class="flex items-start gap-3">
-                    <div class="p-2.5 rounded-xl @(wf.IsRobust ? "bg-emerald-500/20 text-emerald-600" : "bg-rose-500/20 text-rose-600") text-lg">
-                        <i class="fa-solid @(wf.IsRobust ? "fa-shield-check" : "fa-triangle-exclamation")"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h3 class="text-sm font-bold @(wf.IsRobust ? "text-emerald-900 dark:text-emerald-200" : "text-rose-900 dark:text-rose-200")">
-                                Walk-Forward Overfitting Status: @(wf.IsRobust ? "Robust (Out-of-Sample Validated)" : "High Overfitting Risk Detected")
-                            </h3>
-                            <span class="px-2 py-0.5 rounded-md text-2xs font-bold @(wf.IsRobust ? "bg-emerald-200/60 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200" : "bg-rose-200/60 dark:bg-rose-900 text-rose-800 dark:text-rose-200")">
-                                Risk: @wf.OverfittingRisk
-                            </span>
-                        </div>
-                        <p class="text-xs @(wf.IsRobust ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300") mt-1 leading-relaxed">
-                            @wf.Recommendation
-                        </p>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-4 text-xs font-mono shrink-0">
-                    <div>
-                        <span class="text-slate-400 block text-[10px]">In-Sample Sharpe</span>
-                        <span class="font-bold text-slate-800 dark:text-white">@wf.InSampleSharpe.ToString("F2")</span>
-                    </div>
-                    <div>
-                        <span class="text-slate-400 block text-[10px]">Out-of-Sample Sharpe</span>
-                        <span class="font-bold text-slate-800 dark:text-white">@wf.OutOfSampleSharpe.ToString("F2")</span>
-                    </div>
-                    <div>
-                        <span class="text-slate-400 block text-[10px]">Degradation</span>
-                        <span class="font-bold @(wf.DegradationPercent > 35m ? "text-rose-500" : "text-emerald-500")">
-                            @wf.DegradationPercent.ToString("F1")%
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
 
     <!-- Performance Summary Cards -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -124,19 +83,260 @@
         </div>
 
         <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-            <div class="text-2xs text-slate-400 font-semibold uppercase">Fees & Slippage</div>
+            <div class="text-2xs text-slate-400 font-semibold uppercase">Total Friction Drag</div>
             <div class="text-base font-bold font-mono text-slate-800 dark:text-white mt-1">
                 $@Model.TotalFeesPaid.ToString("N2")
             </div>
-            <div class="text-2xs text-slate-400 mt-0.5">Realized cost drag</div>
+            <div class="text-2xs text-slate-400 mt-0.5">Commissions + Slip + Funding</div>
         </div>
     </div>
 
-    <!-- Equity Curve Summary Bar -->
+    <!-- 5.1 Real-World Friction Model Breakdown Card -->
+    @if (friction != null)
+    {
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-coins text-amber-500"></i> Real-World Friction Cost Decomposition (5.1)
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Institutional fee tier execution, volatility-adjusted dynamic slippage, and 8-hour perpetual funding carry</p>
+                </div>
+                @if (friction.LiquidationOccurred)
+                {
+                    <span class="px-3 py-1 rounded-full text-2xs font-bold bg-rose-500/10 text-rose-500 border border-rose-500/30 flex items-center gap-1.5">
+                        <i class="fa-solid fa-triangle-exclamation animate-pulse"></i> Liquidation Event Triggered
+                    </span>
+                }
+                else
+                {
+                    <span class="px-3 py-1 rounded-full text-2xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield-check"></i> Zero Liquidations
+                    </span>
+                }
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                    <div class="text-2xs text-slate-400 uppercase font-bold">Exchange Commissions</div>
+                    <div class="mt-1 text-lg font-mono font-bold text-slate-800 dark:text-white">$@friction.TotalCommissionPaid.ToString("N2")</div>
+                    <div class="mt-0.5 text-3xs text-slate-500">Tier: @friction.FeeTier</div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                    <div class="text-2xs text-slate-400 uppercase font-bold">Dynamic Slippage Drag</div>
+                    <div class="mt-1 text-lg font-mono font-bold text-slate-800 dark:text-white">$@friction.TotalSlippageCost.ToString("N2")</div>
+                    <div class="mt-0.5 text-3xs text-slate-500">ATR% Volatility Adjusted</div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                    <div class="text-2xs text-slate-400 uppercase font-bold">Perpetual Funding Carry</div>
+                    <div class="mt-1 text-lg font-mono font-bold text-slate-800 dark:text-white">$@friction.TotalFundingFeesPaid.ToString("N2")</div>
+                    <div class="mt-0.5 text-3xs text-slate-500">8h Perpetual Settlement</div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                    <div class="text-2xs text-slate-400 uppercase font-bold">Friction Drag % of Profit</div>
+                    <div class="mt-1 text-lg font-mono font-bold @(friction.FrictionDragPercentOfReturn > 25m ? "text-rose-500" : "text-emerald-500")">
+                        @friction.FrictionDragPercentOfReturn.ToString("N1")%
+                    </div>
+                    <div class="mt-0.5 text-3xs text-slate-500">Maintenance Margin: @friction.MaintenanceMarginPercent.ToString("N1")%</div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- 5.2 Overfitting Shield & Multi-Window Walk-Forward Analysis -->
+    @if (shield != null)
+    {
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-emerald-500"></i> Overfitting Shield & Deflated Sharpe Ratio (5.2)
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">López de Prado framework correcting selection bias, non-normality skewness, and multi-trial overfitting</p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-2xs font-bold @(shield.OverfittingRiskLevel.Contains("Low") ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500")">
+                    @shield.OverfittingRiskLevel
+                </span>
+            </div>
+
+            <!-- Shield Diagnostics Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                    <div class="text-2xs text-slate-400 uppercase font-bold">Deflated Sharpe Ratio (DSR)</div>
+                    <div class="mt-1 text-xl font-bold font-mono text-emerald-500">@shield.DeflatedSharpeRatio.ToString("N3")</div>
+                    <div class="mt-0.5 text-3xs text-slate-500">Statistical Significance Level</div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                    <div class="text-2xs text-slate-400 uppercase font-bold">Prob. of Backtest Overfitting (PBO)</div>
+                    <div class="mt-1 text-xl font-bold font-mono @(shield.ProbabilityOfOverfittingPercent < 25m ? "text-emerald-500" : "text-rose-500")">
+                        @shield.ProbabilityOfOverfittingPercent.ToString("N1")%
+                    </div>
+                    <div class="mt-0.5 text-3xs text-slate-500">Chance alpha is noise artifact</div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                    <div class="text-2xs text-slate-400 uppercase font-bold">Min. Track Record Length (MinTRL)</div>
+                    <div class="mt-1 text-xl font-bold font-mono text-slate-800 dark:text-white">@shield.MinTrackRecordLengthDays Days</div>
+                    <div class="mt-0.5 text-3xs text-slate-500">Required statistical horizon</div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                    <div class="text-2xs text-slate-400 uppercase font-bold">Skewness / Kurtosis</div>
+                    <div class="mt-1 text-xl font-bold font-mono text-slate-800 dark:text-white">@shield.Skewness / @shield.Kurtosis</div>
+                    <div class="mt-0.5 text-3xs text-slate-500">Non-normal distribution moments</div>
+                </div>
+            </div>
+
+            <!-- Shield Verdict Note -->
+            <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-900 dark:text-emerald-200 font-medium mb-6">
+                <i class="fa-solid fa-circle-check mr-1.5"></i> @shield.ShieldVerdict
+            </div>
+
+            <!-- Multi-Window Walk-Forward Analysis Table -->
+            @if (Model.WalkForwardWindows != null && Model.WalkForwardWindows.Any())
+            {
+                <h3 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">
+                    Rolling Walk-Forward Windows (Train In-Sample vs. Test Out-of-Sample)
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-2xs uppercase font-bold">
+                                <th class="py-2.5 px-3">Window</th>
+                                <th class="py-2.5 px-3">In-Sample (Train 65%)</th>
+                                <th class="py-2.5 px-3">Out-of-Sample (Test 35%)</th>
+                                <th class="py-2.5 px-3 text-right">IS Return</th>
+                                <th class="py-2.5 px-3 text-right">OOS Return</th>
+                                <th class="py-2.5 px-3 text-right">WFE Efficiency</th>
+                                <th class="py-2.5 px-3 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 font-mono text-2xs">
+                            @foreach (var w in Model.WalkForwardWindows)
+                            {
+                                <tr>
+                                    <td class="py-2.5 px-3 font-sans font-bold text-slate-700 dark:text-slate-300">#@w.WindowIndex</td>
+                                    <td class="py-2.5 px-3 text-slate-500">@w.InSampleStart.ToString("MM/dd") – @w.InSampleEnd.ToString("MM/dd") (SR: @w.InSampleSharpe)</td>
+                                    <td class="py-2.5 px-3 text-slate-500">@w.OutOfSampleStart.ToString("MM/dd") – @w.OutOfSampleEnd.ToString("MM/dd") (SR: @w.OutOfSampleSharpe)</td>
+                                    <td class="py-2.5 px-3 text-right font-bold @(w.InSampleReturnPercent >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                        @(w.InSampleReturnPercent >= 0 ? "+" : "")@w.InSampleReturnPercent.ToString("N1")%
+                                    </td>
+                                    <td class="py-2.5 px-3 text-right font-bold @(w.OutOfSampleReturnPercent >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                        @(w.OutOfSampleReturnPercent >= 0 ? "+" : "")@w.OutOfSampleReturnPercent.ToString("N1")%
+                                    </td>
+                                    <td class="py-2.5 px-3 text-right font-bold text-indigo-500">
+                                        @w.WalkForwardEfficiencyPercent.ToString("N1")%
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center font-sans">
+                                        <span class="px-2 py-0.5 rounded-full text-3xs font-bold @(w.Status.Contains("Robust") ? "bg-emerald-500/10 text-emerald-500" : w.Status.Contains("Moderate") ? "bg-amber-500/10 text-amber-500" : "bg-rose-500/10 text-rose-500")">
+                                            @w.Status
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- 5.3 Monte Carlo 10,000-Path Simulation -->
+    @if (mc != null)
+    {
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-dice text-purple-500"></i> Monte Carlo 10,000-Path Simulation Engine (5.3)
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Bootstrap resampling with replacement across 10,000 iterations to determine Risk of Ruin & confidence percentiles</p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-2xs font-bold bg-purple-500/10 text-purple-500">
+                    @mc.TotalSimulations.ToString("N0") Iterations
+                </span>
+            </div>
+
+            <!-- Monte Carlo KPI Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                    <div class="text-2xs text-slate-400 uppercase font-bold">Probability of Profit</div>
+                    <div class="mt-1 text-xl font-bold font-mono text-emerald-500">@mc.ProbabilityOfProfitPercent.ToString("N1")%</div>
+                    <div class="mt-0.5 text-3xs text-slate-500">Paths ending with Net Gain</div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                    <div class="text-2xs text-slate-400 uppercase font-bold">Median Final Capital</div>
+                    <div class="mt-1 text-xl font-bold font-mono text-slate-800 dark:text-white">$@mc.MedianFinalCapital.ToString("N2")</div>
+                    <div class="mt-0.5 text-3xs text-slate-500">50th Percentile Outcome</div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                    <div class="text-2xs text-slate-400 uppercase font-bold">Risk of 20% Drawdown</div>
+                    <div class="mt-1 text-xl font-bold font-mono @(mc.RiskOfRuin20PercentDrawdown < 20m ? "text-emerald-500" : "text-amber-500")">
+                        @mc.RiskOfRuin20PercentDrawdown.ToString("N1")%
+                    </div>
+                    <div class="mt-0.5 text-3xs text-slate-500">Probability of reaching -20% DD</div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                    <div class="text-2xs text-slate-400 uppercase font-bold">Worst-Case Max Drawdown</div>
+                    <div class="mt-1 text-xl font-bold font-mono text-rose-500">-@mc.WorstCaseDrawdownPercent.ToString("N1")%</div>
+                    <div class="mt-0.5 text-3xs text-slate-500">Total Ruin Risk: @mc.TotalRuinProbabilityPercent.ToString("N2")%</div>
+                </div>
+            </div>
+
+            <!-- Percentile Confidence Bands Table -->
+            <h3 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">
+                Percentile Confidence Distribution Bands (5th to 99th Percentile)
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-2xs uppercase font-bold">
+                            <th class="py-2.5 px-3">Percentile Bracket</th>
+                            <th class="py-2.5 px-3 text-right">Projected Capital</th>
+                            <th class="py-2.5 px-3 text-right">Expected Return %</th>
+                            <th class="py-2.5 px-3 text-right">Associated Drawdown</th>
+                            <th class="py-2.5 px-3 text-center">Scenario Interpretation</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 font-mono text-2xs">
+                        @foreach (var band in mc.ConfidenceBands)
+                        {
+                            var isAdverse = band.Percentile <= 25;
+                            var isMedian = band.Percentile == 50;
+                            <tr class="@(isMedian ? "bg-indigo-500/5 font-bold" : "")">
+                                <td class="py-2.5 px-3 font-sans font-bold">
+                                    <span class="px-2 py-0.5 rounded text-3xs @(isAdverse ? "bg-rose-500/10 text-rose-500" : isMedian ? "bg-indigo-500/10 text-indigo-500" : "bg-emerald-500/10 text-emerald-500")">
+                                        @band.Percentile th Percentile
+                                    </span>
+                                </td>
+                                <td class="py-2.5 px-3 text-right font-bold text-slate-800 dark:text-white">$@band.ProjectedCapital.ToString("N2")</td>
+                                <td class="py-2.5 px-3 text-right font-bold @(band.ReturnPercent >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                    @(band.ReturnPercent >= 0 ? "+" : "")@band.ReturnPercent.ToString("N1")%
+                                </td>
+                                <td class="py-2.5 px-3 text-right text-rose-500 font-bold">-@band.MaxDrawdownPercent.ToString("N1")%</td>
+                                <td class="py-2.5 px-3 text-center font-sans text-3xs text-slate-500">
+                                    @(band.Percentile == 5 ? "Extreme Adverse Tail Risk" : band.Percentile == 25 ? "Conservative Drawdown Horizon" : band.Percentile == 50 ? "Expected Median Trajectory" : band.Percentile == 75 ? "Favorable Bullish Scenario" : band.Percentile == 95 ? "High-Momentum Outlier" : "Best-Case 99th Tail")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <!-- Equity Curve Trajectory Bar -->
     <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <i class="fa-solid fa-chart-line text-indigo-500"></i> Equity Curve Trajectory
+                <i class="fa-solid fa-chart-line text-indigo-500"></i> Equity Curve Trajectory (Historical Sequence)
             </h3>
             <div class="text-xs font-mono text-slate-500">
                 Initial: $@Model.InitialCapital.ToString("N0") → Final: <span class="font-bold @(isProfitable ? "text-emerald-500" : "text-rose-500")">$@Model.FinalCapital.ToString("N2")</span>
@@ -152,7 +352,7 @@
 
             <div class="w-full bg-slate-900 rounded-xl p-4">
                 <div style="height: 180px;" class="flex items-end justify-between gap-1">
-                    @foreach (var pt in Model.EquityCurve.TakeLast(50))
+                    @foreach (var pt in Model.EquityCurve.TakeLast(60))
                     {
                         var barHeight = Math.Max(5f, (float)((pt.Equity - eqMin) / eqRange) * 100f);
                         <div class="flex-1 bg-indigo-500/80 hover:bg-indigo-400 rounded-t-xs transition-colors"
@@ -170,7 +370,7 @@
             <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">
                 Simulated Trade Log (@Model.TotalTrades Trades)
             </h3>
-            <span class="text-2xs text-slate-400">Order Fills with Fees</span>
+            <span class="text-2xs text-slate-400">Order Fills with Friction Costs</span>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs">
@@ -182,9 +382,9 @@
                         <th class="py-3 px-4 text-right">Entry Price</th>
                         <th class="py-3 px-4 text-right">Exit Price</th>
                         <th class="py-3 px-4 text-right">Size</th>
-                        <th class="py-3 px-4 text-right">P&L ($)</th>
-                        <th class="py-3 px-4 text-right">P&L (%)</th>
-                        <th class="py-3 px-4 text-right">Fee</th>
+                        <th class="py-3 px-4 text-right">Net P&L ($)</th>
+                        <th class="py-3 px-4 text-right">Net P&L (%)</th>
+                        <th class="py-3 px-4 text-right">Fee & Carry</th>
                         <th class="py-3 px-4 text-center">Exit Reason</th>
                     </tr>
                 </thead>
@@ -198,7 +398,7 @@
                                 <td class="py-2.5 px-4 text-slate-500">@tr.EntryTime.ToString("yyyy-MM-dd HH:mm")</td>
                                 <td class="py-2.5 px-4 text-slate-500">@tr.ExitTime.ToString("yyyy-MM-dd HH:mm")</td>
                                 <td class="py-2.5 px-4 text-center font-sans">
-                                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold @(tr.Side == "Buy" ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")">
+                                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold @(tr.Side == "LONG" || tr.Side == "Buy" ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")">
                                         @tr.Side
                                     </span>
                                 </td>
@@ -211,8 +411,10 @@
                                 <td class="py-2.5 px-4 text-right font-bold @(win ? "text-emerald-600" : "text-rose-600")">
                                     @(win ? "+" : "")@tr.PnlPercent.ToString("F2")%
                                 </td>
-                                <td class="py-2.5 px-4 text-right text-slate-400">$@tr.FeePaid.ToString("F2")</td>
-                                <td class="py-2.5 px-4 text-center font-sans text-2xs text-slate-500">@tr.ExitReason</td>
+                                <td class="py-2.5 px-4 text-right text-slate-400">$@((tr.FeePaid + tr.FundingFeePaid).ToString("F2"))</td>
+                                <td class="py-2.5 px-4 text-center font-sans text-2xs @(tr.ExitReason.Contains("Liquidated") ? "text-rose-600 font-bold" : "text-slate-500")">
+                                    @tr.ExitReason
+                                </td>
                             </tr>
                         }
                     }

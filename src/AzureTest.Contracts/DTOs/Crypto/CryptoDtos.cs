@@ -695,14 +695,22 @@ public sealed class BacktestRequestDto
     public string Symbol { get; set; } = "BTCUSDT";
     public CryptoTimeframe Timeframe { get; set; } = CryptoTimeframe.H1;
     public decimal InitialCapital { get; set; } = 10000m;
-    public decimal CommissionPercent { get; set; } = 0.075m; // 0.075% Binance standard
-    public decimal SlippagePercent { get; set; } = 0.05m;
+    public decimal CommissionPercent { get; set; } = 0.05m; // Taker standard
+    public decimal MakerFeePercent { get; set; } = 0.02m;
+    public decimal SlippagePercent { get; set; } = 0.04m;
     public int DaysBack { get; set; } = 90;
     public int FastPeriod { get; set; } = 9;
     public int SlowPeriod { get; set; } = 21;
     public int RsiPeriod { get; set; } = 14;
     public int BbPeriod { get; set; } = 20;
     public decimal BbStdDev { get; set; } = 2.0m;
+    public decimal Leverage { get; set; } = 1.0m; // 1x to 20x
+    public string FeeTier { get; set; } = "VIP 0 (0.05% Taker / 0.02% Maker)";
+    public decimal FundingRate8hPercent { get; set; } = 0.01m; // 0.01% per 8h
+    public bool EnableDynamicSlippage { get; set; } = true;
+    public bool EnableLiquidationSimulation { get; set; } = true;
+    public int MonteCarloIterations { get; set; } = 10000;
+    public int WalkForwardWindowsCount { get; set; } = 4;
 }
 
 public sealed record BacktestTradeDto(
@@ -715,7 +723,9 @@ public sealed record BacktestTradeDto(
     decimal Pnl,
     decimal PnlPercent,
     string ExitReason,
-    decimal FeePaid);
+    decimal FeePaid,
+    decimal FundingFeePaid = 0m,
+    decimal SlippageDragUsd = 0m);
 
 public sealed record EquityCurvePointDto(
     DateTime Time,
@@ -738,6 +748,66 @@ public sealed record WalkForwardResultDto(
     public bool IsRobust => RobustnessRating == "Pass";
 }
 
+// ── Feature 5: Strategy Lab, WFA & Monte Carlo Engine DTOs ──────────────────
+
+public sealed record CryptoBacktestFrictionSummaryDto(
+    string FeeTier,
+    decimal MakerFeePercent,
+    decimal TakerFeePercent,
+    decimal TotalCommissionPaid,
+    decimal TotalSlippageCost,
+    decimal TotalFundingFeesPaid,
+    decimal TotalFrictionCost,
+    decimal FrictionDragPercentOfReturn,
+    bool LiquidationOccurred,
+    decimal LiquidationThresholdPrice,
+    decimal MaintenanceMarginPercent);
+
+public sealed record CryptoWalkForwardWindowDto(
+    int WindowIndex,
+    DateTime InSampleStart,
+    DateTime InSampleEnd,
+    DateTime OutOfSampleStart,
+    DateTime OutOfSampleEnd,
+    decimal InSampleReturnPercent,
+    decimal OutOfSampleReturnPercent,
+    decimal InSampleSharpe,
+    decimal OutOfSampleSharpe,
+    decimal WalkForwardEfficiencyPercent,
+    string Status);
+
+public sealed record CryptoOverfittingShieldDto(
+    decimal DeflatedSharpeRatio,
+    decimal ProbabilityOfOverfittingPercent,
+    int MinTrackRecordLengthDays,
+    decimal Skewness,
+    decimal Kurtosis,
+    int ParameterCombinationsTested,
+    string OverfittingRiskLevel,
+    string ShieldVerdict);
+
+public sealed record CryptoMonteCarloPercentileDto(
+    int Percentile,
+    decimal ProjectedCapital,
+    decimal ReturnPercent,
+    decimal MaxDrawdownPercent);
+
+public sealed record CryptoMonteCarloSimulationDto(
+    int TotalSimulations,
+    decimal ProbabilityOfProfitPercent,
+    decimal RiskOfRuin20PercentDrawdown,
+    decimal RiskOfRuin30PercentDrawdown,
+    decimal RiskOfRuin50PercentDrawdown,
+    decimal TotalRuinProbabilityPercent,
+    decimal MedianFinalCapital,
+    decimal MedianMaxDrawdownPercent,
+    decimal WorstCaseDrawdownPercent,
+    IReadOnlyList<CryptoMonteCarloPercentileDto> Percentiles,
+    IReadOnlyList<decimal> SampledEquityTrajectories)
+{
+    public IReadOnlyList<CryptoMonteCarloPercentileDto> ConfidenceBands => Percentiles;
+}
+
 public sealed record BacktestResultDto(
     Guid Id,
     string StrategyName,
@@ -758,7 +828,11 @@ public sealed record BacktestResultDto(
     decimal TotalFeesPaid,
     IReadOnlyList<BacktestTradeDto> Trades,
     IReadOnlyList<EquityCurvePointDto> EquityCurve,
-    WalkForwardResultDto WalkForward);
+    WalkForwardResultDto WalkForward,
+    CryptoBacktestFrictionSummaryDto? FrictionSummary = null,
+    IReadOnlyList<CryptoWalkForwardWindowDto>? WalkForwardWindows = null,
+    CryptoOverfittingShieldDto? OverfittingShield = null,
+    CryptoMonteCarloSimulationDto? MonteCarlo = null);
 
 // ── Trading & Execution DTOs ───────────────────────────────────────────────
 
