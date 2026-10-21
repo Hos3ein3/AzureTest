@@ -1,0 +1,240 @@
+@using AzureTest.Domain.Media.Enums
+
+<!-- Reusable Quick Add to Watchlist / Playlist Modal -->
+<div id="quickAddModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeQuickAddModal()"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 space-y-5 border border-slate-100 dark:border-slate-700">
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300 flex items-center justify-center">
+                        <i class="fa-solid fa-bookmark text-base"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Add to Watchlist or Playlist</h3>
+                        <p id="modalItemTitle" class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[240px]">Select Title</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeQuickAddModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Tab Switcher -->
+            <div class="flex rounded-xl bg-slate-100 dark:bg-slate-700 p-1 text-xs font-semibold">
+                <button type="button" id="tabWatchlistBtn" onclick="switchQuickAddTab('watchlist')" class="flex-1 py-1.5 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs transition-all text-center">
+                    Watchlist
+                </button>
+                <button type="button" id="tabPlaylistBtn" onclick="switchQuickAddTab('playlist')" class="flex-1 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 transition-all text-center">
+                    Custom Playlist
+                </button>
+            </div>
+
+            <!-- Tab 1: Watchlist -->
+            <form id="quickAddWatchlistForm" onsubmit="submitQuickAddWatchlist(event)" class="space-y-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="modalTmdbId" name="TmdbId" value="" />
+                <input type="hidden" id="modalType" name="Type" value="" />
+                <input type="hidden" id="modalTitle" name="Title" value="" />
+                <input type="hidden" id="modalPosterPath" name="PosterPath" value="" />
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">Watch Status</label>
+                    <select id="modalStatusSelect" name="Status" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                        <option value="@WatchStatus.PlanToWatch" selected>Wishlist (Want to Watch)</option>
+                        <option value="@WatchStatus.Watching">Currently Watching</option>
+                        <option value="@WatchStatus.Completed">Finished (Watched)</option>
+                        <option value="@WatchStatus.Dropped">Stopped</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeQuickAddModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="modalWatchlistSubmitBtn" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-2xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-check text-2xs"></i>
+                        <span>Save to Watchlist</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Tab 2: Custom Playlist -->
+            <form id="quickAddPlaylistForm" onsubmit="submitQuickAddPlaylist(event)" class="space-y-4 hidden">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="modalPlaylistTmdbId" name="TmdbId" value="" />
+                <input type="hidden" id="modalPlaylistType" name="Type" value="" />
+                <input type="hidden" id="modalPlaylistTitle" name="Title" value="" />
+                <input type="hidden" id="modalPlaylistPosterPath" name="PosterPath" value="" />
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">Choose Playlist</label>
+                    <select id="modalPlaylistSelect" name="ListId" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                        <option value="">Loading playlists...</option>
+                    </select>
+                    <p id="noPlaylistsMsg" class="text-3xs text-slate-400 hidden">
+                        No playlists found. You can create one in <a href="/Media/Lists" class="text-brand-600 underline">Playlists Hub</a>.
+                    </p>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeQuickAddModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="modalPlaylistSubmitBtn" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-2xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-folder-plus text-2xs"></i>
+                        <span>Add to Playlist</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let userPlaylistsCache = null;
+
+    function openQuickAddModal(id, type, title, posterPath) {
+        document.getElementById('modalTmdbId').value = id;
+        document.getElementById('modalType').value = type;
+        document.getElementById('modalTitle').value = title || '';
+        document.getElementById('modalPosterPath').value = posterPath || '';
+
+        document.getElementById('modalPlaylistTmdbId').value = id;
+        document.getElementById('modalPlaylistType').value = type;
+        document.getElementById('modalPlaylistTitle').value = title || '';
+        document.getElementById('modalPlaylistPosterPath').value = posterPath || '';
+
+        document.getElementById('modalItemTitle').innerText = title || 'Title';
+
+        switchQuickAddTab('watchlist');
+        loadUserPlaylists();
+        document.getElementById('quickAddModal').classList.remove('hidden');
+    }
+
+    function closeQuickAddModal() {
+        document.getElementById('quickAddModal').classList.add('hidden');
+    }
+
+    function switchQuickAddTab(tab) {
+        const watchlistForm = document.getElementById('quickAddWatchlistForm');
+        const playlistForm = document.getElementById('quickAddPlaylistForm');
+        const tabWatchlistBtn = document.getElementById('tabWatchlistBtn');
+        const tabPlaylistBtn = document.getElementById('tabPlaylistBtn');
+
+        if (tab === 'watchlist') {
+            watchlistForm.classList.remove('hidden');
+            playlistForm.classList.add('hidden');
+            tabWatchlistBtn.className = 'flex-1 py-1.5 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs transition-all text-center';
+            tabPlaylistBtn.className = 'flex-1 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 transition-all text-center';
+        } else {
+            watchlistForm.classList.add('hidden');
+            playlistForm.classList.remove('hidden');
+            tabWatchlistBtn.className = 'flex-1 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 transition-all text-center';
+            tabPlaylistBtn.className = 'flex-1 py-1.5 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs transition-all text-center';
+        }
+    }
+
+    function loadUserPlaylists() {
+        const select = document.getElementById('modalPlaylistSelect');
+        const noMsg = document.getElementById('noPlaylistsMsg');
+        const submitBtn = document.getElementById('modalPlaylistSubmitBtn');
+        if (userPlaylistsCache) {
+            populatePlaylistsSelect(userPlaylistsCache);
+            return;
+        }
+
+        fetch('/Media/UserLists')
+            .then(res => res.json())
+            .then(data => {
+                userPlaylistsCache = data || [];
+                populatePlaylistsSelect(userPlaylistsCache);
+            })
+            .catch(() => {
+                select.innerHTML = '<option value="">Failed to load playlists</option>';
+            });
+    }
+
+    function populatePlaylistsSelect(lists) {
+        const select = document.getElementById('modalPlaylistSelect');
+        const noMsg = document.getElementById('noPlaylistsMsg');
+        const submitBtn = document.getElementById('modalPlaylistSubmitBtn');
+
+        if (!lists || lists.length === 0) {
+            select.innerHTML = '<option value="">No playlists created yet</option>';
+            select.disabled = true;
+            if (noMsg) noMsg.classList.remove('hidden');
+            if (submitBtn) submitBtn.disabled = true;
+        } else {
+            select.disabled = false;
+            if (noMsg) noMsg.classList.add('hidden');
+            if (submitBtn) submitBtn.disabled = false;
+            select.innerHTML = lists.map(l => `<option value="${l.id}">${l.title} (${l.count} items)</option>`).join('');
+        }
+    }
+
+    function submitQuickAddWatchlist(evt) {
+        evt.preventDefault();
+        const form = document.getElementById('quickAddWatchlistForm');
+        const submitBtn = document.getElementById('modalWatchlistSubmitBtn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-2xs mr-1"></i> Saving...';
+
+        const formData = new FormData(form);
+        fetch('/Media/Add', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            if (data.success) {
+                closeQuickAddModal();
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to save to watchlist.');
+            }
+        })
+        .catch(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            window.location.reload();
+        });
+    }
+
+    function submitQuickAddPlaylist(evt) {
+        evt.preventDefault();
+        const form = document.getElementById('quickAddPlaylistForm');
+        const submitBtn = document.getElementById('modalPlaylistSubmitBtn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-2xs mr-1"></i> Adding...';
+
+        const formData = new FormData(form);
+        fetch('/Media/AddToList', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            if (data.success) {
+                closeQuickAddModal();
+                alert(data.message || 'Added to playlist successfully.');
+            } else {
+                alert(data.message || 'Failed to add to playlist.');
+            }
+        })
+        .catch(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            alert('Failed to add to playlist.');
+        });
+    }
+</script>

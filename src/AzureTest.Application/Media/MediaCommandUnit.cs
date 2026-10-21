@@ -15,6 +15,7 @@ using AzureTest.Application.Media.Commands.RemoveItemFromCustomList;
 using AzureTest.Application.Media.Commands.UnfollowPerson;
 using AzureTest.Application.Media.Commands.UpdateFollowedPersonNotes;
 using AzureTest.Application.Media.Commands.UpdateWatchProgress;
+using AzureTest.Application.Media.Commands.RewatchItem;
 using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.Media;
 
@@ -27,6 +28,7 @@ public sealed class MediaCommandUnit : IMediaCommandUnit
     private readonly ICommandHandler<ChangeWatchStatusCommand, Result> _changeStatus;
     private readonly ICommandHandler<RateWatchItemCommand, Result> _rateItem;
     private readonly ICommandHandler<DeleteWatchItemCommand, Result> _deleteItem;
+    private readonly ICommandHandler<RewatchItemCommand, Result> _rewatchItem;
     private readonly ICommandHandler<FollowPersonCommand, Result<Guid>> _followPerson;
     private readonly ICommandHandler<UnfollowPersonCommand, Result> _unfollowPerson;
     private readonly ICommandHandler<UpdateFollowedPersonNotesCommand, Result> _updateNotes;
@@ -42,6 +44,7 @@ public sealed class MediaCommandUnit : IMediaCommandUnit
         ICommandHandler<ChangeWatchStatusCommand, Result> changeStatus,
         ICommandHandler<RateWatchItemCommand, Result> rateItem,
         ICommandHandler<DeleteWatchItemCommand, Result> deleteItem,
+        ICommandHandler<RewatchItemCommand, Result> rewatchItem,
         ICommandHandler<FollowPersonCommand, Result<Guid>> followPerson,
         ICommandHandler<UnfollowPersonCommand, Result> unfollowPerson,
         ICommandHandler<UpdateFollowedPersonNotesCommand, Result> updateNotes,
@@ -56,6 +59,7 @@ public sealed class MediaCommandUnit : IMediaCommandUnit
         _changeStatus = changeStatus;
         _rateItem = rateItem;
         _deleteItem = deleteItem;
+        _rewatchItem = rewatchItem;
         _followPerson = followPerson;
         _unfollowPerson = unfollowPerson;
         _updateNotes = updateNotes;
@@ -80,6 +84,9 @@ public sealed class MediaCommandUnit : IMediaCommandUnit
 
     public Task<Result> DeleteWatchItemAsync(DeleteWatchItemCommand command, CancellationToken ct = default) =>
         _deleteItem.HandleAsync(command, ct);
+
+    public Task<Result> RewatchItemAsync(RewatchItemCommand command, CancellationToken ct = default) =>
+        _rewatchItem.HandleAsync(command, ct);
 
     public Task<Result<Guid>> FollowPersonAsync(FollowPersonCommand command, CancellationToken ct = default) =>
         _followPerson.HandleAsync(command, ct);

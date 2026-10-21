@@ -41,6 +41,7 @@ public class WatchItemDocument : ITenantEntity
     public int TotalSeasons { get; private set; }
     public int TotalEpisodes { get; private set; }
     public int? RuntimeMinutes { get; private set; }
+    public int RewatchCount { get; private set; } = 0;
 
     public int? UserRating { get; private set; }
     public string? UserReview { get; private set; }
@@ -75,7 +76,8 @@ public class WatchItemDocument : ITenantEntity
         List<string>? genres = null,
         DateTime? watchedDate = null,
         int? userRating = null,
-        string? userReview = null)
+        string? userReview = null,
+        int rewatchCount = 0)
     {
         var item = new WatchItemDocument
         {
@@ -96,6 +98,7 @@ public class WatchItemDocument : ITenantEntity
             TotalSeasons = Math.Max(1, totalSeasons),
             TotalEpisodes = Math.Max(0, totalEpisodes),
             RuntimeMinutes = runtimeMinutes,
+            RewatchCount = Math.Max(0, rewatchCount),
             Genres = genres ?? new List<string>(),
             WatchedDate = watchedDate ?? (status == WatchStatus.Completed ? DateTime.UtcNow : null),
             LastWatchedAt = watchedDate ?? (status == WatchStatus.Completed ? DateTime.UtcNow : null),
@@ -112,12 +115,12 @@ public class WatchItemDocument : ITenantEntity
         CurrentSeason = Math.Clamp(season, Rules.MinSeason, Rules.MaxSeason);
         CurrentEpisode = Math.Clamp(episode, Rules.MinEpisode, Rules.MaxEpisode);
 
-        if (totalSeasons.HasValue && totalSeasons.Value > 0)
+        if (totalSeasons.HasValue && totalSeasons.Value > TotalSeasons)
         {
             TotalSeasons = totalSeasons.Value;
         }
 
-        if (totalEpisodes.HasValue && totalEpisodes.Value >= 0)
+        if (totalEpisodes.HasValue && totalEpisodes.Value > TotalEpisodes)
         {
             TotalEpisodes = totalEpisodes.Value;
         }
@@ -125,11 +128,41 @@ public class WatchItemDocument : ITenantEntity
         LastWatchedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
 
-        if (Status == WatchStatus.PlanToWatch && (CurrentSeason > 1 || CurrentEpisode > 0))
+        var isEntireSeriesCompleted = TotalEpisodes > 1
+            && CurrentEpisode >= TotalEpisodes
+            && (TotalSeasons <= 1 || CurrentSeason >= TotalSeasons);
+
+        if (isEntireSeriesCompleted)
         {
+            Status = WatchStatus.Completed;
+            WatchedDate ??= DateTime.UtcNow;
+        }
+        else
+        {
+            if (CurrentSeason > 1 || CurrentEpisode > 0)
+            {
+                Status = WatchStatus.Watching;
+            }
+            else if (CurrentSeason <= 1 && CurrentEpisode == 0 && Status == WatchStatus.Completed)
+            {
+                Status = WatchStatus.PlanToWatch;
+            }
+        }
+    }
+
+    public void IncrementRewatch(bool restartWatching = false)
+    {
+        RewatchCount++;
+        UpdatedAt = DateTime.UtcNow;
+        LastWatchedAt = DateTime.UtcNow;
+
+        if (restartWatching && Type != MediaType.Movie)
+        {
+            CurrentSeason = 1;
+            CurrentEpisode = 1;
             Status = WatchStatus.Watching;
         }
-        else if (TotalEpisodes > 0 && CurrentEpisode >= TotalEpisodes && (TotalSeasons <= 1 || CurrentSeason >= TotalSeasons))
+        else
         {
             Status = WatchStatus.Completed;
             WatchedDate ??= DateTime.UtcNow;
@@ -196,14 +229,13 @@ public class WatchItemDocument : ITenantEntity
     {
         if (Type == MediaType.Movie)
         {
-            return Status == WatchStatus.Completed 
-                ? (RuntimeMinutes.HasValue && RuntimeMinutes.Value > 0 ? RuntimeMinutes.Value : Rules.DefaultMovieDurationMinutes) 
-                : 0;
-        }
+            var baseMinutes = (RuntimeMinutes.HasValue && RuntimeMinutes.Value > 0)
+                ? RuntimeMinutes.Value 
+                : Rules.DefaultMovieDurationMinutes;
 
-        var episodesWatched = (Status == WatchStatus.Completed && TotalEpisodes > 0)
-            ? Math.Max(CurrentEpisode, TotalEpisodes)
-            : CurrentEpisode;
+            var timesWatched = Status == WatchStatus.Completed ? (1 + RewatchCount) : RewatchCount;
+            return baseMinutes * Math.Max(0, timesWatched);
+        }
 
         int defaultDuration = Type == MediaType.Anime 
             ? Rules.DefaultAnimeEpisodeDurationMinutes 
@@ -213,6 +245,13 @@ public class WatchItemDocument : ITenantEntity
             ? RuntimeMinutes.Value 
             : defaultDuration;
 
-        return episodesWatched * avgDuration;
+        var fullRunEpisodes = TotalEpisodes > 0 ? TotalEpisodes : CurrentEpisode;
+        var completedEpisodesFromRepeats = fullRunEpisodes * RewatchCount;
+
+        var currentRunEpisodes = (Status == WatchStatus.Completed && TotalEpisodes > 0)
+            ? Math.Max(CurrentEpisode, TotalEpisodes)
+            : CurrentEpisode;
+
+        return (completedEpisodesFromRepeats + currentRunEpisodes) * avgDuration;
     }
 }

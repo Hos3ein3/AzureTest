@@ -151,18 +151,10 @@
                                 <i class="fa-regular fa-calendar mr-1"></i>@(proj.ReleaseDate?.ToString("MMM yyyy") ?? "Release Date TBA")
                             </p>
                         </div>
-                        <form asp-action="Add" asp-controller="Media" method="post" class="flex-shrink-0">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="TmdbId" value="@proj.Id" />
-                            <input type="hidden" name="Type" value="@proj.Type" />
-                            <input type="hidden" name="Title" value="@proj.Title" />
-                            <input type="hidden" name="PosterPath" value="@proj.PosterPath" />
-                            <input type="hidden" name="Status" value="@WatchStatus.PlanToWatch" />
-                            <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
-                            <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-3xs font-bold transition-colors" title="Add to Wishlist">
-                                <i class="fa-solid fa-bookmark mr-1"></i> Wishlist
-                            </button>
-                        </form>
+                        <button type="button" onclick="openQuickAddModal('@proj.Id', '@proj.Type', '@Html.Raw(proj.Title.Replace("'", "\\\'"))', '@proj.PosterPath')"
+                                class="px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-3xs font-bold transition-colors flex items-center gap-1 flex-shrink-0" title="Add to Watchlist or Playlist">
+                            <i class="fa-solid fa-plus text-3xs"></i> Add
+                        </button>
                     </div>
                 }
             </div>
@@ -171,7 +163,7 @@
 
     <!-- Full Filmography Section -->
     <div class="space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div class="flex items-center gap-2">
                 <span class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 flex items-center justify-center text-sm">
                     <i class="fa-solid fa-film"></i>
@@ -182,17 +174,26 @@
                 </div>
             </div>
 
-            <!-- Quick Filter Pill Buttons (JavaScript based) -->
-            <div class="flex items-center gap-1.5 text-xs font-semibold">
-                <button type="button" onclick="filterCredits('all')" class="credit-filter px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-brand-600 text-white transition-colors" data-filter="all">
-                    All (@Model.Filmography.Count)
-                </button>
-                <button type="button" onclick="filterCredits('watched')" class="credit-filter px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 transition-colors" data-filter="watched">
-                    Watched (@Model.WatchedCount)
-                </button>
-                <button type="button" onclick="filterCredits('unwatched')" class="credit-filter px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 transition-colors" data-filter="unwatched">
-                    Unwatched (@(Model.TotalCreditsCount - Model.WatchedCount))
-                </button>
+            <!-- Search and Filter Controls -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="relative w-full sm:w-64">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="filmographySearchInput" oninput="filterCreditsBySearch(this.value)" placeholder="Search filmography..."
+                           class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                </div>
+
+                <!-- Quick Filter Pill Buttons -->
+                <div class="flex items-center gap-1.5 text-xs font-semibold">
+                    <button type="button" onclick="filterCredits('all')" class="credit-filter px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-brand-600 text-white transition-colors" data-filter="all">
+                        All (@Model.Filmography.Count)
+                    </button>
+                    <button type="button" onclick="filterCredits('watched')" class="credit-filter px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 transition-colors" data-filter="watched">
+                        Watched (@Model.WatchedCount)
+                    </button>
+                    <button type="button" onclick="filterCredits('unwatched')" class="credit-filter px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 transition-colors" data-filter="unwatched">
+                        Unwatched (@(Model.TotalCreditsCount - Model.WatchedCount))
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -202,7 +203,8 @@
             {
                 var creditSlug = Slugify(credit.Title);
                 <div class="credit-card group relative bg-white dark:bg-slate-800 rounded-2xl border @(credit.IsWatched ? "border-emerald-300 dark:border-emerald-600 ring-2 ring-emerald-500/20" : "border-slate-200 dark:border-slate-700") overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
-                     data-watched="@credit.IsWatched.ToString().ToLower()">
+                     data-watched="@credit.IsWatched.ToString().ToLower()"
+                     data-title="@credit.Title.ToLower()">
                     <div class="relative aspect-2/3 bg-slate-900 overflow-hidden">
                         <img src="@PosterUrl(credit.PosterPath)" alt="@credit.Title"
                              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -234,18 +236,10 @@
                             </a>
                             @if (!credit.IsWatched)
                             {
-                                <form asp-action="Add" asp-controller="Media" method="post" class="w-full">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="TmdbId" value="@credit.Id" />
-                                    <input type="hidden" name="Type" value="@credit.Type" />
-                                    <input type="hidden" name="Title" value="@credit.Title" />
-                                    <input type="hidden" name="PosterPath" value="@credit.PosterPath" />
-                                    <input type="hidden" name="Status" value="@WatchStatus.PlanToWatch" />
-                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
-                                    <button type="submit" class="w-full py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-3xs font-bold transition-colors shadow-xs">
-                                        <i class="fa-solid fa-plus mr-1"></i> Add
-                                    </button>
-                                </form>
+                                <button type="button" onclick="openQuickAddModal('@credit.Id', '@credit.Type', '@Html.Raw(credit.Title.Replace("'", "\\\'"))', '@credit.PosterPath')"
+                                        class="w-full py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-3xs font-bold transition-colors shadow-xs flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-plus text-3xs"></i> Add
+                                </button>
                             }
                         </div>
                     </div>
@@ -298,7 +292,29 @@
         }
     });
 
+    let currentFilterType = 'all';
+    let currentSearchQuery = '';
+
+    function applyCreditFilters() {
+        const query = currentSearchQuery.trim().toLowerCase();
+        const cards = document.querySelectorAll('.credit-card');
+        cards.forEach(card => {
+            const isWatched = card.dataset.watched === 'true';
+            const title = (card.dataset.title || '').toLowerCase();
+
+            let matchesType = true;
+            if (currentFilterType === 'watched') matchesType = isWatched;
+            else if (currentFilterType === 'unwatched') matchesType = !isWatched;
+
+            let matchesQuery = true;
+            if (query.length > 0) matchesQuery = title.includes(query);
+
+            card.style.display = (matchesType && matchesQuery) ? 'flex' : 'none';
+        });
+    }
+
     function filterCredits(filter) {
+        currentFilterType = filter;
         document.querySelectorAll('.credit-filter').forEach(btn => {
             if (btn.dataset.filter === filter) {
                 btn.className = 'credit-filter px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-brand-600 text-white transition-colors';
@@ -306,17 +322,13 @@
                 btn.className = 'credit-filter px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 transition-colors';
             }
         });
+        applyCreditFilters();
+    }
 
-        const cards = document.querySelectorAll('.credit-card');
-        cards.forEach(card => {
-            const isWatched = card.dataset.watched === 'true';
-            if (filter === 'all') {
-                card.style.display = 'flex';
-            } else if (filter === 'watched') {
-                card.style.display = isWatched ? 'flex' : 'none';
-            } else if (filter === 'unwatched') {
-                card.style.display = !isWatched ? 'flex' : 'none';
-            }
-        });
+    function filterCreditsBySearch(query) {
+        currentSearchQuery = query;
+        applyCreditFilters();
     }
 </script>
+
+<partial name="_QuickAddModal" />

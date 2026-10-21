@@ -234,24 +234,43 @@
                                     </form>
                                 }
 
-                                <!-- Change Status Form -->
-                                <form asp-action="ChangeStatus" asp-controller="Media" method="post" class="flex flex-wrap items-center justify-start sm:justify-end gap-2">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="WatchItemId" value="@userItem.Id" />
-                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                                <!-- Change Status & Actions Form -->
+                                <div class="flex flex-wrap items-center justify-start sm:justify-end gap-2">
+                                    @if (userItem.Status == WatchStatus.PlanToWatch)
+                                    {
+                                        <button type="button" onclick="openWatchedModal('@Model.Id', '@Html.Raw(Model.Title.Replace("'", "\\\'"))', '@Model.Type', @(validSeasons.Count), @totalEpisodesCount)"
+                                                class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 shadow-2xs">
+                                            <i class="fa-solid fa-check text-2xs"></i>
+                                            <span>I Watched This</span>
+                                        </button>
+                                    }
+                                    else if (userItem.Status == WatchStatus.Completed)
+                                    {
+                                        <button type="button" onclick="openRewatchModal('@userItem.Id', '@Html.Raw(Model.Title.Replace("'", "\\\'"))', '@Model.Type', @userItem.RewatchCount)"
+                                                class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 shadow-2xs">
+                                            <i class="fa-solid fa-rotate-right text-2xs"></i>
+                                            <span>Rewatch @(userItem.RewatchCount > 0 ? $"({userItem.RewatchCount + 1}x)" : "")</span>
+                                        </button>
+                                    }
 
-                                    <select name="NewStatus" onchange="this.form.submit()" class="px-3 py-1 rounded-lg bg-slate-800 border border-white/20 text-white text-xs focus:outline-none">
-                                        <option value="@WatchStatus.PlanToWatch" selected="@(userItem.Status == WatchStatus.PlanToWatch)">Wishlist</option>
-                                        <option value="@WatchStatus.Watching" selected="@(userItem.Status == WatchStatus.Watching)">Watching</option>
-                                        <option value="@WatchStatus.Completed" selected="@(userItem.Status == WatchStatus.Completed)">Finished</option>
-                                        <option value="@WatchStatus.Dropped" selected="@(userItem.Status == WatchStatus.Dropped)">Stopped</option>
-                                    </select>
+                                    <form asp-action="ChangeStatus" asp-controller="Media" method="post" class="flex items-center gap-2">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="WatchItemId" value="@userItem.Id" />
+                                        <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
 
-                                    <!-- Delete from watchlist button with modal trigger -->
-                                    <button type="button" onclick="openDeleteDetailsModal()" class="p-1.5 text-slate-400 hover:text-rose-400 transition-colors" title="Remove from Watchlist">
-                                        <i class="fa-solid fa-trash-can text-xs"></i>
-                                    </button>
-                                </form>
+                                        <select name="NewStatus" onchange="this.form.submit()" class="px-3 py-1 rounded-lg bg-slate-800 border border-white/20 text-white text-xs focus:outline-none">
+                                            <option value="@WatchStatus.PlanToWatch" selected="@(userItem.Status == WatchStatus.PlanToWatch)">Wishlist</option>
+                                            <option value="@WatchStatus.Watching" selected="@(userItem.Status == WatchStatus.Watching)">Watching</option>
+                                            <option value="@WatchStatus.Completed" selected="@(userItem.Status == WatchStatus.Completed)">Finished</option>
+                                            <option value="@WatchStatus.Dropped" selected="@(userItem.Status == WatchStatus.Dropped)">Stopped</option>
+                                        </select>
+
+                                        <!-- Delete from watchlist button with modal trigger -->
+                                        <button type="button" onclick="openDeleteDetailsModal()" class="p-1.5 text-slate-400 hover:text-rose-400 transition-colors" title="Remove from Watchlist">
+                                            <i class="fa-solid fa-trash-can text-xs"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     }
@@ -338,6 +357,9 @@
                             data-season="@s.SeasonNumber"
                             data-episodes="@s.EpisodeCount"
                             data-name="@s.Name"
+                            data-overview="@(s.Overview ?? "")"
+                            data-airdate="@(s.AirDate?.ToString("MMM yyyy") ?? "")"
+                            data-watched="@(isSeasonWatched ? "true" : "false")"
                             class="season-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 @(isCurrentActiveSeason ? "bg-slate-900 dark:bg-brand-600 text-white shadow-2xs" : "bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-650")">
                         <span>@s.Name</span>
                         <span class="px-2 py-0.5 rounded-lg text-3xs font-semibold @(isCurrentActiveSeason ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300")">
@@ -352,17 +374,27 @@
             </div>
 
             <!-- Active Season Details Banner -->
-            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-750 border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="space-y-1">
-                    <h3 id="activeSeasonTitle" class="text-sm font-bold text-slate-900 dark:text-white">Season 1</h3>
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-750 border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div class="space-y-1.5 flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 id="activeSeasonTitle" class="text-sm font-bold text-slate-900 dark:text-white">Season 1</h3>
+                        <span id="activeSeasonAirDate" class="text-3xs text-slate-400 font-medium"></span>
+                    </div>
                     <p id="activeSeasonSubtitle" class="text-xs text-slate-500 dark:text-slate-400">Episodes list</p>
+                    <p id="activeSeasonOverview" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-3 hidden"></p>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
                     <button type="button" id="markSeasonWatchedBtn" onclick="markCurrentSeasonWatched()"
                             class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
                         <i class="fa-solid fa-check text-2xs"></i>
                         <span id="markSeasonWatchedBtnText">Mark Season Watched</span>
+                    </button>
+
+                    <button type="button" id="markSeasonUnwatchedBtn" onclick="markCurrentSeasonUnwatched()"
+                            class="px-3.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5 hidden">
+                        <i class="fa-solid fa-rotate-left text-2xs"></i>
+                        <span>Mark Season Unwatched</span>
                     </button>
                 </div>
             </div>
@@ -757,6 +789,114 @@
     </div>
 }
 
+<!-- Episode Details Modal -->
+<div id="episodeDetailsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeEpisodeDetailsModal()"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
+            <!-- Episode Image Banner -->
+            <div class="relative aspect-video w-full bg-slate-900">
+                <img id="epModalImg" src="" alt="Episode Still" class="w-full h-full object-cover" />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                <button type="button" onclick="closeEpisodeDetailsModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+                <div class="absolute bottom-3 left-4 right-4 text-white">
+                    <span id="epModalBadge" class="px-2 py-0.5 rounded-md bg-brand-600 font-mono text-3xs font-bold uppercase tracking-wider"></span>
+                    <h3 id="epModalTitle" class="text-base font-bold text-white mt-1 leading-snug"></h3>
+                </div>
+            </div>
+
+            <!-- Details Content -->
+            <div class="p-6 space-y-4">
+                <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                    <span id="epModalAirDate" class="flex items-center gap-1.5"><i class="fa-regular fa-calendar text-2xs"></i> <span></span></span>
+                    <span id="epModalRating" class="flex items-center gap-1 text-amber-500 font-bold"><i class="fa-solid fa-star text-2xs"></i> <span></span></span>
+                </div>
+
+                <div class="space-y-1">
+                    <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200">Synopsis</h4>
+                    <p id="epModalOverview" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-h-48 overflow-y-auto pr-1"></p>
+                </div>
+
+                <div class="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <div id="epModalStatusText" class="text-xs font-semibold"></div>
+                    <div class="flex items-center gap-2" id="epModalActions"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rewatch Modal -->
+<div id="rewatchModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeRewatchModal()"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 md:p-8 space-y-5 border border-slate-100 dark:border-slate-700">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center">
+                        <i class="fa-solid fa-rotate-right text-base"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">Rewatch Title</h3>
+                        <p id="rewatchModalSubtitle" class="text-xs text-slate-500 dark:text-slate-400">Log a repeat watch</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeRewatchModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Watched this title again? Updating your rewatch count includes repeat watch time in your total hours and stats without losing your original completed date.
+            </p>
+
+            <form asp-action="Rewatch" asp-controller="Media" method="post" id="rewatchForm" class="space-y-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="rewatchWatchItemId" name="watchItemId" value="" />
+                <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Choose Rewatch Action:</label>
+                    <div class="space-y-2">
+                        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 cursor-pointer transition-colors">
+                            <input type="radio" name="restartWatching" value="false" checked class="mt-0.5 text-purple-600 focus:ring-purple-500" />
+                            <div class="space-y-0.5">
+                                <span class="text-xs font-bold text-slate-900 dark:text-white block">Log Finished Repeat (+1 count)</span>
+                                <span class="text-3xs text-slate-500 dark:text-slate-400 block">I already finished rewatching this. Add full duration to stats and keep status as Finished.</span>
+                            </div>
+                        </label>
+
+                        @if (Model.Type != MediaType.Movie)
+                        {
+                            <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 cursor-pointer transition-colors">
+                                <input type="radio" name="restartWatching" value="true" class="mt-0.5 text-purple-600 focus:ring-purple-500" />
+                                <div class="space-y-0.5">
+                                    <span class="text-xs font-bold text-slate-900 dark:text-white block">Start Watching Again From Ep 1</span>
+                                    <span class="text-3xs text-slate-500 dark:text-slate-400 block">Reset current progress to Season 1 Episode 1 and change status back to Watching.</span>
+                                </div>
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2.5 pt-2">
+                    <button type="button" onclick="closeRewatchModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate-right text-2xs"></i>
+                        <span>Confirm Rewatch</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<partial name="_QuickAddModal" />
+
 <script>
     const mediaId = @Model.Id;
     const mediaType = @((int)Model.Type);
@@ -783,9 +923,41 @@
         const activeTab = document.getElementById(`seasonTab-${seasonNumber}`);
         const seasonName = activeTab ? activeTab.dataset.name : `Season ${seasonNumber}`;
         const epCount = activeTab ? activeTab.dataset.episodes : '';
+        const overview = activeTab ? activeTab.dataset.overview : '';
+        const airdate = activeTab ? activeTab.dataset.airdate : '';
+        const isSeasonWatched = activeTab ? activeTab.dataset.watched === 'true' : false;
+
         document.getElementById('activeSeasonTitle').innerText = seasonName;
         document.getElementById('activeSeasonSubtitle').innerText = `${epCount} episodes in this season`;
-        document.getElementById('markSeasonWatchedBtnText').innerText = `Mark ${seasonName} Watched`;
+        
+        const airDateEl = document.getElementById('activeSeasonAirDate');
+        if (airDateEl) {
+            airDateEl.innerText = airdate ? `• Released ${airdate}` : '';
+        }
+
+        const overviewEl = document.getElementById('activeSeasonOverview');
+        if (overviewEl) {
+            if (overview && overview.trim().length > 0) {
+                overviewEl.innerText = overview;
+                overviewEl.classList.remove('hidden');
+            } else {
+                overviewEl.classList.add('hidden');
+            }
+        }
+
+        const unwatchedBtn = document.getElementById('markSeasonUnwatchedBtn');
+        const watchedBtn = document.getElementById('markSeasonWatchedBtn');
+        const watchedBtnText = document.getElementById('markSeasonWatchedBtnText');
+
+        if (isSeasonWatched) {
+            if (unwatchedBtn) unwatchedBtn.classList.remove('hidden');
+            if (watchedBtnText) watchedBtnText.innerText = `Season Watched`;
+            if (watchedBtn) watchedBtn.className = 'px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5 opacity-80';
+        } else {
+            if (unwatchedBtn) unwatchedBtn.classList.add('hidden');
+            if (watchedBtnText) watchedBtnText.innerText = `Mark ${seasonName} Watched`;
+            if (watchedBtn) watchedBtn.className = 'px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5';
+        }
 
         loadSeasonEpisodes(seasonNumber);
     }
@@ -839,8 +1011,8 @@
 
             html += `
                 <div class="p-3.5 rounded-2xl border ${isWatched ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50' : 'bg-slate-50 dark:bg-slate-750 border-slate-200 dark:border-slate-700'} flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
-                    <div class="flex items-start gap-3.5 flex-1 min-w-0">
-                        <div class="w-20 sm:w-28 aspect-video rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 flex-shrink-0 relative">
+                    <div class="flex items-start gap-3.5 flex-1 min-w-0 cursor-pointer group" onclick="showEpisodeDetailsModal(${seasonNumber}, ${ep.episodeNumber})">
+                        <div class="w-20 sm:w-28 aspect-video rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 flex-shrink-0 relative group-hover:ring-2 group-hover:ring-brand-500 transition-all">
                             <img src="${stillUrl}" alt="${ep.name}" class="w-full h-full object-cover" loading="lazy" />
                             <span class="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-slate-900/80 text-white font-mono text-3xs font-bold">
                                 E${ep.episodeNumber}
@@ -848,23 +1020,31 @@
                         </div>
                         <div class="flex-1 min-w-0 space-y-1">
                             <div class="flex flex-wrap items-center gap-2">
-                                <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                <h4 class="text-xs font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors truncate">
                                     ${ep.episodeNumber}. ${ep.name || `Episode ${ep.episodeNumber}`}
                                 </h4>
                                 ${ep.voteAverage ? `<span class="px-1.5 py-0.5 rounded text-3xs font-bold bg-amber-500/15 text-amber-500 flex items-center gap-1"><i class="fa-solid fa-star text-3xs"></i> ${ep.voteAverage.toFixed(1)}</span>` : ''}
                                 ${airDateStr ? `<span class="text-3xs text-slate-400">${airDateStr}</span>` : ''}
                             </div>
                             <p class="text-3xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                                ${ep.overview || 'No synopsis provided.'}
+                                ${ep.overview || 'No synopsis provided. Click for details.'}
                             </p>
                         </div>
                     </div>
 
                     <div class="flex-shrink-0 flex items-center gap-2 justify-end">
+                        <button type="button" onclick="showEpisodeDetailsModal(${seasonNumber}, ${ep.episodeNumber})"
+                                class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" title="View episode details">
+                            <i class="fa-solid fa-circle-info text-sm"></i>
+                        </button>
                         ${isWatched
-                            ? `<span class="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5">
-                                 <i class="fa-solid fa-check text-2xs"></i> Watched
-                               </span>`
+                            ? `<button type="button" onclick="markSingleEpisodeUnwatched(${seasonNumber}, ${ep.episodeNumber})"
+                                       class="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-rose-100 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 text-xs font-bold flex items-center gap-1.5 transition-colors group" title="Click to undo / mark unwatched">
+                                 <i class="fa-solid fa-check text-2xs group-hover:hidden"></i>
+                                 <i class="fa-solid fa-rotate-left text-2xs hidden group-hover:inline"></i>
+                                 <span class="group-hover:hidden">Watched</span>
+                                 <span class="hidden group-hover:inline">Undo</span>
+                               </button>`
                             : `<button type="button" onclick="markSingleEpisodeWatched(${seasonNumber}, ${ep.episodeNumber})"
                                        class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-700 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 text-xs font-semibold transition-all shadow-2xs flex items-center gap-1.5">
                                  <i class="fa-solid fa-check text-2xs"></i> Mark Watched
@@ -878,6 +1058,63 @@
         container.innerHTML = html;
     }
 
+    function showEpisodeDetailsModal(seasonNumber, episodeNumber) {
+        const episodes = episodesCache[seasonNumber] || [];
+        const ep = episodes.find(e => e.episodeNumber === episodeNumber);
+        if (!ep) return;
+
+        const isWatched = isCompleted || (userCurrentSeason > seasonNumber) || (userCurrentSeason === seasonNumber && userCurrentEpisode >= ep.episodeNumber);
+        const stillUrl = ep.stillPath
+            ? `https://image.tmdb.org/t/p/w780${ep.stillPath}`
+            : 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=780&q=80';
+
+        document.getElementById('epModalImg').src = stillUrl;
+        document.getElementById('epModalBadge').innerText = `Season ${seasonNumber} • Episode ${ep.episodeNumber}`;
+        document.getElementById('epModalTitle').innerText = ep.name || `Episode ${ep.episodeNumber}`;
+
+        const airDateStr = ep.airDate ? new Date(ep.airDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'Unknown air date';
+        document.getElementById('epModalAirDate').querySelector('span').innerText = airDateStr;
+
+        const ratingEl = document.getElementById('epModalRating');
+        if (ep.voteAverage) {
+            ratingEl.querySelector('span').innerText = `${ep.voteAverage.toFixed(1)} / 10 TMDb`;
+            ratingEl.classList.remove('hidden');
+        } else {
+            ratingEl.classList.add('hidden');
+        }
+
+        document.getElementById('epModalOverview').innerText = ep.overview && ep.overview.trim().length > 0 
+            ? ep.overview 
+            : 'No detailed synopsis available for this episode.';
+
+        const statusEl = document.getElementById('epModalStatusText');
+        const actionsEl = document.getElementById('epModalActions');
+
+        if (isWatched) {
+            statusEl.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Watched</span>`;
+            actionsEl.innerHTML = `
+                <button type="button" onclick="closeEpisodeDetailsModal(); markSingleEpisodeUnwatched(${seasonNumber}, ${ep.episodeNumber});"
+                        class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 text-xs font-bold transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-left text-2xs"></i> Mark Unwatched
+                </button>
+            `;
+        } else {
+            statusEl.innerHTML = `<span class="text-slate-400">Not watched yet</span>`;
+            actionsEl.innerHTML = `
+                <button type="button" onclick="closeEpisodeDetailsModal(); markSingleEpisodeWatched(${seasonNumber}, ${ep.episodeNumber});"
+                        class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-check text-2xs"></i> Mark Watched
+                </button>
+            `;
+        }
+
+        document.getElementById('episodeDetailsModal').classList.remove('hidden');
+    }
+
+    function closeEpisodeDetailsModal() {
+        document.getElementById('episodeDetailsModal').classList.add('hidden');
+    }
+
     function markSingleEpisodeWatched(season, episode) {
         const formData = new FormData();
         formData.append('TmdbId', mediaId);
@@ -886,6 +1123,8 @@
         formData.append('PosterPath', mediaPoster);
         formData.append('CurrentSeason', season);
         formData.append('CurrentEpisode', episode);
+        formData.append('TotalSeasons', @validSeasons.Count);
+        formData.append('TotalEpisodes', @totalEpisodesCount);
         formData.append('Status', '@WatchStatus.Watching');
         formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
 
@@ -899,11 +1138,54 @@
             if (data.success) {
                 userCurrentSeason = season;
                 userCurrentEpisode = episode;
-                renderEpisodes(episodesCache[season], season);
+                if (episodesCache[season]) {
+                    renderEpisodes(episodesCache[season], season);
+                }
                 window.location.reload();
             } else {
                 alert(data.message || 'Failed to update progress.');
             }
+        })
+        .catch(() => window.location.reload());
+    }
+
+    function markSingleEpisodeUnwatched(season, episode) {
+        let targetSeason = season;
+        let targetEpisode = episode - 1;
+        let targetStatus = '@WatchStatus.Watching';
+
+        if (targetEpisode <= 0) {
+            if (season > 1) {
+                targetSeason = season - 1;
+                const prevTab = document.getElementById(`seasonTab-${targetSeason}`);
+                targetEpisode = prevTab ? parseInt(prevTab.dataset.episodes) : 1;
+            } else {
+                targetSeason = 1;
+                targetEpisode = 0;
+                targetStatus = '@WatchStatus.PlanToWatch';
+            }
+        }
+
+        const formData = new FormData();
+        formData.append('TmdbId', mediaId);
+        formData.append('Type', mediaType);
+        formData.append('Title', mediaTitle);
+        formData.append('PosterPath', mediaPoster);
+        formData.append('CurrentSeason', targetSeason);
+        formData.append('CurrentEpisode', targetEpisode);
+        formData.append('TotalSeasons', @validSeasons.Count);
+        formData.append('TotalEpisodes', @totalEpisodesCount);
+        formData.append('Status', targetStatus);
+        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+        fetch('/Media/Add', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            window.location.reload();
         })
         .catch(() => window.location.reload());
     }
@@ -921,6 +1203,8 @@
         formData.append('PosterPath', mediaPoster);
         formData.append('CurrentSeason', activeSeasonNumber);
         formData.append('CurrentEpisode', totalEpInSeason);
+        formData.append('TotalSeasons', totalSeasons);
+        formData.append('TotalEpisodes', @totalEpisodesCount);
         formData.append('Status', isLastSeason ? '@WatchStatus.Completed' : '@WatchStatus.Watching');
         formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
 
@@ -934,6 +1218,54 @@
             window.location.reload();
         })
         .catch(() => window.location.reload());
+    }
+
+    function markCurrentSeasonUnwatched() {
+        let targetSeason = activeSeasonNumber - 1;
+        let targetEpisode = 0;
+        let targetStatus = '@WatchStatus.Watching';
+
+        if (targetSeason >= 1) {
+            const prevTab = document.getElementById(`seasonTab-${targetSeason}`);
+            targetEpisode = prevTab ? parseInt(prevTab.dataset.episodes) : 1;
+        } else {
+            targetSeason = 1;
+            targetEpisode = 0;
+            targetStatus = '@WatchStatus.PlanToWatch';
+        }
+
+        const formData = new FormData();
+        formData.append('TmdbId', mediaId);
+        formData.append('Type', mediaType);
+        formData.append('Title', mediaTitle);
+        formData.append('PosterPath', mediaPoster);
+        formData.append('CurrentSeason', targetSeason);
+        formData.append('CurrentEpisode', targetEpisode);
+        formData.append('TotalSeasons', @validSeasons.Count);
+        formData.append('TotalEpisodes', @totalEpisodesCount);
+        formData.append('Status', targetStatus);
+        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+        fetch('/Media/Add', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            window.location.reload();
+        })
+        .catch(() => window.location.reload());
+    }
+
+    function openRewatchModal(watchItemId, title, type, rewatchCount) {
+        document.getElementById('rewatchWatchItemId').value = watchItemId;
+        document.getElementById('rewatchModalSubtitle').innerText = `${title} • Already watched ${rewatchCount + 1}x`;
+        document.getElementById('rewatchModal').classList.remove('hidden');
+    }
+
+    function closeRewatchModal() {
+        document.getElementById('rewatchModal').classList.add('hidden');
     }
 
     function openWatchedModal(tmdbId, title, type, totalSeasons, totalEpisodes) {

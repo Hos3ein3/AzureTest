@@ -21,6 +21,7 @@ using AzureTest.Application.Media.Commands.RateWatchItem;
 using AzureTest.Application.Media.Commands.RemoveItemFromCustomList;
 using AzureTest.Application.Media.Commands.UnfollowPerson;
 using AzureTest.Application.Media.Commands.UpdateFollowedPersonNotes;
+using AzureTest.Application.Media.Commands.RewatchItem;
 using AzureTest.Application.Media.Commands.UpdateWatchProgress;
 using AzureTest.Application.Media.Queries.ExportMediaData;
 using AzureTest.Application.Media.Queries.GetCustomListById;
@@ -370,11 +371,14 @@ public class MediaController : Controller
     [Description("Update season and episode where you stopped watching.")]
     public async Task<IActionResult> UpdateProgress(UpdateWatchProgressCommand command, string? returnUrl, CancellationToken ct)
     {
+        var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
         var cmd = command with { UserId = _currentUser.Id };
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
         {
-            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to update watch progress.";
+            var msg = validation.Message ?? validation.Error ?? "Failed to update watch progress.";
+            TempData["ErrorMessage"] = msg;
+            if (isAjax) return Json(new { success = false, message = msg });
             return RedirectBack(returnUrl, nameof(Index));
         }
 
@@ -382,10 +386,13 @@ public class MediaController : Controller
         if (result.IsSuccess)
         {
             TempData["SuccessMessage"] = "Watch progress updated.";
+            if (isAjax) return Json(new { success = true, message = "Watch progress updated." });
         }
         else
         {
-            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to update watch progress.";
+            var msg = result.Message ?? result.Error ?? "Failed to update watch progress.";
+            TempData["ErrorMessage"] = msg;
+            if (isAjax) return Json(new { success = false, message = msg });
         }
 
         return RedirectBack(returnUrl, nameof(Index));
@@ -397,11 +404,14 @@ public class MediaController : Controller
     [Description("Change watch status of a title in your watchlist.")]
     public async Task<IActionResult> ChangeStatus(ChangeWatchStatusCommand command, string? returnUrl, CancellationToken ct)
     {
+        var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
         var cmd = command with { UserId = _currentUser.Id };
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
         {
-            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to change watch status.";
+            var msg = validation.Message ?? validation.Error ?? "Failed to change watch status.";
+            TempData["ErrorMessage"] = msg;
+            if (isAjax) return Json(new { success = false, message = msg });
             return RedirectBack(returnUrl, nameof(Index));
         }
 
@@ -409,10 +419,49 @@ public class MediaController : Controller
         if (result.IsSuccess)
         {
             TempData["SuccessMessage"] = "Watch status updated.";
+            if (isAjax) return Json(new { success = true, message = "Watch status updated." });
         }
         else
         {
-            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to change watch status.";
+            var msg = result.Message ?? result.Error ?? "Failed to change watch status.";
+            TempData["ErrorMessage"] = msg;
+            if (isAjax) return Json(new { success = false, message = msg });
+        }
+
+        return RedirectBack(returnUrl, nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Repeat / Rewatch Title")]
+    [Description("Log another viewing of a finished movie or series to update your rewatch stats.")]
+    public async Task<IActionResult> Rewatch(Guid watchItemId, bool restartWatching = false, string? returnUrl = null, CancellationToken ct = default)
+    {
+        var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
+        var cmd = new RewatchItemCommand(_currentUser.Id, watchItemId, restartWatching);
+        var validation = await _validator.ValidateAsync(cmd, ct);
+        if (validation.IsFailure)
+        {
+            var msg = validation.Message ?? validation.Error ?? "Failed to log repeat watch.";
+            TempData["ErrorMessage"] = msg;
+            if (isAjax) return Json(new { success = false, message = msg });
+            return RedirectBack(returnUrl, nameof(Index));
+        }
+
+        var result = await _commands.RewatchItemAsync(cmd, ct);
+        if (result.IsSuccess)
+        {
+            var msg = restartWatching 
+                ? "Started rewatching from Episode 1." 
+                : "Logged repeat viewing.";
+            TempData["SuccessMessage"] = msg;
+            if (isAjax) return Json(new { success = true, message = msg });
+        }
+        else
+        {
+            var msg = result.Message ?? result.Error ?? "Failed to log repeat watch.";
+            TempData["ErrorMessage"] = msg;
+            if (isAjax) return Json(new { success = false, message = msg });
         }
 
         return RedirectBack(returnUrl, nameof(Index));
@@ -633,25 +682,73 @@ public class MediaController : Controller
     [Description("Add a title to one of your custom playlists.")]
     public async Task<IActionResult> AddToList(AddItemToCustomListCommand command, string? returnUrl, CancellationToken ct)
     {
+        var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
         var cmd = command with { UserId = _currentUser.Id };
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
         {
-            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Failed to add title to playlist.";
+            var msg = validation.Message ?? validation.Error ?? "Failed to add title to playlist.";
+            TempData["ErrorMessage"] = msg;
+            if (isAjax) return Json(new { success = false, message = msg });
             return RedirectBack(returnUrl, nameof(ListDetails), new { id = command.ListId });
         }
 
         var result = await _commands.AddItemToCustomListAsync(cmd, ct);
         if (result.IsSuccess)
         {
-            TempData["SuccessMessage"] = $"Added \"{cmd.Title}\" to playlist.";
+            var msg = $"Added \"{cmd.Title}\" to playlist.";
+            TempData["SuccessMessage"] = msg;
+            if (isAjax) return Json(new { success = true, message = msg });
         }
         else
         {
-            TempData["ErrorMessage"] = result.Message ?? result.Error ?? "Failed to add title to playlist.";
+            var msg = result.Message ?? result.Error ?? "Failed to add title to playlist.";
+            TempData["ErrorMessage"] = msg;
+            if (isAjax) return Json(new { success = false, message = msg });
         }
 
         return RedirectBack(returnUrl, nameof(ListDetails), new { id = command.ListId });
+    }
+
+    [HttpGet]
+    [DisplayName("User Playlists")]
+    [Description("Get user custom playlists as JSON for quick addition.")]
+    public async Task<IActionResult> UserLists(CancellationToken ct)
+    {
+        var result = await _queries.GetCustomListsAsync(new GetCustomListsQuery(_currentUser.Id), ct);
+        if (result.IsSuccess && result.Value != null)
+        {
+            var lists = result.Value.Select(l => new { id = l.Id, title = l.Title, count = l.Items != null ? l.Items.Count : 0 });
+            return Json(lists);
+        }
+        return Json(Array.Empty<object>());
+    }
+
+    [HttpGet]
+    [Route("Media/ShowSeasonsJson")]
+    [DisplayName("Show Seasons JSON")]
+    [Description("Get TV show or anime seasons and episode counts.")]
+    public async Task<IActionResult> ShowSeasonsJson(int id, MediaType type = MediaType.TvSeries, CancellationToken ct = default)
+    {
+        var result = await _queries.GetMediaDetailsAsync(new GetMediaDetailsQuery(id, type, _currentUser.Id), ct);
+        if (result.IsSuccess && result.Value != null)
+        {
+            var seasons = (result.Value.Seasons ?? new List<TvSeasonSummaryDto>())
+                .Where(s => s.SeasonNumber > 0)
+                .Select(s => new {
+                    seasonNumber = s.SeasonNumber,
+                    name = s.Name,
+                    episodeCount = s.EpisodeCount,
+                    overview = s.Overview,
+                    airDate = s.AirDate?.ToString("yyyy-MM-dd")
+                });
+            return Json(new {
+                success = true,
+                title = result.Value.Title,
+                seasons
+            });
+        }
+        return Json(new { success = false, message = "Could not load show seasons." });
     }
 
     [HttpPost]

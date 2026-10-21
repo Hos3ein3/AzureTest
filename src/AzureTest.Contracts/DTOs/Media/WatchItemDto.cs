@@ -28,7 +28,8 @@ public record WatchItemDto(
     DateTime? LastWatchedAt,
     List<string> Genres,
     string NextEpisodeLabel,
-    int EstimatedWatchedMinutes
+    int EstimatedWatchedMinutes,
+    int RewatchCount = 0
 );
 
 public record SaveWatchProgressDto(

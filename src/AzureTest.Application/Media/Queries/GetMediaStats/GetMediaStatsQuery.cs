@@ -70,9 +70,11 @@ public sealed class GetMediaStatsQueryHandler : IQueryHandler<GetMediaStatsQuery
                 var itemMinutes = item.GetEstimatedWatchedMinutes();
                 totalWatchedMinutes += itemMinutes;
 
-                var episodesWatched = (item.Status == WatchStatus.Completed && item.TotalEpisodes > 0)
-                    ? Math.Max(item.CurrentEpisode, item.TotalEpisodes)
-                    : item.CurrentEpisode;
+                var fullRunEpisodes = item.TotalEpisodes > 0 ? item.TotalEpisodes : item.CurrentEpisode;
+                var episodesWatched = (fullRunEpisodes * item.RewatchCount) +
+                    ((item.Status == WatchStatus.Completed && item.TotalEpisodes > 0)
+                        ? Math.Max(item.CurrentEpisode, item.TotalEpisodes)
+                        : item.CurrentEpisode);
 
                 if (item.Type == MediaType.Movie)
                 {

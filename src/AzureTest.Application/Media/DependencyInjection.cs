@@ -14,6 +14,7 @@ using AzureTest.Application.Media.Commands.RemoveItemFromCustomList;
 using AzureTest.Application.Media.Commands.UnfollowPerson;
 using AzureTest.Application.Media.Commands.UpdateFollowedPersonNotes;
 using AzureTest.Application.Media.Commands.UpdateWatchProgress;
+using AzureTest.Application.Media.Commands.RewatchItem;
 using AzureTest.Application.Media.Queries.ExportMediaData;
 using AzureTest.Application.Media.Queries.GetCustomListById;
 using AzureTest.Application.Media.Queries.GetCustomLists;
@@ -45,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<ChangeWatchStatusCommand, Result>, ChangeWatchStatusCommandHandler>();
         services.AddScoped<ICommandHandler<RateWatchItemCommand, Result>, RateWatchItemCommandHandler>();
         services.AddScoped<ICommandHandler<DeleteWatchItemCommand, Result>, DeleteWatchItemCommandHandler>();
+        services.AddScoped<ICommandHandler<RewatchItemCommand, Result>, RewatchItemCommandHandler>();
         services.AddScoped<ICommandHandler<FollowPersonCommand, Result<Guid>>, FollowPersonCommandHandler>();
         services.AddScoped<ICommandHandler<UnfollowPersonCommand, Result>, UnfollowPersonCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateFollowedPersonNotesCommand, Result>, UpdateFollowedPersonNotesCommandHandler>();
@@ -60,6 +62,7 @@ public static class DependencyInjection
         services.AddScoped<IValidator<ChangeWatchStatusCommand>, ChangeWatchStatusCommandValidator>();
         services.AddScoped<IValidator<RateWatchItemCommand>, RateWatchItemCommandValidator>();
         services.AddScoped<IValidator<DeleteWatchItemCommand>, DeleteWatchItemCommandValidator>();
+        services.AddScoped<IValidator<RewatchItemCommand>, RewatchItemCommandValidator>();
         services.AddScoped<IValidator<FollowPersonCommand>, FollowPersonCommandValidator>();
         services.AddScoped<IValidator<UnfollowPersonCommand>, UnfollowPersonCommandValidator>();
         services.AddScoped<IValidator<UpdateFollowedPersonNotesCommand>, UpdateFollowedPersonNotesCommandValidator>();

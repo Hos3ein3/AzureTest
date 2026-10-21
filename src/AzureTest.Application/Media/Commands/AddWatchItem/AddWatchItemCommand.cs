@@ -107,9 +107,11 @@ public sealed class AddWatchItemCommandHandler : ICommandHandler<AddWatchItemCom
             {
                 existing.ChangeStatus(cmd.Status);
             }
-            if (cmd.Status != WatchStatus.PlanToWatch || cmd.CurrentSeason > 1 || cmd.CurrentEpisode > 0)
+            var effectiveTotalSeasons = cmd.TotalSeasons > 1 ? cmd.TotalSeasons : existing.TotalSeasons;
+            var effectiveTotalEpisodes = cmd.TotalEpisodes > 1 ? cmd.TotalEpisodes : existing.TotalEpisodes;
+            if (cmd.Status != WatchStatus.PlanToWatch || cmd.CurrentSeason > 1 || cmd.CurrentEpisode >= 0)
             {
-                existing.UpdateProgress(cmd.CurrentSeason, cmd.CurrentEpisode, cmd.TotalSeasons, cmd.TotalEpisodes);
+                existing.UpdateProgress(cmd.CurrentSeason, cmd.CurrentEpisode, effectiveTotalSeasons, effectiveTotalEpisodes);
             }
             if (cmd.WatchedDate.HasValue || cmd.UserRating.HasValue || !string.IsNullOrWhiteSpace(cmd.UserReview))
             {

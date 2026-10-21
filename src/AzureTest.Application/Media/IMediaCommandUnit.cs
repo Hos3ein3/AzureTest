@@ -15,6 +15,7 @@ using AzureTest.Application.Media.Commands.RemoveItemFromCustomList;
 using AzureTest.Application.Media.Commands.UnfollowPerson;
 using AzureTest.Application.Media.Commands.UpdateFollowedPersonNotes;
 using AzureTest.Application.Media.Commands.UpdateWatchProgress;
+using AzureTest.Application.Media.Commands.RewatchItem;
 using AzureTest.Contracts.DTOs.Media;
 
 namespace AzureTest.Application.Media;
@@ -26,6 +27,7 @@ public interface IMediaCommandUnit
     Task<Result> ChangeWatchStatusAsync(ChangeWatchStatusCommand command, CancellationToken ct = default);
     Task<Result> RateWatchItemAsync(RateWatchItemCommand command, CancellationToken ct = default);
     Task<Result> DeleteWatchItemAsync(DeleteWatchItemCommand command, CancellationToken ct = default);
+    Task<Result> RewatchItemAsync(RewatchItemCommand command, CancellationToken ct = default);
     Task<Result<Guid>> FollowPersonAsync(FollowPersonCommand command, CancellationToken ct = default);
     Task<Result> UnfollowPersonAsync(UnfollowPersonCommand command, CancellationToken ct = default);
     Task<Result> UpdateFollowedPersonNotesAsync(UpdateFollowedPersonNotesCommand command, CancellationToken ct = default);

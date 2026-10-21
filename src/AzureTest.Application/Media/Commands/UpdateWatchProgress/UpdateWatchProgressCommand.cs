@@ -51,7 +51,9 @@ public sealed class UpdateWatchProgressCommandHandler : ICommandHandler<UpdateWa
             return Result.Failure("Not authorized to update this watch item.");
         }
 
-        item.UpdateProgress(cmd.Season, cmd.Episode, cmd.TotalSeasons, cmd.TotalEpisodes);
+        var effectiveTotalSeasons = (cmd.TotalSeasons.HasValue && cmd.TotalSeasons.Value > 1) ? cmd.TotalSeasons.Value : item.TotalSeasons;
+        var effectiveTotalEpisodes = (cmd.TotalEpisodes.HasValue && cmd.TotalEpisodes.Value > 1) ? cmd.TotalEpisodes.Value : item.TotalEpisodes;
+        item.UpdateProgress(cmd.Season, cmd.Episode, effectiveTotalSeasons, effectiveTotalEpisodes);
         await _uow.WatchItems.UpdateAsync(item.Id, item, ct);
         return Result.Success();
     }
