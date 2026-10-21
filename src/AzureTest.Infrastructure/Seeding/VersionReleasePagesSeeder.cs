@@ -22,9 +22,18 @@ public static class VersionReleasePagesSeeder
             bool anyAdded = false;
             foreach (var page in releasePages)
             {
-                if (!existingPages.Any(p => p.Slug.Equals(page.Slug, StringComparison.OrdinalIgnoreCase)))
+                var existing = existingPages.FirstOrDefault(p => p.Slug.Equals(page.Slug, StringComparison.OrdinalIgnoreCase));
+                if (existing == null)
                 {
                     await noSqlUnitOfWork.Pages.AddAsync(page);
+                    anyAdded = true;
+                }
+                else if (existing.Content != page.Content || existing.Title != page.Title)
+                {
+                    existing.Title = page.Title;
+                    existing.Content = page.Content;
+                    existing.Status = page.Status;
+                    await noSqlUnitOfWork.Pages.UpdateAsync(existing.Id, existing);
                     anyAdded = true;
                 }
             }
@@ -32,7 +41,7 @@ public static class VersionReleasePagesSeeder
             if (anyAdded)
             {
                 await noSqlUnitOfWork.SaveChangesAsync();
-                logger.LogInformation("Version release documentation pages (v1.0 to v2.3) seeded successfully.");
+                logger.LogInformation("Documentation pages seeded and synchronized successfully.");
             }
         }
         catch (Exception ex)
@@ -785,6 +794,386 @@ public static class VersionReleasePagesSeeder
                         <li><strong>Custom Playlists:</strong> Curate custom collections (e.g., "Friday Night Movies", "Anime Marathon") at <a href="/Media/Lists" class="text-amber-600 font-semibold hover:underline">/Media/Lists</a>.</li>
                         <li><strong>Watch Statistics:</strong> Visual breakdown of hours watched, top genres, favorite actors, and rating score distribution at <a href="/Media/Stats" class="text-amber-600 font-semibold hover:underline">/Media/Stats</a>.</li>
                         <li><strong>Data Portability:</strong> 1-click JSON export and import for seamless personal data backups.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                """
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "User Guide: Media & Anime Tracking System",
+                Slug = "how-to-use-media-and-anime",
+                Status = PageStatus.Published,
+                CreatedAt = new DateTime(2026, 10, 21, 10, 0, 0, DateTimeKind.Utc),
+                Content = """
+                <div class="py-6 px-4 max-w-4xl mx-auto font-sans leading-relaxed text-slate-800">
+                  <div class="border-b border-slate-200 pb-6 mb-8">
+                    <div class="flex items-center gap-2 mb-3">
+                      <span class="px-3 py-1 bg-purple-50 text-purple-700 font-bold text-xs rounded-full border border-purple-200">System Guide</span>
+                      <span class="text-xs text-slate-500"><i class="fa-regular fa-clock mr-1"></i> 8 min read</span>
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">How to Use the Media &amp; Anime Tracking System</h1>
+                    <p class="text-base text-slate-600 mt-2">A complete guide to searching titles, tracking TV and anime episodes with accordions, following actors and directors, managing custom playlists, and viewing watch analytics.</p>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Search &amp; Discovery</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-magnifying-glass text-purple-600 mr-2"></i>Multi-Entity Search</div>
+                      <p class="text-2xs text-slate-500 mt-1">Search movies, series, anime, and people.</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Episode Progress</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-layer-group text-brand-600 mr-2"></i>Accordion Seasons</div>
+                      <p class="text-2xs text-slate-500 mt-1">Track series, whole seasons, or single episodes.</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Filmography Sync</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-user-check text-emerald-600 mr-2"></i>Follow Creators</div>
+                      <p class="text-2xs text-slate-500 mt-1">Track career filmographies and upcoming premieres.</p>
+                    </div>
+                  </div>
+
+                  <div class="space-y-8 text-sm">
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-magnifying-glass text-purple-600"></i> 1. Searching &amp; Finding Titles
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Navigate to <a href="/Media/Search" class="text-purple-600 font-semibold hover:underline">/Media/Search</a> to search across movies, series, anime, and people simultaneously.
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Entity Filtering:</strong> Switch between <em>All</em>, <em>Movies</em>, <em>TV Series</em>, <em>Anime</em>, and <em>People</em> pill tabs.</li>
+                        <li><strong>Friendly URLs:</strong> Title detail pages support clean slug-based links, e.g. <code>/Media/Details/1429/attack-on-titan?type=Anime</code> or <code>/Media/Details/125988/silo?type=TvSeries</code>.</li>
+                        <li><strong>Discover Hub:</strong> Visit <a href="/Media/Discover" class="text-purple-600 font-semibold hover:underline">/Media/Discover</a> to see Trending Today, Top-Rated Classics, and Upcoming Releases.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-brand-600"></i> 2. Managing Watch Statuses
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Every title on <a href="/Media" class="text-purple-600 font-semibold hover:underline">/Media</a> can be assigned one of four distinct status states:
+                      </p>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                          <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-600 text-white">Want to Watch</span>
+                          <p class="text-xs text-slate-600 mt-2">Wishlist for titles you plan to watch later. Shows upcoming premiere badges on your calendar.</p>
+                        </div>
+                        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                          <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-600 text-white">Currently Watching</span>
+                          <p class="text-xs text-slate-600 mt-2">Active shows and anime. Prominently displays your next episode to watch with 1-click increment.</p>
+                        </div>
+                        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                          <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white">Finished (Completed)</span>
+                          <p class="text-xs text-slate-600 mt-2">Completed titles. Counts towards your total time spent and genre distribution analytics.</p>
+                        </div>
+                        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                          <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-600 text-white">Stopped (Dropped)</span>
+                          <p class="text-xs text-slate-600 mt-2">Titles you discontinued. Keeps your history intact without cluttering currently watching queues.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-purple-600"></i> 3. Tracking Seasons &amp; Episodes with Accordions
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        On any TV show or anime page, seasons and episodes are organized into an interactive accordion structure:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-2 text-slate-600">
+                        <li><strong>Mark Entire Series / Anime Watched:</strong> Use the green button in the section header to mark all seasons and episodes finished at once.</li>
+                        <li><strong>Mark Season Watched:</strong> Each season accordion header features a direct <em>Mark Season Watched</em> button. Clicking it updates progress to the end of that season without needing to check episodes one by one.</li>
+                        <li><strong>Mark Single Episode:</strong> Expand any season accordion to reveal episode thumbnails, official episode names, air dates, and individual <em>Mark Watched</em> buttons.</li>
+                        <li><strong>Next Episode Guide:</strong> When a show is marked as <em>Currently Watching</em>, the hero banner automatically highlights your next episode (e.g. <code>Next: S02E05</code>).</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-star text-amber-500"></i> 4. Ratings, Reviews &amp; Watched Dates
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Click the <em>Rate &amp; Date</em> button on any title card to open the assessment modal:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Score:</strong> Rate from 1 to 10 stars with visual highlighting.</li>
+                        <li><strong>Review:</strong> Write personal notes or critical reviews that display prominently on your title card.</li>
+                        <li><strong>Watched Date Presets:</strong> Quickly pick dates using presets like <em>Today</em>, <em>1 Year Ago</em>, or <em>3 Years Ago</em>.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-tv text-sky-600"></i> 5. Streaming Providers &amp; Followed Creators
+                      </h3>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Where to Watch:</strong> Real-time streaming availability cards indicate where a title can be streamed (Netflix, Apple TV+, Prime Video, Disney+) or rented.</li>
+                        <li><strong>Follow People:</strong> Click <em>Follow</em> on any actor or director at <a href="/Media/People" class="text-purple-600 font-semibold hover:underline">/Media/People</a>. The button acts as an instant toggle.</li>
+                        <li><strong>Filmography Tracker:</strong> Open a creator profile to view how many titles in their entire filmography you have watched (e.g. 8 of 22 watched).</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-emerald-600"></i> 6. Calendar, Playlists &amp; Analytics
+                      </h3>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Release Calendar:</strong> View scheduled movie premieres and TV season returns at <a href="/Media/Calendar" class="text-purple-600 font-semibold hover:underline">/Media/Calendar</a>.</li>
+                        <li><strong>Custom Playlists:</strong> Create custom collections at <a href="/Media/Lists" class="text-purple-600 font-semibold hover:underline">/Media/Lists</a> (e.g. "Weekend Anime", "Sci-Fi Favorites").</li>
+                        <li><strong>Watch Statistics:</strong> Inspect total hours spent, anime vs TV vs movie breakdowns, and rating distribution at <a href="/Media/Stats" class="text-purple-600 font-semibold hover:underline">/Media/Stats</a>.</li>
+                        <li><strong>Backup &amp; Restore:</strong> Export your full watch history as a JSON backup or import from a file at any time.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                """
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "User Guide: Food, Nutrition & Meal Planning System",
+                Slug = "how-to-use-food-and-nutrition",
+                Status = PageStatus.Published,
+                CreatedAt = new DateTime(2026, 10, 21, 10, 0, 0, DateTimeKind.Utc),
+                Content = """
+                <div class="py-6 px-4 max-w-4xl mx-auto font-sans leading-relaxed text-slate-800">
+                  <div class="border-b border-slate-200 pb-6 mb-8">
+                    <div class="flex items-center gap-2 mb-3">
+                      <span class="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-full border border-emerald-200">System Guide</span>
+                      <span class="text-xs text-slate-500"><i class="fa-regular fa-clock mr-1"></i> 7 min read</span>
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">How to Use the Food &amp; Nutrition System</h1>
+                    <p class="text-base text-slate-600 mt-2">A complete guide to managing recipes, scheduling weekly meals, tracking daily calories and macronutrients, automatic pantry inventory decrements, and real-time shopping lists.</p>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Recipes &amp; Macros</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-utensils text-emerald-600 mr-2"></i>Recipe Management</div>
+                      <p class="text-2xs text-slate-500 mt-1">Full ingredient breakdown with automated macronutrient calculation.</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Pantry Ledger</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-boxes-stacked text-brand-600 mr-2"></i>Auto-Decrement</div>
+                      <p class="text-2xs text-slate-500 mt-1">Ingredients auto-deduct from stock when meals are logged.</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Collaboration</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-cart-shopping text-sky-600 mr-2"></i>Real-Time List</div>
+                      <p class="text-2xs text-slate-500 mt-1">SignalR synchronized shopping cart for family members.</p>
+                    </div>
+                  </div>
+
+                  <div class="space-y-8 text-sm">
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-book-bookmark text-emerald-600"></i> 1. Managing Recipes &amp; Ingredients
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Navigate to <a href="/Food" class="text-emerald-600 font-semibold hover:underline">/Food</a> to create and browse your culinary recipe collection.
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Ingredient Quantities:</strong> Define each ingredient with its unit (grams, ml, pieces) and exact measurement per portion.</li>
+                        <li><strong>Macronutrient Profiles:</strong> Specify Calories, Protein (g), Carbohydrates (g), and Fat (g) per serving. The system automatically tallies total nutrition.</li>
+                        <li><strong>Tags &amp; Timers:</strong> Add preparation time, cooking time, and dietary tags (e.g. High-Protein, Low-Carb, Vegan, Quick Prep).</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-week text-brand-600"></i> 2. Weekly Meal Planning
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Use the interactive meal planner to organize your weekly eating schedule:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Meal Slots:</strong> Plan meals across four daily slots: Breakfast, Lunch, Dinner, and Snacks for all 7 days of the week.</li>
+                        <li><strong>Macro Targets:</strong> As you assign recipes to days, a top summary bar computes your scheduled daily calories and macronutrient breakdown compared against your daily nutrition goals.</li>
+                        <li><strong>Drag &amp; Reorder:</strong> Easily swap meals between days or clear slots as plans change.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-check text-purple-600"></i> 3. Meal Logging &amp; Real-Time Macro Intake
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Log what you actually consumed during the day:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Quick Logging:</strong> Choose from planned meals or pick any recipe from your collection.</li>
+                        <li><strong>Portion Scaling:</strong> Adjust the portion multiplier (e.g. 1.5 servings) to accurately capture intake.</li>
+                        <li><strong>Daily Progress Rings:</strong> Track consumed calories and macros against your personalized daily targets in real time.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-boxes-stacked text-amber-600"></i> 4. Automatic Pantry Stock Decrement
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        The system bridges your food logs with your kitchen inventory through an automated stock reduction ledger:
+                      </p>
+                      <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                        <p class="text-xs text-slate-700"><strong>How it works:</strong></p>
+                        <ol class="list-decimal pl-5 text-xs text-slate-600 space-y-1">
+                          <li>When you log a meal that was prepared at home, the system looks up all ingredients in the recipe.</li>
+                          <li>For each ingredient linked to your inventory, a stock decrement ledger movement is recorded automatically.</li>
+                          <li>Your available pantry quantities update instantly without manual deduction.</li>
+                        </ol>
+                      </div>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-warehouse text-blue-600"></i> 5. Pantry &amp; Inventory Management
+                      </h3>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Storage Zones:</strong> Categorize items by location (Refrigerator, Freezer, Dry Pantry, Spice Rack).</li>
+                        <li><strong>Minimum Stock Alerts:</strong> Set low-stock threshold alerts so you are notified before essential staples run out.</li>
+                        <li><strong>Expiration Tracking:</strong> Monitor expiration dates to minimize food waste and optimize recipe scheduling.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-cart-shopping text-emerald-600"></i> 6. Smart Shopping List &amp; SignalR Real-Time Collaboration
+                      </h3>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Auto-Generate from Meal Plan:</strong> Generate your grocery list in 1 click. The system compares meal plan requirements against current pantry inventory and only adds missing items.</li>
+                        <li><strong>Real-Time SignalR Synchronization:</strong> When shopping at the supermarket, any item checked off or added broadcasts instantly to all family or household members without refreshing the page.</li>
+                        <li><strong>Aisle Organization:</strong> Items are automatically grouped into supermarket aisles (Produce, Dairy, Meat &amp; Seafood, Bakery, Pantry).</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                """
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                Title = "User Guide: Gym Courses, Workouts & Fitness Analytics",
+                Slug = "how-to-use-gym-and-workouts",
+                Status = PageStatus.Published,
+                CreatedAt = new DateTime(2026, 10, 21, 10, 0, 0, DateTimeKind.Utc),
+                Content = """
+                <div class="py-6 px-4 max-w-4xl mx-auto font-sans leading-relaxed text-slate-800">
+                  <div class="border-b border-slate-200 pb-6 mb-8">
+                    <div class="flex items-center gap-2 mb-3">
+                      <span class="px-3 py-1 bg-blue-50 text-blue-700 font-bold text-xs rounded-full border border-blue-200">System Guide</span>
+                      <span class="text-xs text-slate-500"><i class="fa-regular fa-clock mr-1"></i> 8 min read</span>
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">How to Use Gym Courses, Training &amp; Workout Analytics</h1>
+                    <p class="text-base text-slate-600 mt-2">A complete guide to enrolling in gym courses, logging active workouts with sets and rest timers, reviewing personal records (PRs), tracking weight and body composition, and mobile PWA usage.</p>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Courses &amp; Classes</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-graduation-cap text-blue-600 mr-2"></i>Gym Courses</div>
+                      <p class="text-2xs text-slate-500 mt-1">Structured courses with schedules, coaches, and enrollments.</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Workout Logging</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-dumbbell text-purple-600 mr-2"></i>Active Workouts</div>
+                      <p class="text-2xs text-slate-500 mt-1">Track sets, reps, weight kg, RPE, rest timers, and PRs.</p>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div class="text-xs font-bold text-slate-500 uppercase">Body Composition</div>
+                      <div class="text-base font-bold text-slate-900 mt-1"><i class="fa-solid fa-weight-scale text-emerald-600 mr-2"></i>Weight &amp; BMI</div>
+                      <p class="text-2xs text-slate-500 mt-1">Track muscle %, fat %, bone %, and interactive BMI simulator.</p>
+                    </div>
+                  </div>
+
+                  <div class="space-y-8 text-sm">
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-graduation-cap text-blue-600"></i> 1. Gym Courses &amp; Enrollments
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Navigate to <a href="/GymCourses" class="text-blue-600 font-semibold hover:underline">/GymCourses</a> to browse structured fitness classes:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Course Catalog:</strong> Browse classes across disciplines including HIIT, Powerlifting, Functional Mobility, Yoga, and Core Strength.</li>
+                        <li><strong>Class Details:</strong> Review instructor profiles, difficulty level (Beginner, Intermediate, Advanced), maximum participant capacity, and required equipment.</li>
+                        <li><strong>Enrollment:</strong> Enroll in active cohorts and manage upcoming scheduled class sessions.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-person-running text-brand-600"></i> 2. Exercises &amp; Training Library
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Access the exercise movement catalog at <a href="/GymCourses/Trainings" class="text-blue-600 font-semibold hover:underline">/GymCourses/Trainings</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Muscle Groups:</strong> Filter movements by target muscle anatomy: Chest, Back, Legs, Shoulders, Biceps, Triceps, and Core.</li>
+                        <li><strong>Training Categories:</strong> Exercises are grouped into Strength, Hypertrophy, Endurance, Cardio, and Mobility.</li>
+                        <li><strong>Calorie Formulas:</strong> Each exercise defines a base calorie burn rate and required gym equipment (Barbell, Dumbbells, Cables, Bodyweight).</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-stopwatch text-purple-600"></i> 3. Active Workout Logging &amp; Rest Timers
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Start a workout session at <a href="/Workout" class="text-blue-600 font-semibold hover:underline">/Workout</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Set Logging:</strong> For each exercise, log completed Sets, Reps, and Resistance Weight in kg.</li>
+                        <li><strong>RPE Scale:</strong> Record Rate of Perceived Exertion (1 to 10) to gauge fatigue and training intensity.</li>
+                        <li><strong>Rest Timers:</strong> Built-in 60s, 90s, and 120s countdown timers help maintain optimal pacing between sets.</li>
+                        <li><strong>Personal Records:</strong> The system automatically detects when you exceed previous bests and celebrates new PRs.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> 4. Workout History &amp; Volume Progression
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Review past training logs at <a href="/Workout/History" class="text-blue-600 font-semibold hover:underline">/Workout/History</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Volume Summary:</strong> Tracks total tonnage lifted per workout (Sets &times; Reps &times; Weight).</li>
+                        <li><strong>Exercise Timelines:</strong> View progression over time for key compound lifts (Bench Press, Squat, Deadlift, Overhead Press).</li>
+                        <li><strong>Calorie Burn Estimation:</strong> Summary of estimated calories burned across workout duration.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-emerald-600"></i> 5. Weight Tracking, BMI &amp; Body Composition
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        Track body transformation at <a href="/Workout/Analytics" class="text-blue-600 font-semibold hover:underline">/Workout/Analytics</a>:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>Mobile-Responsive Weight Entry:</strong> Tap <em>Log Weight</em> to open the mobile-optimized modal. Record weight in kg, height in cm, date, and optional notes.</li>
+                        <li><strong>Automatic BMI Calculation:</strong> Computes Body Mass Index instantly and categorizes into WHO standards (Underweight, Normal, Overweight, Obese).</li>
+                        <li><strong>Body Composition:</strong> Track Muscle %, Body Fat %, and Bone % from smart scales or DEXA scans.</li>
+                        <li><strong>Interactive BMI Simulator:</strong> Use the live height and weight slider simulator to calculate what weight is required to hit target BMI ranges.</li>
+                      </ul>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+                      <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-mobile-screen-button text-sky-600"></i> 6. Mobile PWA Installation &amp; Gym Floor Tracking
+                      </h3>
+                      <p class="text-slate-600 leading-relaxed">
+                        TrackerPro is a full Progressive Web App (PWA) designed for quick logging directly on the gym floor:
+                      </p>
+                      <ul class="list-disc pl-5 space-y-1.5 text-slate-600">
+                        <li><strong>iPhone / iPad (iOS Safari):</strong> Tap the <em>Share</em> button in Safari &rarr; select <em>Add to Home Screen</em> &rarr; tap <em>Add</em>.</li>
+                        <li><strong>Android (Chrome):</strong> Tap <em>Install Mobile App</em> in the left sidebar or select <em>Install app</em> from Chrome's top right menu.</li>
+                        <li><strong>Standalone Mode:</strong> Runs full screen without browser toolbars for a distraction-free workout logging experience.</li>
                       </ul>
                     </div>
                   </div>
