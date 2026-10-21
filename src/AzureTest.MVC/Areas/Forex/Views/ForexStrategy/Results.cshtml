@@ -99,12 +99,125 @@
 
         <!-- Sharpe Ratio -->
         <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-            <span class="text-2xs font-semibold text-slate-400 uppercase">Sharpe Ratio</span>
+            <span class="text-2xs font-semibold text-slate-400 uppercase">Sharpe / Sortino</span>
             <div class="text-xl font-bold font-mono mt-1 text-slate-800 dark:text-white">
-                @Model.SharpeRatio.ToString("F2")
+                @Model.SharpeRatio.ToString("F2") <span class="text-xs text-slate-400">/ @Model.SortinoRatio.ToString("F2")</span>
             </div>
-            <span class="text-2xs text-slate-400">Risk-adjusted return</span>
+            <span class="text-2xs text-slate-400">Total vs downside risk</span>
         </div>
+    </div>
+
+    <!-- Monte Carlo & Overfitting Diagnostics Ribbon -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 500-Iteration Monte Carlo Simulation -->
+        @if (Model.MonteCarlo != null)
+        {
+            var mc = Model.MonteCarlo;
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-dice text-purple-500"></i> Monte Carlo Simulation (@mc.TotalIterations Runs)
+                        </h2>
+                        <p class="text-xs text-slate-400">Bootstrap resampling of trade returns testing sequence vulnerability and ruin risk</p>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-2xs font-bold @(mc.ProbabilityOfRuinPercent <= 5 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300")">
+                        Ruin Risk: @mc.ProbabilityOfRuinPercent%
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mb-4">
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                        <span class="text-3xs uppercase font-bold text-slate-400 block">Profit Probability</span>
+                        <span class="text-base font-bold font-mono text-emerald-600 block mt-1">@mc.ProbabilityOfProfitPercent%</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                        <span class="text-3xs uppercase font-bold text-slate-400 block">Ruin Probability (&lt;50%)</span>
+                        <span class="text-base font-bold font-mono @(mc.ProbabilityOfRuinPercent > 5 ? "text-rose-600" : "text-slate-800 dark:text-white") block mt-1">@mc.ProbabilityOfRuinPercent%</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                        <span class="text-3xs uppercase font-bold text-slate-400 block">Median Max DD</span>
+                        <span class="text-base font-bold font-mono text-slate-800 dark:text-white block mt-1">@mc.MedianMaxDrawdownPercent%</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                        <span class="text-3xs uppercase font-bold text-slate-400 block">95th % Worst DD</span>
+                        <span class="text-base font-bold font-mono text-rose-600 block mt-1">@mc.WorstCase95thPercentileMaxDrawdownPercent%</span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="text-2xs text-slate-400 uppercase bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
+                            <tr>
+                                <th class="py-2 px-3">Confidence Percentile</th>
+                                <th class="py-2 px-3 text-right">Projected Balance</th>
+                                <th class="py-2 px-3 text-right">Projected Max DD</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700 font-mono">
+                            @foreach (var band in mc.ConfidenceBands)
+                            {
+                                <tr>
+                                    <td class="py-2 px-3 font-sans">
+                                        @(band.Percentile == 50 ? "50th Percentile (Expected Median)" : $"{band.Percentile}th Percentile")
+                                    </td>
+                                    <td class="py-2 px-3 text-right font-bold @(band.ProjectedFinalBalance >= Model.InitialBalance ? "text-emerald-600" : "text-rose-600")">
+                                        $@band.ProjectedFinalBalance.ToString("N2")
+                                    </td>
+                                    <td class="py-2 px-3 text-right text-rose-600">
+                                        @band.ProjectedMaxDrawdownPercent%
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <!-- Overfitting Diagnostics (Bailey & Lopez de Prado DSR / PBO) -->
+        @if (Model.Overfitting != null)
+        {
+            var ov = Model.Overfitting;
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-microscope text-brand-500"></i> Statistical Overfitting Diagnostics (PBO / DSR)
+                            </h2>
+                            <p class="text-xs text-slate-400">Bailey & Lopez de Prado Deflated Sharpe Ratio correcting for selection bias</p>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full text-2xs font-bold @(ov.IsLikelyOverfitted ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300")">
+                            @(ov.IsLikelyOverfitted ? "HIGH OVERFITTING RISK" : "STATISTICALLY SOUND")
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 text-center mb-4 font-mono">
+                        <div class="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <span class="text-3xs uppercase font-sans font-bold text-slate-400 block">Deflated Sharpe (DSR)</span>
+                            <span class="text-base font-bold block mt-1 text-slate-800 dark:text-white">@ov.DeflatedSharpeRatio</span>
+                        </div>
+                        <div class="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <span class="text-3xs uppercase font-sans font-bold text-slate-400 block">Probability Overfitted</span>
+                            <span class="text-base font-bold block mt-1 @(ov.ProbabilityOfBacktestOverfittingPercent > 40 ? "text-rose-600" : "text-emerald-600")">@ov.ProbabilityOfBacktestOverfittingPercent%</span>
+                        </div>
+                        <div class="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <span class="text-3xs uppercase font-sans font-bold text-slate-400 block">Min Track Days (95%)</span>
+                            <span class="text-base font-bold block mt-1 text-indigo-600">@ov.MinTrackRecordLengthDays d</span>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-xl @(ov.IsLikelyOverfitted ? "bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-300" : "bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300") text-xs">
+                        <strong>Evaluation Verdict:</strong> @ov.StatusMessage
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 text-2xs text-slate-400">
+                    Deflated Sharpe Ratio (DSR) adjusts observed Sharpe downward based on number of trial configurations, non-normal returns, and sample period length.
+                </div>
+            </div>
+        }
     </div>
 
     <!-- Walk-Forward Testing Diagnostics (If enabled) -->

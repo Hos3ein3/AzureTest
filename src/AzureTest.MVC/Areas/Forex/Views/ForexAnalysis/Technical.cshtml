@@ -269,4 +269,261 @@
             </div>
         </div>
     </div>
+
+    <!-- Smart Money Concepts (SMC) & Institutional Market Structure -->
+    @if (t.MarketStructure != null)
+    {
+        var ms = t.MarketStructure;
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-shapes text-indigo-500"></i> Smart Money Concepts (SMC) & Market Structure
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Order blocks, Break of Structure (BOS), Change of Character (CHoCH), and liquidity sweep levels</p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-xs font-bold @(ms.CurrentStructure.Contains("Bullish") ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : ms.CurrentStructure.Contains("Bearish") ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300")">
+                    @ms.CurrentStructure
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                <!-- BOS & CHoCH -->
+                <div class="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <span class="text-2xs font-bold uppercase text-slate-400">Structural Break (BOS / CHoCH)</span>
+                    <div class="mt-2 space-y-1.5 font-mono">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Last BOS (@ms.BosDirection):</span>
+                            <span class="font-bold text-slate-800 dark:text-white">@ms.LastBosPrice.ToString("F5")</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Last CHoCH:</span>
+                            <span class="font-semibold text-slate-700 dark:text-slate-300">@ms.LastChochPrice.ToString("F5")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Block: Demand -->
+                <div class="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/20">
+                    <span class="text-2xs font-bold uppercase text-emerald-600 dark:text-emerald-400">Institutional Demand Zone (OB)</span>
+                    <div class="mt-2 space-y-1.5 font-mono">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">OB Low:</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400">@ms.OrderBlockDemandLow.ToString("F5")</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">OB High:</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400">@ms.OrderBlockDemandHigh.ToString("F5")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Block: Supply -->
+                <div class="p-4 bg-rose-500/5 rounded-xl border border-rose-500/20">
+                    <span class="text-2xs font-bold uppercase text-rose-600 dark:text-rose-400">Institutional Supply Zone (OB)</span>
+                    <div class="mt-2 space-y-1.5 font-mono">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">OB Low:</span>
+                            <span class="font-bold text-rose-600 dark:text-rose-400">@ms.OrderBlockSupplyLow.ToString("F5")</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">OB High:</span>
+                            <span class="font-bold text-rose-600 dark:text-rose-400">@ms.OrderBlockSupplyHigh.ToString("F5")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Liquidity Sweeps -->
+                <div class="p-4 bg-indigo-500/5 rounded-xl border border-indigo-500/20">
+                    <span class="text-2xs font-bold uppercase text-indigo-600 dark:text-indigo-400">Liquidity Sweep Levels</span>
+                    <div class="mt-2 space-y-1.5 font-mono">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Buy-Side Sweep:</span>
+                            <span class="font-bold text-slate-800 dark:text-white">@ms.LiquiditySweepHigh.ToString("F5")</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Sell-Side Sweep:</span>
+                            <span class="font-bold text-slate-800 dark:text-white">@ms.LiquiditySweepLow.ToString("F5")</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Fibonacci Retracements & Session VWAP Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Fibonacci Retracements & Extensions -->
+        @if (t.Fibonacci != null)
+        {
+            var fib = t.Fibonacci;
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-calculator text-amber-500"></i> Fibonacci Retracements & Extensions
+                    </h2>
+                    <span class="text-xs font-mono text-slate-400">High: @fib.SwingHigh.ToString("F5") | Low: @fib.SwingLow.ToString("F5")</span>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 font-mono text-xs">
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                        <span class="text-3xs font-sans text-slate-400 block">23.6% Retracement</span>
+                        <span class="font-bold text-slate-800 dark:text-white">@fib.Retracement236.ToString("F5")</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                        <span class="text-3xs font-sans text-slate-400 block">38.2% Retracement</span>
+                        <span class="font-bold text-slate-800 dark:text-white">@fib.Retracement382.ToString("F5")</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                        <span class="text-3xs font-sans text-slate-400 block">50.0% Equilibrium</span>
+                        <span class="font-bold text-slate-800 dark:text-white">@fib.Retracement500.ToString("F5")</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300">
+                        <span class="text-3xs font-sans font-bold block">61.8% Golden Pocket</span>
+                        <span class="font-bold">@fib.Retracement618.ToString("F5")</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                        <span class="text-3xs font-sans text-slate-400 block">78.6% Deep Pocket</span>
+                        <span class="font-bold text-slate-800 dark:text-white">@fib.Retracement786.ToString("F5")</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                        <span class="text-3xs font-sans text-slate-400 block">127.2% Extension</span>
+                        <span class="font-bold text-slate-800 dark:text-white">@fib.Extension1272.ToString("F5")</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 col-span-2">
+                        <span class="text-3xs font-sans font-bold block">161.8% Target Extension</span>
+                        <span class="font-bold">@fib.Extension1618.ToString("F5")</span>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Session VWAP & Volatility Bands -->
+        @if (t.Vwap != null)
+        {
+            var vw = t.Vwap;
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-water text-cyan-500"></i> Session Volume Weighted Average Price (VWAP)
+                        </h2>
+                        <p class="text-2xs text-slate-400">Institutional benchmark price with 1-Sigma and 2-Sigma standard deviation bands</p>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-2xs font-bold @(Math.Abs(vw.CurrentStdDevFromVwap) > 1.5m ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300")">
+                        @(vw.CurrentStdDevFromVwap > 0 ? "+" : "")@vw.CurrentStdDevFromVwap.ToString("F2") σ
+                    </span>
+                </div>
+
+                <div class="space-y-2 font-mono text-xs">
+                    <div class="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900">
+                        <span class="font-sans text-slate-500">+2 Sigma Upper Band:</span>
+                        <span class="font-bold text-rose-600 dark:text-rose-400">@vw.UpperBand2Sigma.ToString("F5")</span>
+                    </div>
+                    <div class="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900">
+                        <span class="font-sans text-slate-500">+1 Sigma Upper Band:</span>
+                        <span class="font-semibold text-amber-600 dark:text-amber-400">@vw.UpperBand1Sigma.ToString("F5")</span>
+                    </div>
+                    <div class="flex justify-between p-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-800 dark:text-cyan-300">
+                        <span class="font-sans font-bold">Session VWAP Equilibrium:</span>
+                        <span class="font-bold text-sm">@vw.VwapPrice.ToString("F5")</span>
+                    </div>
+                    <div class="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900">
+                        <span class="font-sans text-slate-500">-1 Sigma Lower Band:</span>
+                        <span class="font-semibold text-emerald-600 dark:text-emerald-400">@vw.LowerBand1Sigma.ToString("F5")</span>
+                    </div>
+                    <div class="flex justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-900">
+                        <span class="font-sans text-slate-500">-2 Sigma Lower Band:</span>
+                        <span class="font-bold text-emerald-600 dark:text-emerald-400">@vw.LowerBand2Sigma.ToString("F5")</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Retail Sentiment, ADR Volatility Regime & Options Expiries -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Retail Sentiment (Contrarian) -->
+        @if (t.RetailSentiment != null)
+        {
+            var sent = t.RetailSentiment;
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Retail Sentiment</h3>
+                    <span class="px-2 py-0.5 rounded text-2xs font-bold @(sent.ContrarianBias.Contains("Bullish") ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : sent.ContrarianBias.Contains("Bearish") ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300")">
+                        Contrarian: @sent.ContrarianBias.Split(' ')[0]
+                    </span>
+                </div>
+                <div class="space-y-2 mt-3">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="text-emerald-600">Long @sent.LongPercentage%</span>
+                        <span class="text-rose-600">Short @sent.ShortPercentage%</span>
+                    </div>
+                    <div class="w-full h-3 rounded-full bg-rose-500 overflow-hidden flex">
+                        <div class="h-full bg-emerald-500" style="width: @sent.LongPercentage%"></div>
+                    </div>
+                    <div class="flex justify-between text-2xs text-slate-400 pt-2">
+                        <span>L/S Ratio: @sent.LongShortRatio.ToString("F2")</span>
+                        <span>Sample: @sent.SampleTraderCount.ToString("N0") traders</span>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- ADR & Volatility Regime -->
+        @if (t.Volatility != null)
+        {
+            var vol = t.Volatility;
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">ADR Volatility Regime</h3>
+                    <span class="px-2 py-0.5 rounded text-2xs font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                        @vol.MarketRegime
+                    </span>
+                </div>
+                <div class="space-y-2 mt-3 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">14-Day Average Range:</span>
+                        <span class="font-bold text-slate-800 dark:text-white">@vol.Adr14Pips pips</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Today's Range:</span>
+                        <span class="font-bold text-slate-800 dark:text-white">@vol.TodayRangePips pips</span>
+                    </div>
+                    <div class="flex justify-between font-semibold">
+                        <span class="text-slate-400">% ADR Exhausted:</span>
+                        <span class="@(vol.PercentAdrUsed > 85 ? "text-rose-600" : "text-emerald-600")">@vol.PercentAdrUsed%</span>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Options Expiry & Yield Spread -->
+        @if (t.OptionsExpiry != null)
+        {
+            var opt = t.OptionsExpiry;
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">FX Options 10 AM NY Cut</h3>
+                    <span class="text-2xs font-mono text-slate-400">@opt.ExpiryDateUtc.ToString("HH:mm") UTC</span>
+                </div>
+                <div class="space-y-2 mt-3 text-xs font-mono">
+                    <div class="flex justify-between">
+                        <span class="font-sans text-slate-400">Max Pain Strike:</span>
+                        <span class="font-bold text-slate-800 dark:text-white">@opt.MaxPainStrike.ToString("F4")</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-sans text-slate-400">Open Interest Notional:</span>
+                        <span class="font-bold text-slate-800 dark:text-white">$@opt.TotalOpenInterestNotionalMillions M</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-sans text-slate-400">25-Delta Risk Reversal:</span>
+                        <span class="font-bold @(opt.RiskReversal25Delta >= 0 ? "text-emerald-600" : "text-rose-600")">
+                            @(opt.RiskReversal25Delta >= 0 ? "+" : "")@opt.RiskReversal25Delta.ToString("F2")
+                        </span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 </div>
