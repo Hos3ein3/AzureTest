@@ -223,4 +223,154 @@
             </div>
         </div>
     </div>
+
+    <!-- Central Bank Rate Expectations & Carry Trade Ranking -->
+    @if (f.CentralBankExpectations != null && f.CentralBankExpectations.Count > 0)
+    {
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-scale-balanced text-indigo-500"></i> Central Bank Rate Expectations & Carry Ranking
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Market-implied OIS rate pricing, next meeting cut/hike probability, and 12-month forward rate</p>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left">
+                    <thead class="text-2xs text-slate-400 uppercase bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
+                        <tr>
+                            <th class="py-2.5 px-3">Central Bank</th>
+                            <th class="py-2.5 px-3 text-right">Current Rate</th>
+                            <th class="py-2.5 px-3">Next Decision Date</th>
+                            <th class="py-2.5 px-3 text-right">Priced Cut Prob.</th>
+                            <th class="py-2.5 px-3 text-right">Priced Hike Prob.</th>
+                            <th class="py-2.5 px-3 text-right">12M Implied Rate</th>
+                            <th class="py-2.5 px-3 text-center">Carry Rank</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                        @foreach (var exp in f.CentralBankExpectations)
+                        {
+                            <tr>
+                                <td class="py-2.5 px-3">
+                                    <div class="font-bold text-slate-800 dark:text-white">@exp.CentralBank</div>
+                                    <div class="text-2xs text-slate-400">@exp.Currency</div>
+                                </td>
+                                <td class="py-2.5 px-3 text-right font-mono font-bold text-slate-800 dark:text-white">
+                                    @exp.CurrentRatePercent.ToString("F2")%
+                                </td>
+                                <td class="py-2.5 px-3 font-mono text-slate-600 dark:text-slate-300">
+                                    @exp.NextDecisionDateUtc.ToString("yyyy-MM-dd")
+                                </td>
+                                <td class="py-2.5 px-3 text-right font-mono font-semibold @(exp.PricedRateCutProbabilityPercent > 50 ? "text-rose-600 dark:text-rose-400" : "text-slate-500")">
+                                    @exp.PricedRateCutProbabilityPercent.ToString("F1")%
+                                </td>
+                                <td class="py-2.5 px-3 text-right font-mono font-semibold @(exp.PricedRateHikeProbabilityPercent > 20 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500")">
+                                    @exp.PricedRateHikeProbabilityPercent.ToString("F1")%
+                                </td>
+                                <td class="py-2.5 px-3 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                    @exp.MarketImpliedRate12MPercent.ToString("F2")%
+                                </td>
+                                <td class="py-2.5 px-3 text-center">
+                                    <span class="px-2.5 py-1 rounded-full text-2xs font-bold @(exp.CarryTradeRank <= 3 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400")">
+                                        #@exp.CarryTradeRank
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <!-- Macro Scorecards & Speeches Schedule -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Country Macro Dashboards (CPI, GDP, Unemployment, Trade) -->
+        @if (f.CountryDashboards != null && f.CountryDashboards.Count > 0)
+        {
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                <h2 class="text-base font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-brand-500"></i> Country Macroeconomic Scorecards
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Inflation, GDP growth, and employment indicators steering policy regimes</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="text-2xs text-slate-400 uppercase bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
+                            <tr>
+                                <th class="py-2.5 px-3">Country</th>
+                                <th class="py-2.5 px-3 text-right">CPI</th>
+                                <th class="py-2.5 px-3 text-right">GDP</th>
+                                <th class="py-2.5 px-3 text-right">Unemp.</th>
+                                <th class="py-2.5 px-3 text-right">Trade Bal.</th>
+                                <th class="py-2.5 px-3 text-center">Policy Stance</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                            @foreach (var c in f.CountryDashboards)
+                            {
+                                <tr>
+                                    <td class="py-2.5 px-3">
+                                        <div class="font-bold text-slate-800 dark:text-white">@c.CountryName</div>
+                                        <div class="text-2xs text-slate-400">@c.Currency</div>
+                                    </td>
+                                    <td class="py-2.5 px-3 text-right font-mono font-bold text-slate-800 dark:text-white">
+                                        @c.InflationRatePercent%
+                                    </td>
+                                    <td class="py-2.5 px-3 text-right font-mono font-semibold @(c.GdpGrowthRatePercent >= 1.5m ? "text-emerald-600" : "text-slate-600 dark:text-slate-300")">
+                                        @c.GdpGrowthRatePercent%
+                                    </td>
+                                    <td class="py-2.5 px-3 text-right font-mono text-slate-600 dark:text-slate-300">
+                                        @c.UnemploymentRatePercent%
+                                    </td>
+                                    <td class="py-2.5 px-3 text-right font-mono text-xs @(c.TradeBalanceBillions >= 0 ? "text-emerald-600" : "text-rose-600")">
+                                        @(c.TradeBalanceBillions >= 0 ? "+" : "")$@c.TradeBalanceBillions B
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center">
+                                        <span class="px-2 py-0.5 rounded text-2xs font-semibold @(c.PolicyStance.Contains("Hawkish") ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : c.PolicyStance.Contains("Dovish") ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300" : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300")">
+                                            @c.PolicyStance
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <!-- Central Bank Speeches & Testimony Schedule -->
+        @if (f.UpcomingSpeeches != null && f.UpcomingSpeeches.Count > 0)
+        {
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                <h2 class="text-base font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-microphone-lines text-amber-500"></i> Central Bank Speeches & Testimony
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Scheduled remarks and congressional testimony by central bankers</p>
+                <div class="space-y-3">
+                    @foreach (var s in f.UpcomingSpeeches)
+                    {
+                        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-slate-800 dark:text-white">@s.SpeakerName</span>
+                                    <span class="text-2xs text-slate-400">(@s.CentralBank, @s.Title)</span>
+                                </div>
+                                <span class="px-2 py-0.5 rounded text-2xs font-bold @(s.Impact == ForexImpactLevel.High ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300")">
+                                    @s.Impact.ToString().ToUpper() IMPACT
+                                </span>
+                            </div>
+                            <div class="text-xs font-medium text-slate-700 dark:text-slate-300 mt-1">@s.Topic</div>
+                            <div class="flex items-center justify-between text-2xs text-slate-400 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <span><i class="fa-solid fa-location-dot mr-1"></i>@s.LocationOrEvent</span>
+                                <span class="font-mono"><i class="fa-solid fa-clock mr-1"></i>@s.ScheduledTimeUtc.ToString("MMM dd, HH:mm") UTC</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
 </div>

@@ -167,4 +167,131 @@
             </div>
         </div>
     </div>
+
+    <!-- 24-Hour Volatility Heatmap by UTC Hour -->
+    @if (Model.HourlyVolatility != null && Model.HourlyVolatility.Count > 0)
+    {
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-chart-simple text-indigo-500"></i> 24-Hour Hourly Volatility Heatmap (EUR/USD & Majors)
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Average pip distribution across 24 UTC hours showing session momentum spikes</p>
+                </div>
+                <div class="flex items-center gap-3 text-2xs font-semibold">
+                    <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-slate-200 dark:bg-slate-700"></span> Low (&lt;25p)</span>
+                    <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-blue-300 dark:bg-blue-800"></span> Moderate (25-45p)</span>
+                    <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-amber-400 dark:bg-amber-600"></span> High (45-70p)</span>
+                    <span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-rose-500"></span> Peak (&gt;70p)</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-6 sm:grid-cols-12 lg:grid-cols-24 gap-1.5 pt-2">
+                @foreach (var h in Model.HourlyVolatility)
+                {
+                    var isCurrent = nowUtc.Hour == h.UtcHour;
+                    string bgClass = h.ActivityLevel switch
+                    {
+                        "Peak Volatility" => "bg-rose-500 text-white",
+                        "High" => "bg-amber-400 dark:bg-amber-600 text-slate-900 dark:text-white",
+                        "Moderate" => "bg-blue-300 dark:bg-blue-800 text-slate-800 dark:text-white",
+                        _ => "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                    };
+
+                    <div class="flex flex-col items-center justify-between p-2 rounded-xl text-center border @(isCurrent ? "border-brand-500 ring-2 ring-brand-500/30" : "border-slate-200 dark:border-slate-700") @bgClass">
+                        <span class="text-2xs font-mono font-bold">@h.UtcHour:00</span>
+                        <span class="text-xs font-extrabold my-1">@h.AveragePipsMovement p</span>
+                        <span class="text-3xs uppercase tracking-tighter opacity-80 truncate w-full" title="@h.PrimarySession">@h.PrimarySession.Split(' ')[0]</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Intermarket Context & Broker Execution Spreads -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Intermarket Context Markets (Yields, DXY, Commodities) -->
+        @if (Model.ContextMarkets != null && Model.ContextMarkets.Count > 0)
+        {
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                <h2 class="text-base font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-link text-brand-500"></i> Macro Context Markets
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Sovereign bond yields, DXY Dollar Index, and context assets steering currency flows</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="text-2xs text-slate-400 uppercase bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
+                            <tr>
+                                <th class="py-2.5 px-3">Asset</th>
+                                <th class="py-2.5 px-3">Category</th>
+                                <th class="py-2.5 px-3 text-right">Price / Yield</th>
+                                <th class="py-2.5 px-3 text-right">24h Change</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                            @foreach (var c in Model.ContextMarkets)
+                            {
+                                <tr>
+                                    <td class="py-2.5 px-3">
+                                        <div class="font-bold text-slate-800 dark:text-white">@c.Symbol</div>
+                                        <div class="text-2xs text-slate-400">@c.Name</div>
+                                    </td>
+                                    <td class="py-2.5 px-3">
+                                        <span class="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">@c.Category</span>
+                                    </td>
+                                    <td class="py-2.5 px-3 text-right font-mono font-bold text-slate-800 dark:text-white">
+                                        @c.Price @c.Unit
+                                    </td>
+                                    <td class="py-2.5 px-3 text-right font-mono font-semibold @(c.ChangePercent >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400")">
+                                        @(c.ChangePercent >= 0 ? "+" : "")@c.ChangePercent.ToString("F2")%
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <!-- Broker Spread & Execution Latency Comparison -->
+        @if (Model.BrokerComparisons != null && Model.BrokerComparisons.Count > 0)
+        {
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                <h2 class="text-base font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-server text-emerald-500"></i> Broker Spreads & Execution Comparison
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Comparing typical retail ECN raw spreads, AFM passporting, and execution latency</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="text-2xs text-slate-400 uppercase bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
+                            <tr>
+                                <th class="py-2.5 px-3">Broker</th>
+                                <th class="py-2.5 px-3">Regulation</th>
+                                <th class="py-2.5 px-3 text-right">Typical Spread</th>
+                                <th class="py-2.5 px-3 text-right">Commission</th>
+                                <th class="py-2.5 px-3 text-right">Latency</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                            @foreach (var b in Model.BrokerComparisons)
+                            {
+                                <tr>
+                                    <td class="py-2.5 px-3 font-bold text-slate-800 dark:text-white">@b.BrokerName</td>
+                                    <td class="py-2.5 px-3 text-2xs text-slate-500">@b.Regulation</td>
+                                    <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">@b.TypicalSpreadPips p</td>
+                                    <td class="py-2.5 px-3 text-right font-mono text-slate-700 dark:text-slate-300">
+                                        @(b.CommissionPerLot > 0 ? $"${b.CommissionPerLot:F2}/lot" : "Zero")
+                                    </td>
+                                    <td class="py-2.5 px-3 text-right font-mono font-semibold text-slate-600 dark:text-slate-400">
+                                        @b.AverageExecutionLatencyMs ms
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
 </div>
