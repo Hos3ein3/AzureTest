@@ -1,0 +1,72 @@
+@model IEnumerable<AzureTest.Domain.Documents.ExpenseCategory>
+@{
+    ViewData["Title"] = "Expense Categories";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Expenses", Url = "/Expense/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Categories", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Expense Categories",
+        Subtitle = "Manage categories for grouping and reporting budget expenditures.",
+        Icon = "fa-solid fa-tags",
+        Badge = $"{Model?.Count() ?? 0} Listed",
+        ActionText = "Add New Category",
+        ActionUrl = "/ExpenseCategory/Create",
+        ActionIcon = "fa-solid fa-plus",
+        Breadcrumbs = breadcrumbs
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200/80 uppercase tracking-wider text-2xs">
+                <tr>
+                    <th scope="col" class="px-5 py-3.5">Category Name</th>
+                    <th scope="col" class="px-5 py-3.5 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr class="hover:bg-slate-50/70 transition-colors">
+                            <td class="px-5 py-3.5 whitespace-nowrap">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-xl bg-brand-50 border border-brand-100 text-brand-700 flex items-center justify-center font-bold text-xs shrink-0">
+                                        <i class="fa-solid fa-tag"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-slate-900 text-xs">@item.Name</div>
+                                        <div class="text-3xs text-slate-400 font-mono">@item.Id.ToString().Substring(0, 8)...</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-5 py-3.5 whitespace-nowrap text-right">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="p-2 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors inline-block" title="Edit Category">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="2" class="p-8">
+                            <partial name="UiComponents/_EmptyState" model='new AzureTest.MVC.Models.EmptyStateModel { Title = "No Categories Found", Description = "Create categories like Groceries, Utilities, Housing, or Entertainment.", Icon = "fa-solid fa-folder-open", ActionText = "Add First Category", ActionUrl = "/ExpenseCategory/Create" }' />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

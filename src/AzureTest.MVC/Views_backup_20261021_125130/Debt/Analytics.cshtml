@@ -1,0 +1,427 @@
+@model AzureTest.Contracts.DTOs.Debts.DebtAnalyticsDto
+@{
+    ViewData["Title"] = "Debt Analytics";
+    var users = ViewBag.Users as IReadOnlyList<AzureTest.Contracts.DTOs.Users.UserListDto>;
+    var selectedUserIds = ViewBag.SelectedUserIds as List<Guid> ?? new List<Guid>();
+    bool isAdmin = ViewBag.IsAdmin == true;
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Debts", Url = "/Debt/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Analytics", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Debt & Lending Analytics",
+        Subtitle = "Detailed financial portfolio breakdown, counterparty exposure, status distribution, and recovery trends.",
+        Icon = "fa-solid fa-chart-pie",
+        ActionText = "New Debt",
+        ActionUrl = "/Debt/Create",
+        ActionIcon = "fa-solid fa-plus",
+        Breadcrumbs = breadcrumbs
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+<!-- Filter Bar -->
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 mb-8">
+    <form asp-action="Analytics" method="get" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+        <div class="md:col-span-3">
+            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">From Date</label>
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                    <i class="fa-solid fa-calendar"></i>
+                </div>
+                <input type="date" name="fromDate" value="@ViewBag.FromDate" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+            </div>
+        </div>
+        <div class="md:col-span-3">
+            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">To Date</label>
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                    <i class="fa-solid fa-calendar"></i>
+                </div>
+                <input type="date" name="toDate" value="@ViewBag.ToDate" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+            </div>
+        </div>
+        @if (isAdmin && users != null && users.Any())
+        {
+            <div class="md:col-span-4">
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Filter by Users (Admin)</label>
+                <select name="userIds" multiple class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white h-11">
+                    @foreach (var u in users)
+                    {
+                        var isSel = selectedUserIds.Contains(u.Id);
+                        <!option value="@u.Id" @(isSel ? "selected" : "")>@u.FullName (@u.Email)</!option>
+                    }
+                </select>
+            </div>
+        }
+        <div class="md:col-span-2 flex items-center gap-2">
+            <button type="submit" class="w-full inline-flex justify-center items-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-2xs transition-colors">
+                <i class="fa-solid fa-filter"></i> Apply
+            </button>
+            <a asp-action="Analytics" class="inline-flex justify-center items-center p-2.5 border border-slate-200 rounded-xl text-slate-600 bg-white hover:bg-slate-50 shadow-2xs transition-colors" title="Reset Filters">
+                <i class="fa-solid fa-rotate-left"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- KPI Summary Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-3xs font-bold uppercase tracking-wider text-slate-400">Total Borrowed</span>
+            <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+            </div>
+        </div>
+        <div class="text-xl font-black text-slate-900 font-mono mb-0.5">@Model.TotalBorrowed.ToString("C")</div>
+        <p class="text-3xs text-slate-400">Across @Model.TotalDebtsCount total transactions</p>
+    </div>
+
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-3xs font-bold uppercase tracking-wider text-slate-400">Total Settled</span>
+            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+        </div>
+        <div class="text-xl font-black text-emerald-600 font-mono mb-0.5">@Model.TotalReturned.ToString("C")</div>
+        <p class="text-3xs text-emerald-600 font-semibold">@Model.SettledDebtsCount settled debts</p>
+    </div>
+
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-3xs font-bold uppercase tracking-wider text-slate-400">Outstanding Balance</span>
+            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-hourglass-half"></i>
+            </div>
+        </div>
+        <div class="text-xl font-black text-amber-600 font-mono mb-0.5">@Model.TotalOutstanding.ToString("C")</div>
+        <p class="text-3xs text-slate-400">@Model.PendingDebtsCount pending recovery</p>
+    </div>
+
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-3xs font-bold uppercase tracking-wider text-slate-400">Total Profit</span>
+            <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+            </div>
+        </div>
+        <div class="text-xl font-black text-purple-600 font-mono mb-0.5">@Model.TotalProfit.ToString("C")</div>
+        <p class="text-3xs text-purple-600 font-semibold">Yield / earnings</p>
+    </div>
+
+    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-3xs font-bold uppercase tracking-wider text-slate-400">Overdue Debts</span>
+            <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+        </div>
+        <div class="text-xl font-black text-rose-600 font-mono mb-0.5">@Model.OverdueDebtsAmount.ToString("C")</div>
+        <p class="text-3xs text-rose-600 font-bold">@Model.OverdueDebtsCount overdue items</p>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+    <!-- Top Persons Bar Chart -->
+    <div class="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div class="flex items-center justify-between mb-5">
+            <div>
+                <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Debts by Person</h3>
+                <p class="text-2xs text-slate-400 mt-0.5">Top counterparties sorted by outstanding amount</p>
+            </div>
+            <span class="text-3xs font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full border border-slate-200">Top 10 Persons</span>
+        </div>
+        <div class="h-72">
+            <canvas id="personChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Status Distribution Doughnut -->
+    <div class="lg:col-span-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col justify-between">
+        <div>
+            <div class="mb-4">
+                <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Status Breakdown</h3>
+                <p class="text-2xs text-slate-400 mt-0.5">Ratio of settled vs active vs overdue loans</p>
+            </div>
+            <div class="h-52 relative flex items-center justify-center">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-100 text-center">
+            <div>
+                <span class="text-3xs text-slate-400 block font-bold uppercase">Settled</span>
+                <span class="text-xs font-black text-emerald-600 font-mono">@Model.SettledDebtsCount</span>
+            </div>
+            <div>
+                <span class="text-3xs text-slate-400 block font-bold uppercase">Active</span>
+                <span class="text-xs font-black text-blue-600 font-mono">@(Model.PendingDebtsCount - Model.OverdueDebtsCount)</span>
+            </div>
+            <div>
+                <span class="text-3xs text-slate-400 block font-bold uppercase">Overdue</span>
+                <span class="text-xs font-black text-rose-600 font-mono">@Model.OverdueDebtsCount</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Timeline Chart -->
+@if (Model.MonthlyTrend.Any())
+{
+    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs mb-8">
+        <div class="flex items-center justify-between mb-5">
+            <div>
+                <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Monthly Cash Flow &amp; Return Trends</h3>
+                <p class="text-2xs text-slate-400 mt-0.5">Volume borrowed versus recovered by month</p>
+            </div>
+            <span class="text-3xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Timeline</span>
+        </div>
+        <div class="h-64">
+            <canvas id="monthlyChart"></canvas>
+        </div>
+    </div>
+}
+
+<!-- Detailed Breakdown Grouped By Person -->
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden mb-8">
+    <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <div>
+            <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Counterparty Breakdown</h3>
+            <p class="text-2xs text-slate-400 mt-0.5">Summary grouped by each debtor or creditor</p>
+        </div>
+        <span class="text-3xs font-bold px-2.5 py-1 bg-brand-50 text-brand-700 rounded-full border border-brand-200/80">@Model.PersonBreakdown.Count Counterparties</span>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200/80 uppercase tracking-wider text-2xs">
+                <tr>
+                    <th class="px-5 py-3.5">Person</th>
+                    <th class="px-5 py-3.5 text-right">Total Borrowed</th>
+                    <th class="px-5 py-3.5 text-right">Settled</th>
+                    <th class="px-5 py-3.5 text-right">Outstanding</th>
+                    <th class="px-5 py-3.5 text-right">Profit</th>
+                    <th class="px-5 py-3.5 text-center">Settlement %</th>
+                    <th class="px-5 py-3.5 text-center">Status</th>
+                    <th class="px-5 py-3.5 text-right">Last Activity</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @if (Model.PersonBreakdown.Any())
+                {
+                    foreach (var p in Model.PersonBreakdown)
+                    {
+                        var pct = p.TotalBorrowed > 0 ? (int)Math.Round((double)p.TotalReturned / (double)p.TotalBorrowed * 100) : 0;
+                        <tr class="hover:bg-slate-50/70 transition-colors">
+                            <td class="px-5 py-3.5 font-bold text-slate-900 flex items-center gap-2.5">
+                                <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 font-bold text-2xs flex items-center justify-center shrink-0">
+                                    @(string.IsNullOrWhiteSpace(p.PersonName) ? "?" : p.PersonName.Substring(0, 1).ToUpper())
+                                </div>
+                                <span>@p.PersonName</span>
+                            </td>
+                            <td class="px-5 py-3.5 text-right font-mono text-slate-700">@p.TotalBorrowed.ToString("C")</td>
+                            <td class="px-5 py-3.5 text-right font-mono font-semibold text-emerald-600">@p.TotalReturned.ToString("C")</td>
+                            <td class="px-5 py-3.5 text-right font-mono font-black @(p.TotalOutstanding > 0 ? "text-amber-600" : "text-slate-400")">
+                                @p.TotalOutstanding.ToString("C")
+                            </td>
+                            <td class="px-5 py-3.5 text-right font-mono font-bold text-purple-600">@p.TotalProfit.ToString("C")</td>
+                            <td class="px-5 py-3.5 text-center">
+                                <div class="w-24 mx-auto bg-slate-100 rounded-full h-1.5 overflow-hidden mb-1">
+                                    <div class="bg-emerald-500 h-1.5 rounded-full" style="width: @pct%"></div>
+                                </div>
+                                <span class="text-3xs font-mono font-semibold text-slate-500">@pct%</span>
+                            </td>
+                            <td class="px-5 py-3.5 text-center">
+                                @if (p.OverdueCount > 0)
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-rose-50 text-rose-700 border border-rose-200/80">
+                                        <i class="fa-solid fa-triangle-exclamation text-3xs"></i> @p.OverdueCount Overdue
+                                    </span>
+                                }
+                                else if (p.PendingCount > 0)
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80">
+                                        <i class="fa-solid fa-hourglass-start text-3xs"></i> @p.PendingCount Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                                        <i class="fa-solid fa-check text-3xs"></i> All Settled
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-5 py-3.5 text-right text-3xs font-mono text-slate-400">
+                                @(p.LastBorrowDate?.ToString("MMM dd, yyyy") ?? "-")
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="p-8">
+                            <partial name="UiComponents/_EmptyState" model='new AzureTest.MVC.Models.EmptyStateModel { Title = "No Debt Records", Description = "No counterparty records available to summarize.", Icon = "fa-solid fa-receipt" }' />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Overdue Debts Alert List -->
+@if (Model.OverdueDebts.Any())
+{
+    <div class="bg-rose-50/70 border border-rose-200/80 rounded-2xl p-6 mb-8 shadow-2xs">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center gap-2">
+                <div class="w-6 h-6 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-bell"></i>
+                </div>
+                <span>Attention Required: Overdue Debts (@Model.OverdueDebts.Count)</span>
+            </h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            @foreach (var debt in Model.OverdueDebts)
+            {
+                <div class="bg-white rounded-xl p-4 border border-rose-200/80 shadow-2xs flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-bold text-slate-900 text-xs">@debt.DebtPersonName</span>
+                            <span class="text-xs font-black text-rose-600 font-mono">@debt.Amount.ToString("C")</span>
+                        </div>
+                        <p class="text-2xs text-slate-500 mb-2 truncate">@(string.IsNullOrWhiteSpace(debt.Description) ? "No description" : debt.Description)</p>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-slate-100 text-2xs">
+                        <span class="text-rose-600 font-bold font-mono">
+                            Due: @(debt.PromissedReturnDate?.ToString("MMM dd, yyyy") ?? "-")
+                        </span>
+                        <a asp-action="Details" asp-route-id="@debt.Id" class="text-brand-600 hover:text-brand-700 font-bold text-2xs">View</a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Person Breakdown Chart
+            const personLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PersonBreakdown.Take(10).Select(p => p.PersonName)));
+            const personBorrowed = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PersonBreakdown.Take(10).Select(p => p.TotalBorrowed)));
+            const personOutstanding = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PersonBreakdown.Take(10).Select(p => p.TotalOutstanding)));
+
+            const ctxPerson = document.getElementById('personChart')?.getContext('2d');
+            if (ctxPerson) {
+                new Chart(ctxPerson, {
+                    type: 'bar',
+                    data: {
+                        labels: personLabels,
+                        datasets: [
+                            {
+                                label: 'Outstanding Balance',
+                                data: personOutstanding,
+                                backgroundColor: '#f59e0b',
+                                borderRadius: 6
+                            },
+                            {
+                                label: 'Total Borrowed',
+                                data: personBorrowed,
+                                backgroundColor: '#94a3b8',
+                                borderRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: { position: 'top' }
+                        },
+                        scales: {
+                            x: { grid: { color: '#f1f5f9' } },
+                            y: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+
+            // Status Breakdown Donut
+            const statusLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusDistribution.Select(s => s.Status)));
+            const statusCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusDistribution.Select(s => s.Count)));
+            const ctxStatus = document.getElementById('statusChart')?.getContext('2d');
+            if (ctxStatus && statusCounts.length > 0) {
+                new Chart(ctxStatus, {
+                    type: 'doughnut',
+                    data: {
+                        labels: statusLabels,
+                        datasets: [{
+                            data: statusCounts,
+                            backgroundColor: ['#10b981', '#3b82f6', '#f43f5e'],
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        },
+                        cutout: '65%'
+                    }
+                });
+            }
+
+            // Monthly Trend Chart
+            const monthLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyTrend.Select(m => m.MonthLabel)));
+            const monthBorrowed = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyTrend.Select(m => m.BorrowedAmount)));
+            const monthReturned = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyTrend.Select(m => m.ReturnedAmount)));
+
+            const ctxMonthly = document.getElementById('monthlyChart')?.getContext('2d');
+            if (ctxMonthly && monthLabels.length > 0) {
+                new Chart(ctxMonthly, {
+                    type: 'bar',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [
+                            {
+                                label: 'Borrowed / Lent',
+                                data: monthBorrowed,
+                                backgroundColor: '#3b82f6',
+                                borderRadius: 6
+                            },
+                            {
+                                label: 'Settled / Recovered',
+                                data: monthReturned,
+                                backgroundColor: '#10b981',
+                                borderRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' }
+                        },
+                        scales: {
+                            x: { grid: { display: false } },
+                            y: { grid: { color: '#f1f5f9' } }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}

@@ -1,0 +1,254 @@
+@using AzureTest.Contracts.DTOs.Media
+@using AzureTest.Domain.Media.Enums
+@using AzureTest.MVC.Models
+@model TmdbDiscoverDto
+
+@{
+    ViewData["Title"] = "Discover";
+
+    var headerModel = new PageHeaderModel(
+        Title: "Discover Media",
+        Subtitle: "Explore trending titles, popular releases, upcoming movies, and anime gems.",
+        Icon: "fa-solid fa-compass",
+        Badge: "TMDb Live",
+        ActionText: "Search TMDb",
+        ActionUrl: Url.Action("Search", "Media"),
+        ActionIcon: "fa-solid fa-magnifying-glass"
+    );
+
+
+}
+
+<div class="space-y-8">
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
+
+    <!-- Sub Navigation Pill Bar -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide text-xs font-semibold">
+        <a href="#trending" class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs whitespace-nowrap">
+            <i class="fa-solid fa-fire text-amber-500 mr-1.5"></i> Trending Today
+        </a>
+        <a href="#anime" class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs whitespace-nowrap">
+            <i class="fa-solid fa-dragon text-rose-500 mr-1.5"></i> Anime Highlights
+        </a>
+        <a href="#movies" class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs whitespace-nowrap">
+            <i class="fa-solid fa-film text-blue-500 mr-1.5"></i> Popular Movies
+        </a>
+        <a href="#tv" class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs whitespace-nowrap">
+            <i class="fa-solid fa-tv text-purple-500 mr-1.5"></i> Popular TV Series
+        </a>
+        <a href="#upcoming" class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs whitespace-nowrap">
+            <i class="fa-solid fa-calendar-star text-emerald-500 mr-1.5"></i> Upcoming
+        </a>
+        <a href="#toprated" class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs whitespace-nowrap">
+            <i class="fa-solid fa-star text-amber-400 mr-1.5"></i> Top Rated
+        </a>
+    </div>
+
+    <!-- Section: Trending Today -->
+    <section id="trending" class="space-y-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-fire"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">Trending Today</h2>
+                    <p class="text-xs text-slate-500">The most popular titles across all media right now.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            @foreach (var item in Model.TrendingToday.Take(12))
+            {
+                @await Html.PartialAsync("_DiscoverCard", item)
+            }
+        </div>
+    </section>
+
+    <!-- Section: Anime Highlights -->
+    <section id="anime" class="space-y-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-dragon"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">Anime Highlights</h2>
+                    <p class="text-xs text-slate-500">Top Japanese animated series and movies.</p>
+                </div>
+            </div>
+            <a asp-action="Search" asp-route-q="Anime" class="text-xs font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1">
+                More Anime <i class="fa-solid fa-arrow-right text-2xs"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            @foreach (var item in Model.AnimeHighlights.Take(12))
+            {
+                @await Html.PartialAsync("_DiscoverCard", item)
+            }
+        </div>
+    </section>
+
+    <!-- Section: Popular Movies -->
+    <section id="movies" class="space-y-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-film"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">Popular Movies</h2>
+                    <p class="text-xs text-slate-500">Blockbusters and top trending feature films.</p>
+                </div>
+            </div>
+            <a asp-action="Search" asp-route-searchType="titles" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                Explore Movies <i class="fa-solid fa-arrow-right text-2xs"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            @foreach (var item in Model.PopularMovies.Take(12))
+            {
+                @await Html.PartialAsync("_DiscoverCard", item)
+            }
+        </div>
+    </section>
+
+    <!-- Section: Popular TV Series -->
+    <section id="tv" class="space-y-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-tv"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">Popular TV Series</h2>
+                    <p class="text-xs text-slate-500">Shows everyone is talking about this week.</p>
+                </div>
+            </div>
+            <a asp-action="Search" asp-route-searchType="titles" class="text-xs font-semibold text-purple-600 hover:text-purple-700 flex items-center gap-1">
+                Explore Series <i class="fa-solid fa-arrow-right text-2xs"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            @foreach (var item in Model.PopularTv.Take(12))
+            {
+                @await Html.PartialAsync("_DiscoverCard", item)
+            }
+        </div>
+    </section>
+
+    <!-- Section: Upcoming Titles -->
+    <section id="upcoming" class="space-y-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-calendar-star"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">Coming Soon</h2>
+                    <p class="text-xs text-slate-500">New releases coming to theaters and streaming.</p>
+                </div>
+            </div>
+            <a asp-action="Calendar" class="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+                View Calendar <i class="fa-solid fa-arrow-right text-2xs"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            @foreach (var item in Model.UpcomingMovies.Take(12))
+            {
+                @await Html.PartialAsync("_DiscoverCard", item)
+            }
+        </div>
+    </section>
+
+    <!-- Section: Top Rated -->
+    <section id="toprated" class="space-y-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-star"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">Top Rated Masterpieces</h2>
+                    <p class="text-xs text-slate-500">Highest rated titles of all time.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            @foreach (var item in Model.TopRatedMovies.Take(12))
+            {
+                @await Html.PartialAsync("_DiscoverCard", item)
+            }
+        </div>
+    </section>
+</div>
+
+<!-- Quick Add Modal -->
+<div id="quickAddModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="closeQuickAddModal()"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 space-y-5 border border-slate-100">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
+                        <i class="fa-solid fa-plus text-base"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">Add to Watchlist</h3>
+                        <p id="modalItemTitle" class="text-xs text-slate-500 truncate max-w-[220px]">Title</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeQuickAddModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form asp-action="Add" asp-controller="Media" method="post" class="space-y-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="modalTmdbId" name="TmdbId" value="" />
+                <input type="hidden" id="modalType" name="Type" value="" />
+                <input type="hidden" id="modalTitle" name="Title" value="" />
+                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold text-slate-700">Choose Status</label>
+                    <select name="Status" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                        <option value="@WatchStatus.PlanToWatch" selected>Want to Watch (Wishlist)</option>
+                        <option value="@WatchStatus.Watching">Currently Watching</option>
+                        <option value="@WatchStatus.Completed">Finished</option>
+                        <option value="@WatchStatus.Dropped">Stopped</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeQuickAddModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-2xs">
+                        <i class="fa-solid fa-check mr-1.5 text-2xs"></i> Save to Watchlist
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openQuickAddModal(id, type, title) {
+        document.getElementById('modalTmdbId').value = id;
+        document.getElementById('modalType').value = type;
+        document.getElementById('modalTitle').value = title || '';
+        document.getElementById('modalItemTitle').innerText = title;
+        document.getElementById('quickAddModal').classList.remove('hidden');
+    }
+
+    function closeQuickAddModal() {
+        document.getElementById('quickAddModal').classList.add('hidden');
+    }
+</script>

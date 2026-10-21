@@ -11,8 +11,8 @@ namespace AzureTest.Persistence.Repositories.NoSql;
 
 public class ExpenseCategoryRepository : DocumentRepository<ExpenseCategory>, IExpenseCategoryRepository
 {
-    public ExpenseCategoryRepository(IMongoDatabase database)
-        : base(database, "ExpenseCategories")
+    public ExpenseCategoryRepository(IMongoDatabase database, AzureTest.Application.Interfaces.Services.ITenantProvider? tenantProvider = null)
+        : base(database, "ExpenseCategories", tenantProvider)
     {
         EnsureIndexes();
     }
@@ -26,23 +26,51 @@ public class ExpenseCategoryRepository : DocumentRepository<ExpenseCategory>, IE
 
     public async Task<ExpenseCategory?> GetByNameAsync(string name, Guid userId)
     {
-        var filter = Builders<ExpenseCategory>.Filter.And(
-            Builders<ExpenseCategory>.Filter.Regex(
-                x => x.Name,
-                new MongoDB.Bson.BsonRegularExpression($"^{System.Text.RegularExpressions.Regex.Escape(name)}$", "i")),
-            Builders<ExpenseCategory>.Filter.Eq(x => x.UserId, userId)
-        );
+        var filterBuilder = Builders<ExpenseCategory>.Filter;
+        var nameFilter = filterBuilder.Regex(
+            x => x.Name,
+            new MongoDB.Bson.BsonRegularExpression($"^{System.Text.RegularExpressions.Regex.Escape(name)}$", "i"));
+
+        FilterDefinition<ExpenseCategory> filter;
+        if (_tenantProvider?.IsMultiTenancyEnabled == true && _tenantProvider.CurrentTenantId != Guid.Empty)
+        {
+            var tenantFilter = filterBuilder.Or(
+                filterBuilder.Eq(x => x.TenantId, _tenantProvider.CurrentTenantId),
+                filterBuilder.Eq(x => x.UserId, _tenantProvider.CurrentTenantId),
+                filterBuilder.Eq(x => x.UserId, userId)
+            );
+            filter = filterBuilder.And(nameFilter, tenantFilter);
+        }
+        else
+        {
+            filter = filterBuilder.And(nameFilter, filterBuilder.Eq(x => x.UserId, userId));
+        }
+
         return await _collection.Find(filter).FirstOrDefaultAsync();
     }
 
     public async Task<IReadOnlyList<ExpenseCategory>> SearchByNameAsync(string term, Guid userId)
     {
-        var filter = Builders<ExpenseCategory>.Filter.And(
-            Builders<ExpenseCategory>.Filter.Regex(
-                x => x.Name,
-                new MongoDB.Bson.BsonRegularExpression(System.Text.RegularExpressions.Regex.Escape(term), "i")),
-            Builders<ExpenseCategory>.Filter.Eq(x => x.UserId, userId)
-        );
+        var filterBuilder = Builders<ExpenseCategory>.Filter;
+        var termFilter = filterBuilder.Regex(
+            x => x.Name,
+            new MongoDB.Bson.BsonRegularExpression(System.Text.RegularExpressions.Regex.Escape(term), "i"));
+
+        FilterDefinition<ExpenseCategory> filter;
+        if (_tenantProvider?.IsMultiTenancyEnabled == true && _tenantProvider.CurrentTenantId != Guid.Empty)
+        {
+            var tenantFilter = filterBuilder.Or(
+                filterBuilder.Eq(x => x.TenantId, _tenantProvider.CurrentTenantId),
+                filterBuilder.Eq(x => x.UserId, _tenantProvider.CurrentTenantId),
+                filterBuilder.Eq(x => x.UserId, userId)
+            );
+            filter = filterBuilder.And(termFilter, tenantFilter);
+        }
+        else
+        {
+            filter = filterBuilder.And(termFilter, filterBuilder.Eq(x => x.UserId, userId));
+        }
+
         return await _collection.Find(filter).SortBy(x => x.Name).ToListAsync();
     }
 }

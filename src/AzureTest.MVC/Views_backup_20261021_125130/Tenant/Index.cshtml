@@ -1,0 +1,405 @@
+@model AzureTest.MVC.ViewModels.Tenants.TenantManagementViewModel
+@{
+    ViewData["Title"] = "Tenant Management";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Administration", Url = "#" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Tenants", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Tenant Management",
+        Subtitle = "Switch active tenant workspace for administrative oversight, debugging, and auditing.",
+        Icon = "fa-solid fa-building-user",
+        Badge = Model.IsMultiTenancyEnabled ? "Multi-Tenancy Active" : "Multi-Tenancy Disabled",
+        Breadcrumbs = breadcrumbs
+    };
+
+    string GetPageUrl(int pageNumber)
+    {
+        return $"?PageNumber={pageNumber}&PageSize={Model.PageSize}&SearchTerm={Model.SearchTerm}";
+    }
+}
+
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+<!-- Top Utility Actions -->
+<div class="flex flex-wrap items-center justify-between gap-3 mb-6 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
+    <div class="flex flex-wrap items-center gap-2">
+        @if (Model.IsMultiTenancyEnabled)
+        {
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                <i class="fa-solid fa-circle-check text-emerald-600"></i> Multi-Tenancy Active
+            </span>
+        }
+        else
+        {
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80">
+                <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Multi-Tenancy Disabled
+            </span>
+        }
+
+        @if (Model.IsAdminImpersonating)
+        {
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                <i class="fa-solid fa-user-secret text-amber-700"></i> Impersonating Workspace
+            </span>
+        }
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2.5">
+        <form asp-action="TriggerBackfillJob" method="post" class="inline" onsubmit="return confirm('Enqueue background job to sync TenantId = UserId for legacy records across PostgreSQL and MongoDB?');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition-colors">
+                <i class="fa-solid fa-bolt text-amber-400"></i> Run Backfill Job
+            </button>
+        </form>
+
+        <a href="/hangfire" target="_blank" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+            <i class="fa-solid fa-server text-brand-600"></i> Job Monitor
+        </a>
+
+        @if (Model.IsAdminImpersonating)
+        {
+            <form asp-action="ResetTenant" method="post" class="inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                    <i class="fa-solid fa-arrow-rotate-left"></i> Exit Impersonation
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (!Model.IsMultiTenancyEnabled)
+{
+    <div class="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-start gap-3 shadow-2xs">
+        <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div class="flex-1 text-xs text-amber-900">
+            <h4 class="font-bold text-sm mb-1 text-amber-900">Multi-Tenancy is Disabled</h4>
+            <p>
+                Multi-tenancy isolation is turned off in the system configuration (<code class="bg-amber-100 font-mono text-amber-900 px-1 py-0.5 rounded text-2xs">FeatureManagement:EnableMultiTenancy</code> is <span class="font-bold">false</span>).
+                All database queries and document operations bypass tenant isolation while this setting is disabled.
+            </p>
+        </div>
+    </div>
+}
+
+<!-- Active Context Overview Card -->
+<div class="mb-6 bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+    <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-building-user"></i>
+            </div>
+            <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Active Workspace Context</h2>
+        </div>
+        @if (Model.IsAdminImpersonating)
+        {
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80">
+                <i class="fa-solid fa-user-secret"></i> Impersonating
+            </span>
+        }
+        else
+        {
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                <i class="fa-solid fa-shield-halved"></i> Personal Admin Workspace
+            </span>
+        }
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="border-l-4 border-brand-500 pl-4 py-1">
+                <div class="text-2xs font-bold text-slate-400 uppercase tracking-wider">Active Tenant ID</div>
+                <div class="text-xs font-mono font-bold text-slate-800 mt-1 break-all">
+                    @(Model.CurrentTenantId != Guid.Empty ? Model.CurrentTenantId.ToString() : "Global / Bypass")
+                </div>
+                <div class="text-2xs text-slate-500 mt-1">
+                    Admin ID: <span class="font-mono">@Model.RealAdminUserId</span>
+                </div>
+            </div>
+
+            <div class="border-l-4 @(Model.IsAdminImpersonating ? "border-amber-500" : "border-slate-300") pl-4 py-1">
+                <div class="text-2xs font-bold text-slate-400 uppercase tracking-wider">Active Tenant Owner</div>
+                <div class="text-xs font-bold text-slate-800 mt-1 truncate">
+                    @(string.IsNullOrWhiteSpace(Model.CurrentTenantName) ? "Default / Admin" : Model.CurrentTenantName)
+                </div>
+                <div class="text-2xs text-slate-500 mt-1 truncate">
+                    @(string.IsNullOrWhiteSpace(Model.CurrentTenantEmail) ? "System Root" : Model.CurrentTenantEmail)
+                </div>
+            </div>
+
+            <div class="border-l-4 @(!Model.AllowImpersonationWrites ? "border-emerald-500" : "border-amber-500") pl-4 py-1">
+                <div class="text-2xs font-bold text-slate-400 uppercase tracking-wider">Impersonation Policy</div>
+                <div class="text-xs font-bold text-slate-800 mt-1 flex items-center gap-1.5">
+                    @if (!Model.AllowImpersonationWrites)
+                    {
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                            <i class="fa-solid fa-lock text-3xs"></i> Read-Only Enforced
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80">
+                            <i class="fa-solid fa-triangle-exclamation text-3xs"></i> Writes Allowed
+                        </span>
+                    }
+                </div>
+                <div class="text-2xs text-slate-500 mt-1">
+                    AllowImpersonationWrites: @(Model.AllowImpersonationWrites ? "true" : "false")
+                </div>
+            </div>
+
+            <div class="border-l-4 border-slate-300 pl-4 py-1">
+                <div class="text-2xs font-bold text-slate-400 uppercase tracking-wider">Immutable Audit Log</div>
+                <div class="text-xs font-bold text-slate-800 mt-1 flex items-center gap-1.5">
+                    @if (Model.ImmutableAuditLog)
+                    {
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold bg-sky-50 text-sky-700 border border-sky-200/80">
+                            <i class="fa-solid fa-shield-halved text-3xs"></i> Enabled
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                            <i class="fa-solid fa-clock text-3xs"></i> Planned / Inactive
+                        </span>
+                    }
+                </div>
+                <div class="text-2xs text-slate-500 mt-1">
+                    ImmutableAuditLog: @(Model.ImmutableAuditLog ? "true" : "false")
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Impersonate Switcher Card -->
+<div class="mb-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-user-secret"></i>
+                </div>
+                <span>Impersonate Any Tenant</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">Select a tenant from the dropdown below to instantly switch into their isolated workspace environment.</p>
+        </div>
+        
+        <form asp-action="SwitchTenant" method="post" class="flex flex-wrap items-center gap-2.5">
+            @Html.AntiForgeryToken()
+            <div class="w-full sm:w-80">
+                <select name="targetTenantId" asp-items="Model.AllTenantsList" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white">
+                    <option value="">-- Choose Tenant to Impersonate --</option>
+                </select>
+            </div>
+            <button type="submit" @(Model.IsMultiTenancyEnabled ? "" : "disabled") class="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl shadow-2xs transition-colors">
+                <i class="fa-solid fa-user-secret"></i> Impersonate Workspace
+            </button>
+            @if (Model.IsAdminImpersonating)
+            {
+                <form asp-action="ResetTenant" method="post" class="inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-2xs transition-colors">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> Exit Impersonation
+                    </button>
+                </form>
+            }
+        </form>
+    </div>
+</div>
+
+<!-- Filter / Search Bar -->
+<div class="mb-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+    <form asp-action="Index" method="get">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="md:col-span-2">
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Search Tenants</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <input name="SearchTerm" type="text" value="@Model.SearchTerm" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="Filter by Name, Email, Username..." />
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Page Size</label>
+                <select name="PageSize" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white">
+                    @foreach (var size in new[] { 10, 20, 50, 100 })
+                    {
+                        if (Model.PageSize == size)
+                        {
+                            <option value="@size" selected>@size per page</option>
+                        }
+                        else
+                        {
+                            <option value="@size">@size per page</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="flex items-end gap-2">
+                <button type="submit" class="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition-colors">
+                    <i class="fa-solid fa-filter"></i> Filter
+                </button>
+                <a asp-action="Index" class="inline-flex justify-center items-center p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold shadow-2xs transition-colors" title="Reset Filters">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+@if (Model.TotalCount <= 1 && !Model.IsAdminImpersonating)
+{
+    <div class="mb-6 p-4 rounded-2xl bg-sky-50 border border-sky-200/80 text-xs text-sky-900 flex items-start gap-3 shadow-2xs">
+        <div class="w-8 h-8 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-circle-info"></i>
+        </div>
+        <div class="flex-1">
+            <span class="font-bold">Only 1 User Exists in Database:</span>
+            Your account is currently the only user registered in the system. Because this is already your active workspace, there are no other tenants to switch to yet.
+            To test tenant switching, simply create or register another user at <a asp-controller="User" asp-action="Create" class="font-bold underline text-brand-700 hover:text-brand-900">/User/Create</a> or <a href="/Auth/Register" class="font-bold underline text-brand-700 hover:text-brand-900">/Auth/Register</a>. Once created, the <strong>"Switch To"</strong> button will appear next to their name.
+        </div>
+    </div>
+}
+
+<!-- Tenants Table -->
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200/80 uppercase tracking-wider text-2xs">
+                <tr>
+                    <th scope="col" class="px-5 py-3.5">Tenant / User</th>
+                    <th scope="col" class="px-5 py-3.5">Email & Username</th>
+                    <th scope="col" class="px-5 py-3.5">Tenant Identifier</th>
+                    <th scope="col" class="px-5 py-3.5 text-center">Status</th>
+                    <th scope="col" class="px-5 py-3.5 text-right">Impersonate Workspace</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @if (Model.Tenants.Count == 0)
+                {
+                    <tr>
+                        <td colspan="5" class="p-8">
+                            <partial name="UiComponents/_EmptyState" model='new AzureTest.MVC.Models.EmptyStateModel { Title = "No Tenants Found", Description = "No tenant workspaces matched your search query.", Icon = "fa-solid fa-users-slash" }' />
+                        </td>
+                    </tr>
+                }
+                @foreach (var tenant in Model.Tenants)
+                {
+                    <tr class="@(tenant.IsActiveTenant ? "bg-brand-50/40" : "hover:bg-slate-50/70") transition-colors">
+                        <td class="px-5 py-3.5 whitespace-nowrap">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs shrink-0">
+                                    @(string.IsNullOrWhiteSpace(tenant.FullName) ? "U" : tenant.FullName.Substring(0, 1).ToUpper())
+                                </div>
+                                <div>
+                                    <div class="font-bold text-slate-900 text-xs">
+                                        @(string.IsNullOrWhiteSpace(tenant.FullName) ? "Unnamed User" : tenant.FullName)
+                                    </div>
+                                    @if (tenant.IsCurrentAdmin)
+                                    {
+                                        <span class="inline-flex items-center text-3xs font-semibold text-amber-600 gap-1 mt-0.5">
+                                            <i class="fa-solid fa-crown text-amber-500"></i> Your Account
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </td>
+
+                        <td class="px-5 py-3.5 whitespace-nowrap">
+                            <div class="text-xs font-medium text-slate-800">@tenant.Email</div>
+                            <div class="text-2xs text-slate-400">@tenant.UserName</div>
+                        </td>
+
+                        <td class="px-5 py-3.5 whitespace-nowrap">
+                            <div class="flex items-center gap-2">
+                                <code class="text-2xs font-mono bg-slate-100 text-slate-700 px-2 py-1 rounded-lg border border-slate-200/80">@tenant.TenantId</code>
+                                <button type="button" onclick="navigator.clipboard.writeText('@tenant.TenantId')" class="text-slate-400 hover:text-slate-600 text-xs p-1 rounded hover:bg-slate-100 transition-colors" title="Copy Tenant ID">
+                                    <i class="fa-regular fa-copy"></i>
+                                </button>
+                            </div>
+                        </td>
+
+                        <td class="px-5 py-3.5 whitespace-nowrap text-center">
+                            @if (tenant.IsActiveTenant)
+                            {
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                                    <i class="fa-solid fa-check text-3xs"></i> Active Tenant
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-2xs font-medium bg-slate-100 text-slate-500">
+                                    Inactive
+                                </span>
+                            }
+                        </td>
+
+                        <td class="px-5 py-3.5 whitespace-nowrap text-right">
+                            @if (tenant.IsActiveTenant)
+                            {
+                                @if (Model.IsAdminImpersonating)
+                                {
+                                    <div class="inline-flex items-center gap-2">
+                                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-800 border border-amber-300 text-2xs font-bold rounded-xl shadow-2xs">
+                                            <i class="fa-solid fa-user-secret"></i> Impersonating
+                                        </span>
+                                        <form asp-action="ResetTenant" method="post" class="inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-2xs font-bold rounded-xl shadow-2xs transition-colors" title="Exit Impersonation">
+                                                <i class="fa-solid fa-arrow-rotate-left"></i> Exit
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-2xs font-bold rounded-xl shadow-2xs">
+                                        <i class="fa-solid fa-circle-check text-emerald-500"></i> Active Workspace
+                                    </span>
+                                }
+                            }
+                            else
+                            {
+                                <form asp-action="SwitchTenant" method="post" class="inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="targetTenantId" value="@tenant.TenantId" />
+                                    <button type="submit" @(Model.IsMultiTenancyEnabled ? "" : "disabled") class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-2xs font-bold rounded-xl shadow-2xs transition-colors" title="Impersonate @tenant.FullName">
+                                        <i class="fa-solid fa-user-secret"></i> Impersonate
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        var paginationModel = new AzureTest.MVC.Models.PaginationModel
+        {
+            CurrentPage = Model.PageNumber,
+            PageSize = Model.PageSize,
+            TotalItems = Model.TotalCount,
+            BaseUrl = Context.Request.Path,
+            RouteParams = new Dictionary<string, string>
+            {
+                { "SearchTerm", Model.SearchTerm ?? "" },
+                { "PageSize", Model.PageSize.ToString() }
+            }
+        };
+        <partial name="UiComponents/_Pagination" model="paginationModel" />
+    }
+</div>

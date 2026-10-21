@@ -1,0 +1,723 @@
+@model AzureTest.Contracts.DTOs.Habits.HabitTrackerDto
+@using AzureTest.Domain.Enums
+@{
+    ViewData["Title"] = $"{Model.Name} - Habit Details & Analytics";
+    var isDone = Model.IsCompletedToday;
+    var currentUrl = Context.Request.Path + Context.Request.QueryString;
+    var logs = Model.Logs.OrderByDescending(l => l.LocalDate).ThenByDescending(l => l.LoggedAt).ToList();
+
+    // Prepare 30-day timeline data for charts
+    var today = DateOnly.FromDateTime(DateTime.UtcNow);
+    var last30Days = Enumerable.Range(0, 30)
+        .Select(i => today.AddDays(-29 + i))
+        .ToList();
+
+    var logsByDate = logs.GroupBy(l => l.LocalDate)
+        .ToDictionary(g => g.Key, g => g.ToList());
+
+    // Compute chart series
+    var labelsJson = System.Text.Json.JsonSerializer.Serialize(last30Days.Select(d => d.ToString("MMM dd")));
+    var valuesList = last30Days.Select(d =>
+    {
+        if (!logsByDate.TryGetValue(d, out var dayLogs)) return 0.0;
+        return Model.Type == HabitType.Counter
+            ? dayLogs.Sum(l => l.NumericValue)
+            : dayLogs.First().NumericValue;
+    }).ToList();
+    var valuesJson = System.Text.Json.JsonSerializer.Serialize(valuesList);
+
+    var completedDaysCount = last30Days.Count(d => logsByDate.ContainsKey(d));
+    var completionRate30Days = Math.Round((double)completedDaysCount / 30.0 * 100.0, 1);
+}
+
+@using AzureTest.MVC.Models
+
+<partial name="UiComponents/_Breadcrumb" model='new List<BreadcrumbItem> { new BreadcrumbItem("Habits", Url.Action("Index", "Habit")), new BreadcrumbItem(Model.Name, active: true) }' />
+
+<!-- Habit Header Card -->
+<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <h1 class="text-2xl font-bold text-slate-900">@Model.Name</h1>
+                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700">
+                    @Model.Type
+                </span>
+                <span class="px-3 py-1 text-xs font-semibold rounded-full @(Model.Direction == HabitDirection.AtLeast ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700")">
+                    @(Model.Direction == HabitDirection.AtLeast ? "≥ At least" : "≤ At most") @(Model.Target.HasValue ? Model.Target.Value.ToString() : "None")
+                </span>
+                @if (isDone)
+                {
+                    <span class="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 flex items-center gap-1">
+                        <i class="fa-solid fa-circle-check"></i> Completed Today
+                    </span>
+                }
+                else
+                {
+                    <span class="px-3 py-1 text-xs font-semibold rounded-full bg-amber-50 text-amber-700 flex items-center gap-1">
+                        <i class="fa-regular fa-clock"></i> Pending Today
+                    </span>
+                }
+            </div>
+            @if (!string.IsNullOrEmpty(Model.Description))
+            {
+                <p class="text-slate-500 text-sm mt-2">@Model.Description</p>
+            }
+            <div class="flex items-center gap-4 text-xs text-slate-400 mt-3">
+                <span><i class="fa-regular fa-calendar mr-1"></i> Schedule: @Model.Schedule</span>
+                <span><i class="fa-solid fa-globe mr-1"></i> Timezone: @Model.TimeZone</span>
+                <span><i class="fa-solid fa-list-check mr-1"></i> Total Logs: @logs.Count</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <a asp-action="Index" class="px-4 py-2 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+                <i class="fa-solid fa-arrow-left mr-1.5"></i> All Habits
+            </a>
+            <form asp-action="Delete" method="post" onsubmit="return confirm('Are you sure you want to delete habit &quot;@Model.Name&quot;?');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="px-4 py-2 text-sm font-medium rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors">
+                    <i class="fa-solid fa-trash-can mr-1.5"></i> Delete
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Stats Metric Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-100">
+        <div class="bg-slate-50 rounded-xl p-4 text-center">
+            <span class="text-xs font-medium text-slate-500 block mb-1">Current Streak</span>
+            <div class="text-2xl font-bold text-amber-600 flex items-center justify-center gap-1">
+                <i class="fa-solid fa-fire text-amber-500 mr-1"></i> @Model.CurrentStreak <span class="text-xs font-normal text-slate-400">days</span>
+            </div>
+        </div>
+        <div class="bg-slate-50 rounded-xl p-4 text-center">
+            <span class="text-xs font-medium text-slate-500 block mb-1">Longest Streak</span>
+            <div class="text-2xl font-bold text-indigo-600 flex items-center justify-center gap-1">
+                <i class="fa-solid fa-trophy text-indigo-500 mr-1"></i> @Model.LongestStreak <span class="text-xs font-normal text-slate-400">days</span>
+            </div>
+        </div>
+        <div class="bg-slate-50 rounded-xl p-4 text-center">
+            <span class="text-xs font-medium text-slate-500 block mb-1">30-Day Adherence</span>
+            <div class="text-2xl font-bold text-brand-600">
+                @completionRate30Days%
+            </div>
+        </div>
+        <div class="bg-slate-50 rounded-xl p-4 text-center">
+            <span class="text-xs font-medium text-slate-500 block mb-1">Today's Value</span>
+            <div class="text-2xl font-bold text-slate-800 truncate" title="@Model.TodayValue">
+                @(string.IsNullOrWhiteSpace(Model.TodayValue) ? (Model.TodayNumericValue > 0 ? Model.TodayNumericValue.ToString() : "-") : Model.TodayValue)
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Interactive Action Panel (Type-Specific) -->
+<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
+    <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+        <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-bolt text-amber-500"></i> Quick Action: Log Today (@DateTime.UtcNow.ToString("MMM dd"))
+        </h2>
+        @if (isDone)
+        {
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full flex items-center gap-1">
+                <i class="fa-solid fa-check"></i> Goal Target Achieved
+            </span>
+        }
+    </div>
+
+    @* 1. BOOLEAN TYPE *@
+    @if (Model.Type == HabitType.Boolean)
+    {
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 p-6 rounded-xl bg-slate-50 border border-slate-200">
+            <div>
+                <p class="font-medium text-slate-800">Status for Today: <strong class="@(isDone ? "text-emerald-600" : "text-slate-500")">@(isDone ? "Completed" : "Not yet completed")</strong></p>
+                <p class="text-xs text-slate-500 mt-1">Click the button to toggle today's status.</p>
+            </div>
+            <form asp-action="Log" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <input type="hidden" name="booleanValue" value="@(isDone ? "false" : "true")" />
+                <input type="hidden" name="returnUrl" value="@currentUrl" />
+                <button type="submit" class="px-6 py-3 rounded-xl font-semibold text-sm transition-all shadow-sm @(isDone ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200" : "bg-brand-600 text-white hover:bg-brand-700 shadow-brand-200")">
+                    <i class="fa-solid @(isDone ? "fa-circle-check" : "fa-check") mr-2"></i>
+                    @(isDone ? "Mark as Not Done (Undo)" : "Complete Today")
+                </button>
+            </form>
+        </div>
+    }
+
+    @* 2. COUNTER TYPE *@
+    else if (Model.Type == HabitType.Counter)
+    {
+        <div class="p-6 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div>
+                    <span class="text-xs font-medium text-slate-500 uppercase tracking-wider block">Today's Total Count</span>
+                    <div class="text-4xl font-extrabold text-slate-900 mt-1">
+                        @Model.TodayNumericValue
+                        @if (Model.Target > 0)
+                        {
+                            <span class="text-sm font-normal text-slate-400">/ target: @Model.Target</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    @if (Model.TodayNumericValue > 0)
+                    {
+                        <form asp-action="Undo" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <input type="hidden" name="returnUrl" value="@currentUrl" />
+                            <button type="submit" class="px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 font-semibold text-sm transition-all shadow-sm">
+                                <i class="fa-solid fa-rotate-left mr-1.5"></i> Undo (-1)
+                            </button>
+                        </form>
+                    }
+
+                    <form asp-action="Log" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="numericValue" value="1" />
+                        <input type="hidden" name="returnUrl" value="@currentUrl" />
+                        <button type="submit" class="px-6 py-3 rounded-xl bg-brand-600 text-white hover:bg-brand-700 font-semibold text-sm transition-all shadow-md shadow-brand-100 flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> +1 Click
+                        </button>
+                    </form>
+
+                    <form asp-action="Log" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="numericValue" value="5" />
+                        <input type="hidden" name="returnUrl" value="@currentUrl" />
+                        <button type="submit" class="px-4 py-3 rounded-xl bg-slate-800 text-white hover:bg-slate-700 font-semibold text-sm transition-all shadow-sm">
+                            +5
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            @if (Model.Target > 0)
+            {
+                <div class="mt-4">
+                    <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                        <div class="bg-brand-500 h-2 rounded-full transition-all" style="width: @Math.Min(100, Model.ProgressPercentage)%"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-500 mt-1.5">
+                        <span>Progress: @Math.Round(Model.ProgressPercentage, 1)%</span>
+                        <span>Goal: @Model.Target</span>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @* 3. QUANTITY TYPE *@
+    else if (Model.Type == HabitType.Quantity)
+    {
+        <div class="p-6 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div>
+                    <span class="text-xs font-medium text-slate-500 uppercase tracking-wider block">Logged Today</span>
+                    <div class="text-3xl font-extrabold text-slate-900 mt-1">
+                        @Model.TodayNumericValue <span class="text-sm font-medium text-slate-500">@(!string.IsNullOrEmpty(Model.TypeConfig) ? Model.TypeConfig : "units")</span>
+                        @if (Model.Target > 0)
+                        {
+                            <span class="text-sm font-normal text-slate-400">/ target @Model.Target</span>
+                        }
+                    </div>
+                </div>
+
+                <form asp-action="Log" method="post" class="flex flex-wrap items-center gap-2">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="returnUrl" value="@currentUrl" />
+                    
+                    <div class="relative">
+                        <input type="number" step="any" min="0" name="numericValue" placeholder="Enter amount" required
+                               class="w-36 rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm py-2 px-3" />
+                    </div>
+
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 text-white font-semibold text-sm hover:bg-brand-700 transition-colors shadow-sm">
+                        <i class="fa-solid fa-plus mr-1"></i> Add
+                    </button>
+                </form>
+            </div>
+
+            <!-- Quick Add Presets -->
+            <div class="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200 flex-wrap">
+                <span class="text-xs font-medium text-slate-500">Quick Add:</span>
+                @foreach (var preset in new[] { 100, 250, 500, 1000 })
+                {
+                    <form asp-action="Log" method="post" class="inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="numericValue" value="@preset" />
+                        <input type="hidden" name="returnUrl" value="@currentUrl" />
+                        <button type="submit" class="px-3 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-brand-50 hover:text-brand-600 hover:border-brand-200 transition-colors">
+                            +@preset
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    }
+
+    @* 4. DURATION TYPE *@
+    else if (Model.Type == HabitType.Duration)
+    {
+        <div class="p-6 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <!-- Interactive Stopwatch -->
+                <div class="bg-slate-900 rounded-xl p-6 text-white text-center shadow-inner">
+                    <span class="text-xs font-medium text-slate-400 uppercase tracking-widest block mb-2">Live Session Stopwatch</span>
+                    <div id="stopwatch-display" class="font-mono text-4xl font-extrabold tracking-wider text-emerald-400 mb-4">
+                        00:00:00
+                    </div>
+                    <div class="flex items-center justify-center gap-3">
+                        <button id="btn-sw-start" type="button" onclick="startStopwatch()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-colors">
+                            <i class="fa-solid fa-play mr-1"></i> Start
+                        </button>
+                        <button id="btn-sw-pause" type="button" onclick="pauseStopwatch()" disabled class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs transition-colors opacity-50 cursor-not-allowed">
+                            <i class="fa-solid fa-pause mr-1"></i> Pause
+                        </button>
+                        <button id="btn-sw-save" type="button" onclick="saveStopwatch()" disabled class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs transition-colors opacity-50 cursor-not-allowed">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> Log Time
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Manual Duration Log -->
+                <div class="space-y-4">
+                    <div>
+                        <span class="text-xs font-medium text-slate-500 uppercase tracking-wider block">Today Logged</span>
+                        <div class="text-2xl font-bold text-slate-900 mt-1">
+                            @Math.Round(Model.TodayNumericValue, 1) <span class="text-sm font-normal text-slate-500">minutes</span>
+                            @if (Model.Target > 0)
+                            {
+                                <span class="text-xs text-slate-400">/ target @Model.Target mins</span>
+                            }
+                        </div>
+                    </div>
+
+                    <form id="form-duration-log" asp-action="Log" method="post" class="flex items-center gap-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="returnUrl" value="@currentUrl" />
+                        <input id="input-duration-minutes" type="number" step="any" min="1" name="numericValue" placeholder="Minutes to log" required
+                               class="w-40 rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm py-2 px-3" />
+                        <button type="submit" class="px-5 py-2 rounded-xl bg-slate-800 text-white font-semibold text-sm hover:bg-slate-700 transition-colors">
+                            Log Minutes
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* 5. RATING TYPE *@
+    else if (Model.Type == HabitType.Rating)
+    {
+        <div class="p-6 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-2">Today's Rating (1 to 5 Stars)</span>
+            <div class="flex items-center gap-3">
+                @for (int star = 1; star <= 5; star++)
+                {
+                    var isStarActive = Model.TodayNumericValue >= star;
+                    <form asp-action="Log" method="post" class="inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="numericValue" value="@star" />
+                        <input type="hidden" name="returnUrl" value="@currentUrl" />
+                        <button type="submit" class="p-2 text-2xl transition-transform hover:scale-125 focus:outline-none @(isStarActive ? "text-amber-400" : "text-slate-300 hover:text-amber-300")" title="Rate @star / 5">
+                            <i class="fa-solid fa-star"></i>
+                        </button>
+                    </form>
+                }
+                <span class="text-sm font-semibold text-slate-700 ml-3">
+                    @(Model.TodayNumericValue > 0 ? $"{Model.TodayNumericValue} / 5" : "Not rated yet")
+                </span>
+            </div>
+        </div>
+    }
+
+    @* 6. TIME OF DAY TYPE *@
+    else if (Model.Type == HabitType.TimeOfDay)
+    {
+        <div class="p-6 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div>
+                <span class="text-xs font-medium text-slate-500 uppercase tracking-wider block">Today's Recorded Time</span>
+                <div class="text-3xl font-extrabold text-slate-900 mt-1">
+                    @(string.IsNullOrWhiteSpace(Model.TodayValue) ? "Not logged" : Model.TodayValue)
+                </div>
+            </div>
+
+            <form asp-action="Log" method="post" class="flex items-center gap-2">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <input type="hidden" name="returnUrl" value="@currentUrl" />
+                <input type="time" name="value" value="@(string.IsNullOrWhiteSpace(Model.TodayValue) ? DateTime.Now.ToString("HH:mm") : Model.TodayValue)" required
+                       class="rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm py-2 px-3" />
+                <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 text-white font-semibold text-sm hover:bg-brand-700 transition-colors shadow-sm">
+                    <i class="fa-regular fa-clock mr-1"></i> Log Time
+                </button>
+            </form>
+        </div>
+    }
+
+    @* 7. CHECKLIST TYPE *@
+    else if (Model.Type == HabitType.Checklist)
+    {
+        var rawItems = !string.IsNullOrWhiteSpace(Model.TypeConfig)
+            ? Model.TypeConfig.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : new[] { "Sub-task 1", "Sub-task 2", "Sub-task 3" };
+        var completedList = !string.IsNullOrWhiteSpace(Model.TodayValue)
+            ? Model.TodayValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet()
+            : new HashSet<string>();
+
+        <div class="p-6 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-3">Sub-Items Checklist</span>
+            <div class="space-y-2 mb-4">
+                @foreach (var item in rawItems)
+                {
+                    var isChecked = completedList.Contains(item);
+                    <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors">
+                        <input type="checkbox" class="checklist-item rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                               data-item="@item" @(isChecked ? "checked" : "") onchange="saveChecklist()" />
+                        <span class="text-sm font-medium @(isChecked ? "text-slate-400 line-through" : "text-slate-800")">
+                            @item
+                        </span>
+                    </label>
+                }
+            </div>
+
+            <form id="form-checklist" asp-action="Log" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <input type="hidden" id="checklist-value" name="value" value="@Model.TodayValue" />
+                <input type="hidden" name="returnUrl" value="@currentUrl" />
+            </form>
+        </div>
+    }
+
+    @* 8. QUIT / ABSTINENCE TYPE *@
+    else if (Model.Type == HabitType.Quit)
+    {
+        <div class="p-6 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+                <span class="text-xs font-semibold uppercase tracking-wider opacity-90 block">Abstinence Tracker</span>
+                <div class="text-4xl font-extrabold mt-1 flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved"></i> @Model.TodayValue
+                </div>
+                <p class="text-xs opacity-80 mt-1">Stay strong! Every day clean is a milestone towards your freedom.</p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <form asp-action="Log" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="value" value="Relapse" />
+                    <input type="hidden" name="returnUrl" value="@currentUrl" />
+                    <button type="submit" onclick="return confirm('Record relapse and reset counter? You can do this, reset and keep going!');" class="px-5 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-semibold text-sm transition-all backdrop-blur-sm">
+                        <i class="fa-solid fa-rotate-left mr-1.5"></i> Reset (Relapsed)
+                    </button>
+                </form>
+
+                <form asp-action="Log" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="value" value="Clean" />
+                    <input type="hidden" name="returnUrl" value="@currentUrl" />
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-white text-emerald-800 hover:bg-emerald-50 font-bold text-sm transition-all shadow-sm">
+                        <i class="fa-solid fa-check mr-1.5"></i> Check In Today
+                    </button>
+                </form>
+            </div>
+        </div>
+    }
+
+    @* 9. CHOICE TYPE *@
+    else if (Model.Type == HabitType.Choice)
+    {
+        var rawChoices = !string.IsNullOrWhiteSpace(Model.TypeConfig)
+            ? Model.TypeConfig.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : new[] { "Option A", "Option B", "Option C" };
+
+        <div class="p-6 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-3">Choose Option for Today</span>
+            <div class="flex flex-wrap gap-2">
+                @foreach (var opt in rawChoices)
+                {
+                    var isSelected = Model.TodayValue == opt;
+                    <form asp-action="Log" method="post" class="inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="value" value="@opt" />
+                        <input type="hidden" name="returnUrl" value="@currentUrl" />
+                        <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5 @(isSelected ? "bg-brand-600 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-700 hover:bg-brand-50 hover:text-brand-600")">
+                            <span>@opt</span>
+                            @if (isSelected)
+                            {
+                                <i class="fa-solid fa-check text-xs"></i>
+                            }
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    }
+
+    @* 10. TEXT / NOTE TYPE *@
+    else
+    {
+        <div class="p-6 rounded-xl bg-slate-50 border border-slate-200">
+            <span class="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-2">Today's Reflection / Note</span>
+            <form asp-action="Log" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <input type="hidden" name="returnUrl" value="@currentUrl" />
+                <textarea name="notes" rows="3" placeholder="Write your thoughts, reflections, or notes for today..." required
+                          class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm p-3">@Model.TodayValue</textarea>
+                <div class="flex justify-end mt-2">
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 text-white font-semibold text-sm hover:bg-brand-700 transition-colors shadow-sm">
+                        <i class="fa-solid fa-floppy-disk mr-1.5"></i> Save Reflection
+                    </button>
+                </div>
+            </form>
+        </div>
+    }
+</div>
+
+<!-- Visual Charts & Analytics Section -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+    <!-- 30-Day Activity Bar Chart -->
+    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-base font-bold text-slate-900">30-Day Activity Trend</h3>
+                <p class="text-xs text-slate-500">Daily performance over the last 30 days</p>
+            </div>
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+                Target: @(Model.Target.HasValue ? Model.Target.Value.ToString() : "None")
+            </span>
+        </div>
+        <div class="h-64 relative">
+            <canvas id="habitHistoryChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Adherence Breakdown Donut Chart -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between">
+        <div>
+            <h3 class="text-base font-bold text-slate-900 mb-1">30-Day Adherence</h3>
+            <p class="text-xs text-slate-500 mb-4">Completed vs Missed days</p>
+            <div class="h-48 relative flex items-center justify-center">
+                <canvas id="habitAdherenceDonut"></canvas>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-center pt-4 border-t border-slate-100 mt-4">
+            <div>
+                <span class="text-xs text-slate-400 block">Completed</span>
+                <span class="text-base font-bold text-emerald-600">@completedDaysCount days</span>
+            </div>
+            <div>
+                <span class="text-xs text-slate-400 block">Missed</span>
+                <span class="text-base font-bold text-slate-400">@(30 - completedDaysCount) days</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historical Logs Table -->
+<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h3 class="text-base font-bold text-slate-900">Activity History Log</h3>
+            <p class="text-xs text-slate-500">Audit trail of all recorded entries</p>
+        </div>
+    </div>
+
+    @if (!logs.Any())
+    {
+        <div class="text-center py-8 text-slate-400">
+            <i class="fa-solid fa-clock-rotate-left text-3xl mb-2 block"></i>
+            <p class="text-sm">No activity logged yet.</p>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        <th class="py-3 px-4">Local Date</th>
+                        <th class="py-3 px-4">Logged At (UTC)</th>
+                        <th class="py-3 px-4">Recorded Value</th>
+                        <th class="py-3 px-4">Target Snapshot</th>
+                        <th class="py-3 px-4">Notes</th>
+                        <th class="py-3 px-4 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-sm">
+                    @foreach (var log in logs)
+                    {
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="py-3 px-4 font-semibold text-slate-800">
+                                @log.LocalDate.ToString("yyyy-MM-dd")
+                            </td>
+                            <td class="py-3 px-4 text-slate-500 text-xs">
+                                @log.LoggedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                            </td>
+                            <td class="py-3 px-4">
+                                <span class="font-medium text-slate-700">
+                                    @(string.IsNullOrWhiteSpace(log.Value) ? log.NumericValue.ToString() : log.Value)
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-slate-500 text-xs">
+                                @log.TargetSnapshot
+                            </td>
+                            <td class="py-3 px-4 text-slate-500 text-xs truncate max-w-xs" title="@log.Notes">
+                                @(string.IsNullOrWhiteSpace(log.Notes) ? "-" : log.Notes)
+                            </td>
+                            <td class="py-3 px-4 text-right">
+                                <form asp-action="Undo" method="post" class="inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <input type="hidden" name="logDate" value="@log.LocalDate.ToString("yyyy-MM-dd")" />
+                                    <input type="hidden" name="returnUrl" value="@currentUrl" />
+                                    <button type="submit" class="text-slate-400 hover:text-rose-600 transition-colors text-xs font-medium" title="Undo this day">
+                                        <i class="fa-solid fa-rotate-left mr-1"></i> Undo
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Chart Initialization
+        document.addEventListener("DOMContentLoaded", function () {
+            const labels = @Html.Raw(labelsJson);
+            const dataValues = @Html.Raw(valuesJson);
+            const targetVal = @(Model.Target ?? 0);
+
+            // 1. History Trend Chart
+            const ctxHistory = document.getElementById('habitHistoryChart').getContext('2d');
+            new Chart(ctxHistory, {
+                type: '@(Model.Type == HabitType.Quantity || Model.Type == HabitType.Duration || Model.Type == HabitType.Rating ? "line" : "bar")',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Logged Value',
+                            data: dataValues,
+                            backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                            borderColor: 'rgb(99, 102, 241)',
+                            borderWidth: 2,
+                            borderRadius: 4,
+                            tension: 0.3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(241, 245, 249, 1)' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // 2. Adherence Donut Chart
+            const ctxDonut = document.getElementById('habitAdherenceDonut').getContext('2d');
+            new Chart(ctxDonut, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'Missed'],
+                    datasets: [{
+                        data: [@completedDaysCount, @(30 - completedDaysCount)],
+                        backgroundColor: ['#10b981', '#f1f5f9'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        });
+
+        // Stopwatch Logic for Duration Type
+        let swTimer = null;
+        let swElapsedSeconds = 0;
+
+        function updateSwDisplay() {
+            const hrs = String(Math.floor(swElapsedSeconds / 3600)).padStart(2, '0');
+            const mins = String(Math.floor((swElapsedSeconds % 3600) / 60)).padStart(2, '0');
+            const secs = String(swElapsedSeconds % 60).padStart(2, '0');
+            document.getElementById('stopwatch-display').textContent = `${hrs}:${mins}:${secs}`;
+        }
+
+        function startStopwatch() {
+            if (swTimer) return;
+            swTimer = setInterval(() => {
+                swElapsedSeconds++;
+                updateSwDisplay();
+            }, 1000);
+            document.getElementById('btn-sw-start').disabled = true;
+            document.getElementById('btn-sw-start').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('btn-sw-pause').disabled = false;
+            document.getElementById('btn-sw-pause').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('btn-sw-save').disabled = false;
+            document.getElementById('btn-sw-save').classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        function pauseStopwatch() {
+            clearInterval(swTimer);
+            swTimer = null;
+            document.getElementById('btn-sw-start').disabled = false;
+            document.getElementById('btn-sw-start').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('btn-sw-pause').disabled = true;
+            document.getElementById('btn-sw-pause').classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        function saveStopwatch() {
+            pauseStopwatch();
+            const minutes = Math.max(1, Math.round(swElapsedSeconds / 60));
+            document.getElementById('input-duration-minutes').value = minutes;
+            document.getElementById('form-duration-log').submit();
+        }
+
+        // Checklist Sync Logic
+        function saveChecklist() {
+            const checkedItems = [];
+            document.querySelectorAll('.checklist-item:checked').forEach(cb => {
+                checkedItems.push(cb.getAttribute('data-item'));
+            });
+            document.getElementById('checklist-value').value = checkedItems.join(', ');
+            document.getElementById('form-checklist').submit();
+        }
+    </script>
+}

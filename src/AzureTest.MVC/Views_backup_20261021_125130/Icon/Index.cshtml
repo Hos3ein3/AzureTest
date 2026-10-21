@@ -1,0 +1,417 @@
+@model AzureTest.MVC.Models.IconGalleryViewModel
+@using AzureTest.MVC.Services
+@{
+    ViewData["Title"] = "SVG Icon Gallery";
+    var activeCategory = string.IsNullOrWhiteSpace(Model.SelectedCategory) ? "All" : Model.SelectedCategory;
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new("Dashboard", "/"),
+        new("Icon Gallery", IsActive: true)
+    };
+}
+
+<div class="mb-4">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+</div>
+
+<!-- Header -->
+<div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 text-xl shadow-sm">
+                <i class="fa-solid fa-icons"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    SVG Icon Gallery
+                    <span id="badge-total-count" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-700">@Model.Icons.Count icons</span>
+                </h1>
+                <p class="text-sm text-slate-500 mt-0.5">Search, preview, and copy custom SVG icons. Clean, scalable, and zero emoji dependencies.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="flex items-center gap-3">
+        <button type="button" onclick="copyAllKeys()" class="inline-flex items-center px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
+            <i class="fa-regular fa-copy mr-2 text-slate-400"></i> Copy All Names
+        </button>
+    </div>
+</div>
+
+<!-- Search & Category Filters Bar -->
+<div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm mb-8 space-y-4">
+    <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input id="icon-search-input" type="text" value="@Model.SearchTerm"
+               placeholder="Search icons by name, category, or keyword (e.g. timer, flame, gym, scale, chart)..."
+               class="w-full pl-11 pr-10 py-3 rounded-xl border border-slate-200 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all text-slate-800 placeholder-slate-400" />
+        <button id="btn-clear-search" type="button" onclick="clearSearch()" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 hidden p-1">
+            <i class="fa-solid fa-circle-xmark"></i>
+        </button>
+    </div>
+
+    <!-- Category Pills -->
+    <div class="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-100">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-1">Category:</span>
+        <button type="button" onclick="filterCategory('All')" data-category="All"
+                class="category-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all @(activeCategory.Equals("All", StringComparison.OrdinalIgnoreCase) ? "bg-slate-800 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200")">
+            All Icons (@SvgIconCatalog.GetAll().Count)
+        </button>
+        @foreach (var cat in Model.Categories)
+        {
+            var countInCat = SvgIconCatalog.GetAll().Count(x => x.Category.Equals(cat, StringComparison.OrdinalIgnoreCase));
+            var isSelected = activeCategory.Equals(cat, StringComparison.OrdinalIgnoreCase);
+            <button type="button" onclick="filterCategory('@cat')" data-category="@cat"
+                    class="category-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all @(isSelected ? "bg-slate-800 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200")">
+                @cat (@countInCat)
+            </button>
+        }
+    </div>
+</div>
+
+<!-- Icons Grid -->
+<div id="icons-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    @foreach (var icon in Model.Icons)
+    {
+        <div class="icon-card bg-white rounded-2xl p-5 border border-slate-100 hover:border-brand-300 hover:shadow-md transition-all flex flex-col justify-between group"
+             data-key="@icon.Key"
+             data-name="@icon.Name.ToLowerInvariant()"
+             data-category="@icon.Category"
+             data-tags="@string.Join(" ", icon.Tags).ToLowerInvariant()">
+            
+            <div>
+                <!-- Icon Visual Stage -->
+                <div class="w-full h-24 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-4 group-hover:bg-brand-50/40 group-hover:border-brand-100 transition-colors relative overflow-hidden">
+                    <div class="w-10 h-10 text-slate-700 group-hover:text-brand-600 transition-transform group-hover:scale-110 flex items-center justify-center">
+                        @Html.Raw(icon.SvgContent)
+                    </div>
+                    
+                    <button type="button" onclick="inspectIcon('@icon.Key')" title="Inspect & Customize"
+                            class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg bg-white shadow-sm border border-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center text-xs transition-opacity">
+                        <i class="fa-solid fa-up-right-and-down-left-from-center text-[10px]"></i>
+                    </button>
+                </div>
+
+                <!-- Meta Info -->
+                <div class="flex items-start justify-between gap-2 mb-1">
+                    <h3 class="text-sm font-bold text-slate-800 group-hover:text-brand-600 transition-colors">
+                        @icon.Name
+                    </h3>
+                </div>
+
+                <div class="flex items-center gap-1.5 mb-2">
+                    <span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                        @icon.Category
+                    </span>
+                    <span class="text-[11px] font-mono text-slate-400 truncate" title="@icon.Key">
+                        #@icon.Key
+                    </span>
+                </div>
+
+                <p class="text-xs text-slate-500 line-clamp-2 mb-4">
+                    @icon.Description
+                </p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="pt-3 border-t border-slate-100 flex items-center gap-2">
+                <button type="button" onclick="copySvg('@icon.Key')"
+                        class="flex-1 inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-brand-600 text-white text-xs font-semibold transition-colors shadow-sm">
+                    <i class="fa-solid fa-code mr-1.5 text-[10px]"></i> Copy SVG
+                </button>
+                <button type="button" onclick="copyKey('@icon.Key')" title="Copy Key"
+                        class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors">
+                    <i class="fa-regular fa-copy"></i>
+                </button>
+            </div>
+
+            <!-- Hidden SVG Store for JS Copying -->
+            <textarea id="svg-raw-@icon.Key" class="sr-only">@icon.SvgContent</textarea>
+        </div>
+    }
+</div>
+
+<!-- Empty State -->
+<div id="no-icons-found" class="hidden text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 p-8 my-8">
+    <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3 text-2xl">
+        <i class="fa-solid fa-magnifying-glass"></i>
+    </div>
+    <h3 class="text-base font-bold text-slate-800">No icons match your search</h3>
+    <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Try searching for other keywords like "timer", "scale", "fire", "chart", or select another category.</p>
+    <button type="button" onclick="clearSearch()" class="mt-4 px-4 py-2 bg-brand-50 text-brand-700 hover:bg-brand-100 text-xs font-semibold rounded-xl transition-colors">
+        Reset Search Filter
+    </button>
+</div>
+
+<!-- Inspector & Customizer Modal -->
+<div id="inspector-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div id="modal-icon-badge" class="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-base">
+                    <!-- SVG injected here -->
+                </div>
+                <div>
+                    <h3 id="modal-title" class="text-base font-bold text-slate-800">Icon Inspector</h3>
+                    <p id="modal-category" class="text-xs text-slate-400">Category</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeInspectorModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto space-y-6 flex-1">
+            <!-- Live Preview Stage with Controls -->
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Live Canvas</label>
+                <div id="preview-stage" class="w-full h-48 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center transition-all p-6 relative">
+                    <div id="preview-icon-wrapper" class="w-16 h-16 text-white transition-all flex items-center justify-center">
+                        <!-- SVG injected here -->
+                    </div>
+                </div>
+
+                <!-- Customizer Toolbar -->
+                <div class="flex items-center justify-between flex-wrap gap-3 mt-3">
+                    <!-- Size controls -->
+                    <div class="flex items-center gap-1.5 text-xs">
+                        <span class="text-slate-400 font-medium">Size:</span>
+                        <button type="button" onclick="setPreviewSize('w-6 h-6')" class="size-btn px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs">24px</button>
+                        <button type="button" onclick="setPreviewSize('w-8 h-8')" class="size-btn px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs">32px</button>
+                        <button type="button" onclick="setPreviewSize('w-12 h-12')" class="size-btn px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs">48px</button>
+                        <button type="button" onclick="setPreviewSize('w-16 h-16')" class="size-btn px-2.5 py-1 rounded-lg bg-slate-800 text-white text-xs">64px</button>
+                        <button type="button" onclick="setPreviewSize('w-24 h-24')" class="size-btn px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs">96px</button>
+                    </div>
+
+                    <!-- Color palette -->
+                    <div class="flex items-center gap-1.5 text-xs">
+                        <span class="text-slate-400 font-medium">Color:</span>
+                        <button type="button" onclick="setPreviewColor('text-white')" class="w-6 h-6 rounded-full bg-white border border-slate-300 shadow-sm" title="White"></button>
+                        <button type="button" onclick="setPreviewColor('text-brand-500')" class="w-6 h-6 rounded-full bg-brand-500" title="Brand Blue"></button>
+                        <button type="button" onclick="setPreviewColor('text-rose-500')" class="w-6 h-6 rounded-full bg-rose-500" title="Rose Red"></button>
+                        <button type="button" onclick="setPreviewColor('text-emerald-500')" class="w-6 h-6 rounded-full bg-emerald-500" title="Emerald Green"></button>
+                        <button type="button" onclick="setPreviewColor('text-amber-400')" class="w-6 h-6 rounded-full bg-amber-400" title="Amber Yellow"></button>
+                        <button type="button" onclick="setPreviewColor('text-indigo-400')" class="w-6 h-6 rounded-full bg-indigo-400" title="Indigo Purple"></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Raw SVG Code View -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Raw SVG Markup</label>
+                    <button type="button" onclick="copyInspectorSvg()" class="text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1">
+                        <i class="fa-regular fa-copy"></i> Copy Code
+                    </button>
+                </div>
+                <pre class="bg-slate-900 text-slate-200 p-4 rounded-2xl text-xs font-mono overflow-x-auto max-h-40 scrollbar-thin"><code id="modal-svg-code"></code></pre>
+            </div>
+        </div>
+
+        <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50">
+            <span id="modal-key-badge" class="text-xs font-mono text-slate-500"></span>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="closeInspectorModal()" class="px-4 py-2 rounded-xl text-slate-600 text-xs font-semibold hover:bg-slate-200 transition-colors">
+                    Close
+                </button>
+                <button type="button" onclick="downloadCurrentSvg()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-download"></i> Download SVG
+                </button>
+                <button type="button" onclick="copyInspectorSvg()" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold transition-colors shadow-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-code"></i> Copy SVG
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Toast for Copy Confirmation -->
+<div id="copy-toast" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-800 flex items-center gap-3 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm">
+        <i class="fa-solid fa-check"></i>
+    </div>
+    <div>
+        <p id="copy-toast-title" class="text-xs font-bold text-white">Copied to Clipboard</p>
+        <p id="copy-toast-desc" class="text-[11px] text-slate-400">Ready to paste into your markup.</p>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentActiveCategory = '@activeCategory';
+        let currentInspectedKey = null;
+
+        // Instant Filter Engine
+        const searchInput = document.getElementById('icon-search-input');
+        const clearBtn = document.getElementById('btn-clear-search');
+        const cards = document.querySelectorAll('.icon-card');
+        const emptyState = document.getElementById('no-icons-found');
+        const countBadge = document.getElementById('badge-total-count');
+
+        function applyFilters() {
+            const query = (searchInput.value || '').trim().toLowerCase();
+            clearBtn.classList.toggle('hidden', query.length === 0);
+
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const name = card.getAttribute('data-name') || '';
+                const key = card.getAttribute('data-key') || '';
+                const category = card.getAttribute('data-category') || '';
+                const tags = card.getAttribute('data-tags') || '';
+
+                const matchesCat = currentActiveCategory === 'All' || category.toLowerCase() === currentActiveCategory.toLowerCase();
+                const matchesSearch = !query || name.includes(query) || key.includes(query) || tags.includes(query) || category.toLowerCase().includes(query);
+
+                if (matchesCat && matchesSearch) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            countBadge.textContent = `${visibleCount} icons`;
+            emptyState.classList.toggle('hidden', visibleCount > 0);
+        }
+
+        searchInput.addEventListener('input', applyFilters);
+
+        function clearSearch() {
+            searchInput.value = '';
+            applyFilters();
+            searchInput.focus();
+        }
+
+        function filterCategory(cat) {
+            currentActiveCategory = cat;
+            document.querySelectorAll('.category-pill').forEach(btn => {
+                const bCat = btn.getAttribute('data-category');
+                if (bCat.toLowerCase() === cat.toLowerCase()) {
+                    btn.className = 'category-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-slate-800 text-white shadow-sm';
+                } else {
+                    btn.className = 'category-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200';
+                }
+            });
+            applyFilters();
+        }
+
+        // Toast Feedback
+        function showToast(title, desc) {
+            const toast = document.getElementById('copy-toast');
+            document.getElementById('copy-toast-title').textContent = title;
+            document.getElementById('copy-toast-desc').textContent = desc;
+
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 2500);
+        }
+
+        // Copy Handlers
+        async function copySvg(key) {
+            const textarea = document.getElementById(`svg-raw-${key}`);
+            if (!textarea) return;
+            try {
+                await navigator.clipboard.writeText(textarea.value.trim());
+                showToast('SVG Copied!', `Raw <svg> for '${key}' copied to clipboard.`);
+            } catch (err) {
+                textarea.select();
+                document.execCommand('copy');
+                showToast('SVG Copied!', `Markup for '${key}' copied to clipboard.`);
+            }
+        }
+
+        async function copyKey(key) {
+            try {
+                await navigator.clipboard.writeText(key);
+                showToast('Icon Key Copied!', `'${key}' copied to clipboard.`);
+            } catch (e) {
+                showToast('Copy Failed', 'Please copy manually.');
+            }
+        }
+
+        async function copyAllKeys() {
+            const allKeys = Array.from(cards).map(c => c.getAttribute('data-key')).filter(Boolean).join('\n');
+            try {
+                await navigator.clipboard.writeText(allKeys);
+                showToast('All Keys Copied!', `${cards.length} icon keys copied to clipboard.`);
+            } catch (e) {
+                showToast('Copy Failed', 'Unable to copy to clipboard.');
+            }
+        }
+
+        // Inspector Modal
+        function inspectIcon(key) {
+            currentInspectedKey = key;
+            const textarea = document.getElementById(`svg-raw-${key}`);
+            const card = document.querySelector(`.icon-card[data-key="${key}"]`);
+            if (!textarea || !card) return;
+
+            const name = card.querySelector('h3').textContent.trim();
+            const category = card.getAttribute('data-category');
+            const svgMarkup = textarea.value.trim();
+
+            document.getElementById('modal-title').textContent = name;
+            document.getElementById('modal-category').textContent = category;
+            document.getElementById('modal-key-badge').textContent = `Key: #${key}`;
+            document.getElementById('modal-svg-code').textContent = svgMarkup;
+
+            document.getElementById('modal-icon-badge').innerHTML = svgMarkup;
+            document.getElementById('preview-icon-wrapper').innerHTML = svgMarkup;
+
+            document.getElementById('inspector-modal').classList.remove('hidden');
+        }
+
+        function closeInspectorModal() {
+            document.getElementById('inspector-modal').classList.add('hidden');
+        }
+
+        function setPreviewSize(sizeClass) {
+            const wrap = document.getElementById('preview-icon-wrapper');
+            wrap.className = wrap.className.replace(/w-\d+ h-\d+/g, '').trim() + ' ' + sizeClass;
+            document.querySelectorAll('.size-btn').forEach(b => {
+                b.classList.remove('bg-slate-800', 'text-white');
+                b.classList.add('border', 'border-slate-200', 'text-slate-600');
+            });
+            event.target.classList.add('bg-slate-800', 'text-white');
+            event.target.classList.remove('border', 'border-slate-200', 'text-slate-600');
+        }
+
+        function setPreviewColor(colorClass) {
+            const wrap = document.getElementById('preview-icon-wrapper');
+            wrap.className = wrap.className.replace(/text-[a-z]+-\d+|text-white/g, '').trim() + ' ' + colorClass;
+        }
+
+        function copyInspectorSvg() {
+            if (currentInspectedKey) copySvg(currentInspectedKey);
+        }
+
+        function downloadCurrentSvg() {
+            if (!currentInspectedKey) return;
+            const textarea = document.getElementById(`svg-raw-${currentInspectedKey}`);
+            if (!textarea) return;
+
+            const blob = new Blob([textarea.value.trim()], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentInspectedKey}.svg`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('SVG Downloaded', `${currentInspectedKey}.svg downloaded.`);
+        }
+
+        // Close on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeInspectorModal();
+        });
+    </script>
+}

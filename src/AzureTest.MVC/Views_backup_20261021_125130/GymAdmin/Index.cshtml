@@ -1,0 +1,140 @@
+@model IEnumerable<AzureTest.Domain.Documents.Gym.Training>
+@{
+    ViewData["Title"] = "Gym Trainings";
+    string search = ViewBag.Search as string ?? "";
+    string sort = ViewBag.Sort as string ?? "Name";
+    string dir = ViewBag.Dir as string ?? "asc";
+    int pageNo = ViewBag.Page ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+
+    string GetSortLink(string sortBy, string label)
+    {
+        var isCurrentSort = (sort == sortBy);
+        var nextDir = isCurrentSort && dir == "asc" ? "desc" : "asc";
+        var icon = isCurrentSort ? (dir == "desc" ? "fa-sort-down text-brand-600" : "fa-sort-up text-brand-600") : "fa-sort text-slate-300";
+        var url = $"?search={search}&sort={sortBy}&dir={nextDir}";
+        
+        return $@"<a href=""{url}"" class=""group inline-flex items-center hover:text-slate-700 transition-colors"">{label} <i class=""fa-solid {icon} ml-1""></i></a>";
+    }
+
+    string GetPageUrl(int p)
+    {
+        return $"?search={search}&sort={sort}&dir={dir}&page={p}";
+    }
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new("Dashboard", "/"),
+        new("Gym Admin", "/GymAdmin"),
+        new("Trainings", IsActive: true)
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel(
+        "Gym Trainings",
+        "Manage workout exercises, sets/reps definitions, calorie baselines, and media links.",
+        "fa-solid fa-dumbbell",
+        breadcrumbs: breadcrumbs,
+        ActionText: "Add Training",
+        ActionUrl: Url.Action("CreateTraining"),
+        ActionIcon: "fa-solid fa-plus"
+    );
+
+    var emptyModel = new AzureTest.MVC.Models.EmptyStateModel(
+        "No Trainings Found",
+        string.IsNullOrEmpty(search) ? "Get started by adding your first gym exercise." : "No gym exercises match your current search criteria.",
+        "fa-solid fa-dumbbell",
+        ActionText: "Add Training",
+        ActionUrl: Url.Action("CreateTraining"),
+        ActionIcon: "fa-solid fa-plus"
+    );
+
+    var paginationModel = new AzureTest.MVC.Models.PaginationModel(
+        pageNo,
+        totalPages,
+        10,
+        totalPages * 10,
+        p => GetPageUrl(p)
+    );
+}
+
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+<!-- Search & Filters -->
+<div class="mb-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+    <form method="get" class="flex flex-col md:flex-row gap-4 items-end">
+        <input type="hidden" name="sort" value="@sort" />
+        <input type="hidden" name="dir" value="@dir" />
+        
+        <div class="flex-1 w-full">
+            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Search Trainings</label>
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input name="search" type="text" value="@search" placeholder="Search by exercise name or description..." 
+                       class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" />
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-2 w-full md:w-auto">
+            <button type="submit" class="inline-flex justify-center items-center px-4 py-2 text-xs font-semibold rounded-xl text-white bg-slate-800 hover:bg-slate-900 shadow-2xs transition-colors w-full md:w-auto">
+                <i class="fa-solid fa-filter mr-1.5 text-slate-300"></i> Filter
+            </button>
+            @if(!string.IsNullOrEmpty(search)) {
+                <a asp-action="Index" class="inline-flex justify-center items-center px-4 py-2 border border-slate-200 text-xs font-semibold rounded-xl text-slate-700 bg-white hover:bg-slate-50 transition-colors w-full md:w-auto">
+                    <i class="fa-solid fa-rotate-left mr-1.5 text-slate-400"></i> Reset
+                </a>
+            }
+        </div>
+    </form>
+</div>
+
+@if (!Model.Any())
+{
+    <partial name="UiComponents/_EmptyState" model="emptyModel" />
+}
+else
+{
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-100 text-xs">
+                <thead class="bg-slate-50/75">
+                    <tr>
+                        <th scope="col" class="px-6 py-3.5 text-left font-bold text-slate-600 uppercase tracking-wider">@Html.Raw(GetSortLink("Name", "Exercise Name"))</th>
+                        <th scope="col" class="px-6 py-3.5 text-left font-bold text-slate-600 uppercase tracking-wider">@Html.Raw(GetSortLink("Type", "Type"))</th>
+                        <th scope="col" class="px-6 py-3.5 text-right font-bold text-slate-600 uppercase tracking-wider">Base Calories</th>
+                        <th scope="col" class="px-6 py-3.5 text-right font-bold text-slate-600 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    @foreach (var item in Model)
+                    {
+                        <tr class="hover:bg-slate-50/50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="font-bold text-slate-900">@item.Name</div>
+                                @if (!string.IsNullOrWhiteSpace(item.Description))
+                                {
+                                    <div class="text-2xs text-slate-400 line-clamp-1 max-w-md">@item.Description</div>
+                                }
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-semibold @(item.Type == AzureTest.Domain.Enums.TrainingType.SetAndRest ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-emerald-50 text-emerald-700 border border-emerald-200")">
+                                    <i class="fa-solid @(item.Type == AzureTest.Domain.Enums.TrainingType.SetAndRest ? "fa-repeat" : "fa-stopwatch") mr-1"></i>
+                                    @item.Type
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right font-mono font-semibold text-slate-800">
+                                @item.BaseCaloriesBurn <span class="text-2xs text-slate-400 font-normal">kcal</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right">
+                                <a asp-action="EditTraining" asp-route-id="@item.Id" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition-colors" title="Edit Training">
+                                    <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <partial name="UiComponents/_Pagination" model="paginationModel" />
+    </div>
+}

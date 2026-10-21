@@ -1,0 +1,656 @@
+@model AzureTest.MVC.Models.PomodoroAnalyticsViewModel
+@using AzureTest.Domain.Enums.Pomodoro
+@using AzureTest.MVC.Extensions
+@{
+    ViewData["Title"] = "Pomodoro Analytics & History";
+
+    var dailyLabelsJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.DailyTrend.Select(d => d.DateLabel));
+    var dailyMinutesJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.DailyTrend.Select(d => d.FocusMinutes));
+    var dailyCountsJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.DailyTrend.Select(d => d.SessionCount));
+
+    var typeLabelsJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.SessionTypeDistribution.Select(t => t.TypeLabel));
+    var typeMinutesJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.SessionTypeDistribution.Select(t => t.TotalMinutes));
+
+    var catLabelsJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.CategoryDistribution.Select(c => c.Category));
+    var catMinutesJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.CategoryDistribution.Select(c => c.FocusMinutes));
+
+    var hourlyLabelsJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.HourlyDistribution.Select(h => $"{h.Hour:D2}:00"));
+    var hourlyMinutesJson = System.Text.Json.JsonSerializer.Serialize(Model.Analytics.HourlyDistribution.Select(h => h.FocusMinutes));
+}
+
+@using AzureTest.MVC.Models
+
+<partial name="UiComponents/_Breadcrumb" model='new List<BreadcrumbItem> { new BreadcrumbItem("Pomodoro", Url.Action("Index", "Pomodoro")), new BreadcrumbItem("Analytics & Logs", active: true) }' />
+
+<div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 text-lg shadow-2xs shrink-0">
+            <i class="fa-solid fa-chart-pie"></i>
+        </div>
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+                Pomodoro Analytics & Logs
+            </h1>
+            <p class="text-xs text-slate-500 mt-0.5">Deep insights into concentration cycles, category distribution, and focus streaks.</p>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+        <button type="button" onclick="openCreateSessionModal()" class="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition-colors shadow-2xs">
+            <i class="fa-solid fa-plus text-2xs"></i>
+            <span>Log Session</span>
+        </button>
+        <a asp-action="Index" class="inline-flex items-center gap-2 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl transition-colors shadow-2xs">
+            <i class="fa-solid fa-play text-2xs"></i>
+            <span>Launch Timer</span>
+        </a>
+    </div>
+</div>
+
+<!-- Primary Metric Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Focus Time</span>
+            <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-brain"></i>
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="text-3xl font-extrabold text-slate-900">
+                @Math.Round(Model.Analytics.TotalFocusMinutesAllTime / 60.0, 1) <span class="text-sm font-medium text-slate-400">hrs</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+                @Model.Analytics.TotalFocusMinutesThisMonth mins this month
+            </p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Completed Sessions</span>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="text-3xl font-extrabold text-slate-900">
+                @Model.Analytics.TotalCompletedSessions
+            </div>
+            <p class="text-xs text-emerald-600 font-medium mt-1">
+                @Model.Analytics.CompletionRatePercentage% completion rate
+            </p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Current Daily Streak</span>
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-fire text-amber-500"></i>
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="text-3xl font-extrabold text-slate-900">
+                @Model.Analytics.CurrentDailyStreak <span class="text-sm font-medium text-slate-400">days</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+                @Model.Analytics.CompletedTodayCount focus sessions today
+            </p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Abandoned Sessions</span>
+            <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-circle-xmark"></i>
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="text-3xl font-extrabold text-slate-900">
+                @Model.Analytics.TotalAbandonedSessions
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+                Ended or stopped early
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Grid: 1. Daily Trend & 2. Type Breakdown -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+    <!-- Daily Focus Minutes Trend -->
+    <div class="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-base font-bold text-slate-900">14-Day Focus Trend</h3>
+                <p class="text-xs text-slate-500">Daily focus minutes and completed intervals</p>
+            </div>
+        </div>
+        <div class="h-64 relative">
+            <canvas id="dailyTrendChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Session Type Donut -->
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div>
+            <h3 class="text-base font-bold text-slate-900">Session Distribution</h3>
+            <p class="text-xs text-slate-500 mb-4">Focus vs Breaks allocation</p>
+        </div>
+        <div class="h-56 relative flex items-center justify-center">
+            <canvas id="typeDonutChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Grid 2: Category Distribution & Hourly Productivity -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-base font-bold text-slate-900">Focus by Category</h3>
+                <p class="text-xs text-slate-500">Time spent per activity topic</p>
+            </div>
+        </div>
+        <div class="h-60 relative">
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-base font-bold text-slate-900">Hourly Productivity Heatmap</h3>
+                <p class="text-xs text-slate-500">Most active focus hours throughout the day</p>
+            </div>
+        </div>
+        <div class="h-60 relative">
+            <canvas id="hourlyChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Sessions Table & Filter -->
+<div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm mb-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+            <h3 class="text-base font-bold text-slate-900">Recent Focus Sessions</h3>
+            <p class="text-xs text-slate-500">Detailed timeline of recorded pomodoro periods</p>
+        </div>
+
+        <form method="get" class="flex items-center gap-2 flex-wrap">
+            <input type="text" name="Category" value="@Model.Filter.Category" placeholder="Filter Category..."
+                   class="rounded-xl border-slate-200 text-xs py-1.5 px-3 focus:border-brand-500 focus:ring-brand-500" />
+            <input type="date" name="FromDate" value="@(Model.Filter.FromDate?.ToString("yyyy-MM-dd"))"
+                   class="rounded-xl border-slate-200 text-xs py-1.5 px-3 focus:border-brand-500 focus:ring-brand-500" />
+            <button type="submit" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
+                Filter
+            </button>
+        </form>
+    </div>
+
+    @if (!Model.RecentSessions.Any())
+    {
+        <div class="text-center py-12 text-slate-400">
+            <i class="fa-solid fa-hourglass-empty text-3xl mb-2 block"></i>
+            <p class="text-sm">No pomodoro sessions found.</p>
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        <th class="py-3 px-4">Session Title</th>
+                        <th class="py-3 px-4">Category</th>
+                        <th class="py-3 px-4">Type</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4">Duration</th>
+                        <th class="py-3 px-4">Started At</th>
+                        <th class="py-3 px-4">Skin Used</th>
+                        <th class="py-3 px-4 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-sm">
+                    @foreach (var s in Model.RecentSessions)
+                    {
+                        var mins = Math.Round(s.ActualDurationSeconds / 60.0, 1);
+                        var isSuccess = s.Status == PomodoroStatus.Completed;
+
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="py-3 px-4 font-semibold text-slate-800">
+                                <div>@s.Title</div>
+                                @if (!string.IsNullOrEmpty(s.TaskTitle))
+                                {
+                                    <div class="text-[11px] text-brand-600 font-normal flex items-center gap-1 mt-0.5">
+                                        <i class="fa-solid fa-list-check text-[10px]"></i> @s.TaskTitle
+                                    </div>
+                                }
+                            </td>
+                            <td class="py-3 px-4">
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+                                    @(string.IsNullOrWhiteSpace(s.Category) ? "General" : s.Category)
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-xs font-medium text-slate-600">
+                                @s.SessionType
+                            </td>
+                            <td class="py-3 px-4">
+                                <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold @(isSuccess ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700")">
+                                    @s.Status
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 font-medium text-slate-700 text-xs">
+                                @mins min <span class="text-slate-400 font-normal">(@s.ActualDurationSeconds s)</span>
+                            </td>
+                            <td class="py-3 px-4 text-slate-500 text-xs">
+                                @s.StartedAtUtc.ToString("yyyy-MM-dd HH:mm")
+                            </td>
+                            <td class="py-3 px-4 text-slate-500 text-xs">
+                                @s.UsedSkin
+                            </td>
+                            <td class="py-3 px-4 text-right">
+                                <div class="flex items-center justify-end gap-1">
+                                    <button type="button" onclick="openEditSessionModal({ id: '@s.Id', title: '@Html.Raw(s.Title.Replace("'", "\\'"))', category: '@Html.Raw((s.Category ?? "").Replace("'", "\\'"))', taskItemId: '@(s.TaskItemId?.ToString() ?? "")', sessionType: @((int)s.SessionType), status: @((int)s.Status), plannedDurationSeconds: @s.PlannedDurationSeconds, actualDurationSeconds: @s.ActualDurationSeconds, startedAtUtc: '@s.StartedAtUtc.ToString("yyyy-MM-ddTHH:mm")', usedSkin: @((int)s.UsedSkin), notes: '@Html.Raw((s.Notes ?? "").Replace("'", "\\'").Replace("\r", "").Replace("\n", "\\n"))' })" class="text-slate-400 hover:text-blue-600 transition-colors p-1" title="Edit session">
+                                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                    </button>
+                                    <button type="button" onclick="openDeleteSessionModal('@s.Id', '@Html.Raw(s.Title.Replace("'", "\\'"))')" class="text-slate-400 hover:text-rose-600 transition-colors p-1" title="Delete record">
+                                        <i class="fa-solid fa-trash-can text-xs"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Delete Session Confirmation Modal -->
+<div id="deleteSessionModal" class="relative z-50 hidden" aria-labelledby="delete-session-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600 sm:mx-0 sm:h-10 sm:w-10">
+                            <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                            <h3 class="text-base font-bold text-slate-900" id="delete-session-title">Delete Session Record</h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-slate-500">Are you sure you want to delete session <strong id="deleteSessionTitle" class="text-slate-800"></strong>? This record will be permanently removed from your focus history.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 gap-2">
+                    <form id="deleteSessionForm" asp-action="Delete" method="post" class="inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" id="deleteSessionId" value="" />
+                        <button type="submit" class="inline-flex w-full justify-center rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-500 sm:w-auto transition-colors">
+                            Delete Session
+                        </button>
+                    </form>
+                    <button type="button" onclick="closeDeleteSessionModal()" class="mt-3 inline-flex w-full justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 sm:mt-0 sm:w-auto transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Manual Session Modal -->
+<div id="createSessionModal" class="relative z-50 hidden" aria-labelledby="create-session-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="text-base font-bold text-slate-900" id="create-session-title"><i class="fa-solid fa-plus text-brand-600 mr-2"></i> Log Focus Session</h3>
+                    <button type="button" onclick="closeCreateSessionModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <form asp-action="CreateManualSession" method="post" class="p-6 space-y-4">
+                    @Html.AntiForgeryToken()
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Session Title <span class="text-rose-500">*</span></label>
+                        <input type="text" name="Title" required class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-4 py-2 border" placeholder="e.g. Code Review, Deep Study" />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Category / Tag</label>
+                            <input type="text" name="Category" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" placeholder="e.g. Coding, Design" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Linked Task <span class="text-xs text-slate-400 font-normal">(Optional)</span></label>
+                            <select name="TaskItemId" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border">
+                                <option value="">-- None --</option>
+                                @foreach (var task in Model.Tasks)
+                                {
+                                    <option value="@task.Id">@task.Title</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Session Type</label>
+                            <select name="SessionType" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border">
+                                <option value="1">Focus Session</option>
+                                <option value="2">Short Break</option>
+                                <option value="3">Long Break</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Status</label>
+                            <select name="Status" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border">
+                                <option value="2">Completed</option>
+                                <option value="3">Abandoned</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Planned Duration (seconds)</label>
+                            <input type="number" name="PlannedDurationSeconds" value="1500" min="1" max="86400" required class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Actual Duration (seconds)</label>
+                            <input type="number" name="ActualDurationSeconds" value="1500" min="0" max="86400" required class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Started At (UTC)</label>
+                            <input type="datetime-local" name="StartedAtUtc" value="@DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm")" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Skin Used</label>
+                            <select name="UsedSkin" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border">
+                                <option value="1">Digital</option>
+                                <option value="2">Analog</option>
+                                <option value="3">Sand Glass</option>
+                                <option value="4">Kitchen Timer</option>
+                                <option value="5">Candle</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Notes / Reflection</label>
+                        <textarea name="Notes" rows="2" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" placeholder="Key outcomes or thoughts..."></textarea>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                        <button type="button" onclick="closeCreateSessionModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors">
+                            Save Session
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Session Modal -->
+<div id="editSessionModal" class="relative z-50 hidden" aria-labelledby="edit-session-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="text-base font-bold text-slate-900" id="edit-session-title"><i class="fa-solid fa-pen-to-square text-brand-600 mr-2"></i> Edit Focus Session</h3>
+                    <button type="button" onclick="closeEditSessionModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <form asp-action="EditSession" method="post" class="p-6 space-y-4">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Id" id="editSessionId" />
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Session Title <span class="text-rose-500">*</span></label>
+                        <input type="text" name="Title" id="editSessionTitle" required class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-4 py-2 border" />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Category / Tag</label>
+                            <input type="text" name="Category" id="editSessionCategory" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Linked Task <span class="text-xs text-slate-400 font-normal">(Optional)</span></label>
+                            <select name="TaskItemId" id="editSessionTaskItemId" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border">
+                                <option value="">-- None --</option>
+                                @foreach (var task in Model.Tasks)
+                                {
+                                    <option value="@task.Id">@task.Title</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Session Type</label>
+                            <select name="SessionType" id="editSessionType" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border">
+                                <option value="1">Focus Session</option>
+                                <option value="2">Short Break</option>
+                                <option value="3">Long Break</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Status</label>
+                            <select name="Status" id="editSessionStatus" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border">
+                                <option value="1">Running</option>
+                                <option value="2">Completed</option>
+                                <option value="3">Abandoned</option>
+                                <option value="4">Paused</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Planned Duration (seconds)</label>
+                            <input type="number" name="PlannedDurationSeconds" id="editSessionPlannedDuration" min="1" max="86400" required class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Actual Duration (seconds)</label>
+                            <input type="number" name="ActualDurationSeconds" id="editSessionActualDuration" min="0" max="86400" required class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Started At (UTC)</label>
+                            <input type="datetime-local" name="StartedAtUtc" id="editSessionStartedAt" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Skin Used</label>
+                            <select name="UsedSkin" id="editSessionUsedSkin" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border">
+                                <option value="1">Digital</option>
+                                <option value="2">Analog</option>
+                                <option value="3">Sand Glass</option>
+                                <option value="4">Kitchen Timer</option>
+                                <option value="5">Candle</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Notes / Reflection</label>
+                        <textarea name="Notes" id="editSessionNotes" rows="2" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2 border"></textarea>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                        <button type="button" onclick="closeEditSessionModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function openCreateSessionModal() {
+            document.getElementById('createSessionModal').classList.remove('hidden');
+        }
+        function closeCreateSessionModal() {
+            document.getElementById('createSessionModal').classList.add('hidden');
+        }
+
+        function openEditSessionModal(session) {
+            document.getElementById('editSessionId').value = session.id;
+            document.getElementById('editSessionTitle').value = session.title;
+            document.getElementById('editSessionCategory').value = session.category || '';
+            document.getElementById('editSessionTaskItemId').value = session.taskItemId || '';
+            document.getElementById('editSessionType').value = session.sessionType;
+            document.getElementById('editSessionStatus').value = session.status;
+            document.getElementById('editSessionPlannedDuration').value = session.plannedDurationSeconds;
+            document.getElementById('editSessionActualDuration').value = session.actualDurationSeconds;
+            document.getElementById('editSessionStartedAt').value = session.startedAtUtc;
+            document.getElementById('editSessionUsedSkin').value = session.usedSkin;
+            document.getElementById('editSessionNotes').value = session.notes || '';
+            document.getElementById('editSessionModal').classList.remove('hidden');
+        }
+        function closeEditSessionModal() {
+            document.getElementById('editSessionModal').classList.add('hidden');
+        }
+
+        function openDeleteSessionModal(id, title) {
+            document.getElementById('deleteSessionId').value = id;
+            document.getElementById('deleteSessionTitle').textContent = title;
+            document.getElementById('deleteSessionModal').classList.remove('hidden');
+        }
+        function closeDeleteSessionModal() {
+            document.getElementById('deleteSessionModal').classList.add('hidden');
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // 1. Daily Trend Bar Chart
+            const ctxDaily = document.getElementById('dailyTrendChart').getContext('2d');
+            new Chart(ctxDaily, {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(dailyLabelsJson),
+                    datasets: [{
+                        label: 'Focus Minutes',
+                        data: @Html.Raw(dailyMinutesJson),
+                        backgroundColor: 'rgba(244, 63, 94, 0.75)',
+                        borderColor: '#f43f5e',
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(241, 245, 249, 1)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // 2. Session Type Donut Chart
+            const ctxType = document.getElementById('typeDonutChart').getContext('2d');
+            new Chart(ctxType, {
+                type: 'doughnut',
+                data: {
+                    labels: @Html.Raw(typeLabelsJson),
+                    datasets: [{
+                        data: @Html.Raw(typeMinutesJson),
+                        backgroundColor: ['#f43f5e', '#10b981', '#6366f1'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            // 3. Category Horizontal Bar Chart
+            const ctxCat = document.getElementById('categoryChart').getContext('2d');
+            new Chart(ctxCat, {
+                type: 'bar',
+                data: {
+                    labels: @Html.Raw(catLabelsJson),
+                    datasets: [{
+                        label: 'Minutes',
+                        data: @Html.Raw(catMinutesJson),
+                        backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: 'rgba(241, 245, 249, 1)' } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // 4. Hourly Productivity Pattern
+            const ctxHourly = document.getElementById('hourlyChart').getContext('2d');
+            new Chart(ctxHourly, {
+                type: 'line',
+                data: {
+                    labels: @Html.Raw(hourlyLabelsJson),
+                    datasets: [{
+                        label: 'Minutes Focused',
+                        data: @Html.Raw(hourlyMinutesJson),
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.15)',
+                        fill: true,
+                        tension: 0.35,
+                        borderWidth: 2,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(241, 245, 249, 1)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        });
+    </script>
+}

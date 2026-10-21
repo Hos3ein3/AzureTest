@@ -1,0 +1,27 @@
+@{
+    ViewData["Title"] = "Page Not Found";
+}
+
+<div class="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center">
+    <div class="mb-6 relative inline-block">
+        <div class="w-20 h-20 rounded-2xl bg-slate-100 border border-slate-200/80 flex items-center justify-center shadow-2xs text-slate-400 text-3xl">
+            <i class="fa-solid fa-ghost"></i>
+        </div>
+    </div>
+
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-2xs font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200 mb-3">
+        <i class="fa-solid fa-circle-question text-slate-500"></i> Error 404
+    </span>
+
+    <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 mb-2">Page Not Found</h1>
+    <p class="text-xs text-slate-500 mb-6 max-w-md">Sorry, we couldn't find the resource you are looking for. It may have been moved, renamed, or deleted.</p>
+
+    <div class="flex items-center justify-center gap-3">
+        <a href="/" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+            <i class="fa-solid fa-house"></i> Go Back Home
+        </a>
+        <a href="#" onclick="history.back(); return false;" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+            <i class="fa-solid fa-arrow-left"></i> Previous Page
+        </a>
+    </div>
+</div>

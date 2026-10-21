@@ -1,0 +1,228 @@
+@model AzureTest.MVC.ViewModels.AuditLogs.AuditLogListViewModel
+@{
+    ViewData["Title"] = "System Audit Trail";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Administration", Url = "#" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Audit Logs", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Security Audit Trail",
+        Subtitle = "Immutable security logs tracking command mutations and query executions.",
+        Icon = "fa-solid fa-clock-rotate-left",
+        Badge = Model.IsAdmin ? "Global Scope" : "Tenant Scope",
+        Breadcrumbs = breadcrumbs
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+<!-- Status Scope Bar -->
+<div class="flex flex-wrap items-center justify-between gap-3 mb-6 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
+    <div class="flex flex-wrap items-center gap-2">
+        @if (Model.IsAdmin)
+        {
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+                <i class="fa-solid fa-shield-halved text-indigo-600"></i> Admin Global Scope
+            </span>
+        }
+        else
+        {
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                <i class="fa-solid fa-user-lock text-emerald-600"></i> Personal Activity Scope
+            </span>
+        }
+
+        @if (Model.IsImpersonating)
+        {
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-bold bg-amber-50 text-amber-700 border border-amber-300">
+                <i class="fa-solid fa-user-secret text-amber-600"></i> Tenant Impersonation Active
+            </span>
+        }
+    </div>
+
+    <div class="text-2xs text-slate-400 font-medium font-mono">
+        Total Records: @Model.TotalCount.ToString("N0")
+    </div>
+</div>
+
+<!-- Filters Card -->
+<div class="mb-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+    <form method="get" asp-action="Index">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="md:col-span-2">
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Search Logs</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <input type="text" name="searchTerm" value="@Model.SearchTerm" placeholder="Search by action name, user, error..." class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Action Type</label>
+                <select name="actionType" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white">
+                    <option value="" selected="@(string.IsNullOrEmpty(Model.ActionType))">All Actions (Commands &amp; Queries)</option>
+                    <option value="Command" selected="@(Model.ActionType == "Command")">Commands (Mutations)</option>
+                    <option value="Query" selected="@(Model.ActionType == "Query")">Queries (Read-Only)</option>
+                </select>
+            </div>
+
+            <div class="flex items-end gap-2">
+                <button type="submit" class="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition-colors">
+                    <i class="fa-solid fa-filter"></i> Filter
+                </button>
+                @if (!string.IsNullOrEmpty(Model.SearchTerm) || !string.IsNullOrEmpty(Model.ActionType))
+                {
+                    <a asp-action="Index" class="inline-flex justify-center items-center p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold shadow-2xs transition-colors" title="Clear Filter">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                }
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Logs Table Card -->
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+    <div class="px-5 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-brand-600 text-xs"></i>
+            <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Audit Records (@Model.TotalCount total)</span>
+        </div>
+        <span class="text-2xs text-slate-400 font-mono">Page @Model.PageNumber of @Model.TotalPages</span>
+    </div>
+
+    @if (Model.Logs.Count == 0)
+    {
+        <div class="p-8">
+            <partial name="UiComponents/_EmptyState" model='new AzureTest.MVC.Models.EmptyStateModel { Title = "No Audit Logs Found", Description = "No activity records matched your filter criteria. Commands and queries populate this log automatically as they run.", Icon = "fa-solid fa-clock-rotate-left" }' />
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200/80 uppercase tracking-wider text-2xs">
+                    <tr>
+                        <th scope="col" class="px-5 py-3.5">Timestamp (UTC)</th>
+                        <th scope="col" class="px-4 py-3.5">Type</th>
+                        <th scope="col" class="px-4 py-3.5">Action Name</th>
+                        <th scope="col" class="px-4 py-3.5">User &amp; Tenant</th>
+                        <th scope="col" class="px-4 py-3.5">Duration</th>
+                        <th scope="col" class="px-4 py-3.5">Status</th>
+                        <th scope="col" class="px-4 py-3.5">Payload Summary</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach (var log in Model.Logs)
+                    {
+                        var isCommand = string.Equals(log.ActionType, "Command", StringComparison.OrdinalIgnoreCase);
+                        <tr class="hover:bg-slate-50/70 transition-colors">
+                            <td class="px-5 py-3.5 font-mono text-slate-600 whitespace-nowrap text-2xs">
+                                @log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")
+                            </td>
+                            <td class="px-4 py-3.5 whitespace-nowrap">
+                                @if (isCommand)
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-blue-50 text-blue-700 border border-blue-200/80">
+                                        <i class="fa-solid fa-bolt text-3xs"></i> Command
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+                                        <i class="fa-solid fa-eye text-3xs"></i> Query
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-4 py-3.5 font-mono font-bold text-slate-900 break-all text-xs">
+                                @log.ActionName
+                            </td>
+                            <td class="px-4 py-3.5">
+                                <div class="font-bold text-slate-800 text-xs">
+                                    @(string.IsNullOrWhiteSpace(log.UserName) ? "Anonymous" : log.UserName)
+                                </div>
+                                <div class="text-slate-400 font-mono text-3xs truncate max-w-[200px]" title="Tenant: @log.TenantId">
+                                    Tenant: @(log.TenantId != Guid.Empty ? log.TenantId.ToString() : "Global")
+                                </div>
+                                @if (log.ImpersonatedByAdminId.HasValue)
+                                {
+                                    <div class="mt-1 inline-flex items-center gap-1 text-3xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/80">
+                                        <i class="fa-solid fa-user-secret"></i> Impersonated by Admin
+                                    </div>
+                                }
+                            </td>
+                            <td class="px-4 py-3.5 whitespace-nowrap font-mono text-xs">
+                                @if (log.ExecutionDurationMs < 50)
+                                {
+                                    <span class="text-emerald-600 font-semibold">@log.ExecutionDurationMs ms</span>
+                                }
+                                else if (log.ExecutionDurationMs < 300)
+                                {
+                                    <span class="text-amber-600 font-semibold">@log.ExecutionDurationMs ms</span>
+                                }
+                                else
+                                {
+                                    <span class="text-rose-600 font-bold">@log.ExecutionDurationMs ms</span>
+                                }
+                            </td>
+                            <td class="px-4 py-3.5 whitespace-nowrap">
+                                @if (log.IsSuccess)
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                                        <i class="fa-solid fa-circle-check text-3xs"></i> Success
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-rose-50 text-rose-700 border border-rose-200/80" title="@log.ErrorMessage">
+                                        <i class="fa-solid fa-circle-xmark text-3xs"></i> Failed
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-4 py-3.5 text-slate-500 max-w-xs truncate font-mono text-3xs" title="@log.Payload">
+                                @if (!string.IsNullOrWhiteSpace(log.ErrorMessage))
+                                {
+                                    <span class="text-rose-600 font-sans font-bold">@log.ErrorMessage</span>
+                                }
+                                else if (!string.IsNullOrWhiteSpace(log.Payload))
+                                {
+                                    <span>@log.Payload</span>
+                                }
+                                else
+                                {
+                                    <span class="text-slate-300">-</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            var paginationModel = new AzureTest.MVC.Models.PaginationModel
+            {
+                CurrentPage = Model.PageNumber,
+                TotalPages = Model.TotalPages,
+                PageSize = Model.PageSize,
+                TotalItems = Model.TotalCount,
+                BaseUrl = "/AuditLog/Index",
+                RouteParams = new Dictionary<string, string>
+                {
+                    { "searchTerm", Model.SearchTerm ?? "" },
+                    { "actionType", Model.ActionType ?? "" },
+                    { "pageSize", Model.PageSize.ToString() }
+                }
+            };
+            <partial name="UiComponents/_Pagination" model="paginationModel" />
+        }
+    }
+</div>

@@ -1,0 +1,735 @@
+@using AzureTest.Contracts.DTOs.Common
+@using AzureTest.Contracts.DTOs.Media
+@using AzureTest.Domain.Media.Enums
+@using AzureTest.MVC.Models
+@model PagedResult<WatchItemDto, WatchListFilter>
+
+@{
+    ViewData["Title"] = "Media Hub";
+    var currentFilter = Model.Filters ?? new WatchListFilter();
+    var currentStatus = currentFilter.Status;
+    var currentType = currentFilter.Type;
+
+    var headerModel = new PageHeaderModel(
+        Title: "My Watchlist",
+        Subtitle: "Track movies, TV series and anime you watch, want to watch, or finished.",
+        Icon: "fa-solid fa-film",
+        Badge: $"{Model.TotalCount} Titles",
+        ActionText: "Discover New",
+        ActionUrl: Url.Action("Discover", "Media"),
+        ActionIcon: "fa-solid fa-compass"
+    );
+}
+
+<div class="space-y-6">
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
+
+    <!-- Top Action Bar & Quick Nav -->
+    <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+        <!-- Status Tabs -->
+        <div class="flex flex-wrap items-center gap-1.5">
+            <a asp-action="Index" asp-route-Status="" asp-route-Type="@currentType" asp-route-SearchTerm="@currentFilter.SearchTerm"
+               class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors @(currentStatus == null ? "bg-brand-600 text-white shadow-2xs" : "bg-slate-100 text-slate-600 hover:bg-slate-200")">
+                <i class="fa-solid fa-layer-group mr-1.5 text-2xs"></i>All
+            </a>
+            <a asp-action="Index" asp-route-Status="@WatchStatus.Watching" asp-route-Type="@currentType" asp-route-SearchTerm="@currentFilter.SearchTerm"
+               class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors @(currentStatus == WatchStatus.Watching ? "bg-blue-600 text-white shadow-2xs" : "bg-slate-100 text-slate-600 hover:bg-slate-200")">
+                <i class="fa-solid fa-play mr-1.5 text-2xs"></i>Watching
+            </a>
+            <a asp-action="Index" asp-route-Status="@WatchStatus.PlanToWatch" asp-route-Type="@currentType" asp-route-SearchTerm="@currentFilter.SearchTerm"
+               class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors @(currentStatus == WatchStatus.PlanToWatch ? "bg-amber-600 text-white shadow-2xs" : "bg-slate-100 text-slate-600 hover:bg-slate-200")">
+                <i class="fa-solid fa-bookmark mr-1.5 text-2xs"></i>Wishlist
+            </a>
+            <a asp-action="Index" asp-route-Status="@WatchStatus.Completed" asp-route-Type="@currentType" asp-route-SearchTerm="@currentFilter.SearchTerm"
+               class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors @(currentStatus == WatchStatus.Completed ? "bg-emerald-600 text-white shadow-2xs" : "bg-slate-100 text-slate-600 hover:bg-slate-200")">
+                <i class="fa-solid fa-check mr-1.5 text-2xs"></i>Finished
+            </a>
+            <a asp-action="Index" asp-route-Status="@WatchStatus.Dropped" asp-route-Type="@currentType" asp-route-SearchTerm="@currentFilter.SearchTerm"
+               class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors @(currentStatus == WatchStatus.Dropped ? "bg-rose-600 text-white shadow-2xs" : "bg-slate-100 text-slate-600 hover:bg-slate-200")">
+                <i class="fa-solid fa-stop mr-1.5 text-2xs"></i>Stopped
+            </a>
+        </div>
+
+        <!-- Quick Utility Buttons -->
+        <div class="flex items-center gap-2">
+            <a asp-action="Search" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors">
+                <i class="fa-solid fa-magnifying-glass text-2xs"></i>
+                <span>Search TMDb</span>
+            </a>
+            <a asp-action="Export" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors" title="Export JSON backup">
+                <i class="fa-solid fa-file-export text-2xs"></i>
+                <span>Export</span>
+            </a>
+            <button type="button" onclick="document.getElementById('importModal').classList.remove('hidden')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors">
+                <i class="fa-solid fa-file-import text-2xs"></i>
+                <span>Import</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter & Search Form -->
+    <form method="get" asp-action="Index" class="grid grid-cols-1 sm:grid-cols-12 gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+        <input type="hidden" name="Status" value="@currentStatus" />
+
+        <div class="sm:col-span-5 relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" name="SearchTerm" value="@currentFilter.SearchTerm" placeholder="Search your watchlist..."
+                   class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+        </div>
+
+        <div class="sm:col-span-4">
+            <select name="Type" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                <option value="">All Types (Movies, Series, Anime)</option>
+                <option value="@MediaType.Movie" selected="@(currentType == MediaType.Movie)">Movies</option>
+                <option value="@MediaType.TvSeries" selected="@(currentType == MediaType.TvSeries)">TV Series</option>
+                <option value="@MediaType.Anime" selected="@(currentType == MediaType.Anime)">Anime</option>
+            </select>
+        </div>
+
+        <div class="sm:col-span-3 flex items-center gap-2">
+            <button type="submit" class="flex-1 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-filter text-2xs"></i> Filter
+            </button>
+            <a asp-action="Index" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition-colors" title="Reset">
+                <i class="fa-solid fa-rotate-left"></i>
+            </a>
+        </div>
+    </form>
+
+    <!-- Watchlist Cards Grid -->
+    @if (Model.Items != null && Model.Items.Any())
+    {
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            @foreach (var item in Model.Items)
+            {
+                var posterUrl = !string.IsNullOrWhiteSpace(item.PosterPath) 
+                    ? $"https://image.tmdb.org/t/p/w500{item.PosterPath}" 
+                    : null;
+
+                var typeBadgeColor = item.Type switch
+                {
+                    MediaType.Movie => "bg-sky-50 text-sky-700 border-sky-200",
+                    MediaType.TvSeries => "bg-purple-50 text-purple-700 border-purple-200",
+                    MediaType.Anime => "bg-pink-50 text-pink-700 border-pink-200",
+                    _ => "bg-slate-50 text-slate-700 border-slate-200"
+                };
+
+                var statusBadgeColor = item.Status switch
+                {
+                    WatchStatus.Watching => "bg-blue-50 text-blue-700 border-blue-200",
+                    WatchStatus.PlanToWatch => "bg-amber-50 text-amber-700 border-amber-200",
+                    WatchStatus.Completed => "bg-emerald-50 text-emerald-700 border-emerald-200",
+                    WatchStatus.Dropped => "bg-rose-50 text-rose-700 border-rose-200",
+                    _ => "bg-slate-50 text-slate-700 border-slate-200"
+                };
+
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs hover:shadow-md transition-shadow flex flex-col">
+                    <!-- Poster Header -->
+                    <div class="relative aspect-video bg-slate-900 overflow-hidden group">
+                        @if (posterUrl != null)
+                        {
+                            <img src="@posterUrl" alt="@item.Title" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        }
+                        else
+                        {
+                            <div class="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-800">
+                                <i class="fa-solid fa-film text-3xl mb-1"></i>
+                                <span class="text-2xs">No Poster</span>
+                            </div>
+                        }
+
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30 pointer-events-none"></div>
+
+                        <!-- Type & Status Badges -->
+                        <div class="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap">
+                            <span class="px-2 py-0.5 rounded-lg text-2xs font-bold border backdrop-blur-xs @typeBadgeColor">
+                                @item.Type
+                            </span>
+                            <span class="px-2 py-0.5 rounded-lg text-2xs font-bold border backdrop-blur-xs @statusBadgeColor">
+                                @item.Status
+                            </span>
+                            @if (item.RewatchCount > 0)
+                            {
+                                <span class="px-2 py-0.5 rounded-lg text-2xs font-bold bg-purple-600/90 text-white border border-purple-400/40 backdrop-blur-xs flex items-center gap-1 shadow-xs" title="Rewatched @item.RewatchCount time(s) (Watched @(item.RewatchCount + 1)x)">
+                                    <i class="fa-solid fa-rotate-right text-3xs"></i>
+                                    <span>@(item.RewatchCount + 1)x</span>
+                                </span>
+                            }
+                        </div>
+
+                        <!-- Rating Badge -->
+                        @if (item.UserRating.HasValue)
+                        {
+                            <div class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-lg bg-amber-500 text-white text-2xs font-bold flex items-center gap-1 shadow-xs">
+                                <i class="fa-solid fa-star text-3xs"></i>
+                                <span>@item.UserRating/10</span>
+                            </div>
+                        }
+                        else if (item.TmdbVoteAverage.HasValue)
+                        {
+                            <div class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-lg bg-slate-900/80 text-amber-400 text-2xs font-semibold flex items-center gap-1 backdrop-blur-xs">
+                                <i class="fa-solid fa-star text-3xs"></i>
+                                <span>@item.TmdbVoteAverage.Value.ToString("0.0")</span>
+                            </div>
+                        }
+
+                        <!-- Title on image bottom -->
+                        <div class="absolute bottom-2.5 left-2.5 right-2.5">
+                            <a asp-action="Details" asp-route-id="@item.TmdbId" asp-route-type="@item.Type" class="text-white font-bold text-sm hover:underline line-clamp-1 drop-shadow-xs">
+                                @item.Title
+                            </a>
+                            @if (item.ReleaseDate.HasValue)
+                            {
+                                <p class="text-slate-300 text-2xs">@item.ReleaseDate.Value.Year</p>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Body Content -->
+                    <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                        <!-- Next to watch or Progress -->
+                        @if (item.Type != MediaType.Movie)
+                        {
+                            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                <div class="flex items-center justify-between text-2xs mb-1.5">
+                                    <span class="text-slate-500 font-medium">Next to watch:</span>
+                                    <span class="font-bold text-brand-700">@item.NextEpisodeLabel</span>
+                                </div>
+                                @if (item.TotalEpisodes > 0)
+                                {
+                                    var percent = Math.Clamp((int)((item.CurrentEpisode / (double)item.TotalEpisodes) * 100), 0, 100);
+                                    <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                                        <div class="bg-brand-600 h-1.5 rounded-full transition-all" style="width: @percent%"></div>
+                                    </div>
+                                    <div class="flex justify-between text-3xs text-slate-400 mt-1">
+                                        <span>Episode @item.CurrentEpisode</span>
+                                        <span>Total @item.TotalEpisodes</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(item.UserReview))
+                        {
+                            <div class="text-xs text-slate-600 italic line-clamp-2 bg-slate-50/60 p-2 rounded-lg border border-slate-100">
+                                "@item.UserReview"
+                            </div>
+                        }
+
+                        @if (item.RewatchCount > 0)
+                        {
+                            <div class="flex items-center gap-1.5 text-3xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-1 rounded-lg border border-purple-100 dark:border-purple-900/40">
+                                <i class="fa-solid fa-rotate-right text-3xs"></i>
+                                <span>Watched @(item.RewatchCount + 1)x total (@item.RewatchCount rewatches)</span>
+                            </div>
+                        }
+
+                        <!-- Actions Footer -->
+                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
+                            <!-- Quick Update Progress Modal Trigger -->
+                            @if (item.Type != MediaType.Movie)
+                            {
+                                <button type="button" 
+                                        onclick="openProgressModal('@item.Id', @item.TmdbId, '@item.Type', '@Html.Raw(item.Title.Replace("'", "\\\'"))', @item.CurrentSeason, @item.CurrentEpisode, @item.TotalSeasons, @item.TotalEpisodes)" 
+                                        class="px-2.5 py-1.5 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-semibold transition-colors flex items-center gap-1">
+                                    <i class="fa-solid fa-forward-step text-2xs"></i>
+                                    <span>Progress</span>
+                                </button>
+                            }
+
+                            <!-- Rate & Review Trigger -->
+                            <button type="button" 
+                                    onclick="openRateModal('@item.Id', '@item.Title', @(item.UserRating ?? 0), '@(item.UserReview?.Replace("'", "\\'") ?? "")')"
+                                    class="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold transition-colors flex items-center gap-1">
+                                <i class="fa-solid fa-star text-2xs"></i>
+                                <span>Rate</span>
+                            </button>
+
+                            <!-- More Details Link -->
+                            <a asp-action="Details" asp-route-id="@item.TmdbId" asp-route-type="@item.Type" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
+                                Details
+                            </a>
+
+                            <!-- Delete Button Trigger (Shows Confirmation Modal) -->
+                            <button type="button" 
+                                    onclick="openDeleteModal('@item.Id', '@item.Title.Replace("'", "\\'").Replace("\"", "&quot;")')"
+                                    class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 dark:hover:text-rose-400 transition-colors" 
+                                    title="Remove from watchlist">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Pagination -->
+        @if (Model.TotalPages > 1)
+        {
+            var pagination = new PaginationModel(
+                CurrentPage: Model.PageNumber,
+                TotalPages: Model.TotalPages,
+                TotalItems: Model.TotalCount,
+                PageSize: Model.PageSize,
+                PageUrlFactory: page => Url.Action("Index", new { 
+                    Status = currentStatus, 
+                    Type = currentType, 
+                    SearchTerm = currentFilter.SearchTerm, 
+                    PageNumber = page 
+                }) ?? "#"
+            );
+            <div class="mt-6">
+                <partial name="UiComponents/_Pagination" model="pagination" />
+            </div>
+        }
+    }
+    else
+    {
+        var emptyModel = new EmptyStateModel(
+            Title: "No media titles found",
+            Description: "Your watchlist is empty for this filter. Start searching or discovering movies, series and anime.",
+            Icon: "fa-solid fa-film",
+            ActionText: "Discover Trending Media",
+            ActionUrl: Url.Action("Discover", "Media"),
+            ActionIcon: "fa-solid fa-compass"
+        );
+        <partial name="UiComponents/_EmptyState" model="emptyModel" />
+    }
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 dark:border-slate-700 space-y-4">
+        <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                <i class="fa-solid fa-trash-can text-rose-500"></i>
+                <span>Remove from Watchlist</span>
+            </h3>
+            <button type="button" onclick="closeDeleteModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            Are you sure you want to remove <span id="deleteModalTitle" class="font-semibold text-slate-900 dark:text-white"></span> from your watchlist?
+        </p>
+
+        <form asp-action="Delete" method="post" class="space-y-3">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="deleteWatchItemId" name="WatchItemId" />
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeDeleteModal()" class="px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 text-xs rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold shadow-2xs transition-colors">
+                    Remove
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Progress Accordion Modal -->
+<div id="progressModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl max-w-xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <!-- Modal Header -->
+        <div class="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-750/50">
+            <div class="flex items-center gap-3">
+                <span class="w-9 h-9 rounded-xl bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-layer-group"></i>
+                </span>
+                <div>
+                    <h3 class="font-bold text-slate-900 dark:text-white text-sm" id="progressModalTitle">Update Progress</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400" id="progressModalSubtitle">Select season and episode to update progress</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeProgressModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+        </div>
+
+        <!-- Accordion Body (Scrollable) -->
+        <div class="p-5 overflow-y-auto space-y-3 flex-1" id="progressAccordionContainer">
+            <!-- Dynamic Accordions loaded here -->
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-750/50 flex items-center justify-between">
+            <div class="text-xs text-slate-600 dark:text-slate-300 font-medium" id="progressModalCurrentStatus"></div>
+            <button type="button" onclick="closeProgressModal()" class="px-4 py-2 text-xs rounded-xl bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white font-semibold shadow-2xs transition-colors">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Rate Modal -->
+<div id="rateModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 dark:border-slate-700 space-y-4">
+        <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                <i class="fa-solid fa-star text-amber-500"></i>
+                <span id="rateModalTitle">Rate and Review</span>
+            </h3>
+            <button type="button" onclick="document.getElementById('rateModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form asp-action="Rate" method="post" class="space-y-3">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="rateWatchItemId" name="WatchItemId" />
+
+            <div>
+                <label class="block text-2xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Your Rating (1 to 10)</label>
+                <select id="rateRating" name="Rating" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                    <option value="">No rating</option>
+                    @for (int i = 10; i >= 1; i--)
+                    {
+                        <option value="@i">@i / 10</option>
+                    }
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-2xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Short Review</label>
+                <textarea id="rateReview" name="Review" rows="3" maxlength="2000" placeholder="What did you think of it?" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('rateModal').classList.add('hidden')" class="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 text-xs rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-2xs">
+                    Save Rating
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div id="importModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 dark:border-slate-700 space-y-4">
+        <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                <i class="fa-solid fa-file-import text-brand-600"></i>
+                <span>Import Backup</span>
+            </h3>
+            <button type="button" onclick="document.getElementById('importModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form asp-action="Import" method="post" enctype="multipart/form-data" class="space-y-3">
+            @Html.AntiForgeryToken()
+            <div>
+                <label class="block text-2xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Select JSON File</label>
+                <input type="file" name="file" accept=".json" required class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('importModal').classList.add('hidden')" class="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 text-xs rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-2xs">
+                    Restore Data
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openDeleteModal(id, title) {
+        document.getElementById('deleteWatchItemId').value = id;
+        document.getElementById('deleteModalTitle').innerText = title;
+        document.getElementById('deleteModal').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+    }
+
+    let currentProgressItem = null;
+    const progressSeasonEpisodesCache = {};
+
+    function openProgressModal(id, tmdbId, type, title, season, episode, totalSeasons, totalEpisodes) {
+        currentProgressItem = {
+            id: id,
+            tmdbId: tmdbId,
+            type: type,
+            title: title,
+            season: parseInt(season) || 1,
+            episode: parseInt(episode) || 0,
+            totalSeasons: parseInt(totalSeasons) || 1,
+            totalEpisodes: parseInt(totalEpisodes) || 1
+        };
+
+        document.getElementById('progressModalTitle').innerText = title;
+        updateProgressStatusDisplay();
+        document.getElementById('progressModal').classList.remove('hidden');
+
+        loadProgressSeasons();
+    }
+
+    function closeProgressModal() {
+        document.getElementById('progressModal').classList.add('hidden');
+        currentProgressItem = null;
+    }
+
+    function updateProgressStatusDisplay() {
+        if (!currentProgressItem) return;
+        const statusEl = document.getElementById('progressModalCurrentStatus');
+        const subEl = document.getElementById('progressModalSubtitle');
+        const text = `Currently on Season ${currentProgressItem.season}, Episode ${currentProgressItem.episode}`;
+        if (statusEl) statusEl.innerText = text;
+        if (subEl) subEl.innerText = text;
+    }
+
+    function loadProgressSeasons() {
+        const container = document.getElementById('progressAccordionContainer');
+        if (!container || !currentProgressItem) return;
+
+        container.innerHTML = `
+            <div class="flex items-center justify-center py-12 text-slate-400">
+                <i class="fa-solid fa-circle-notch fa-spin text-2xl mr-3 text-brand-600"></i>
+                <span class="text-xs font-semibold">Loading seasons & episodes...</span>
+            </div>
+        `;
+
+        fetch(`/Media/ShowSeasonsJson?id=${currentProgressItem.tmdbId}&type=${currentProgressItem.type}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success || !data.seasons || data.seasons.length === 0) {
+                    container.innerHTML = `
+                        <div class="p-6 text-center text-slate-400 text-xs">
+                            No seasons information found.
+                        </div>
+                    `;
+                    return;
+                }
+                renderProgressAccordions(data.seasons);
+            })
+            .catch(err => {
+                container.innerHTML = `
+                    <div class="p-6 text-center text-rose-500 text-xs">
+                        Failed to load show seasons. <button onclick="loadProgressSeasons()" class="underline font-bold ml-1">Retry</button>
+                    </div>
+                `;
+            });
+    }
+
+    function renderProgressAccordions(seasons) {
+        const container = document.getElementById('progressAccordionContainer');
+        if (!container || !currentProgressItem) return;
+
+        let html = '<div class="space-y-3">';
+        seasons.forEach(s => {
+            const isSeasonCompleted = (currentProgressItem.season > s.seasonNumber) ||
+                (currentProgressItem.season === s.seasonNumber && currentProgressItem.episode >= s.episodeCount);
+            const isCurrentSeason = currentProgressItem.season === s.seasonNumber;
+            const autoOpen = isCurrentSeason;
+
+            html += `
+                <div class="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden bg-white dark:bg-slate-800 transition-all" id="seasonAccordion-${s.seasonNumber}">
+                    <!-- Accordion Header -->
+                    <button type="button" onclick="toggleSeasonAccordion(${s.seasonNumber})"
+                            class="w-full p-4 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-lg ${isSeasonCompleted ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'} flex items-center justify-center text-xs font-bold">
+                                ${isSeasonCompleted ? '<i class="fa-solid fa-check text-3xs"></i>' : s.seasonNumber}
+                            </span>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-slate-900 dark:text-white">${s.name || `Season ${s.seasonNumber}`}</span>
+                                    <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 font-mono text-3xs">
+                                        ${s.episodeCount} Ep
+                                    </span>
+                                    ${isSeasonCompleted ? '<span class="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-3xs font-bold">Watched</span>' : ''}
+                                </div>
+                                ${s.airDate ? `<span class="text-3xs text-slate-400">Aired: ${s.airDate}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="event.stopPropagation(); setProgressSeasonWatched(${s.seasonNumber}, ${s.episodeCount})"
+                                    class="px-2.5 py-1 rounded-lg ${isSeasonCompleted ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 hover:bg-rose-100' : 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 hover:bg-purple-100'} text-3xs font-bold transition-colors">
+                                ${isSeasonCompleted ? 'Undo Season' : 'Mark Season Watched'}
+                            </button>
+                            <i class="fa-solid fa-chevron-down text-xs text-slate-400 transition-transform duration-200 ${autoOpen ? 'rotate-180' : ''}" id="seasonChevron-${s.seasonNumber}"></i>
+                        </div>
+                    </button>
+
+                    <!-- Accordion Content -->
+                    <div id="seasonContent-${s.seasonNumber}" class="${autoOpen ? '' : 'hidden'} border-t border-slate-100 dark:border-slate-700/60 p-3 bg-slate-50/50 dark:bg-slate-750/30 space-y-2">
+                        <div id="seasonEpisodesList-${s.seasonNumber}" class="space-y-1.5">
+                            <div class="flex items-center justify-center py-4 text-slate-400 text-3xs">
+                                <i class="fa-solid fa-circle-notch fa-spin mr-1.5 text-brand-600"></i> Loading episodes...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+
+        // Load episodes for auto-opened seasons
+        seasons.forEach(s => {
+            if (currentProgressItem.season === s.seasonNumber || seasons.length === 1) {
+                loadAccordionEpisodes(s.seasonNumber);
+            }
+        });
+    }
+
+    function toggleSeasonAccordion(seasonNumber) {
+        const content = document.getElementById(`seasonContent-${seasonNumber}`);
+        const chevron = document.getElementById(`seasonChevron-${seasonNumber}`);
+        if (!content) return;
+
+        const isHidden = content.classList.contains('hidden');
+        if (isHidden) {
+            content.classList.remove('hidden');
+            if (chevron) chevron.classList.add('rotate-180');
+            loadAccordionEpisodes(seasonNumber);
+        } else {
+            content.classList.add('hidden');
+            if (chevron) chevron.classList.remove('rotate-180');
+        }
+    }
+
+    function loadAccordionEpisodes(seasonNumber) {
+        const listEl = document.getElementById(`seasonEpisodesList-${seasonNumber}`);
+        if (!listEl || !currentProgressItem) return;
+
+        const cacheKey = `${currentProgressItem.tmdbId}-${seasonNumber}`;
+        if (progressSeasonEpisodesCache[cacheKey]) {
+            renderAccordionEpisodes(listEl, seasonNumber, progressSeasonEpisodesCache[cacheKey]);
+            return;
+        }
+
+        fetch(`/Media/SeasonEpisodes?id=${currentProgressItem.tmdbId}&seasonNumber=${seasonNumber}`)
+            .then(res => res.json())
+            .then(episodes => {
+                progressSeasonEpisodesCache[cacheKey] = episodes || [];
+                renderAccordionEpisodes(listEl, seasonNumber, progressSeasonEpisodesCache[cacheKey]);
+            })
+            .catch(err => {
+                listEl.innerHTML = `<div class="p-3 text-center text-rose-500 text-3xs">Failed to load episodes. <button onclick="loadAccordionEpisodes(${seasonNumber})" class="underline font-bold ml-1">Retry</button></div>`;
+            });
+    }
+
+    function renderAccordionEpisodes(listEl, seasonNumber, episodes) {
+        if (!episodes || episodes.length === 0) {
+            listEl.innerHTML = `<div class="p-3 text-center text-slate-400 text-3xs">No episodes found.</div>`;
+            return;
+        }
+
+        let html = '';
+        episodes.forEach(ep => {
+            const isWatched = (currentProgressItem.season > seasonNumber) ||
+                (currentProgressItem.season === seasonNumber && currentProgressItem.episode >= ep.episodeNumber);
+
+            html += `
+                <div class="p-2.5 rounded-xl border ${isWatched ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'} flex items-center justify-between gap-3 transition-colors">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-6 h-6 rounded-lg ${isWatched ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'} flex items-center justify-center font-mono text-3xs font-bold shrink-0">
+                            ${ep.episodeNumber}
+                        </span>
+                        <div class="min-w-0">
+                            <span class="text-xs font-semibold text-slate-900 dark:text-white truncate block">
+                                ${ep.name || `Episode ${ep.episodeNumber}`}
+                            </span>
+                            ${ep.voteAverage ? `<span class="text-3xs text-amber-500 font-bold"><i class="fa-solid fa-star text-3xs"></i> ${ep.voteAverage.toFixed(1)}</span>` : ''}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                        ${isWatched
+                            ? `<button type="button" onclick="submitProgressUpdate(${seasonNumber}, ${ep.episodeNumber - 1})"
+                                       class="px-2.5 py-1 rounded-lg bg-emerald-100 hover:bg-rose-100 text-emerald-700 hover:text-rose-700 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 text-3xs font-bold transition-colors group flex items-center gap-1" title="Click to undo / rollback">
+                                   <i class="fa-solid fa-check text-3xs group-hover:hidden"></i>
+                                   <i class="fa-solid fa-rotate-left text-3xs hidden group-hover:inline"></i>
+                                   <span class="group-hover:hidden">Watched</span>
+                                   <span class="hidden group-hover:inline">Undo</span>
+                               </button>`
+                            : `<button type="button" onclick="submitProgressUpdate(${seasonNumber}, ${ep.episodeNumber})"
+                                       class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-600 hover:text-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-3xs font-bold transition-colors flex items-center gap-1">
+                                   <i class="fa-solid fa-check text-3xs"></i> Watched
+                               </button>`
+                        }
+                    </div>
+                </div>
+            `;
+        });
+
+        listEl.innerHTML = html;
+    }
+
+    function submitProgressUpdate(season, episode) {
+        if (!currentProgressItem) return;
+
+        let targetSeason = season;
+        let targetEpisode = episode;
+
+        if (targetEpisode <= 0) {
+            if (season > 1) {
+                targetSeason = season - 1;
+                targetEpisode = 1;
+            } else {
+                targetSeason = 1;
+                targetEpisode = 0;
+            }
+        }
+
+        const formData = new FormData();
+        formData.append('WatchItemId', currentProgressItem.id);
+        formData.append('Season', targetSeason);
+        formData.append('Episode', targetEpisode);
+        formData.append('TotalSeasons', currentProgressItem.totalSeasons);
+        formData.append('TotalEpisodes', currentProgressItem.totalEpisodes);
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) formData.append('__RequestVerificationToken', token);
+
+        fetch('/Media/UpdateProgress', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                currentProgressItem.season = targetSeason;
+                currentProgressItem.episode = targetEpisode;
+                updateProgressStatusDisplay();
+                setTimeout(() => window.location.reload(), 300);
+            } else {
+                alert(data.message || 'Failed to update progress.');
+            }
+        })
+        .catch(() => window.location.reload());
+    }
+
+    function setProgressSeasonWatched(seasonNumber, episodeCount) {
+        if (!currentProgressItem) return;
+        const isSeasonCompleted = (currentProgressItem.season > seasonNumber) ||
+            (currentProgressItem.season === seasonNumber && currentProgressItem.episode >= episodeCount);
+
+        if (isSeasonCompleted) {
+            const targetSeason = seasonNumber > 1 ? seasonNumber - 1 : 1;
+            const targetEpisode = seasonNumber > 1 ? 1 : 0;
+            submitProgressUpdate(targetSeason, targetEpisode);
+        } else {
+            submitProgressUpdate(seasonNumber, episodeCount);
+        }
+    }
+
+    function openRateModal(id, title, rating, review) {
+        document.getElementById('rateWatchItemId').value = id;
+        document.getElementById('rateModalTitle').innerText = title;
+        document.getElementById('rateRating').value = rating > 0 ? rating : '';
+        document.getElementById('rateReview').value = review;
+        document.getElementById('rateModal').classList.remove('hidden');
+    }
+</script>

@@ -1,0 +1,109 @@
+@using AzureTest.MVC.Models
+@model AzureTest.Contracts.DTOs.IdeaTracker.UpdateIdeaSectionDto
+@{
+    ViewData["Title"] = "Edit Section";
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Dashboard", Url.Action("Index", "Home"), "fa-solid fa-house"),
+        new BreadcrumbItem("Idea Tracker", Url.Action("Index", "IdeaTracker"), "fa-solid fa-brain"),
+        new BreadcrumbItem("Page", Url.Action("Details", "IdeaPage", new { id = Model.IdeaPageId }), "fa-regular fa-file-lines"),
+        new BreadcrumbItem("Edit Section", null, "fa-solid fa-pen", true)
+    };
+
+    var headerModel = new PageHeaderModel(
+        "Edit Section Block",
+        $"Modify \"{Model.Title}\" properties and contents.",
+        "fa-solid fa-shapes",
+        new HeaderAction("Back to Page", Url.Action("Details", "IdeaPage", new { id = Model.IdeaPageId }), "fa-solid fa-arrow-left", "secondary")
+    );
+}
+
+<div class="px-4 sm:px-6 lg:px-8 py-8 mx-auto max-w-5xl space-y-6">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
+
+    <form asp-action="Edit" method="post" id="sectionForm" class="space-y-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-sm">
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="IdeaPageId" />
+
+        <div asp-validation-summary="ModelOnly" class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-700"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="md:col-span-3">
+                <label asp-for="Title" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Section Title <span class="text-rose-500">*</span></label>
+                <input asp-for="Title"
+                       class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all text-slate-900 placeholder:text-slate-400" />
+                <span asp-validation-for="Title" class="text-xs text-rose-600 mt-1 block font-medium"></span>
+            </div>
+            <div class="md:col-span-1">
+                <label asp-for="OrderIndex" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Sort Order</label>
+                <input asp-for="OrderIndex" type="number"
+                       class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-semibold text-slate-800" />
+            </div>
+        </div>
+
+        <div class="pt-6 border-t border-slate-100">
+            <label asp-for="Content" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Section Content</label>
+            <p class="text-xs text-slate-400 mb-3">Include formatted notes, tables, and media.</p>
+            <textarea asp-for="Content" id="Content"></textarea>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 flex justify-end gap-3 sticky bottom-0 bg-white py-4 z-10">
+            <a asp-controller="IdeaPage" asp-action="Details" asp-route-id="@Model.IdeaPageId"
+               class="px-5 py-2.5 border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-sm rounded-xl transition">
+                Cancel
+            </a>
+            <button type="submit" id="saveBtn" class="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl shadow-sm hover:shadow transition">
+                <i class="fa-solid fa-floppy-disk"></i> Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            tinymce.init({
+                selector: '#Content',
+                plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount',
+                toolbar: 'undo redo | formatselect | bold italic forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | image media table | removeformat | help',
+                images_upload_url: '/IdeaTracker/UploadImage',
+                content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #334155; }',
+                height: 450,
+                promotion: false,
+                branding: false,
+                image_title: true,
+                automatic_uploads: true,
+                file_picker_types: 'image',
+                file_picker_callback: function (cb, value, meta) {
+                    var input = document.createElement('input');
+                    input.setAttribute('type', 'file');
+                    input.setAttribute('accept', 'image/*');
+                    input.onchange = async function () {
+                        var file = this.files[0];
+                        var formData = new FormData();
+                        formData.append('image', file);
+                        try {
+                            const res = await fetch('/IdeaTracker/UploadImage', { method: 'POST', body: formData });
+                            if (res.ok) {
+                                const data = await res.json();
+                                cb(data.location, { title: file.name });
+                            }
+                        } catch(e) { console.error(e); }
+                    };
+                    input.click();
+                },
+                setup: function(editor) {
+                    editor.on('change', function() { editor.save(); });
+                }
+            });
+
+            document.getElementById('sectionForm').addEventListener('submit', () => {
+                const saveBtn = document.getElementById('saveBtn');
+                saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...';
+                saveBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            });
+        });
+    </script>
+}

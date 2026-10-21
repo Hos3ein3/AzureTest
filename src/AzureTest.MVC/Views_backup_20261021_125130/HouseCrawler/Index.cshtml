@@ -1,0 +1,419 @@
+@{
+    ViewData["Title"] = "House Crawler";
+}
+
+<div class="flex flex-col lg:flex-row h-[calc(100vh-5rem)] overflow-hidden relative">
+
+    <!-- LEFT PANEL: Search and Results -->
+    <div class="w-full lg:w-2/5 xl:w-1/3 flex flex-col border-r border-slate-200 bg-slate-50 overflow-hidden relative z-10">
+        
+        <!-- Header & Form -->
+        <div class="p-4 bg-white border-b border-slate-200 shadow-sm z-10">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-house-chimney text-brand-600 text-lg"></i>
+                    <h1 class="text-xl font-bold text-slate-800">House Crawler</h1>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="openCredentialsModal()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded border border-slate-200 font-medium transition">
+                        <i class="fa-solid fa-key mr-1"></i> Keys
+                    </button>
+                    <button type="button" onclick="openHistoryModal()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded border border-slate-200 font-medium transition">
+                        <i class="fa-solid fa-clock-rotate-left mr-1"></i> History
+                    </button>
+                </div>
+            </div>
+            
+            <form id="crawlerForm" class="space-y-3">
+                <div>
+                    <input type="text" id="city" name="City" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="City (e.g. Amsterdam)..." required />
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="number" id="minPrice" name="MinPrice" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="Min Price (€)" />
+                    <input type="number" id="maxPrice" name="MaxPrice" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="Max Price (€)" />
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="number" id="bedrooms" name="Bedrooms" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="Min Bedrooms" />
+                    <select id="source" name="Source" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white">
+                        <option value="">All Sources</option>
+                        <option value="1">Funda.nl</option>
+                        <option value="2">Pararius.com</option>
+                        <option value="3">Huurportaal.nl</option>
+                        <option value="4">Huurwoningen.com</option>
+                        <option value="5">Kamernet.nl</option>
+                    </select>
+                </div>
+                <button type="submit" id="crawlBtn" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-spider text-2xs"></i> Deep Search
+                </button>
+            </form>
+        </div>
+
+        <!-- Results List -->
+        <div class="flex-1 overflow-y-auto p-4 relative" id="resultsScroll">
+            <div id="loadingIndicator" class="hidden absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-20">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-500 mb-2"></i>
+                <span class="text-sm font-medium text-slate-600">Crawling websites (Using Credentials)...</span>
+            </div>
+            <div id="resultInfo" class="text-xs font-semibold text-slate-500 uppercase tracking-wider hidden mb-2 flex justify-between items-center">
+                <span>Properties Found: <span id="resultCount"></span></span>
+            </div>
+            <!-- We will append cards here -->
+            <div id="houseCards" class="space-y-3">
+                <div class="text-sm text-slate-400 text-center mt-10">Run a search to see properties.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: Embedded Browser (Tabs + iFrames) -->
+    <div class="flex-1 flex flex-col bg-slate-200 overflow-hidden relative z-0">
+        <!-- Tab Bar -->
+        <div class="bg-slate-300 h-10 flex items-end px-2 gap-1 overflow-x-auto whitespace-nowrap scrollbar-hide pt-2 shadow-inner" id="tabBar">
+            <div id="emptyStateTab" class="px-4 py-1.5 bg-slate-100 text-slate-400 rounded-t-lg text-sm font-medium shadow-sm border border-b-0 border-slate-200 flex items-center gap-2">
+                <i class="fa-brands fa-chrome"></i> Internal Browser
+            </div>
+        </div>
+
+        <!-- iFrame Container -->
+        <div class="flex-1 bg-white relative" id="iframeContainer">
+            <div id="emptyStateFrame" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+                <i class="fa-brands fa-chrome text-6xl mb-4 opacity-20"></i>
+                <p class="font-medium">Embedded Browser</p>
+                <p class="text-sm opacity-60">Click a house listing to view it here.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- History Modal -->
+<div id="historyModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeHistoryModal()"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-slate-900" id="modal-title">Search History</h3>
+                        <div class="mt-4">
+                            <ul id="historyList" class="divide-y divide-slate-200 max-h-96 overflow-y-auto">
+                                <li class="py-3 text-sm text-slate-500">Loading...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="closeHistoryModal()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-brand-600 text-base font-medium text-white hover:bg-brand-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Credentials Modal -->
+<div id="credentialsModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeCredentialsModal()"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-slate-900 mb-4">Saved Credentials</h3>
+                        <form id="credentialForm" class="space-y-3 mb-4">
+                            <div>
+                                <select id="credWebsite" name="Website" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500">
+                                    <option value="1">Funda.nl</option>
+                                    <option value="2">Pararius.com</option>
+                                    <option value="3">Huurportaal.nl</option>
+                                    <option value="4">Huurwoningen.com</option>
+                                    <option value="5">Kamernet.nl</option>
+                                </select>
+                            </div>
+                            <div>
+                                <input type="text" id="credUsername" name="Username" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500" placeholder="Username / Email" required />
+                            </div>
+                            <div>
+                                <input type="password" id="credPassword" name="Password" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-brand-500" placeholder="Password" required />
+                            </div>
+                            <button type="button" onclick="saveCredential()" class="w-full py-1.5 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition">
+                                Save Credential
+                            </button>
+                        </form>
+                        <div class="mt-4">
+                            <h4 class="text-sm font-medium text-slate-700 mb-2">Saved Accounts</h4>
+                            <ul id="credentialsList" class="divide-y divide-slate-200 max-h-48 overflow-y-auto border border-slate-200 rounded-lg">
+                                <li class="py-2 px-3 text-sm text-slate-500">Loading...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="closeCredentialsModal()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-slate-600 text-base font-medium text-white hover:bg-slate-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // --- Form Submission ---
+        document.getElementById('crawlerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('crawlBtn');
+            const loading = document.getElementById('loadingIndicator');
+            const cardsContainer = document.getElementById('houseCards');
+            
+            btn.disabled = true;
+            loading.classList.remove('hidden');
+            
+            let sourceVal = document.getElementById('source').value;
+            const req = {
+                City: document.getElementById('city').value,
+                MinPrice: document.getElementById('minPrice').value,
+                MaxPrice: document.getElementById('maxPrice').value,
+                Bedrooms: document.getElementById('bedrooms').value,
+                Source: sourceVal ? parseInt(sourceVal) : null
+            };
+
+            try {
+                const res = await fetch('@Url.Action("Crawl", "HouseCrawler")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(req)
+                });
+                
+                const json = await res.json();
+                
+                cardsContainer.innerHTML = '';
+                
+                if(json.success && json.data.length > 0) {
+                    document.getElementById('resultInfo').classList.remove('hidden');
+                    document.getElementById('resultCount').textContent = json.count;
+
+                    json.data.forEach((house, index) => {
+                        const id = 'house_' + Math.random().toString(36).substr(2, 9);
+                        const loggedInBadge = house.loggedInSuccessfully 
+                            ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-green-100 text-green-700 ml-2" title="Crawled using your saved credentials!"><i class="fa-solid fa-lock-open mr-1"></i>Auth</span>` 
+                            : '';
+                            
+                        const cardHtml = `
+                            <div class="bg-white border border-slate-200 rounded-lg p-3 shadow-sm hover:shadow-md transition group cursor-pointer" onclick="openTab('${id}', '${house.source}', '${house.url}')">
+                                <div class="flex justify-between items-start mb-1">
+                                    <h3 class="font-semibold text-brand-600 text-sm group-hover:underline truncate" title="${house.title}">${house.title}</h3>
+                                </div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-bold text-slate-800">${house.price}</span>
+                                    <div class="flex items-center">
+                                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-100 text-brand-700">${house.source}</span>
+                                        ${loggedInBadge}
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 mt-2">
+                                    <button type="button" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded transition w-full">
+                                        <i class="fa-solid fa-folder-open"></i> Internal
+                                    </button>
+                                    <a href="${house.url}" target="_blank" onclick="event.stopPropagation()" class="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 px-2 py-1 rounded transition w-full text-center">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> External
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                        cardsContainer.insertAdjacentHTML('beforeend', cardHtml);
+                        
+                        // Automatically open the first one
+                        if (index === 0) {
+                            openTab(id, house.source, house.url);
+                        }
+                    });
+
+                } else {
+                    cardsContainer.innerHTML = `<div class="text-sm text-slate-500 text-center p-4">No properties found. Try adjusting filters.</div>`;
+                }
+            } catch (err) {
+                cardsContainer.innerHTML = `<div class="text-sm text-red-500 text-center p-4">Network error.</div>`;
+            } finally {
+                btn.disabled = false;
+                loading.classList.add('hidden');
+            }
+        });
+
+        // --- Tabs System ---
+        let openTabs = {};
+        let activeTabId = null;
+
+        function openTab(id, title, url) {
+            document.getElementById('emptyStateTab')?.classList.add('hidden');
+            document.getElementById('emptyStateFrame')?.classList.add('hidden');
+
+            if (openTabs[id]) {
+                activateTab(id);
+                return;
+            }
+
+            // Create Tab
+            const tab = document.createElement('div');
+            tab.id = 'tab_' + id;
+            tab.className = 'group px-3 py-1.5 bg-slate-100 text-slate-600 rounded-t-lg text-sm font-medium shadow-sm border border-b-0 border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-white min-w-32 justify-between';
+            tab.onclick = () => activateTab(id);
+            tab.innerHTML = `
+                <div class="flex items-center gap-1.5 truncate max-w-40">
+                    <i class="fa-solid fa-house fa-xs opacity-50"></i>
+                    <span class="truncate">${title}</span>
+                </div>
+                <button type="button" class="w-5 h-5 rounded-full hover:bg-slate-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition" onclick="closeTab(event, '${id}')">
+                    <i class="fa-solid fa-xmark fa-xs"></i>
+                </button>
+            `;
+            document.getElementById('tabBar').appendChild(tab);
+
+            // Create iFrame
+            const frame = document.createElement('iframe');
+            frame.id = 'frame_' + id;
+            frame.src = url;
+            frame.className = 'w-full h-full absolute inset-0 hidden border-0 bg-white';
+            document.getElementById('iframeContainer').appendChild(frame);
+
+            openTabs[id] = { tab, frame };
+            activateTab(id);
+        }
+
+        function activateTab(id) {
+            if (activeTabId && openTabs[activeTabId]) {
+                openTabs[activeTabId].tab.classList.remove('bg-white', 'text-brand-600');
+                openTabs[activeTabId].tab.classList.add('bg-slate-100', 'text-slate-600');
+                openTabs[activeTabId].frame.classList.add('hidden');
+            }
+
+            activeTabId = id;
+            openTabs[id].tab.classList.add('bg-white', 'text-brand-600');
+            openTabs[id].tab.classList.remove('bg-slate-100', 'text-slate-600');
+            openTabs[id].frame.classList.remove('hidden');
+        }
+
+        function closeTab(e, id) {
+            e.stopPropagation();
+            openTabs[id].tab.remove();
+            openTabs[id].frame.remove();
+            delete openTabs[id];
+
+            const remaining = Object.keys(openTabs);
+            if (remaining.length > 0) {
+                if (activeTabId === id) activateTab(remaining[remaining.length - 1]);
+            } else {
+                activeTabId = null;
+                document.getElementById('emptyStateTab')?.classList.remove('hidden');
+                document.getElementById('emptyStateFrame')?.classList.remove('hidden');
+            }
+        }
+
+        // --- Modals ---
+        async function openHistoryModal() {
+            document.getElementById('historyModal').classList.remove('hidden');
+            const list = document.getElementById('historyList');
+            list.innerHTML = '<li class="py-3 text-sm text-slate-500">Loading...</li>';
+            
+            try {
+                const res = await fetch('@Url.Action("GetHistory", "HouseCrawler")');
+                const json = await res.json();
+                
+                list.innerHTML = '';
+                if(json.data && json.data.length > 0) {
+                    json.data.forEach(h => {
+                        // The source in history is saved as a string, let's map it back to the select option value if needed, or just let 'All' handle it.
+                        let sourceMap = { "Funda": 1, "Pararius": 2, "Huurportaal": 3, "Huurwoningen": 4, "Kamernet": 5, "All": "" };
+                        let sourceVal = sourceMap[h.source] !== undefined ? sourceMap[h.source] : "";
+                        
+                        list.insertAdjacentHTML('beforeend', `
+                            <li class="py-3 flex justify-between items-center cursor-pointer hover:bg-slate-50 px-2 rounded transition" onclick="loadHistory('${h.city}', '${h.minPrice}', '${h.maxPrice}', '${h.bedrooms}', '${sourceVal}')">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-900">${h.city} <span class="text-xs bg-slate-200 px-1 rounded">${h.source}</span></p>
+                                    <p class="text-xs text-slate-500">€${h.minPrice || 0}-€${h.maxPrice || 'Any'} | Beds: ${h.bedrooms || 'Any'}</p>
+                                </div>
+                                <div class="text-xs text-slate-400">
+                                    ${new Date(h.searchDate).toLocaleDateString()}
+                                </div>
+                            </li>
+                        `);
+                    });
+                } else {
+                    list.innerHTML = '<li class="py-3 text-sm text-slate-500">No search history found.</li>';
+                }
+            } catch (e) {
+                list.innerHTML = '<li class="py-3 text-sm text-red-500">Failed to load.</li>';
+            }
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('historyModal').classList.add('hidden');
+        }
+
+        function loadHistory(city, min, max, beds, source) {
+            document.getElementById('city').value = city || '';
+            document.getElementById('minPrice').value = min || '';
+            document.getElementById('maxPrice').value = max || '';
+            document.getElementById('bedrooms').value = beds || '';
+            document.getElementById('source').value = source || '';
+            closeHistoryModal();
+            // document.getElementById('crawlerForm').dispatchEvent(new Event('submit'));
+        }
+
+        async function openCredentialsModal() {
+            document.getElementById('credentialsModal').classList.remove('hidden');
+            loadCredentials();
+        }
+
+        function closeCredentialsModal() {
+            document.getElementById('credentialsModal').classList.add('hidden');
+        }
+
+        async function saveCredential() {
+            const req = {
+                Website: parseInt(document.getElementById('credWebsite').value),
+                Username: document.getElementById('credUsername').value,
+                Password: document.getElementById('credPassword').value
+            };
+
+            const res = await fetch('@Url.Action("SaveCredential", "HouseCrawler")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(req)
+            });
+
+            if (res.ok) {
+                document.getElementById('credPassword').value = '';
+                loadCredentials();
+            }
+        }
+
+        async function loadCredentials() {
+            const list = document.getElementById('credentialsList');
+            list.innerHTML = '<li class="py-2 px-3 text-sm text-slate-500">Loading...</li>';
+            
+            try {
+                const res = await fetch('@Url.Action("GetCredentials", "HouseCrawler")');
+                const json = await res.json();
+                
+                list.innerHTML = '';
+                if(json.data && json.data.length > 0) {
+                    json.data.forEach(c => {
+                        list.insertAdjacentHTML('beforeend', `
+                            <li class="py-2 px-3 flex justify-between items-center text-sm">
+                                <div>
+                                    <span class="font-medium text-slate-800">${c.website}</span>
+                                    <span class="text-slate-500 ml-2 text-xs">${c.username}</span>
+                                </div>
+                                <span class="text-[10px] text-brand-600 bg-brand-50 px-2 py-0.5 rounded font-bold"><i class="fa-solid fa-check mr-1"></i>Saved</span>
+                            </li>
+                        `);
+                    });
+                } else {
+                    list.innerHTML = '<li class="py-2 px-3 text-sm text-slate-500">No saved credentials.</li>';
+                }
+            } catch (e) {
+                list.innerHTML = '<li class="py-2 px-3 text-sm text-red-500">Failed to load.</li>';
+            }
+        }
+    </script>
+}

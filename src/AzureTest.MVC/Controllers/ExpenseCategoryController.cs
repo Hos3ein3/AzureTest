@@ -20,11 +20,27 @@ namespace AzureTest.MVC.Controllers;
 {
     private readonly INoSqlUnitOfWork _unitOfWork;
     private readonly ICurrentUser _currentUser;
+    private readonly ITenantProvider _tenantProvider;
 
-    public ExpenseCategoryController(INoSqlUnitOfWork unitOfWork, ICurrentUser currentUser)
+    public ExpenseCategoryController(
+        INoSqlUnitOfWork unitOfWork,
+        ICurrentUser currentUser,
+        ITenantProvider tenantProvider)
     {
         _unitOfWork = unitOfWork;
         _currentUser = currentUser;
+        _tenantProvider = tenantProvider;
+    }
+
+    private bool CanAccessCategory(ExpenseCategory category)
+    {
+        if (_tenantProvider.IsMultiTenancyEnabled && _tenantProvider.CurrentTenantId != Guid.Empty)
+        {
+            return category.TenantId == _tenantProvider.CurrentTenantId ||
+                   category.UserId == _tenantProvider.CurrentTenantId;
+        }
+
+        return category.UserId == _currentUser.Id;
     }
 
     [HttpGet]
@@ -33,7 +49,16 @@ namespace AzureTest.MVC.Controllers;
     public async Task<IActionResult> Index()
     {
         var categories = await _unitOfWork.ExpenseCategories.GetAllAsync();
-        var userCategories = categories.Where(c => c.UserId == _currentUser.Id).ToList();
+        var isMultiTenant = _tenantProvider.IsMultiTenancyEnabled && _tenantProvider.CurrentTenantId != Guid.Empty;
+        var targetTenantId = _tenantProvider.CurrentTenantId;
+
+        var userCategories = categories
+            .Where(c => isMultiTenant
+                ? (c.TenantId == targetTenantId || c.UserId == targetTenantId)
+                : c.UserId == _currentUser.Id)
+            .OrderBy(c => c.Name)
+            .ToList();
+
         return View(userCategories);
     }
 
@@ -54,7 +79,18 @@ namespace AzureTest.MVC.Controllers;
         if (!ModelState.IsValid)
             return View(category);
 
-        category.UserId = _currentUser.Id;
+        var isMultiTenant = _tenantProvider.IsMultiTenancyEnabled && _tenantProvider.CurrentTenantId != Guid.Empty;
+        var effectiveTenantId = isMultiTenant ? _tenantProvider.CurrentTenantId : Guid.Empty;
+        var effectiveUserId = (_tenantProvider.IsAdminImpersonating && effectiveTenantId != Guid.Empty)
+            ? effectiveTenantId
+            : _currentUser.Id;
+
+        category.UserId = effectiveUserId;
+        if (effectiveTenantId != Guid.Empty)
+        {
+            category.TenantId = effectiveTenantId;
+        }
+
         await _unitOfWork.ExpenseCategories.AddAsync(category);
         await _unitOfWork.SaveChangesAsync();
 
@@ -67,7 +103,7 @@ namespace AzureTest.MVC.Controllers;
     public async Task<IActionResult> Edit(Guid id)
     {
         var category = await _unitOfWork.ExpenseCategories.GetByIdAsync(id);
-        if (category == null || category.UserId != _currentUser.Id)
+        if (category == null || !CanAccessCategory(category))
             return NotFound();
 
         return View(category);
@@ -85,7 +121,7 @@ namespace AzureTest.MVC.Controllers;
             return View(model);
 
         var existingCategory = await _unitOfWork.ExpenseCategories.GetByIdAsync(id);
-        if (existingCategory == null || existingCategory.UserId != _currentUser.Id)
+        if (existingCategory == null || !CanAccessCategory(existingCategory))
             return NotFound();
 
         existingCategory.Name = model.Name;

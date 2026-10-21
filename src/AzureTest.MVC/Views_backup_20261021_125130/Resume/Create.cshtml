@@ -1,0 +1,281 @@
+@model AzureTest.Contracts.DTOs.Resumes.CreateResumeDto
+@using AzureTest.MVC.Models
+@{
+    ViewData["Title"] = "Add Resume";
+    var pageHeader = new PageHeaderModel
+    {
+        Title = "Add Resume",
+        Subtitle = "Track a new job application and upload matching CV & cover letter",
+        Icon = "fa-solid fa-file-invoice",
+        Breadcrumbs = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Resumes", Url.Action("Index", "Resume")),
+            new BreadcrumbItem("Add New", active: true)
+        }
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="pageHeader" />
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+    
+    <!-- Form Column -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden h-fit">
+        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <h2 class="text-sm font-bold text-slate-800 m-0 flex items-center gap-2">
+                <i class="fa-solid fa-briefcase text-brand-600"></i>
+                Application Details
+            </h2>
+        </div>
+        <div class="p-6">
+            <form asp-action="Create" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                
+                <partial name="_ResumeFormPartial" />
+                
+                <div class="relative py-4 my-2">
+                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div class="w-full border-t border-slate-200"></div>
+                    </div>
+                    <div class="relative flex justify-start">
+                        <span class="pr-3 bg-white text-2xs font-semibold text-slate-500 uppercase tracking-wider">Attachments</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-4 mb-6">
+                    <div>
+                        <label for="cvFile" class="block text-xs font-semibold text-slate-700 mb-1.5">Upload CV (PDF)</label>
+                        <input type="file" id="cvFile" name="cvFile" accept=".pdf"
+                               class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer" />
+                    </div>
+                    <div>
+                        <label for="clFile" class="block text-xs font-semibold text-slate-700 mb-1.5">Upload Cover Letter (PDF)</label>
+                        <input type="file" id="clFile" name="clFile" accept=".pdf"
+                               class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer" />
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 pt-4 border-t border-slate-100">
+                    <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-sm transition-colors">
+                        <i class="fa-solid fa-floppy-disk text-2xs"></i>
+                        <span>Save Application</span>
+                    </button>
+                    <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors">
+                        <span>Cancel</span>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Preview Column -->
+    <div class="hidden lg:flex flex-col gap-4 sticky top-6" style="height: calc(100vh - 120px);">
+        
+        <!-- CV Preview -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex-1 flex flex-col">
+            <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <h3 class="text-xs font-bold text-slate-800 m-0 flex items-center gap-2">
+                    <i class="fa-solid fa-file-pdf text-rose-500"></i> CV Preview
+                </h3>
+            </div>
+            <div class="w-full flex-1 p-0 flex items-center justify-center bg-slate-50 relative">
+                <div id="noPreviewMsg" class="text-slate-400 text-center p-6">
+                    <i class="fa-regular fa-file-pdf text-3xl mb-2 block"></i>
+                    <p class="text-xs">Select a CV (PDF)</p>
+                </div>
+                <embed id="pdfPreview" class="hidden w-full h-full absolute inset-0" src="" type="application/pdf" />
+            </div>
+        </div>
+
+        <!-- Cover Letter Preview -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex-1 flex flex-col">
+            <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <h3 class="text-xs font-bold text-slate-800 m-0 flex items-center gap-2">
+                    <i class="fa-solid fa-file-lines text-brand-500"></i> Cover Letter Preview
+                </h3>
+            </div>
+            <div class="w-full flex-1 p-0 flex items-center justify-center bg-slate-50 relative">
+                <div id="noPreviewMsg2" class="text-slate-400 text-center p-6">
+                    <i class="fa-regular fa-file-pdf text-3xl mb-2 block"></i>
+                    <p class="text-xs">Select a CL (PDF)</p>
+                </div>
+                <embed id="pdfPreview2" class="hidden w-full h-full absolute inset-0" src="" type="application/pdf" />
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Initialize CKEditor ---
+        ClassicEditor
+            .create(document.querySelector('#Description'))
+            .catch(error => { console.error(error); });
+
+        ClassicEditor
+            .create(document.querySelector('#Note'))
+            .catch(error => { console.error(error); });
+
+        // --- Local PDF Preview ---
+        const cvFileInput = document.getElementById('cvFile');
+        const clFileInput = document.getElementById('clFile');
+        const pdfPreview = document.getElementById('pdfPreview');
+        const pdfPreview2 = document.getElementById('pdfPreview2');
+        const noPreviewMsg = document.getElementById('noPreviewMsg');
+        const noPreviewMsg2 = document.getElementById('noPreviewMsg2');
+
+        cvFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                const fileURL = URL.createObjectURL(file);
+                pdfPreview.src = fileURL;
+                pdfPreview.classList.remove('hidden');
+                noPreviewMsg.classList.add('hidden');
+            } else {
+                pdfPreview.src = "";
+                pdfPreview.classList.add('hidden');
+                noPreviewMsg.classList.remove('hidden');
+            }
+        });
+
+        clFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                const fileURL = URL.createObjectURL(file);
+                pdfPreview2.src = fileURL;
+                pdfPreview2.classList.remove('hidden');
+                noPreviewMsg2.classList.add('hidden');
+            } else {
+                pdfPreview2.src = "";
+                pdfPreview2.classList.add('hidden');
+                noPreviewMsg2.classList.remove('hidden');
+            }
+        });
+
+        // --- UiComponents Searchable Dropdown & Company Logic ---
+        const toggleBtn = document.getElementById('toggleNewCompany');
+        const newPanel  = document.getElementById('newCompanyPanel');
+        const newInput  = document.getElementById('newCompanyInput');
+        const acList    = document.getElementById('companyAutocomplete');
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                const isVisible = newPanel.style.display !== 'none';
+                if (isVisible) {
+                    newPanel.style.display = 'none';
+                    if (newInput) newInput.value = '';
+                } else {
+                    newPanel.style.display = 'block';
+                    selectCompanyOption('', '— Search or select existing company —');
+                    if (newInput) newInput.focus();
+                }
+            });
+        }
+
+        let debounceTimer;
+        if (newInput) {
+            newInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                const term = newInput.value.trim();
+                if (term.length < 1) { if (acList) acList.style.display = 'none'; return; }
+
+                debounceTimer = setTimeout(async () => {
+                    const res  = await fetch(`/Resume/SearchCompanies?term=${encodeURIComponent(term)}`);
+                    const data = await res.json();
+
+                    if (!acList) return;
+                    acList.innerHTML = '';
+                    if (!data || data.length === 0) { acList.style.display = 'none'; return; }
+
+                    data.forEach(c => {
+                        const item = document.createElement('button');
+                        item.type = 'button';
+                        item.className = 'w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-brand-600 focus:outline-none focus:bg-slate-50';
+                        item.textContent = c.name;
+                        item.addEventListener('click', () => {
+                            selectCompanyOption(c.id, c.name);
+                            newInput.value = '';
+                            newPanel.style.display = 'none';
+                            acList.style.display = 'none';
+                        });
+                        acList.appendChild(item);
+                    });
+                    acList.style.display = 'block';
+                }, 300);
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            const btn = document.getElementById('companyDropdownBtn');
+            const menu = document.getElementById('companyDropdownMenu');
+            if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+
+            if (acList && !acList.contains(e.target) && e.target !== newInput) {
+                acList.style.display = 'none';
+            }
+        });
+    });
+
+    // Global Searchable Dropdown functions for UiComponents pattern
+    function toggleCompanyDropdownMenu() {
+        const menu = document.getElementById('companyDropdownMenu');
+        menu?.classList.toggle('hidden');
+        if (menu && !menu.classList.contains('hidden')) {
+            const input = document.getElementById('companyFilterInput');
+            if (input) {
+                input.value = '';
+                filterCompanyOptions('');
+                input.focus();
+            }
+        }
+    }
+
+    function filterCompanyOptions(term) {
+        const filter = (term || '').toLowerCase().trim();
+        const items = document.querySelectorAll('#companyOptionsList .company-option');
+        items.forEach(item => {
+            const text = (item.textContent || '').toLowerCase();
+            item.style.display = text.includes(filter) ? 'flex' : 'none';
+        });
+    }
+
+    function selectCompanyOption(id, name) {
+        const hiddenInput = document.getElementById('companyIdInput');
+        const label = document.getElementById('companySelectedLabel');
+        const newPanel = document.getElementById('newCompanyPanel');
+        const newInput = document.getElementById('newCompanyInput');
+
+        if (hiddenInput) hiddenInput.value = id;
+        if (label) {
+            label.innerText = name;
+            if (id) {
+                label.className = 'text-slate-900 dark:text-white font-bold truncate';
+            } else {
+                label.className = 'text-slate-400 dark:text-slate-400 font-normal truncate';
+            }
+        }
+
+        if (id && newPanel) {
+            newPanel.style.display = 'none';
+            if (newInput) newInput.value = '';
+        }
+
+        // Update checkmark in list
+        const items = document.querySelectorAll('#companyOptionsList .company-option');
+        items.forEach(item => {
+            const check = item.querySelector('.checkmark-icon');
+            if (check) check.remove();
+        });
+
+        const menu = document.getElementById('companyDropdownMenu');
+        menu?.classList.add('hidden');
+    }
+    </script>
+}

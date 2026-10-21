@@ -27,24 +27,32 @@ namespace AzureTest.MVC.Controllers;
     private readonly IExpenseQueryUnit _queries;
     private readonly IExpenseCategoryRepository _categoryRepository;
     private readonly ICurrentUser _currentUser;
+    private readonly ITenantProvider? _tenantProvider;
 
     public ExpenseController(
         IExpenseCommandUnit commands,
         IExpenseQueryUnit queries,
         IExpenseCategoryRepository categoryRepository,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        ITenantProvider? tenantProvider = null)
     {
         _commands = commands;
         _queries = queries;
         _categoryRepository = categoryRepository;
         _currentUser = currentUser;
+        _tenantProvider = tenantProvider;
     }
 
     private async Task LoadCategoriesViewBagAsync()
     {
         var categories = await _categoryRepository.GetAllAsync();
+        var targetTenantId = _tenantProvider?.CurrentTenantId ?? Guid.Empty;
+        var isMultiTenant = _tenantProvider?.IsMultiTenancyEnabled == true && targetTenantId != Guid.Empty;
+
         ViewBag.Categories = categories
-            .Where(c => c.UserId == _currentUser.Id)
+            .Where(c => isMultiTenant
+                ? (c.TenantId == targetTenantId || c.UserId == targetTenantId)
+                : c.UserId == _currentUser.Id)
             .OrderBy(c => c.Name)
             .Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
             {

@@ -1,0 +1,2365 @@
+@{
+    ViewData["Title"] = "UI Components Catalog";
+}
+
+<!-- Page Header -->
+<div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+        <nav class="flex items-center gap-2 text-xs text-slate-400 mb-1">
+            <a asp-controller="Home" asp-action="Index" class="hover:text-brand-600 transition-colors">Home</a>
+            <i class="fa-solid fa-chevron-right text-3xs"></i>
+            <span class="text-slate-600 font-semibold">Design System</span>
+            <i class="fa-solid fa-chevron-right text-3xs"></i>
+            <span class="text-slate-600 font-semibold">UI Components</span>
+        </nav>
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-600 text-xl shadow-sm">
+                <i class="fa-solid fa-shapes"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+                    UI Components Catalog
+                    <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-700">Design System</span>
+                </h1>
+                <p class="text-xs text-slate-500 mt-0.5">Comprehensive, copy-paste component library matching the application's Tailwind CSS design standards.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Search Components Bar -->
+    <div class="flex items-center gap-3">
+        <div class="relative w-full sm:w-72">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input id="componentFilterInput" type="text" onkeyup="filterComponents()" placeholder="Filter components (e.g. accordion, tabs, table, datepicker)..."
+                   class="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" />
+            <button type="button" onclick="clearComponentFilter()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 text-xs bg-transparent border-0 cursor-pointer hidden" id="clearComponentBtn">
+                <i class="fa-solid fa-circle-xmark"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Category Jump Navigation Pills -->
+<div class="bg-white rounded-2xl border border-slate-100 p-3 shadow-2xs mb-8 overflow-x-auto">
+    <div class="flex items-center gap-1.5 min-w-max text-xs">
+        <span class="text-2xs font-bold uppercase tracking-wider text-slate-400 px-2">Jump to:</span>
+        <a href="#sec-hero-breadcrumbs" class="px-3 py-1.5 rounded-xl font-semibold bg-brand-50 text-brand-700 hover:bg-brand-100 transition-colors">Hero & Breadcrumbs</a>
+        <a href="#sec-accordions-tabs" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Accordions & Tabs</a>
+        <a href="#sec-buttons" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Buttons</a>
+        <a href="#sec-inputs" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Inputs & Validation</a>
+        <a href="#sec-custom-pickers" class="px-3 py-1.5 rounded-xl font-semibold bg-brand-50 text-brand-700 hover:bg-brand-100 transition-colors">Custom Date & Time</a>
+        <a href="#sec-toggles" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Custom Checkboxes</a>
+        <a href="#sec-dropdowns" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Dropdowns & Multi-Select</a>
+        <a href="#sec-tables" class="px-3 py-1.5 rounded-xl font-semibold bg-brand-50 text-brand-700 hover:bg-brand-100 transition-colors">Sortable Tables</a>
+        <a href="#sec-dashboard-widgets" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">KPIs, Empty States & Timeline</a>
+        <a href="#sec-modals" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Modals</a>
+        <a href="#sec-toasts" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Toasts & Alerts</a>
+        <a href="#sec-loaders" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Loaders & Progress</a>
+        <a href="#sec-filters-pagination" class="px-3 py-1.5 rounded-xl font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Filters & Pagination</a>
+    </div>
+</div>
+
+<div class="space-y-12">
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 1: HERO SECTION & BREADCRUMBS -->
+    <!-- ========================================================================= -->
+    <section id="sec-hero-breadcrumbs" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-flag text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">1. Hero Section & Breadcrumbs</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Layout</span>
+        </div>
+
+        <div class="space-y-6">
+            <!-- Component Card: Dashboard Hero Banner -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Hero Banner Welcome Section Header Headline Dashboard">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Dashboard Hero Section</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Modern SaaS executive welcome banner with gradient backdrop, quick actions, and embedded KPI highlights.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-hero-banner', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50">
+                    <!-- Hero Banner Visual -->
+                    <div class="relative overflow-hidden rounded-3xl bg-linear-to-br from-slate-900 via-slate-800 to-brand-950 p-6 md:p-8 text-white shadow-lg">
+                        <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-brand-500/15 blur-3xl pointer-events-none"></div>
+                        <div class="absolute right-32 -bottom-20 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
+
+                        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                            <div class="space-y-3 max-w-xl">
+                                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-2xs font-medium text-brand-200">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    <span>System Operational</span>
+                                    <span class="text-white/40">|</span>
+                                    <span>October 20, 2026</span>
+                                </div>
+                                <h2 class="text-2xl md:text-3xl font-black tracking-tight text-white">
+                                    Welcome back, <span class="text-brand-300">Alex</span>!
+                                </h2>
+                                <p class="text-xs md:text-sm text-slate-300 leading-relaxed">
+                                    Here is what is happening across your projects and pantry inventory today. You have <strong class="text-white">4 tasks</strong> due and <strong class="text-white">2 low stock</strong> alerts requiring attention.
+                                </p>
+                                <div class="flex flex-wrap items-center gap-3 pt-2">
+                                    <button type="button" class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-md shadow-brand-600/30 transition-all flex items-center gap-2">
+                                        <i class="fa-solid fa-plus text-2xs"></i>
+                                        <span>Create New Task</span>
+                                    </button>
+                                    <button type="button" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 backdrop-blur-md transition-all flex items-center gap-2">
+                                        <i class="fa-solid fa-chart-simple text-2xs"></i>
+                                        <span>View Analytics</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Integrated Hero Mini-KPIs -->
+                            <div class="grid grid-cols-2 gap-3 min-w-[280px]">
+                                <div class="p-4 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-md">
+                                    <div class="flex items-center justify-between text-brand-300 text-xs mb-1">
+                                        <span class="text-2xs font-semibold uppercase tracking-wider text-slate-300">Active Tasks</span>
+                                        <i class="fa-solid fa-list-check"></i>
+                                    </div>
+                                    <div class="text-2xl font-black text-white">28</div>
+                                    <div class="text-3xs text-emerald-300 flex items-center gap-1 mt-1 font-medium">
+                                        <i class="fa-solid fa-arrow-trend-up"></i> +14% vs last week
+                                    </div>
+                                </div>
+                                <div class="p-4 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-md">
+                                    <div class="flex items-center justify-between text-brand-300 text-xs mb-1">
+                                        <span class="text-2xs font-semibold uppercase tracking-wider text-slate-300">Completion</span>
+                                        <i class="fa-solid fa-bullseye"></i>
+                                    </div>
+                                    <div class="text-2xl font-black text-white">92.4%</div>
+                                    <div class="text-3xs text-emerald-300 flex items-center gap-1 mt-1 font-medium">
+                                        <i class="fa-solid fa-circle-check"></i> On track
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-hero-banner"><code>&lt;!-- Modern SaaS Hero Banner --&gt;
+&lt;div class="relative overflow-hidden rounded-3xl bg-linear-to-br from-slate-900 via-slate-800 to-brand-950 p-8 text-white shadow-lg"&gt;
+    &lt;div class="flex flex-col lg:flex-row items-center justify-between gap-6"&gt;
+        &lt;div class="space-y-3"&gt;
+            &lt;div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-2xs"&gt;
+                &lt;span class="w-2 h-2 rounded-full bg-emerald-400"&gt;&lt;/span&gt; Active Session
+            &lt;/div&gt;
+            &lt;h2 class="text-2xl font-black"&gt;Welcome back, &lt;span class="text-brand-300"&gt;User&lt;/span&gt;!&lt;/h2&gt;
+            &lt;p class="text-xs text-slate-300"&gt;Summary of operations and key status metrics.&lt;/p&gt;
+            &lt;div class="flex gap-3"&gt;
+                &lt;button class="px-4 py-2 bg-brand-600 rounded-xl text-xs font-semibold"&gt;Create Action&lt;/button&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Component Card: Breadcrumb Variations -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Breadcrumb Chevron Slash Icons Badge Navigation Hierarchy">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Breadcrumb Navigation Styles</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Chevron, slash, badge, and icon-based breadcrumb hierarchies with responsive truncation.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-breadcrumbs', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-6">
+                    <!-- Style 1: Chevron with Icons -->
+                    <div class="space-y-1.5">
+                        <span class="text-3xs font-bold uppercase tracking-wider text-slate-400">Style A: Chevron with Icons</span>
+                        <nav class="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
+                            <a href="#" class="inline-flex items-center gap-1.5 text-slate-600 hover:text-brand-600 transition-colors font-medium">
+                                <i class="fa-solid fa-house text-2xs text-slate-400"></i>
+                                <span>Dashboard</span>
+                            </a>
+                            <i class="fa-solid fa-chevron-right text-3xs text-slate-300"></i>
+                            <a href="#" class="text-slate-600 hover:text-brand-600 transition-colors font-medium">Inventory</a>
+                            <i class="fa-solid fa-chevron-right text-3xs text-slate-300"></i>
+                            <a href="#" class="text-slate-600 hover:text-brand-600 transition-colors font-medium">Pantry Stock</a>
+                            <i class="fa-solid fa-chevron-right text-3xs text-slate-300"></i>
+                            <span class="text-slate-900 font-bold bg-slate-100 px-2 py-0.5 rounded-md">Item Details</span>
+                        </nav>
+                    </div>
+
+                    <!-- Style 2: Modern Slash Breadcrumb -->
+                    <div class="space-y-1.5">
+                        <span class="text-3xs font-bold uppercase tracking-wider text-slate-400">Style B: Slash Separator</span>
+                        <nav class="flex items-center gap-2 text-xs text-slate-500">
+                            <a href="#" class="hover:text-brand-600 transition-colors font-medium">Finance</a>
+                            <span class="text-slate-300 font-bold">/</span>
+                            <a href="#" class="hover:text-brand-600 transition-colors font-medium">Debts & Credit</a>
+                            <span class="text-slate-300 font-bold">/</span>
+                            <span class="text-brand-700 font-bold">Analytics & Breakdown</span>
+                        </nav>
+                    </div>
+
+                    <!-- Style 3: Pill / Chip Breadcrumb -->
+                    <div class="space-y-1.5">
+                        <span class="text-3xs font-bold uppercase tracking-wider text-slate-400">Style C: Pill Container with Badge</span>
+                        <nav class="inline-flex items-center gap-1.5 p-1.5 rounded-xl bg-white border border-slate-200 text-xs shadow-2xs">
+                            <a href="#" class="px-2.5 py-1 rounded-lg hover:bg-slate-100 text-slate-600 font-semibold transition-colors flex items-center gap-1.5">
+                                <i class="fa-solid fa-cube text-2xs text-brand-600"></i> Projects
+                            </a>
+                            <i class="fa-solid fa-angle-right text-3xs text-slate-400"></i>
+                            <a href="#" class="px-2.5 py-1 rounded-lg hover:bg-slate-100 text-slate-600 font-semibold transition-colors">
+                                Sprint 42
+                            </a>
+                            <i class="fa-solid fa-angle-right text-3xs text-slate-400"></i>
+                            <span class="px-2.5 py-1 rounded-lg bg-brand-50 text-brand-700 font-bold flex items-center gap-1.5">
+                                User Feedback
+                                <span class="px-1.5 py-0.2 rounded-full bg-brand-200 text-brand-800 text-3xs">12</span>
+                            </span>
+                        </nav>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-breadcrumbs"><code>&lt;!-- Chevron Breadcrumb with Icons --&gt;
+&lt;nav class="flex items-center gap-2 text-xs text-slate-500"&gt;
+    &lt;a href="#" class="inline-flex items-center gap-1.5 text-slate-600 hover:text-brand-600 font-medium"&gt;
+        &lt;i class="fa-solid fa-house text-2xs"&gt;&lt;/i&gt; Home
+    &lt;/a&gt;
+    &lt;i class="fa-solid fa-chevron-right text-3xs text-slate-300"&gt;&lt;/i&gt;
+    &lt;a href="#" class="text-slate-600 hover:text-brand-600"&gt;Section&lt;/a&gt;
+    &lt;i class="fa-solid fa-chevron-right text-3xs text-slate-300"&gt;&lt;/i&gt;
+    &lt;span class="text-slate-900 font-bold bg-slate-100 px-2 py-0.5 rounded-md"&gt;Active Page&lt;/span&gt;
+&lt;/nav&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Component Card: Reusable Partial Tag Component -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Reusable Partial Tag Helper Breadcrumb PageHeader EmptyState Pagination Razor">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Reusable Razor Component Partials</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Use <code>UiComponents/_Breadcrumb</code>, <code>UiComponents/_PageHeader</code>, <code>UiComponents/_EmptyState</code>, and <code>UiComponents/_Pagination</code> across all views.</p>
+                    </div>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <partial name="UiComponents/_Breadcrumb" model='new List<AzureTest.MVC.Models.BreadcrumbItem> { new("Design System", "/UiComponents", "fa-solid fa-shapes"), new("Live Catalog", null, IsActive: true) }' />
+                    <partial name="UiComponents/_EmptyState" model='new AzureTest.MVC.Models.EmptyStateModel("No Records Found", "Example of the standardized empty state component.", "fa-solid fa-shapes", "Sample Action", "#")' />
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 2: ACCORDIONS, TABS & TABS GROUP -->
+    <!-- ========================================================================= -->
+    <section id="sec-accordions-tabs" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-layer-group text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">2. Accordions, Sections & Tab Groups</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Navigation</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Component Card: Accordions -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Accordion Collapsible Expandable FAQ Panels Details">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Expandable Accordions</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Smooth collapsible sections with chevron rotation, badges, and multi-open support.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-accordion', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-3">
+                    <!-- Accordion Item 1 (Expanded) -->
+                    <div class="accordion-item rounded-2xl border border-slate-200 bg-white overflow-hidden transition-all shadow-2xs">
+                        <button type="button" onclick="toggleAccordion('acc-item-1', this)" class="w-full p-4 text-left flex items-center justify-between gap-3 bg-white hover:bg-slate-50/80 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xs">
+                                    <i class="fa-solid fa-utensils"></i>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-900 block">How does stock auto-decrement work?</span>
+                                    <span class="text-3xs text-slate-400">Inventory & Meal Plan Integration</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded-full text-3xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Active</span>
+                                <i class="fa-solid fa-chevron-down text-2xs text-slate-400 transform transition-transform duration-300 rotate-180 accordion-chevron"></i>
+                            </div>
+                        </button>
+                        <div id="acc-item-1" class="accordion-content px-4 pb-4 pt-1 text-xs text-slate-600 leading-relaxed border-t border-slate-100">
+                            When logging a meal, the system checks whether the meal was cooked at home. If so, a stock reduction ledger movement is recorded automatically for all recipe ingredients, decrementing from current stock in real-time.
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 2 (Collapsed) -->
+                    <div class="accordion-item rounded-2xl border border-slate-200 bg-white overflow-hidden transition-all shadow-2xs">
+                        <button type="button" onclick="toggleAccordion('acc-item-2', this)" class="w-full p-4 text-left flex items-center justify-between gap-3 bg-white hover:bg-slate-50/80 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
+                                    <i class="fa-solid fa-users"></i>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-900 block">Can multiple users share shopping lists?</span>
+                                    <span class="text-3xs text-slate-400">SignalR Real-Time Collaboration</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded-full text-3xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">SignalR</span>
+                                <i class="fa-solid fa-chevron-down text-2xs text-slate-400 transform transition-transform duration-300 accordion-chevron"></i>
+                            </div>
+                        </button>
+                        <div id="acc-item-2" class="accordion-content hidden px-4 pb-4 pt-1 text-xs text-slate-600 leading-relaxed border-t border-slate-100">
+                            Yes. The shopping list features real-time SignalR synchronization. Any item added, checked off, or updated broadcasts instantly to all registered family or household members.
+                        </div>
+                    </div>
+
+                    <!-- Accordion Item 3 (Collapsed) -->
+                    <div class="accordion-item rounded-2xl border border-slate-200 bg-white overflow-hidden transition-all shadow-2xs">
+                        <button type="button" onclick="toggleAccordion('acc-item-3', this)" class="w-full p-4 text-left flex items-center justify-between gap-3 bg-white hover:bg-slate-50/80 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xs">
+                                    <i class="fa-solid fa-shield-halved"></i>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-900 block">Who can switch between user tenants?</span>
+                                    <span class="text-3xs text-slate-400">Security & Dynamic Authorization</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded-full text-3xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">Admin Only</span>
+                                <i class="fa-solid fa-chevron-down text-2xs text-slate-400 transform transition-transform duration-300 accordion-chevron"></i>
+                            </div>
+                        </button>
+                        <div id="acc-item-3" class="accordion-content hidden px-4 pb-4 pt-1 text-xs text-slate-600 leading-relaxed border-t border-slate-100">
+                            Only administrators with the `Admin` role can switch between tenant workspaces. Regular users are strictly locked to their own tenant records via EF Core Global Query Filters.
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-accordion"><code>&lt;!-- Accordion Item --&gt;
+&lt;div class="rounded-2xl border border-slate-200 bg-white overflow-hidden"&gt;
+    &lt;button type="button" onclick="toggleAccordion('accId', this)" class="w-full p-4 flex justify-between items-center"&gt;
+        &lt;span class="text-xs font-bold"&gt;Accordion Title&lt;/span&gt;
+        &lt;i class="fa-solid fa-chevron-down text-2xs transition-transform"&gt;&lt;/i&gt;
+    &lt;/button&gt;
+    &lt;div id="accId" class="hidden px-4 pb-4 text-xs text-slate-600 border-t border-slate-100"&gt;
+        Collapsible content body here.
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Component Card: Interactive Tabs & Tabs Group -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Tabs Tab Group Underline Pills Segmented Control Panels">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Tab Groups (Underline & Pills)</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Interactive tab bar switching between tab panels with badges and active indicator styling.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-tabs-group', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-6">
+                    <!-- Underline Tabs Group -->
+                    <div>
+                        <span class="text-3xs font-bold uppercase tracking-wider text-slate-400 mb-2 block">Style 1: Underline Indicator with Badges</span>
+                        <div class="border-b border-slate-200 flex items-center gap-4">
+                            <button type="button" onclick="switchTab('demo-underline', 'tab-overview', this)"
+                                    class="tab-btn px-2 py-2 text-xs font-bold text-brand-600 border-b-2 border-brand-600 transition-colors flex items-center gap-2">
+                                <i class="fa-solid fa-chart-pie text-2xs"></i>
+                                <span>Overview</span>
+                                <span class="px-1.5 py-0.2 rounded-full bg-brand-100 text-brand-700 text-3xs">24</span>
+                            </button>
+                            <button type="button" onclick="switchTab('demo-underline', 'tab-activity', this)"
+                                    class="tab-btn px-2 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition-colors flex items-center gap-2">
+                                <i class="fa-solid fa-clock-rotate-left text-2xs"></i>
+                                <span>Activity Log</span>
+                            </button>
+                            <button type="button" onclick="switchTab('demo-underline', 'tab-settings', this)"
+                                    class="tab-btn px-2 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition-colors flex items-center gap-2">
+                                <i class="fa-solid fa-sliders text-2xs"></i>
+                                <span>Preferences</span>
+                            </button>
+                        </div>
+
+                        <!-- Tab Panels -->
+                        <div class="mt-4 p-4 rounded-2xl bg-white border border-slate-200">
+                            <div id="tab-overview" class="tab-panel text-xs text-slate-700 space-y-2">
+                                <h4 class="font-bold text-slate-900">Workspace Overview Panel</h4>
+                                <p class="text-slate-500 text-2xs">Displays high-level KPI cards, recent activity summaries, and real-time synchronized status charts.</p>
+                            </div>
+                            <div id="tab-activity" class="tab-panel hidden text-xs text-slate-700 space-y-2">
+                                <h4 class="font-bold text-slate-900">Activity & Audit Log</h4>
+                                <p class="text-slate-500 text-2xs">Ledger movements recorded by meal logging, shopping completion, and habit updates.</p>
+                            </div>
+                            <div id="tab-settings" class="tab-panel hidden text-xs text-slate-700 space-y-2">
+                                <h4 class="font-bold text-slate-900">Preferences & Configuration</h4>
+                                <p class="text-slate-500 text-2xs">Configure pantry minimum alerts, default unit converters, and notification channels.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pill / Segmented Control Tabs -->
+                    <div>
+                        <span class="text-3xs font-bold uppercase tracking-wider text-slate-400 mb-2 block">Style 2: Segmented Pill Control</span>
+                        <div class="inline-flex p-1 rounded-2xl bg-slate-200/80 border border-slate-200">
+                            <button type="button" class="px-4 py-1.5 rounded-xl bg-white text-slate-900 font-bold text-xs shadow-2xs transition-all">Daily View</button>
+                            <button type="button" class="px-4 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 font-semibold text-xs transition-all">Weekly</button>
+                            <button type="button" class="px-4 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 font-semibold text-xs transition-all">Monthly</button>
+                            <button type="button" class="px-4 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 font-semibold text-xs transition-all">Custom Range</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-tabs-group"><code>&lt;!-- Underline Tabs Group --&gt;
+&lt;div class="border-b border-slate-200 flex gap-4"&gt;
+    &lt;button class="px-2 py-2 text-xs font-bold text-brand-600 border-b-2 border-brand-600"&gt;Tab 1&lt;/button&gt;
+    &lt;button class="px-2 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800"&gt;Tab 2&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;!-- Segmented Pill Control --&gt;
+&lt;div class="inline-flex p-1 rounded-2xl bg-slate-200"&gt;
+    &lt;button class="px-3 py-1.5 rounded-xl bg-white text-xs font-bold shadow-xs"&gt;Active&lt;/button&gt;
+    &lt;button class="px-3 py-1.5 rounded-xl text-xs text-slate-600 font-semibold"&gt;Inactive&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 3: BUTTONS & ACTIONS -->
+    <!-- ========================================================================= -->
+    <section id="sec-buttons" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-hand-pointer text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">3. Buttons & Actions</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Interaction</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Component Card: Button Variants -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Button Variants primary secondary danger success warning ghost">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Button Color Variants</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Primary, Secondary, Destructive (Danger), Success, Warning, and Ghost.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-btn-variants', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <button type="button" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-xs font-semibold text-white shadow-sm transition-colors">
+                            Primary Action
+                        </button>
+                        <button type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
+                            Secondary
+                        </button>
+                        <button type="button" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-xs font-semibold text-white shadow-sm transition-colors">
+                            <i class="fa-solid fa-trash-can mr-1.5 text-2xs"></i> Danger
+                        </button>
+                        <button type="button" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold text-white shadow-sm transition-colors">
+                            <i class="fa-solid fa-check mr-1.5 text-2xs"></i> Success
+                        </button>
+                        <button type="button" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-xs font-semibold text-white shadow-sm transition-colors">
+                            <i class="fa-solid fa-triangle-exclamation mr-1.5 text-2xs"></i> Warning
+                        </button>
+                        <button type="button" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-colors">
+                            Outline
+                        </button>
+                        <button type="button" class="px-3 py-2 text-slate-500 hover:text-slate-800 text-xs font-semibold bg-transparent transition-colors">
+                            Ghost
+                        </button>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-btn-variants"><code>&lt;!-- Primary Button --&gt;
+&lt;button type="button" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-xs font-semibold text-white shadow-sm"&gt;Primary&lt;/button&gt;
+&lt;!-- Secondary Button --&gt;
+&lt;button type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold"&gt;Secondary&lt;/button&gt;
+&lt;!-- Danger Button --&gt;
+&lt;button type="button" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-xs font-semibold text-white"&gt;Danger&lt;/button&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Component Card: Button Sizes & Icon States -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Button Sizes Icon Buttons Loading Button Disabled Group">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Button Sizes, Loading & Group</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Sizes (xs, sm, md, lg), spinner loading states, and joined button groups.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-btn-states', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" class="px-2.5 py-1 text-2xs font-semibold rounded-lg bg-slate-800 text-white">Size XS</button>
+                        <button type="button" class="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-slate-800 text-white">Size SM</button>
+                        <button type="button" class="px-5 py-2.5 text-sm font-semibold rounded-xl bg-slate-800 text-white">Size MD</button>
+                        <button type="button" class="px-6 py-3 text-base font-bold rounded-2xl bg-slate-800 text-white">Size LG</button>
+                    </div>
+
+                    <div class="flex items-center gap-3 pt-2 border-t border-slate-200">
+                        <!-- Loading State -->
+                        <button type="button" disabled class="px-4 py-2 rounded-xl bg-brand-600/70 text-white text-xs font-semibold flex items-center gap-2 cursor-not-allowed">
+                            <i class="fa-solid fa-circle-notch fa-spin text-2xs"></i>
+                            <span>Saving...</span>
+                        </button>
+
+                        <!-- Icon Only -->
+                        <button type="button" class="w-9 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors shadow-2xs">
+                            <i class="fa-solid fa-ellipsis-vertical text-xs"></i>
+                        </button>
+
+                        <!-- Joined Button Group -->
+                        <div class="inline-flex rounded-xl shadow-2xs border border-slate-200 overflow-hidden bg-white">
+                            <button type="button" class="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 border-r border-slate-200">Grid</button>
+                            <button type="button" class="px-3 py-1.5 text-xs font-semibold bg-brand-50 text-brand-700 border-r border-slate-200">List</button>
+                            <button type="button" class="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Map</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-btn-states"><code>&lt;!-- Button with Loading Spinner --&gt;
+&lt;button type="button" disabled class="px-4 py-2 rounded-xl bg-brand-600/70 text-white text-xs font-semibold flex items-center gap-2 cursor-not-allowed"&gt;
+    &lt;i class="fa-solid fa-circle-notch fa-spin text-2xs"&gt;&lt;/i&gt; Saving...
+&lt;/button&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 4: FORM INPUTS & VALIDATION STATES -->
+    <!-- ========================================================================= -->
+    <section id="sec-inputs" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-keyboard text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">4. Form Inputs & Validation States</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Forms</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Component Card: Good Input vs Invalid Input -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Good Input Valid Success Invalid Error State Warning Validation">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Validation States: Good vs Invalid</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Success (valid), error (invalid), warning, and validating async input feedback.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-validation-states', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <!-- 1. Good / Valid Input -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-emerald-800 mb-1 flex items-center justify-between">
+                            <span>Username</span>
+                            <span class="text-3xs font-semibold text-emerald-600">Valid</span>
+                        </label>
+                        <div class="relative">
+                            <input type="text" value="mohammad_hosein"
+                                   class="w-full pl-3.5 pr-10 py-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-50/20 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-3 focus:ring-emerald-200 transition-all" />
+                            <i class="fa-solid fa-circle-check absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-600 text-sm"></i>
+                        </div>
+                        <p class="text-3xs font-medium text-emerald-600 mt-1 flex items-center gap-1">
+                            <i class="fa-solid fa-check"></i> Username is verified and available.
+                        </p>
+                    </div>
+
+                    <!-- 2. Bad / Invalid Input -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-rose-800 mb-1 flex items-center justify-between">
+                            <span>Email Address</span>
+                            <span class="text-3xs font-semibold text-rose-600">Invalid</span>
+                        </label>
+                        <div class="relative">
+                            <input type="email" value="alexander.hamilton@@invalid"
+                                   class="w-full pl-3.5 pr-10 py-2.5 rounded-xl border-2 border-rose-500 bg-rose-50/20 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-3 focus:ring-rose-200 transition-all" />
+                            <i class="fa-solid fa-circle-exclamation absolute right-3.5 top-1/2 -translate-y-1/2 text-rose-600 text-sm"></i>
+                        </div>
+                        <p class="text-3xs font-medium text-rose-600 mt-1 flex items-center gap-1">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Please enter a valid email address with a valid domain.
+                        </p>
+                    </div>
+
+                    <!-- 3. Warning Input -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-amber-800 mb-1 flex items-center justify-between">
+                            <span>Password Strength</span>
+                            <span class="text-3xs font-semibold text-amber-600">Moderate</span>
+                        </label>
+                        <div class="relative">
+                            <input type="password" value="pass1234"
+                                   class="w-full pl-3.5 pr-10 py-2.5 rounded-xl border-2 border-amber-400 bg-amber-50/20 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-3 focus:ring-amber-200 transition-all" />
+                            <i class="fa-solid fa-triangle-exclamation absolute right-3.5 top-1/2 -translate-y-1/2 text-amber-500 text-sm"></i>
+                        </div>
+                        <p class="text-3xs font-medium text-amber-700 mt-1 flex items-center gap-1">
+                            <i class="fa-solid fa-info-circle"></i> Weak password. Add capital letters or symbols to increase strength.
+                        </p>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-validation-states"><code>&lt;!-- Valid Input State --&gt;
+&lt;div class="relative"&gt;
+    &lt;input type="text" class="w-full pr-10 py-2 rounded-xl border-2 border-emerald-500 bg-emerald-50/20 focus:ring-3 focus:ring-emerald-200" /&gt;
+    &lt;i class="fa-solid fa-circle-check absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-600 text-sm"&gt;&lt;/i&gt;
+&lt;/div&gt;
+&lt;p class="text-3xs text-emerald-600 font-medium"&gt;Field is valid.&lt;/p&gt;
+
+&lt;!-- Invalid Input State --&gt;
+&lt;div class="relative"&gt;
+    &lt;input type="text" class="w-full pr-10 py-2 rounded-xl border-2 border-rose-500 bg-rose-50/20 focus:ring-3 focus:ring-rose-200" /&gt;
+    &lt;i class="fa-solid fa-circle-exclamation absolute right-3.5 top-1/2 -translate-y-1/2 text-rose-600 text-sm"&gt;&lt;/i&gt;
+&lt;/div&gt;
+&lt;p class="text-3xs text-rose-600 font-medium"&gt;Please correct this field.&lt;/p&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Component Card: Text, Email & Password Toggles -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Text Inputs Password Show Hide Toggle Stepper">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Password Toggle & Number Stepper</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Password visibility reveal button and numeric quantity stepper.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-text-inputs', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <!-- Password Input with Toggle -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Password</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input id="demoPasswordInput" type="password" value="SuperSecret123!" class="w-full pl-9 pr-10 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" />
+                            <button type="button" onclick="togglePasswordVisibility('demoPasswordInput', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 bg-transparent border-0 cursor-pointer">
+                                <i class="fa-solid fa-eye text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Number with Stepper -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Serving Quantity (Stepper)</label>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="stepNumber('demoStepper', -1)" class="w-10 h-10 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 flex items-center justify-center text-slate-600 font-bold transition-colors">
+                                <i class="fa-solid fa-minus text-2xs"></i>
+                            </button>
+                            <input id="demoStepper" type="number" value="4" min="1" max="100" class="w-24 text-center rounded-xl border border-slate-300 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" />
+                            <button type="button" onclick="stepNumber('demoStepper', 1)" class="w-10 h-10 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 flex items-center justify-center text-slate-600 font-bold transition-colors">
+                                <i class="fa-solid fa-plus text-2xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-text-inputs"><code>&lt;!-- Password with Show/Hide Toggle --&gt;
+&lt;div class="relative"&gt;
+    &lt;i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"&gt;&lt;/i&gt;
+    &lt;input id="passwordInput" type="password" class="w-full pl-9 pr-10 py-2 rounded-xl border" /&gt;
+    &lt;button type="button" onclick="togglePasswordVisibility('passwordInput', this)" class="absolute right-3 top-1/2 -translate-y-1/2"&gt;
+        &lt;i class="fa-solid fa-eye"&gt;&lt;/i&gt;
+    &lt;/button&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 5: CUSTOM DATE & TIME PICKERS -->
+    <!-- ========================================================================= -->
+    <section id="sec-custom-pickers" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-regular fa-calendar-days text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">5. Custom Date & Time Pickers</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 uppercase">Interactive</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Custom Date Picker Component -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Custom Date Picker Calendar Month Grid Quick Presets">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Custom Interactive Date Picker</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Custom calendar popup with month navigator, active day highlight, and quick presets.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-custom-datepicker', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50">
+                    <div class="relative max-w-sm">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Target Date</label>
+                        <div class="relative">
+                            <i class="fa-regular fa-calendar absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input id="customDateDisplay" type="text" readonly value="2026-10-20" onclick="toggleCustomDatePicker()"
+                                   class="w-full pl-9 pr-10 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-800 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-2xs" />
+                            <button type="button" onclick="toggleCustomDatePicker()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 bg-transparent border-0 cursor-pointer">
+                                <i class="fa-solid fa-chevron-down text-2xs"></i>
+                            </button>
+                        </div>
+
+                        <!-- Calendar Popup Dropdown Card -->
+                        <div id="customDatePickerMenu" class="mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 z-30">
+                            <!-- Header / Month navigation -->
+                            <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+                                <button type="button" onclick="changeCustomMonth(-1)" class="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-600">
+                                    <i class="fa-solid fa-chevron-left text-3xs"></i>
+                                </button>
+                                <span id="calendarMonthYear" class="text-xs font-black text-slate-900 tracking-tight">October 2026</span>
+                                <button type="button" onclick="changeCustomMonth(1)" class="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-600">
+                                    <i class="fa-solid fa-chevron-right text-3xs"></i>
+                                </button>
+                            </div>
+
+                            <!-- Day Headers -->
+                            <div class="grid grid-cols-7 gap-1 text-center text-3xs font-bold text-slate-400 uppercase mb-1">
+                                <div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div><div>Su</div>
+                            </div>
+
+                            <!-- 31 Days Grid -->
+                            <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-center text-xs">
+                                <!-- Days rendered dynamically via JS -->
+                            </div>
+
+                            <!-- Quick Presets Bar -->
+                            <div class="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 text-2xs">
+                                <button type="button" onclick="selectDatePreset('today')" class="text-brand-600 font-bold hover:underline">Today</button>
+                                <button type="button" onclick="selectDatePreset('tomorrow')" class="text-slate-600 font-medium hover:underline">Tomorrow</button>
+                                <button type="button" onclick="selectDatePreset('nextWeek')" class="text-slate-600 font-medium hover:underline">Next Week</button>
+                                <button type="button" onclick="toggleCustomDatePicker()" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200">Done</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-custom-datepicker"><code>&lt;!-- Custom Date Picker Display Input & Popup Grid --&gt;
+&lt;div class="relative"&gt;
+    &lt;input id="dateInput" type="text" readonly class="w-full pl-9 pr-10 py-2.5 rounded-xl border font-bold cursor-pointer" onclick="toggleDatePicker()" /&gt;
+    &lt;!-- Dropdown Calendar Card with Month Header &amp; 7x5 Days Grid --&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Custom Time Picker Component -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Custom Time Picker Clock Stepper Hour Minute AM PM Chips">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Custom Interactive Time Picker</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Numeric spinners for hours & minutes, AM/PM toggle, and quick preset buttons.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-custom-timepicker', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50">
+                    <div class="max-w-sm">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Scheduled Time</label>
+                        <div class="relative mb-3">
+                            <i class="fa-regular fa-clock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input id="customTimeDisplay" type="text" readonly value="02:30 PM"
+                                   class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-black text-slate-800 bg-white shadow-2xs" />
+                        </div>
+
+                        <!-- Time Picker Controls Card -->
+                        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-4">
+                            <div class="flex items-center justify-center gap-4">
+                                <!-- Hours Stepper -->
+                                <div class="flex flex-col items-center">
+                                    <button type="button" onclick="stepCustomTime('hour', 1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center">
+                                        <i class="fa-solid fa-chevron-up text-3xs"></i>
+                                    </button>
+                                    <span id="timeHourDisplay" class="font-mono text-2xl font-black text-slate-900 my-1">02</span>
+                                    <button type="button" onclick="stepCustomTime('hour', -1)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center">
+                                        <i class="fa-solid fa-chevron-down text-3xs"></i>
+                                    </button>
+                                </div>
+
+                                <span class="font-mono text-2xl font-black text-slate-400">:</span>
+
+                                <!-- Minutes Stepper -->
+                                <div class="flex flex-col items-center">
+                                    <button type="button" onclick="stepCustomTime('minute', 5)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center">
+                                        <i class="fa-solid fa-chevron-up text-3xs"></i>
+                                    </button>
+                                    <span id="timeMinuteDisplay" class="font-mono text-2xl font-black text-slate-900 my-1">30</span>
+                                    <button type="button" onclick="stepCustomTime('minute', -5)" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center">
+                                        <i class="fa-solid fa-chevron-down text-3xs"></i>
+                                    </button>
+                                </div>
+
+                                <!-- AM / PM Segmented Toggle -->
+                                <div class="flex flex-col gap-1.5 ml-2">
+                                    <button id="btnAm" type="button" onclick="setCustomAmPm('AM')" class="px-3 py-1.5 rounded-lg text-2xs font-bold bg-slate-100 text-slate-600 transition-all">AM</button>
+                                    <button id="btnPm" type="button" onclick="setCustomAmPm('PM')" class="px-3 py-1.5 rounded-lg text-2xs font-bold bg-brand-600 text-white shadow-2xs transition-all">PM</button>
+                                </div>
+                            </div>
+
+                            <!-- Quick Preset Chips -->
+                            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-1 flex-wrap text-2xs">
+                                <button type="button" onclick="applyTimePreset('09:00 AM')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold">09:00 AM</button>
+                                <button type="button" onclick="applyTimePreset('12:00 PM')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold">12:00 PM</button>
+                                <button type="button" onclick="applyTimePreset('03:30 PM')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold">03:30 PM</button>
+                                <button type="button" onclick="applyTimePreset('06:00 PM')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold">06:00 PM</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-custom-timepicker"><code>&lt;!-- Time Picker Stepper Layout --&gt;
+&lt;div class="flex items-center gap-4"&gt;
+    &lt;button onclick="stepHour(1)"&gt;&lt;i class="fa-solid fa-chevron-up"&gt;&lt;/i&gt;&lt;/button&gt;
+    &lt;span id="hours" class="font-mono text-2xl font-black"&gt;02&lt;/span&gt;
+    &lt;span&gt;:&lt;/span&gt;
+    &lt;span id="minutes" class="font-mono text-2xl font-black"&gt;30&lt;/span&gt;
+    &lt;button class="bg-brand-600 text-white"&gt;PM&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 6: CUSTOM CHECKBOXES, RADIOS & TOGGLES -->
+    <!-- ========================================================================= -->
+    <section id="sec-toggles" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-square-check text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">6. Custom Checkboxes, Radios & Toggles</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Selection</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Component Card: Custom Checkboxes & Indeterminate -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Custom Checkboxes Indeterminate Checkbox Cards Color Variants">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Custom Checkbox Variants & Cards</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Stylized custom SVG checkmarks, indeterminate state, and selectable card units.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-custom-checkboxes', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <!-- Standard Custom Checkboxes -->
+                    <div class="space-y-2.5">
+                        <label class="flex items-center gap-3 cursor-pointer group">
+                            <input type="checkbox" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300 transition-all cursor-pointer" />
+                            <div>
+                                <span class="text-xs font-bold text-slate-800 group-hover:text-brand-600 transition-colors">Real-Time Shopping List Sync</span>
+                                <span class="text-3xs text-slate-400 block">Broadcast cart changes via SignalR</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer group">
+                            <input type="checkbox" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300 transition-all cursor-pointer" />
+                            <div>
+                                <span class="text-xs font-bold text-slate-800 group-hover:text-brand-600 transition-colors">Auto Deduct Pantry Stock on Meal Log</span>
+                                <span class="text-3xs text-slate-400 block">Only applies to recipes cooked at home</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Indeterminate Checkbox Example -->
+                    <div class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <span class="w-4 h-4 rounded bg-brand-600 flex items-center justify-center text-white text-3xs shadow-xs">
+                                <i class="fa-solid fa-minus"></i>
+                            </span>
+                            <span class="text-xs font-bold text-slate-800">Select All Tasks (Indeterminate)</span>
+                        </label>
+                        <span class="text-3xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">3 of 8 selected</span>
+                    </div>
+
+                    <!-- Custom Selectable Checkbox Card -->
+                    <label class="block cursor-pointer">
+                        <input type="checkbox" checked class="peer sr-only" />
+                        <div class="p-3.5 bg-white border-2 border-slate-200 peer-checked:border-brand-600 peer-checked:bg-brand-50/20 rounded-2xl transition-all flex items-center justify-between shadow-2xs">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xs">
+                                    <i class="fa-solid fa-bell"></i>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-900 block">Daily Expiry & Minimum Stock Alerts</span>
+                                    <span class="text-3xs text-slate-500">Receive an email when ingredients reach reorder point</span>
+                                </div>
+                            </div>
+                            <div class="w-5 h-5 rounded-md border-2 border-brand-600 bg-brand-600 flex items-center justify-center text-white text-3xs">
+                                <i class="fa-solid fa-check"></i>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-custom-checkboxes"><code>&lt;!-- Selectable Checkbox Card --&gt;
+&lt;label class="block cursor-pointer"&gt;
+    &lt;input type="checkbox" checked class="peer sr-only" /&gt;
+    &lt;div class="p-3.5 bg-white border-2 border-slate-200 peer-checked:border-brand-600 peer-checked:bg-brand-50/20 rounded-2xl flex items-center justify-between"&gt;
+        &lt;span class="text-xs font-bold"&gt;Card Title&lt;/span&gt;
+        &lt;div class="w-5 h-5 rounded border-2 border-brand-600 bg-brand-600 text-white flex items-center justify-center text-3xs"&gt;
+            &lt;i class="fa-solid fa-check"&gt;&lt;/i&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/label&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Component Card: iOS Toggle Switches & Radio Cards -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Radio Buttons Selection Cards iOS Switch">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">iOS Switches & Radio Cards</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Smooth toggle switches and rich radio card selectors.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-radio-cards', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <!-- Modern Switch Toggle -->
+                    <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">Automatic Synchronization</span>
+                            <span class="text-3xs text-slate-500">Sync meal plan changes with pantry stock</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer" />
+                            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                        </label>
+                    </div>
+
+                    <!-- Radio Option Cards -->
+                    <div class="space-y-2">
+                        <label class="block cursor-pointer">
+                            <input type="radio" name="demoDietPlan" checked class="peer sr-only" />
+                            <div class="p-3 bg-white border-2 border-slate-200 peer-checked:border-brand-600 peer-checked:bg-brand-50/20 rounded-xl transition-all flex items-center justify-between">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                                        <i class="fa-solid fa-leaf"></i>
+                                    </div>
+                                    <div>
+                                        <span class="text-xs font-bold text-slate-900 block">Balanced Nutrition</span>
+                                        <span class="text-3xs text-slate-500">45% Carbs, 30% Protein, 25% Fats</span>
+                                    </div>
+                                </div>
+                                <i class="fa-solid fa-circle-check text-brand-600 text-sm hidden peer-checked:block"></i>
+                            </div>
+                        </label>
+
+                        <label class="block cursor-pointer">
+                            <input type="radio" name="demoDietPlan" class="peer sr-only" />
+                            <div class="p-3 bg-white border-2 border-slate-200 peer-checked:border-brand-600 peer-checked:bg-brand-50/20 rounded-xl transition-all flex items-center justify-between">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs">
+                                        <i class="fa-solid fa-dumbbell"></i>
+                                    </div>
+                                    <div>
+                                        <span class="text-xs font-bold text-slate-900 block">High Protein / Athlete</span>
+                                        <span class="text-3xs text-slate-500">2.2 g protein per kg bodyweight</span>
+                                    </div>
+                                </div>
+                                <i class="fa-solid fa-circle-check text-brand-600 text-sm hidden peer-checked:block"></i>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-radio-cards"><code>&lt;!-- Toggle Switch (iOS Style) --&gt;
+&lt;label class="relative inline-flex items-center cursor-pointer"&gt;
+    &lt;input type="checkbox" checked class="sr-only peer" /&gt;
+    &lt;div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-brand-600"&gt;&lt;/div&gt;
+&lt;/label&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 7: DROPDOWNS & ADVANCED MULTI-SELECT -->
+    <!-- ========================================================================= -->
+    <section id="sec-dropdowns" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-list-ul text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">7. Dropdowns & Multi-Select with Search</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 uppercase">Selection</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Advanced Multi-Select Dropdown with Search & Checkboxes -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Dropdown Multi-Select Checkboxes Search Tag Chips Selected Count">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Advanced Multi-Select Dropdown</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Interactive dropdown with search filter, selectable checkboxes, tag badges, and bulk actions.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-multiselect-advanced', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Assignees & Roles</label>
+                    <div class="relative">
+                        <!-- Multi-Select Trigger Button -->
+                        <button id="multiSelectDropdownBtn" type="button" onclick="toggleAdvancedMultiSelect()"
+                                class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs text-slate-700 hover:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-2xs transition-all">
+                            <span id="multiSelectSummary" class="font-bold text-slate-900 flex items-center gap-1.5">
+                                <span class="px-2 py-0.5 rounded-md bg-brand-100 text-brand-800 text-3xs font-bold" id="multiSelectBadgeCount">3 Selected</span>
+                                <span class="text-slate-600 text-xs">Administrators & Lead Chefs</span>
+                            </span>
+                            <i class="fa-solid fa-chevron-down text-2xs text-slate-400"></i>
+                        </button>
+
+                        <!-- Selected Tags Container -->
+                        <div id="multiSelectTagsContainer" class="flex flex-wrap gap-1.5 mt-2">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-50 text-brand-700 text-2xs font-semibold border border-brand-200" data-tag-val="admin">
+                                Admin Team
+                                <button type="button" onclick="removeMultiSelectTag('admin')" class="text-brand-400 hover:text-brand-600 ml-1"><i class="fa-solid fa-xmark text-3xs"></i></button>
+                            </span>
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-2xs font-semibold border border-emerald-200" data-tag-val="chef">
+                                Executive Chef
+                                <button type="button" onclick="removeMultiSelectTag('chef')" class="text-emerald-400 hover:text-emerald-600 ml-1"><i class="fa-solid fa-xmark text-3xs"></i></button>
+                            </span>
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-2xs font-semibold border border-indigo-200" data-tag-val="inventory">
+                                Inventory Manager
+                                <button type="button" onclick="removeMultiSelectTag('inventory')" class="text-indigo-400 hover:text-indigo-600 ml-1"><i class="fa-solid fa-xmark text-3xs"></i></button>
+                            </span>
+                        </div>
+
+                        <!-- Dropdown Menu -->
+                        <div id="advancedMultiSelectMenu" class="hidden mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl p-3 z-30 space-y-2">
+                            <!-- Search & Action Bar -->
+                            <div class="relative">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-3xs"></i>
+                                <input id="multiSelectFilter" type="text" onkeyup="filterMultiSelectOptions(this.value)" placeholder="Search options..."
+                                       class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                            </div>
+                            <div class="flex items-center justify-between text-3xs font-semibold px-1 text-slate-500 border-b border-slate-100 pb-1.5">
+                                <button type="button" onclick="selectAllMultiOptions()" class="text-brand-600 hover:underline">Select All</button>
+                                <button type="button" onclick="clearAllMultiOptions()" class="text-rose-600 hover:underline">Clear All</button>
+                            </div>
+
+                            <!-- Options List with Checkboxes -->
+                            <div id="multiSelectOptionsList" class="max-h-44 overflow-y-auto space-y-1 pr-1">
+                                <label class="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                                    <input type="checkbox" checked data-value="admin" data-label="Admin Team" onchange="toggleMultiOption(this)" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300" />
+                                    <div class="flex-1">
+                                        <span class="text-xs font-bold text-slate-900 block">Admin Team</span>
+                                        <span class="text-3xs text-slate-400">Full system & tenant administration</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                                    <input type="checkbox" checked data-value="chef" data-label="Executive Chef" onchange="toggleMultiOption(this)" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300" />
+                                    <div class="flex-1">
+                                        <span class="text-xs font-bold text-slate-900 block">Executive Chef</span>
+                                        <span class="text-3xs text-slate-400">Recipe scaling, batches & timers</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                                    <input type="checkbox" checked data-value="inventory" data-label="Inventory Manager" onchange="toggleMultiOption(this)" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300" />
+                                    <div class="flex-1">
+                                        <span class="text-xs font-bold text-slate-900 block">Inventory Manager</span>
+                                        <span class="text-3xs text-slate-400">Pantry stock & shopping ledger</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                                    <input type="checkbox" data-value="nutritionist" data-label="Certified Nutritionist" onchange="toggleMultiOption(this)" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300" />
+                                    <div class="flex-1">
+                                        <span class="text-xs font-bold text-slate-900 block">Certified Nutritionist</span>
+                                        <span class="text-3xs text-slate-400">Macro tracking, calories & diets</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-multiselect-advanced"><code>&lt;!-- Dropdown with Multi-Select --&gt;
+&lt;button onclick="toggleMultiSelect()" class="w-full flex justify-between px-3.5 py-2.5 rounded-xl border bg-white"&gt;
+    &lt;span class="badge"&gt;3 Selected&lt;/span&gt;
+    &lt;i class="fa-solid fa-chevron-down"&gt;&lt;/i&gt;
+&lt;/button&gt;
+&lt;div id="multiMenu" class="hidden bg-white border rounded-2xl p-3 shadow-xl"&gt;
+    &lt;input type="text" placeholder="Search..." onkeyup="filterMulti(this.value)" class="w-full border rounded" /&gt;
+    &lt;label class="flex gap-2 p-1.5"&gt;
+        &lt;input type="checkbox" value="item1" /&gt; Option Label
+    &lt;/label&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Single Searchable Dropdown & Datalist -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Dropdown Searchable Autocomplete Datalist">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Searchable Dropdown & Datalist</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Fast searchable single select with category grouping and HTML5 datalist.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-searchable-dropdown', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <!-- Searchable Single Select -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Ingredient (Searchable)</label>
+                        <div class="relative">
+                            <button id="searchableDropdownBtn" type="button" onclick="toggleSearchableMenu()" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs text-slate-700 hover:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-2xs transition-all">
+                                <span id="searchableSelectedLabel" class="text-slate-900 font-bold">Extra Virgin Olive Oil (Oils & Spices)</span>
+                                <i class="fa-solid fa-chevron-down text-2xs text-slate-400"></i>
+                            </button>
+
+                            <!-- Searchable Dropdown Popup Menu -->
+                            <div id="searchableDropdownMenu" class="hidden mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-2 space-y-1.5">
+                                <div class="relative">
+                                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-3xs"></i>
+                                    <input type="text" id="searchableFilterInput" onkeyup="filterSearchableOptions(this.value)" placeholder="Type to filter..." class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                                </div>
+                                <ul id="searchableOptionsList" class="max-h-40 overflow-y-auto divide-y divide-slate-100 list-none p-0 m-0">
+                                    <li onclick="selectSearchableOption('Fresh Chicken Breast', 'Meat & Seafood')" class="searchable-option p-2 hover:bg-brand-50 rounded-lg cursor-pointer flex items-center justify-between text-xs text-slate-800">
+                                        <span>Fresh Chicken Breast</span>
+                                        <span class="text-3xs text-slate-400">Meat</span>
+                                    </li>
+                                    <li onclick="selectSearchableOption('Extra Virgin Olive Oil', 'Oils & Spices')" class="searchable-option p-2 hover:bg-brand-50 rounded-lg cursor-pointer flex items-center justify-between text-xs text-slate-800">
+                                        <span>Extra Virgin Olive Oil</span>
+                                        <span class="text-3xs text-slate-400">Oils</span>
+                                    </li>
+                                    <li onclick="selectSearchableOption('Greek Whole Yogurt', 'Dairy & Eggs')" class="searchable-option p-2 hover:bg-brand-50 rounded-lg cursor-pointer flex items-center justify-between text-xs text-slate-800">
+                                        <span>Greek Whole Yogurt</span>
+                                        <span class="text-3xs text-slate-400">Dairy</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Native Datalist -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Unit of Measurement (Datalist)</label>
+                        <input list="unitsDatalist" placeholder="Choose or type custom unit..." class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white" />
+                        <datalist id="unitsDatalist">
+                            <option value="g (grams)" />
+                            <option value="ml (milliliters)" />
+                            <option value="piece / count" />
+                            <option value="tbsp (tablespoon)" />
+                            <option value="tsp (teaspoon)" />
+                        </datalist>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-searchable-dropdown"><code>&lt;!-- Native Datalist --&gt;
+&lt;input list="units" placeholder="Unit..." class="w-full rounded-xl border px-3.5 py-2 text-xs" /&gt;
+&lt;datalist id="units"&gt;
+    &lt;option value="grams" /&gt;
+    &lt;option value="pieces" /&gt;
+&lt;/datalist&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 8: TABLE WITH SORTING HEADER -->
+    <!-- ========================================================================= -->
+    <section id="sec-tables" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-table text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">8. Table with Sorting Header & Row Selection</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 uppercase">Data Table</span>
+        </div>
+
+        <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Table Sortable Sorting Header Column Sort Ascending Descending Selection Zebra Checkbox">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Interactive Sortable Data Table</h3>
+                    <p class="text-2xs text-slate-400 mt-0.5">Click any header column to sort ascending/descending with visual sort arrows and master row checkbox selection.</p>
+                </div>
+                <button type="button" onclick="copySnippet('code-sortable-table', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                    <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                </button>
+            </div>
+            <div class="p-6 bg-slate-50/50">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table id="demoSortableTable" class="w-full text-left text-xs text-slate-700 border-collapse">
+                            <thead class="bg-slate-50 text-2xs uppercase tracking-wider text-slate-500 border-b border-slate-200 select-none">
+                                <tr>
+                                    <th class="p-4 w-12 text-center">
+                                        <input type="checkbox" onchange="toggleAllTableRows(this)" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300" />
+                                    </th>
+                                    <th onclick="sortTable('demoSortableTable', 1, 'text')" class="px-4 py-3.5 font-bold cursor-pointer hover:bg-slate-100/80 transition-colors">
+                                        <div class="flex items-center gap-2">
+                                            <span>Item / Project</span>
+                                            <i class="fa-solid fa-sort text-slate-400 text-3xs sort-icon"></i>
+                                        </div>
+                                    </th>
+                                    <th onclick="sortTable('demoSortableTable', 2, 'text')" class="px-4 py-3.5 font-bold cursor-pointer hover:bg-slate-100/80 transition-colors">
+                                        <div class="flex items-center gap-2">
+                                            <span>Category</span>
+                                            <i class="fa-solid fa-sort text-slate-400 text-3xs sort-icon"></i>
+                                        </div>
+                                    </th>
+                                    <th onclick="sortTable('demoSortableTable', 3, 'number')" class="px-4 py-3.5 font-bold cursor-pointer hover:bg-slate-100/80 transition-colors text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <span>Quantity / Value</span>
+                                            <i class="fa-solid fa-sort text-slate-400 text-3xs sort-icon"></i>
+                                        </div>
+                                    </th>
+                                    <th onclick="sortTable('demoSortableTable', 4, 'text')" class="px-4 py-3.5 font-bold cursor-pointer hover:bg-slate-100/80 transition-colors">
+                                        <div class="flex items-center gap-2">
+                                            <span>Stock Status</span>
+                                            <i class="fa-solid fa-sort text-slate-400 text-3xs sort-icon"></i>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-3.5 text-right font-bold">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr class="hover:bg-slate-50/70 transition-colors">
+                                    <td class="p-4 text-center">
+                                        <input type="checkbox" class="row-checkbox w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300" />
+                                    </td>
+                                    <td class="px-4 py-3.5 font-bold text-slate-900 flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xs">
+                                            <i class="fa-solid fa-cube"></i>
+                                        </div>
+                                        <span>Organic Rolled Oats</span>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-slate-600">Pantry & Grains</td>
+                                    <td class="px-4 py-3.5 text-right font-mono font-bold text-slate-800" data-val="1200">1,200 g</td>
+                                    <td class="px-4 py-3.5">
+                                        <span class="px-2.5 py-1 rounded-full text-3xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">In Stock</span>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-right space-x-1">
+                                        <button type="button" class="p-1.5 text-slate-400 hover:text-brand-600 rounded-lg hover:bg-brand-50"><i class="fa-solid fa-pen-to-square text-xs"></i></button>
+                                        <button type="button" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"><i class="fa-solid fa-trash text-xs"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/70 transition-colors">
+                                    <td class="p-4 text-center">
+                                        <input type="checkbox" class="row-checkbox w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300" />
+                                    </td>
+                                    <td class="px-4 py-3.5 font-bold text-slate-900 flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xs">
+                                            <i class="fa-solid fa-egg"></i>
+                                        </div>
+                                        <span>Pasture Eggs</span>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-slate-600">Dairy & Poultry</td>
+                                    <td class="px-4 py-3.5 text-right font-mono font-bold text-slate-800" data-val="2">2 count</td>
+                                    <td class="px-4 py-3.5">
+                                        <span class="px-2.5 py-1 rounded-full text-3xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">Low Stock</span>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-right space-x-1">
+                                        <button type="button" class="p-1.5 text-slate-400 hover:text-brand-600 rounded-lg hover:bg-brand-50"><i class="fa-solid fa-pen-to-square text-xs"></i></button>
+                                        <button type="button" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"><i class="fa-solid fa-trash text-xs"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-slate-50/70 transition-colors">
+                                    <td class="p-4 text-center">
+                                        <input type="checkbox" class="row-checkbox w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300" />
+                                    </td>
+                                    <td class="px-4 py-3.5 font-bold text-slate-900 flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-xs">
+                                            <i class="fa-solid fa-drumstick-bite"></i>
+                                        </div>
+                                        <span>Chicken Breast Cutlets</span>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-slate-600">Meat & Poultry</td>
+                                    <td class="px-4 py-3.5 text-right font-mono font-bold text-slate-800" data-val="0">0 g</td>
+                                    <td class="px-4 py-3.5">
+                                        <span class="px-2.5 py-1 rounded-full text-3xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">Out of Stock</span>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-right space-x-1">
+                                        <button type="button" class="p-1.5 text-slate-400 hover:text-brand-600 rounded-lg hover:bg-brand-50"><i class="fa-solid fa-pen-to-square text-xs"></i></button>
+                                        <button type="button" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"><i class="fa-solid fa-trash text-xs"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-sortable-table"><code>&lt;!-- Table with Sorting Header --&gt;
+&lt;table id="myTable" class="w-full text-xs"&gt;
+    &lt;thead&gt;
+        &lt;tr&gt;
+            &lt;th onclick="sortTable('myTable', 1, 'text')" class="cursor-pointer"&gt;
+                Item &lt;i class="fa-solid fa-sort text-slate-400"&gt;&lt;/i&gt;
+            &lt;/th&gt;
+            &lt;th onclick="sortTable('myTable', 2, 'number')" class="cursor-pointer text-right"&gt;
+                Quantity &lt;i class="fa-solid fa-sort text-slate-400"&gt;&lt;/i&gt;
+            &lt;/th&gt;
+        &lt;/tr&gt;
+    &lt;/thead&gt;
+&lt;/table&gt;</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 9: SENIOR UI/UX DASHBOARD WIDGETS -->
+    <!-- ========================================================================= -->
+    <section id="sec-dashboard-widgets" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-compass-drafting text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">9. Essential Dashboard UX Components</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Senior UX</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- 1. KPI Metric Card -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs p-5 flex flex-col justify-between" data-name="KPI Card Metric Stat Trend Percentage Sparkline">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-3xs font-bold uppercase tracking-wider text-slate-400">Monthly Grocery Expense</span>
+                        <div class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-wallet"></i>
+                        </div>
+                    </div>
+                    <div class="text-2xl font-black text-slate-900">$1,428.50</div>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-3xs font-bold">
+                            <i class="fa-solid fa-arrow-trend-down"></i> -6.4%
+                        </span>
+                        <span class="text-3xs text-slate-400">vs. last month</span>
+                    </div>
+                </div>
+                <!-- Mini Progress Spark -->
+                <div class="mt-4 pt-3 border-t border-slate-100">
+                    <div class="flex justify-between text-3xs text-slate-400 mb-1">
+                        <span>Budget Cap: $1,800</span>
+                        <span>79% Used</span>
+                    </div>
+                    <div class="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                        <div class="h-full bg-brand-600 rounded-full" style="width: 79%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Empty State Card -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs p-6 text-center flex flex-col items-center justify-center" data-name="Empty State No Records Zero Results CTA">
+                <div class="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center text-xl mb-3 shadow-inner">
+                    <i class="fa-solid fa-basket-shopping"></i>
+                </div>
+                <h4 class="text-xs font-bold text-slate-900 mb-1">Shopping List is Empty</h4>
+                <p class="text-3xs text-slate-400 max-w-xs mb-4">No items currently marked for purchase. Auto-generate from low stock or meal plans.</p>
+                <button type="button" class="px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-magic-wand-sparkles text-2xs"></i>
+                    <span>Auto Generate List</span>
+                </button>
+            </div>
+
+            <!-- 3. Avatar Stack & Presence Indicator -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs p-5" data-name="Avatar Stack Overlapping Presence Status Online Dot">
+                <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-1">Collaborators Presence</h4>
+                <p class="text-2xs text-slate-400 mb-4">Live active household collaborators connected via SignalR.</p>
+
+                <!-- Avatar Stack -->
+                <div class="flex items-center -space-x-2 overflow-hidden mb-4">
+                    <div class="relative">
+                        <div class="w-9 h-9 rounded-full ring-2 ring-white bg-slate-800 text-white text-xs font-bold flex items-center justify-center shadow-xs">AH</div>
+                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 ring-2 ring-white rounded-full"></span>
+                    </div>
+                    <div class="relative">
+                        <div class="w-9 h-9 rounded-full ring-2 ring-white bg-brand-600 text-white text-xs font-bold flex items-center justify-center shadow-xs">SM</div>
+                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 ring-2 ring-white rounded-full"></span>
+                    </div>
+                    <div class="relative">
+                        <div class="w-9 h-9 rounded-full ring-2 ring-white bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shadow-xs">JD</div>
+                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-slate-300 ring-2 ring-white rounded-full"></span>
+                    </div>
+                    <div class="w-9 h-9 rounded-full ring-2 ring-white bg-slate-100 text-slate-600 text-2xs font-bold flex items-center justify-center shadow-xs">
+                        +4
+                    </div>
+                </div>
+
+                <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-2xs">
+                    <span class="text-slate-600 font-semibold flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 2 online now
+                    </span>
+                    <button type="button" class="text-brand-600 font-bold hover:underline">Manage Team</button>
+                </div>
+            </div>
+
+            <!-- 4. Drag & Drop File Upload Dropzone -->
+            <div class="component-card md:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-2xs p-5" data-name="File Upload Dropzone Drag Drop Attachment Progress">
+                <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-1">Drag & Drop File Upload</h4>
+                <p class="text-2xs text-slate-400 mb-3">Upload resume files, receipts, or recipe cover images.</p>
+
+                <div class="border-2 border-dashed border-slate-200 hover:border-brand-400 bg-slate-50/50 hover:bg-brand-50/20 rounded-2xl p-6 text-center transition-all cursor-pointer">
+                    <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto mb-2 text-base">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <p class="text-xs font-bold text-slate-800">
+                        <span class="text-brand-600 hover:underline">Click to upload</span> or drag and drop
+                    </p>
+                    <p class="text-3xs text-slate-400 mt-1">PNG, JPG, PDF, or DOCX (max 10MB)</p>
+                </div>
+
+                <!-- Attached File Progress Bar -->
+                <div class="mt-3 p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between gap-3 shadow-2xs">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <i class="fa-solid fa-file-pdf text-rose-500 text-lg"></i>
+                        <div class="min-w-0">
+                            <span class="text-xs font-bold text-slate-900 truncate block">Resume_Backend_Senior.pdf</span>
+                            <span class="text-3xs text-slate-400">2.4 MB - 100% completed</span>
+                        </div>
+                    </div>
+                    <button type="button" class="text-slate-400 hover:text-rose-600 p-1"><i class="fa-solid fa-xmark text-xs"></i></button>
+                </div>
+            </div>
+
+            <!-- 5. Activity Timeline Feed -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs p-5" data-name="Timeline Activity Feed Audit Log History Connector">
+                <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider mb-1">Recent Activity Timeline</h4>
+                <p class="text-2xs text-slate-400 mb-4">Chronological feed with status connector nodes.</p>
+
+                <div class="relative pl-6 space-y-4 before:content-[''] before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                    <div class="relative">
+                        <span class="absolute -left-6 top-1 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-white"></span>
+                        <div class="text-xs font-bold text-slate-900">Finished Shopping</div>
+                        <p class="text-3xs text-slate-500">6 items automatically added to fridge stock.</p>
+                        <span class="text-3xs font-mono text-slate-400">12 mins ago</span>
+                    </div>
+
+                    <div class="relative">
+                        <span class="absolute -left-6 top-1 w-3 h-3 rounded-full bg-brand-500 ring-4 ring-white"></span>
+                        <div class="text-xs font-bold text-slate-900">Logged Meal: Mediterranean Bowl</div>
+                        <p class="text-3xs text-slate-500">640 kcal, 48g protein logged to lunch.</p>
+                        <span class="text-3xs font-mono text-slate-400">2 hours ago</span>
+                    </div>
+
+                    <div class="relative">
+                        <span class="absolute -left-6 top-1 w-3 h-3 rounded-full bg-amber-500 ring-4 ring-white"></span>
+                        <div class="text-xs font-bold text-slate-900">Low Stock Alert: Olive Oil</div>
+                        <p class="text-3xs text-slate-500">Quantity reached reorder threshold (100 ml).</p>
+                        <span class="text-3xs font-mono text-slate-400">Yesterday</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 10: MODALS & DRAWERS -->
+    <!-- ========================================================================= -->
+    <section id="sec-modals" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-window-maximize text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">10. Modals & Slide-out Drawers</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Overlay</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Modal Trigger Card -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Modal Dialog Popup Confirmation Alert">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Confirmation Modal Dialog</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Backdrop blur modal with header, description, and dual action buttons.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-modal', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 flex flex-wrap items-center gap-3">
+                    <button type="button" onclick="openDemoModal('demoConfirmModal')" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                        <i class="fa-solid fa-window-maximize mr-1.5"></i> Launch Standard Modal
+                    </button>
+                    <button type="button" onclick="openDemoModal('demoDangerModal')" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                        <i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Launch Danger Modal
+                    </button>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-modal"><code>&lt;!-- Modal Dialog Trigger &amp; Structure --&gt;
+&lt;div id="myModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs"&gt;
+    &lt;div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4"&gt;
+        &lt;h3 class="font-bold text-sm"&gt;Confirm Action&lt;/h3&gt;
+        &lt;p class="text-xs text-slate-500"&gt;Are you sure you want to proceed?&lt;/p&gt;
+        &lt;div class="flex justify-end gap-2"&gt;
+            &lt;button onclick="closeModal()" class="px-4 py-2 bg-slate-100 rounded-xl"&gt;Cancel&lt;/button&gt;
+            &lt;button class="px-4 py-2 bg-brand-600 text-white rounded-xl"&gt;Confirm&lt;/button&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Slide-out Drawer Trigger Card -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Drawer Slide-out Offcanvas Sidebar Panel Sheet">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Slide-out Drawer / Sheet</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Off-canvas side drawer ideal for filters, quick edits, or detail views.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-drawer', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50">
+                    <button type="button" onclick="openDemoDrawer()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold shadow-2xs transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-2xs"></i>
+                        <span>Open Side Filter Drawer</span>
+                    </button>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-drawer"><code>&lt;!-- Slide Drawer Template --&gt;
+&lt;div id="myDrawer" class="hidden fixed inset-0 z-50 flex justify-end bg-slate-900/50 backdrop-blur-xs"&gt;
+    &lt;div class="w-full max-w-md bg-white h-full p-6 shadow-2xl flex flex-col justify-between"&gt;
+        &lt;div&gt;Drawer Body&lt;/div&gt;
+        &lt;button onclick="closeDrawer()"&gt;Close&lt;/button&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 11: TOASTS, ALERTS & BANNERS -->
+    <!-- ========================================================================= -->
+    <section id="sec-toasts" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-bell text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">11. Toasts, Alerts & Banners</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Feedback</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Toast Notifications Card -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Toast Notification Floating Alert Popup">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Floating Toast Triggers</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Click to trigger floating notifications (success, warning, error, info).</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-toasts', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 flex flex-wrap gap-2.5">
+                    <button type="button" onclick="triggerCatalogToast('Item Purchased', 'Added 500g rolled oats to stock.', 'emerald')" class="px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-semibold shadow-2xs hover:bg-emerald-700 transition-colors">
+                        <i class="fa-solid fa-circle-check mr-1"></i> Success Toast
+                    </button>
+                    <button type="button" onclick="triggerCatalogToast('Stock Low', 'Whole milk is below minimum level.', 'amber')" class="px-3.5 py-2 rounded-xl bg-amber-500 text-white text-xs font-semibold shadow-2xs hover:bg-amber-600 transition-colors">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Warning Toast
+                    </button>
+                    <button type="button" onclick="triggerCatalogToast('Sync Failed', 'Could not reach server. Retrying...', 'rose')" class="px-3.5 py-2 rounded-xl bg-rose-600 text-white text-xs font-semibold shadow-2xs hover:bg-rose-700 transition-colors">
+                        <i class="fa-solid fa-circle-xmark mr-1"></i> Error Toast
+                    </button>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-toasts"><code>&lt;!-- Floating Toast Anchor --&gt;
+&lt;div id="toastContainer" class="fixed top-20 right-6 z-50 flex flex-col gap-2"&gt;&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Inline Alert Banners Card -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Alert Banners Information Warning Success Danger">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Inline Alert Banners</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Dismissible and persistent contextual alert banners.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-alerts', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-3">
+                    <div class="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-3">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5 text-xs"></i>
+                        <div class="text-2xs">
+                            <span class="font-bold block">Pantry Expiry Warning</span>
+                            <span>Greek Yogurt expires in 2 days. Use it in today's meal plan to avoid waste.</span>
+                        </div>
+                    </div>
+                    <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-start gap-3">
+                        <i class="fa-solid fa-circle-check text-emerald-600 mt-0.5 text-xs"></i>
+                        <div class="text-2xs">
+                            <span class="font-bold block">Sync Completed</span>
+                            <span>SignalR shopping list is connected with 3 household collaborators online.</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-alerts"><code>&lt;!-- Inline Alert Banner --&gt;
+&lt;div class="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-3"&gt;
+    &lt;i class="fa-solid fa-triangle-exclamation text-amber-600 text-xs"&gt;&lt;/i&gt;
+    &lt;div class="text-2xs"&gt;Alert message&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 12: LOADERS, SKELETONS & PROGRESS -->
+    <!-- ========================================================================= -->
+    <section id="sec-loaders" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-spinner text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">12. Loaders, Skeletons & Progress</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">State</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Spinners & Progress Bars -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Spinners Progress Bars Percentages Loading State">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Spinners & Progress Bars</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Indeterminate spinners and determinate progress meters.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-loaders', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-4">
+                    <div class="flex items-center gap-4">
+                        <i class="fa-solid fa-circle-notch fa-spin text-brand-600 text-xl"></i>
+                        <i class="fa-solid fa-spinner fa-spin text-slate-400 text-xl"></i>
+                        <div class="w-6 h-6 border-3 border-brand-200 border-t-brand-600 rounded-full animate-spin"></div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-2xs font-bold text-slate-700">
+                            <span>Daily Calorie Goal</span>
+                            <span>1,680 / 2,100 kcal (80%)</span>
+                        </div>
+                        <div class="w-full h-2.5 rounded-full bg-slate-200 overflow-hidden">
+                            <div class="h-full bg-brand-600 rounded-full transition-all duration-500" style="width: 80%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-loaders"><code>&lt;!-- Progress Bar --&gt;
+&lt;div class="w-full h-2.5 rounded-full bg-slate-200 overflow-hidden"&gt;
+    &lt;div class="h-full bg-brand-600 rounded-full" style="width: 80%"&gt;&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Skeleton Loading Placeholders -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Skeleton Loader Shimmer Placeholder Placeholder Cards">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Skeleton Placeholders</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Shimmer pulse skeletons matching final component layouts.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-skeleton', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-6 bg-slate-50/50 space-y-3">
+                    <div class="animate-pulse space-y-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-slate-200"></div>
+                            <div class="space-y-1.5 flex-1">
+                                <div class="h-3 bg-slate-200 rounded w-1/3"></div>
+                                <div class="h-2 bg-slate-200 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                        <div class="h-2 bg-slate-200 rounded w-full"></div>
+                        <div class="h-2 bg-slate-200 rounded w-4/5"></div>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-skeleton"><code>&lt;!-- Shimmer Skeleton Card --&gt;
+&lt;div class="animate-pulse space-y-2 p-4 bg-white rounded-2xl border"&gt;
+    &lt;div class="h-3 bg-slate-200 rounded w-1/3"&gt;&lt;/div&gt;
+    &lt;div class="h-2 bg-slate-200 rounded w-full"&gt;&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 13: FILTERS & PAGINATION -->
+    <!-- ========================================================================= -->
+    <section id="sec-filters-pagination" class="component-section space-y-6">
+        <div class="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+            <i class="fa-solid fa-filter text-brand-600 text-lg"></i>
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">13. Paged Filter Bar & Pagination</h2>
+            <span class="text-3xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">Navigation</span>
+        </div>
+
+        <div class="space-y-6">
+            <!-- Paged Filter Bar Component -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Filter Bar Search Category Date Range Reset">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Standard Paged Filter Bar</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Reusable filter controls with search, dropdowns, date bounds, and reset.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-filters-bar', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-5 bg-slate-50/50">
+                    <form method="get" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
+                        <div>
+                            <label class="block text-3xs font-bold uppercase tracking-wider text-slate-500 mb-1">Search Keywords</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-2xs"></i>
+                                <input type="text" placeholder="Search..." class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-3xs font-bold uppercase tracking-wider text-slate-500 mb-1">Category</label>
+                            <select class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <option value="">All Categories</option>
+                                <option value="Dairy">Dairy & Eggs</option>
+                                <option value="Produce">Produce</option>
+                                <option value="Meat">Meat & Poultry</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-3xs font-bold uppercase tracking-wider text-slate-500 mb-1">Date Range</label>
+                            <input type="date" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="flex-1 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                                <i class="fa-solid fa-filter mr-1.5 text-2xs"></i> Apply
+                            </button>
+                            <button type="button" class="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-semibold transition-colors" title="Reset">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-filters-bar"><code>&lt;!-- Paged Filter Bar --&gt;
+&lt;form method="get" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end"&gt;
+    &lt;input type="text" placeholder="Search..." class="w-full border rounded-xl" /&gt;
+    &lt;select class="w-full border rounded-xl"&gt;...&lt;/select&gt;
+    &lt;button class="bg-brand-600 text-white rounded-xl"&gt;Apply&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+                </div>
+            </div>
+
+            <!-- Pagination Bar Component -->
+            <div class="component-card bg-white rounded-2xl border border-slate-100 shadow-2xs overflow-hidden" data-name="Pagination Page Numbers Next Previous Page Size Records Total">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Standard Responsive Pagination</h3>
+                        <p class="text-2xs text-slate-400 mt-0.5">Previous, next, active page pill, records summary, and page size dropdown.</p>
+                    </div>
+                    <button type="button" onclick="copySnippet('code-pagination', this)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-2xs font-semibold transition-colors">
+                        <i class="fa-regular fa-copy text-3xs"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+                <div class="p-5 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="text-xs text-slate-500 font-medium">
+                        Showing <strong class="text-slate-800">11</strong> to <strong class="text-slate-800">20</strong> of <strong class="text-slate-800">94</strong> entries
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                        <button type="button" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 text-xs font-semibold transition-colors">
+                            <i class="fa-solid fa-chevron-left text-3xs mr-1"></i> Prev
+                        </button>
+                        <button type="button" class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 text-xs font-semibold transition-colors">1</button>
+                        <button type="button" class="w-8 h-8 rounded-xl bg-brand-600 text-white text-xs font-bold shadow-2xs">2</button>
+                        <button type="button" class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 text-xs font-semibold transition-colors">3</button>
+                        <span class="px-1 text-slate-400 text-xs">...</span>
+                        <button type="button" class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 text-xs font-semibold transition-colors">10</button>
+                        <button type="button" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 text-xs font-semibold transition-colors">
+                            Next <i class="fa-solid fa-chevron-right text-3xs ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 bg-slate-900 text-slate-200 p-4 font-mono text-2xs overflow-x-auto">
+<pre id="code-pagination"><code>&lt;!-- Pagination Bar --&gt;
+&lt;div class="flex items-center justify-between"&gt;
+    &lt;span class="text-xs text-slate-500"&gt;Showing 1 to 10 of 50&lt;/span&gt;
+    &lt;div class="flex gap-1"&gt;
+        &lt;button class="px-3 py-1 rounded bg-white border"&gt;Prev&lt;/button&gt;
+        &lt;button class="w-8 h-8 bg-brand-600 text-white rounded font-bold"&gt;1&lt;/button&gt;
+        &lt;button class="px-3 py-1 rounded bg-white border"&gt;Next&lt;/button&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- Interactive Confirmation Modal Dialog (Demo) -->
+<div id="demoConfirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-300">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 transform transition-all scale-100">
+        <div class="flex items-center justify-between">
+            <div class="w-10 h-10 rounded-2xl bg-brand-50 border border-brand-100 text-brand-600 flex items-center justify-center text-base">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <button type="button" onclick="closeDemoModal('demoConfirmModal')" class="text-slate-400 hover:text-slate-600 p-1 bg-transparent border-0 cursor-pointer">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+        <div>
+            <h3 class="text-base font-bold text-slate-900">Finish Shopping Trip?</h3>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                All purchased items will be committed to your pantry stock ledger as purchase movements.
+            </p>
+        </div>
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <button type="button" onclick="closeDemoModal('demoConfirmModal')" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors">
+                Cancel
+            </button>
+            <button type="button" onclick="closeDemoModal('demoConfirmModal'); triggerCatalogToast('Stock Updated', '6 items committed to pantry stock.', 'emerald')" class="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 shadow-2xs transition-colors">
+                Confirm & Add
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Danger Confirmation Modal Dialog (Demo) -->
+<div id="demoDangerModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-300">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-rose-100 space-y-4">
+        <div class="flex items-center justify-between">
+            <div class="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center text-base">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <button type="button" onclick="closeDemoModal('demoDangerModal')" class="text-slate-400 hover:text-slate-600 p-1 bg-transparent border-0 cursor-pointer">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+        <div>
+            <h3 class="text-base font-bold text-slate-900">Delete Recipe Batch?</h3>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                This action is irreversible. All linked portion logs and nutritional calculations will be deleted.
+            </p>
+        </div>
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+            <button type="button" onclick="closeDemoModal('demoDangerModal')" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors">
+                Cancel
+            </button>
+            <button type="button" onclick="closeDemoModal('demoDangerModal'); triggerCatalogToast('Recipe Deleted', 'Item permanently removed.', 'rose')" class="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 shadow-2xs transition-colors">
+                Delete Permanently
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Slide-out Offcanvas Drawer (Demo) -->
+<div id="demoSlideDrawer" class="hidden fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-xs transition-opacity">
+    <div class="w-full max-w-md bg-white h-full shadow-2xl border-l border-slate-100 flex flex-col justify-between p-6">
+        <div class="space-y-6">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <h3 class="text-sm font-black text-slate-900">Filter Inventory</h3>
+                </div>
+                <button type="button" onclick="closeDemoDrawer()" class="text-slate-400 hover:text-slate-600 p-1 bg-transparent border-0 cursor-pointer">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-2xs font-bold uppercase tracking-wider text-slate-500 mb-1">Stock Location</label>
+                    <select class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs">
+                        <option value="">All Locations (Fridge, Freezer, Pantry)</option>
+                        <option value="Fridge">Fridge</option>
+                        <option value="Freezer">Freezer</option>
+                        <option value="Pantry">Pantry Cabinet</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-2xs font-bold uppercase tracking-wider text-slate-500 mb-1">Expiry Horizon</label>
+                    <select class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs">
+                        <option value="">All Items</option>
+                        <option value="3">Expiring within 3 days</option>
+                        <option value="7">Expiring within 7 days</option>
+                        <option value="expired">Already Expired</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+            <button type="button" onclick="closeDemoDrawer()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Close</button>
+            <button type="button" onclick="closeDemoDrawer(); triggerCatalogToast('Filters Applied', 'Filtered inventory items.', 'brand')" class="px-5 py-2 rounded-xl bg-brand-600 text-xs font-semibold text-white">Apply</button>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Toast Notification Anchor for Catalog -->
+<div id="catalogToastAnchor" class="fixed top-20 right-6 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
+
+@section Scripts {
+<script>
+    // Copy Code Snippet
+    function copySnippet(elementId, btn) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const codeText = el.innerText;
+        navigator.clipboard.writeText(codeText).then(() => {
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check text-emerald-600 text-3xs"></i> <span class="text-emerald-700 font-bold">Copied!</span>';
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+            }, 2000);
+        });
+    }
+
+    // Accordion Toggle
+    function toggleAccordion(id, btn) {
+        const content = document.getElementById(id);
+        const chevron = btn.querySelector('.accordion-chevron');
+        if (!content) return;
+
+        const isHidden = content.classList.contains('hidden');
+        content.classList.toggle('hidden');
+        if (chevron) {
+            chevron.classList.toggle('rotate-180', isHidden);
+        }
+    }
+
+    // Tab Switching
+    function switchTab(groupName, panelId, btn) {
+        // Find sibling tabs
+        const tabBtns = btn.parentElement.querySelectorAll('.tab-btn');
+        tabBtns.forEach(t => {
+            t.classList.remove('text-brand-600', 'border-brand-600', 'font-bold');
+            t.classList.add('text-slate-500', 'border-transparent', 'font-semibold');
+        });
+
+        btn.classList.add('text-brand-600', 'border-brand-600', 'font-bold');
+        btn.classList.remove('text-slate-500', 'border-transparent', 'font-semibold');
+
+        // Hide all sibling panels
+        const container = btn.parentElement.nextElementSibling;
+        if (container) {
+            const panels = container.querySelectorAll('.tab-panel');
+            panels.forEach(p => p.classList.add('hidden'));
+        }
+
+        const targetPanel = document.getElementById(panelId);
+        if (targetPanel) {
+            targetPanel.classList.remove('hidden');
+        }
+    }
+
+    // Password Toggle
+    function togglePasswordVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (icon) { icon.className = 'fa-solid fa-eye-slash text-xs'; }
+        } else {
+            input.type = 'password';
+            if (icon) { icon.className = 'fa-solid fa-eye text-xs'; }
+        }
+    }
+
+    // Number Stepper
+    function stepNumber(inputId, delta) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        let val = parseFloat(input.value) || 0;
+        val += delta;
+        if (input.min && val < parseFloat(input.min)) val = parseFloat(input.min);
+        if (input.max && val > parseFloat(input.max)) val = parseFloat(input.max);
+        input.value = val;
+    }
+
+    // Custom Date Picker Logic
+    let currentPickerYear = 2026;
+    let currentPickerMonth = 9; // 0-indexed, 9 = October
+    let selectedDay = 20;
+
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    function renderCustomCalendar() {
+        const grid = document.getElementById('calendarDaysGrid');
+        const monthYearLabel = document.getElementById('calendarMonthYear');
+        if (!grid || !monthYearLabel) return;
+
+        monthYearLabel.innerText = `${monthNames[currentPickerMonth]} ${currentPickerYear}`;
+        grid.innerHTML = '';
+
+        // Days in month
+        const daysInMonth = new Date(currentPickerYear, currentPickerMonth + 1, 0).getDate();
+        // First day index (Monday = 0, Sunday = 6)
+        let firstDay = new Date(currentPickerYear, currentPickerMonth, 1).getDay();
+        firstDay = (firstDay + 6) % 7; // Convert to Monday-start
+
+        // Blanks for prior month
+        for (let i = 0; i < firstDay; i++) {
+            const blank = document.createElement('div');
+            blank.className = 'p-2 text-slate-300 text-3xs';
+            grid.appendChild(blank);
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dayBtn = document.createElement('button');
+            dayBtn.type = 'button';
+            const isSelected = (d === selectedDay && currentPickerMonth === 9 && currentPickerYear === 2026);
+            dayBtn.className = `p-2 rounded-xl text-xs font-semibold transition-all ${
+                isSelected
+                    ? 'bg-brand-600 text-white font-bold shadow-xs'
+                    : 'text-slate-700 hover:bg-slate-100'
+            }`;
+            dayBtn.innerText = d;
+            dayBtn.onclick = () => selectCustomDate(d);
+            grid.appendChild(dayBtn);
+        }
+    }
+
+    function toggleCustomDatePicker() {
+        const menu = document.getElementById('customDatePickerMenu');
+        if (menu) {
+            menu.classList.toggle('hidden');
+        }
+    }
+
+    function changeCustomMonth(delta) {
+        currentPickerMonth += delta;
+        if (currentPickerMonth < 0) {
+            currentPickerMonth = 11;
+            currentPickerYear--;
+        } else if (currentPickerMonth > 11) {
+            currentPickerMonth = 0;
+            currentPickerYear++;
+        }
+        renderCustomCalendar();
+    }
+
+    function selectCustomDate(day) {
+        selectedDay = day;
+        const mm = String(currentPickerMonth + 1).padStart(2, '0');
+        const dd = String(day).padStart(2, '0');
+        const display = document.getElementById('customDateDisplay');
+        if (display) {
+            display.value = `${currentPickerYear}-${mm}-${dd}`;
+        }
+        renderCustomCalendar();
+    }
+
+    function selectDatePreset(preset) {
+        const today = new Date();
+        let target = new Date(today);
+        if (preset === 'tomorrow') {
+            target.setDate(today.getDate() + 1);
+        } else if (preset === 'nextWeek') {
+            target.setDate(today.getDate() + 7);
+        }
+        currentPickerYear = target.getFullYear();
+        currentPickerMonth = target.getMonth();
+        selectedDay = target.getDate();
+        selectCustomDate(selectedDay);
+    }
+
+    // Custom Time Picker Logic
+    let currentHour = 2;
+    let currentMinute = 30;
+    let currentAmPm = 'PM';
+
+    function updateTimeDisplay() {
+        const hh = String(currentHour).padStart(2, '0');
+        const mm = String(currentMinute).padStart(2, '0');
+        const hourSpan = document.getElementById('timeHourDisplay');
+        const minuteSpan = document.getElementById('timeMinuteDisplay');
+        const displayInput = document.getElementById('customTimeDisplay');
+
+        if (hourSpan) hourSpan.innerText = hh;
+        if (minuteSpan) minuteSpan.innerText = mm;
+        if (displayInput) displayInput.value = `${hh}:${mm} ${currentAmPm}`;
+    }
+
+    function stepCustomTime(part, delta) {
+        if (part === 'hour') {
+            currentHour += delta;
+            if (currentHour > 12) currentHour = 1;
+            if (currentHour < 1) currentHour = 12;
+        } else if (part === 'minute') {
+            currentMinute += delta;
+            if (currentMinute >= 60) currentMinute = 0;
+            if (currentMinute < 0) currentMinute = 55;
+        }
+        updateTimeDisplay();
+    }
+
+    function setCustomAmPm(val) {
+        currentAmPm = val;
+        const btnAm = document.getElementById('btnAm');
+        const btnPm = document.getElementById('btnPm');
+        if (val === 'AM') {
+            btnAm?.classList.add('bg-brand-600', 'text-white', 'shadow-2xs');
+            btnAm?.classList.remove('bg-slate-100', 'text-slate-600');
+            btnPm?.classList.remove('bg-brand-600', 'text-white', 'shadow-2xs');
+            btnPm?.classList.add('bg-slate-100', 'text-slate-600');
+        } else {
+            btnPm?.classList.add('bg-brand-600', 'text-white', 'shadow-2xs');
+            btnPm?.classList.remove('bg-slate-100', 'text-slate-600');
+            btnAm?.classList.remove('bg-brand-600', 'text-white', 'shadow-2xs');
+            btnAm?.classList.add('bg-slate-100', 'text-slate-600');
+        }
+        updateTimeDisplay();
+    }
+
+    function applyTimePreset(timeStr) {
+        const [timePart, ampm] = timeStr.split(' ');
+        const [h, m] = timePart.split(':');
+        currentHour = parseInt(h);
+        currentMinute = parseInt(m);
+        setCustomAmPm(ampm);
+    }
+
+    // Advanced Multi-Select Dropdown Logic
+    function toggleAdvancedMultiSelect() {
+        const menu = document.getElementById('advancedMultiSelectMenu');
+        menu?.classList.toggle('hidden');
+    }
+
+    function filterMultiSelectOptions(term) {
+        const filter = (term || '').toLowerCase();
+        const items = document.querySelectorAll('#multiSelectOptionsList label');
+        items.forEach(lbl => {
+            const text = lbl.innerText.toLowerCase();
+            lbl.style.display = text.includes(filter) ? 'flex' : 'none';
+        });
+    }
+
+    function toggleMultiOption(checkbox) {
+        const val = checkbox.getAttribute('data-value');
+        const label = checkbox.getAttribute('data-label');
+        const container = document.getElementById('multiSelectTagsContainer');
+
+        if (checkbox.checked) {
+            if (!container.querySelector(`[data-tag-val="${val}"]`)) {
+                const span = document.createElement('span');
+                span.className = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-50 text-brand-700 text-2xs font-semibold border border-brand-200';
+                span.setAttribute('data-tag-val', val);
+                span.innerHTML = `${label} <button type="button" onclick="removeMultiSelectTag('${val}')" class="text-brand-400 hover:text-brand-600 ml-1"><i class="fa-solid fa-xmark text-3xs"></i></button>`;
+                container.appendChild(span);
+            }
+        } else {
+            const tag = container.querySelector(`[data-tag-val="${val}"]`);
+            tag?.remove();
+        }
+        updateMultiSelectBadge();
+    }
+
+    function removeMultiSelectTag(val) {
+        const container = document.getElementById('multiSelectTagsContainer');
+        const tag = container?.querySelector(`[data-tag-val="${val}"]`);
+        tag?.remove();
+        const cb = document.querySelector(`#multiSelectOptionsList input[data-value="${val}"]`);
+        if (cb) cb.checked = false;
+        updateMultiSelectBadge();
+    }
+
+    function selectAllMultiOptions() {
+        const cbs = document.querySelectorAll('#multiSelectOptionsList input[type="checkbox"]');
+        cbs.forEach(cb => {
+            if (!cb.checked) {
+                cb.checked = true;
+                toggleMultiOption(cb);
+            }
+        });
+    }
+
+    function clearAllMultiOptions() {
+        const cbs = document.querySelectorAll('#multiSelectOptionsList input[type="checkbox"]');
+        cbs.forEach(cb => {
+            cb.checked = false;
+        });
+        const container = document.getElementById('multiSelectTagsContainer');
+        if (container) container.innerHTML = '';
+        updateMultiSelectBadge();
+    }
+
+    function updateMultiSelectBadge() {
+        const count = document.querySelectorAll('#multiSelectTagsContainer span[data-tag-val]').length;
+        const badge = document.getElementById('multiSelectBadgeCount');
+        if (badge) badge.innerText = `${count} Selected`;
+    }
+
+    // Sortable Table Logic
+    let currentSortColumn = -1;
+    let isAscending = true;
+
+    function sortTable(tableId, columnIndex, type) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const headers = table.querySelectorAll('thead th');
+
+        if (currentSortColumn === columnIndex) {
+            isAscending = !isAscending;
+        } else {
+            currentSortColumn = columnIndex;
+            isAscending = true;
+        }
+
+        // Update Icons
+        headers.forEach((th, idx) => {
+            const icon = th.querySelector('.sort-icon');
+            if (icon) {
+                if (idx === columnIndex) {
+                    icon.className = `fa-solid fa-sort-${isAscending ? 'up' : 'down'} text-brand-600 text-3xs sort-icon`;
+                } else {
+                    icon.className = 'fa-solid fa-sort text-slate-400 text-3xs sort-icon';
+                }
+            }
+        });
+
+        rows.sort((a, b) => {
+            const cellA = a.children[columnIndex];
+            const cellB = b.children[columnIndex];
+
+            if (type === 'number') {
+                const valA = parseFloat(cellA.getAttribute('data-val') || cellA.innerText.replace(/[^0-9.-]+/g, '')) || 0;
+                const valB = parseFloat(cellB.getAttribute('data-val') || cellB.innerText.replace(/[^0-9.-]+/g, '')) || 0;
+                return isAscending ? valA - valB : valB - valA;
+            } else {
+                const valA = cellA.innerText.trim().toLowerCase();
+                const valB = cellB.innerText.trim().toLowerCase();
+                return isAscending ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            }
+        });
+
+        rows.forEach(r => tbody.appendChild(r));
+    }
+
+    function toggleAllTableRows(masterCheckbox) {
+        const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+        rowCheckboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+    }
+
+    // Single Searchable Dropdown
+    function toggleSearchableMenu() {
+        const menu = document.getElementById('searchableDropdownMenu');
+        menu?.classList.toggle('hidden');
+    }
+
+    function filterSearchableOptions(term) {
+        const filter = (term || '').toLowerCase();
+        const items = document.querySelectorAll('#searchableOptionsList li');
+        items.forEach(item => {
+            const text = item.innerText.toLowerCase();
+            item.style.display = text.includes(filter) ? 'flex' : 'none';
+        });
+    }
+
+    function selectSearchableOption(name, category) {
+        const label = document.getElementById('searchableSelectedLabel');
+        if (label) {
+            label.innerText = `${name} (${category})`;
+        }
+        toggleSearchableMenu();
+    }
+
+    // Modal Helpers
+    function openDemoModal(id) {
+        document.getElementById(id)?.classList.remove('hidden');
+    }
+    function closeDemoModal(id) {
+        document.getElementById(id)?.classList.add('hidden');
+    }
+
+    // Drawer Helpers
+    function openDemoDrawer() {
+        document.getElementById('demoSlideDrawer')?.classList.remove('hidden');
+    }
+    function closeDemoDrawer() {
+        document.getElementById('demoSlideDrawer')?.classList.add('hidden');
+    }
+
+    // Floating Toast Notification
+    function triggerCatalogToast(title, message, color) {
+        const anchor = document.getElementById('catalogToastAnchor');
+        if (!anchor) return;
+
+        let icon = 'fa-circle-check text-emerald-600';
+        let border = 'border-emerald-200';
+        if (color === 'rose') { icon = 'fa-circle-xmark text-rose-600'; border = 'border-rose-200'; }
+        else if (color === 'amber') { icon = 'fa-triangle-exclamation text-amber-500'; border = 'border-amber-200'; }
+        else if (color === 'brand') { icon = 'fa-circle-info text-brand-600'; border = 'border-brand-200'; }
+
+        const toast = document.createElement('div');
+        toast.className = `pointer-events-auto bg-white/95 backdrop-blur-sm border ${border} shadow-lg rounded-2xl p-3.5 flex items-start gap-3 transition-all duration-300 transform translate-y-2 opacity-0 text-xs`;
+        toast.innerHTML = `
+            <div class="mt-0.5"><i class="fa-solid ${icon} text-sm"></i></div>
+            <div class="flex-1 min-w-0">
+                <p class="font-bold text-slate-800">${title}</p>
+                <p class="text-slate-500 text-2xs mt-0.5">${message}</p>
+            </div>
+            <button type="button" class="text-slate-400 hover:text-slate-600 ml-1 p-0.5 bg-transparent border-0 cursor-pointer" onclick="this.parentElement.remove()">
+                <i class="fa-solid fa-xmark text-2xs"></i>
+            </button>
+        `;
+
+        anchor.appendChild(toast);
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-y-2', 'opacity-0');
+        });
+
+        setTimeout(() => {
+            toast.classList.add('opacity-0', '-translate-y-2');
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    // Filter Components Live Search
+    function filterComponents() {
+        const input = document.getElementById('componentFilterInput');
+        const clearBtn = document.getElementById('clearComponentBtn');
+        const term = (input?.value || '').toLowerCase().trim();
+
+        if (clearBtn) {
+            clearBtn.classList.toggle('hidden', term === '');
+        }
+
+        const cards = document.querySelectorAll('.component-card');
+        const sections = document.querySelectorAll('.component-section');
+
+        cards.forEach(card => {
+            const dataName = (card.getAttribute('data-name') || '').toLowerCase();
+            const text = card.innerText.toLowerCase();
+            const matches = dataName.includes(term) || text.includes(term);
+            card.style.display = matches ? '' : 'none';
+        });
+
+        sections.forEach(sec => {
+            const visibleCards = sec.querySelectorAll('.component-card:not([style*="display: none"])');
+            sec.style.display = visibleCards.length > 0 || term === '' ? '' : 'none';
+        });
+    }
+
+    function clearComponentFilter() {
+        const input = document.getElementById('componentFilterInput');
+        if (input) {
+            input.value = '';
+            filterComponents();
+        }
+    }
+
+    // Init custom calendar on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        renderCustomCalendar();
+    });
+</script>
+}

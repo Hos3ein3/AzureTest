@@ -1,0 +1,49 @@
+@model AzureTest.Contracts.DTOs.Companies.CreateCompanyDto
+@using AzureTest.MVC.Models
+@{
+    ViewData["Title"] = "Add Company";
+    var pageHeader = new PageHeaderModel
+    {
+        Title = "Add Company",
+        Subtitle = "Register a new company and IND sponsor credentials",
+        Icon = "fa-solid fa-building-circle-check",
+        Breadcrumbs = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Companies", Url.Action("Index", "Company")),
+            new BreadcrumbItem("Add New", active: true)
+        }
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="pageHeader" />
+
+<div class="max-w-2xl bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <h2 class="text-sm font-bold text-slate-800 m-0 flex items-center gap-2">
+            <i class="fa-solid fa-building text-brand-600"></i>
+            Company Details
+        </h2>
+    </div>
+    <div class="p-6">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-rose-600 text-xs mb-4"></div>
+            
+            <partial name="_UpsertPartial" />
+            
+            <div class="flex items-center gap-3 pt-6 mt-6 border-t border-slate-100">
+                <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-sm transition-colors">
+                    <i class="fa-solid fa-floppy-disk text-2xs"></i>
+                    <span>Save Company</span>
+                </button>
+                <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors">
+                    <span>Cancel</span>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

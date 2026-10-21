@@ -1,0 +1,111 @@
+@{
+    ViewData["Title"] = "Create Permission";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Administration", Url = "#" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Permissions", Url = "/Permission/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Create", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Create Permission",
+        Subtitle = "Manually register a new restricted endpoint into the access control catalog.",
+        Icon = "fa-solid fa-key",
+        Breadcrumbs = breadcrumbs
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200/80 flex items-start gap-3 shadow-2xs">
+        <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div class="flex-1 text-xs font-semibold text-rose-800">
+            @TempData["ErrorMessage"]
+        </div>
+    </div>
+}
+
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden max-w-2xl">
+    <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-brand-600 text-xs"></i>
+            <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Endpoint Details</h2>
+        </div>
+        <span class="text-2xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Manual Entry</span>
+    </div>
+
+    <form asp-action="Create" method="post" class="p-6 md:p-8">
+        @Html.AntiForgeryToken()
+        
+        <div class="mb-5">
+            <label for="areaName" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                Area Name <span class="text-3xs text-slate-400 font-normal lowercase">(optional)</span>
+            </label>
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                    <i class="fa-solid fa-box"></i>
+                </div>
+                <input type="text" id="areaName" name="areaName" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="e.g. FootballFantasy (leave empty if none)" />
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+            <div>
+                <label for="controllerName" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    Controller Name <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                        <i class="fa-solid fa-code"></i>
+                    </div>
+                    <input type="text" id="controllerName" name="controllerName" required class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white font-mono" placeholder="e.g. Dashboard" />
+                </div>
+            </div>
+            <div>
+                <label for="actionName" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    Action Name <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <input type="text" id="actionName" name="actionName" required class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white font-mono" placeholder="e.g. Index" />
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-5">
+            <label for="displayName" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                Display Name <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                    <i class="fa-solid fa-tag"></i>
+                </div>
+                <input type="text" id="displayName" name="displayName" required class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="e.g. View Dashboard" />
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <label for="description" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Description</label>
+            <textarea id="description" name="description" rows="3" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="Brief explanation of the capabilities granted by this permission..."></textarea>
+            <p class="text-3xs text-slate-400 mt-1">Manually registered permissions are enforced as restricted by default.</p>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-5 border-t border-slate-100">
+            <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+                Cancel
+            </a>
+            <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                <i class="fa-solid fa-check"></i> Create Permission
+            </button>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,142 @@
+@model AzureTest.Application.Debts.Commands.UpdateDebtCommand
+@{
+    ViewData["Title"] = "Edit Debt";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Debts", Url = "/Debt/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Edit Debt", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Edit Debt Record",
+        Subtitle = "Update loan balances, counterparty details, settlement dates, and notes.",
+        Icon = "fa-solid fa-pen-to-square",
+        Breadcrumbs = breadcrumbs
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+<div class="max-w-2xl">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-file-invoice-dollar text-brand-600 text-xs"></i>
+                <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Update Debt Details</h2>
+            </div>
+            <span class="text-2xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">ID: @Model.Id.ToString().Substring(0, 8)...</span>
+        </div>
+
+        <div class="p-6 md:p-8">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <div asp-validation-summary="ModelOnly" class="p-3 mb-6 bg-rose-50 border border-rose-200/80 rounded-xl text-rose-700 text-xs"></div>
+                
+                <partial name="_UpsertPartial" />
+
+                <div class="flex items-center justify-end gap-3 pt-5 border-t border-slate-100">
+                    <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectEl = document.getElementById('personSelect');
+        let tsInstance = null;
+        
+        if (selectEl && typeof TomSelect !== 'undefined') {
+            tsInstance = new TomSelect(selectEl, {
+                create: false,
+                sortField: { field: "text", direction: "asc" }
+            });
+        }
+
+        const toggleBtn = document.getElementById('toggleNewPerson');
+        const newPanel  = document.getElementById('newPersonPanel');
+        const newInput  = document.getElementById('newPersonInput');
+        const acList    = document.getElementById('personAutocomplete');
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                const isVisible = newPanel.style.display !== 'none';
+                if (isVisible) {
+                    newPanel.style.display = 'none';
+                    newInput.value = '';
+                    if (tsInstance) tsInstance.enable();
+                } else {
+                    newPanel.style.display = 'block';
+                    if (tsInstance) {
+                        tsInstance.clear();
+                        tsInstance.disable();
+                    }
+                    newInput.focus();
+                }
+            });
+        }
+
+        if (tsInstance) {
+            tsInstance.on('change', function(value) {
+                if (value) {
+                    newPanel.style.display = 'none';
+                    newInput.value = '';
+                }
+            });
+        }
+
+        let debounceTimer;
+        if (newInput) {
+            newInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                const term = newInput.value.trim();
+                if (term.length < 1) { acList.style.display = 'none'; return; }
+
+                debounceTimer = setTimeout(async () => {
+                    const res  = await fetch(`/Debt/SearchDebtPersons?term=${encodeURIComponent(term)}`);
+                    const data = await res.json();
+
+                    acList.innerHTML = '';
+                    if (data.length === 0) { acList.style.display = 'none'; return; }
+
+                    data.forEach(c => {
+                        const item = document.createElement('button');
+                        item.type = 'button';
+                        item.className = 'w-full text-left px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-brand-600 focus:outline-none transition-colors';
+                        item.textContent = c.name;
+                        item.addEventListener('click', () => {
+                            if (tsInstance) {
+                                tsInstance.enable();
+                                tsInstance.setValue(c.id);
+                            }
+                            newInput.value = '';
+                            newPanel.style.display = 'none';
+                            acList.style.display = 'none';
+                        });
+                        acList.appendChild(item);
+                    });
+                    acList.style.display = 'block';
+                }, 300);
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (acList && !acList.contains(e.target) && e.target !== newInput) {
+                acList.style.display = 'none';
+            }
+        });
+    });
+    </script>
+}

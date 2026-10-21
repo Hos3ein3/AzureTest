@@ -1,0 +1,96 @@
+@model AzureTest.Contracts.DTOs.Events.EventDto
+@using AzureTest.MVC.Models
+@{
+    ViewData["Title"] = "Event Details";
+    var pageHeader = new PageHeaderModel
+    {
+        Title = Model.Title,
+        Subtitle = "View event schedule, description, and status",
+        Icon = "fa-solid fa-calendar-check",
+        Breadcrumbs = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Events", Url.Action("Index", "Event")),
+            new BreadcrumbItem("Details", active: true)
+        },
+        ActionText = "Edit Event",
+        ActionUrl = Url.Action("Edit", "Event", new { id = Model.Id }),
+        ActionIcon = "fa-solid fa-pen-to-square"
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="pageHeader" />
+
+<div class="max-w-3xl bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+        <h2 class="text-sm font-bold text-slate-800 m-0 flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-brand-600"></i>
+            Event Information
+        </h2>
+    </div>
+    
+    <div class="p-6">
+        <dl class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
+            <div class="sm:col-span-2">
+                <dt class="text-2xs font-semibold text-slate-400 uppercase tracking-wider">Event Title</dt>
+                <dd class="mt-1 text-base font-bold text-slate-900 flex items-center gap-2.5">
+                    @if (!string.IsNullOrEmpty(Model.Color))
+                    {
+                        <span class="w-3.5 h-3.5 rounded-full inline-block shadow-2xs" style="background-color: @Model.Color"></span>
+                    }
+                    else
+                    {
+                        <span class="w-3.5 h-3.5 rounded-full inline-block bg-brand-500 shadow-2xs"></span>
+                    }
+                    <span>@Model.Title</span>
+                </dd>
+            </div>
+            
+            <div class="sm:col-span-2">
+                <dt class="text-2xs font-semibold text-slate-400 uppercase tracking-wider">Description</dt>
+                <dd class="mt-1 text-xs text-slate-700 whitespace-pre-wrap bg-slate-50 p-4 rounded-xl border border-slate-100 leading-relaxed">
+                    @(string.IsNullOrEmpty(Model.Description) ? "No description provided." : Model.Description)
+                </dd>
+            </div>
+            
+            <div>
+                <dt class="text-2xs font-semibold text-slate-400 uppercase tracking-wider">Start Date & Time</dt>
+                <dd class="mt-1 text-xs font-semibold text-slate-800 flex items-center gap-2">
+                    <i class="fa-regular fa-calendar text-brand-500"></i>
+                    <span>@Model.StartDate.ToString("F")</span>
+                </dd>
+            </div>
+            
+            <div>
+                <dt class="text-2xs font-semibold text-slate-400 uppercase tracking-wider">End Date & Time</dt>
+                <dd class="mt-1 text-xs font-semibold text-slate-800 flex items-center gap-2">
+                    <i class="fa-regular fa-calendar-check text-brand-500"></i>
+                    <span>@Model.EndDate.ToString("F")</span>
+                </dd>
+            </div>
+            
+            <div>
+                <dt class="text-2xs font-semibold text-slate-400 uppercase tracking-wider">All Day Status</dt>
+                <dd class="mt-1.5">
+                    @if (Model.IsAllDay)
+                    {
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-200/60 px-2.5 py-0.5 text-2xs font-semibold text-blue-700">
+                            <i class="fa-solid fa-check text-3xs"></i> Yes
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-2xs font-semibold text-slate-600">
+                            No
+                        </span>
+                    }
+                </dd>
+            </div>
+        </dl>
+    </div>
+    <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center gap-3">
+        <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+            <i class="fa-solid fa-arrow-left text-2xs"></i>
+            <span>Back to Events</span>
+        </a>
+    </div>
+</div>

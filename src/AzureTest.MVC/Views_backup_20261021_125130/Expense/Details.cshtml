@@ -1,0 +1,83 @@
+@model AzureTest.Contracts.DTOs.Expenses.ExpenseDto
+@{
+    ViewData["Title"] = "Expense Details";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Expenses", Url = "/Expense/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Details", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Expense Details",
+        Subtitle = $"Transaction recorded on {Model.Date.ToString("MMM dd, yyyy")}",
+        Icon = "fa-solid fa-receipt",
+        Badge = string.IsNullOrEmpty(Model.CategoryName) ? "Uncategorized" : Model.CategoryName,
+        Breadcrumbs = breadcrumbs
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+<div class="max-w-2xl">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-info text-brand-600 text-xs"></i>
+                <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Transaction Record</h2>
+            </div>
+            <div class="flex items-center gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+                    <i class="fa-solid fa-pen-to-square text-brand-600"></i> Edit
+                </a>
+                <a asp-action="Index" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition-colors">
+                    Back to List
+                </a>
+            </div>
+        </div>
+
+        <div class="p-6 md:p-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div class="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                    <div class="text-3xs font-bold uppercase tracking-wider text-slate-400">Category</div>
+                    <div class="mt-1">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-bold bg-brand-50 text-brand-700 border border-brand-200/80">
+                            <i class="fa-solid fa-tag text-3xs"></i> @(string.IsNullOrEmpty(Model.CategoryName) ? "Uncategorized" : Model.CategoryName)
+                        </span>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                    <div class="text-3xs font-bold uppercase tracking-wider text-slate-400">Amount</div>
+                    <div class="text-xl font-black text-rose-600 font-mono mt-0.5">
+                        -@Model.Amount.ToString("C")
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                    <div class="text-3xs font-bold uppercase tracking-wider text-slate-400">Transaction Date</div>
+                    <div class="text-xs font-bold text-slate-800 font-mono mt-1 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar text-slate-400"></i>
+                        <span>@Model.Date.ToString("MMMM dd, yyyy")</span>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                    <div class="text-3xs font-bold uppercase tracking-wider text-slate-400">Transaction ID</div>
+                    <div class="text-xs font-mono text-slate-600 mt-1 truncate">
+                        @Model.Id
+                    </div>
+                </div>
+
+                <div class="sm:col-span-2 p-4 rounded-xl border border-slate-200/80 bg-white">
+                    <div class="text-3xs font-bold uppercase tracking-wider text-slate-400 mb-1">Description & Purpose</div>
+                    <p class="text-xs text-slate-700 leading-relaxed">
+                        @Model.Description
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

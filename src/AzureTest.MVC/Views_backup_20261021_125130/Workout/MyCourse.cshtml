@@ -1,0 +1,94 @@
+@model AzureTest.Domain.Documents.Gym.UserGymCourse
+@{
+    ViewData["Title"] = Model.Name;
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new("Dashboard", "/"),
+        new("Workout", Url.Action("Index")),
+        new(Model.Name, IsActive: true)
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel(
+        Model.Name,
+        "Manage your weekly syllabus, track completion, and execute daily training workouts.",
+        "fa-solid fa-graduation-cap",
+        breadcrumbs: breadcrumbs,
+        ActionText: "Workout Dashboard",
+        ActionUrl: Url.Action("Index"),
+        ActionIcon: "fa-solid fa-arrow-left"
+    );
+
+    var emptyModel = new AzureTest.MVC.Models.EmptyStateModel(
+        "No Weeks Configured",
+        "There are no structured training weeks or exercises configured for this course yet.",
+        "fa-solid fa-calendar-xmark"
+    );
+}
+
+<div class="max-w-5xl mx-auto">
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
+
+    @if (!Model.Weeks.Any()) {
+        <partial name="UiComponents/_EmptyState" model="emptyModel" />
+    }
+    else {
+        <div class="space-y-6">
+            @foreach (var week in Model.Weeks.OrderBy(w => w.WeekNumber)) {
+                var completedDaysInWeek = week.Days.Count(d => Model.CompletedDayIds.Contains(d.Id));
+                var totalDaysInWeek = week.Days.Count;
+                var isWeekDone = totalDaysInWeek > 0 && completedDaysInWeek == totalDaysInWeek;
+
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden transition-shadow hover:shadow-md">
+                    <div class="bg-slate-50/75 px-6 py-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-2">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-xl bg-brand-50 border border-brand-100 text-brand-600 flex items-center justify-center font-bold text-xs">
+                                W@(week.WeekNumber)
+                            </span>
+                            <h4 class="text-base font-bold text-slate-800 m-0">Week @week.WeekNumber</h4>
+                        </div>
+                        <span class="text-xs font-semibold px-3 py-1 rounded-full border shadow-2xs @(isWeekDone ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white text-slate-600 border-slate-200")">
+                            <i class="fa-solid @(isWeekDone ? "fa-circle-check text-emerald-600" : "fa-clock text-slate-400") mr-1"></i>
+                            @completedDaysInWeek / @totalDaysInWeek Completed
+                        </span>
+                    </div>
+
+                    <div class="divide-y divide-slate-100">
+                        @if (!week.Days.Any()) {
+                            <div class="px-6 py-6 text-slate-400 text-xs italic text-center">
+                                No workout days scheduled for this week.
+                            </div>
+                        }
+                        @foreach (var day in week.Days) {
+                            var isCompleted = Model.CompletedDayIds.Contains(day.Id);
+                            <a href="@Url.Action("Day", new { userGymCourseId = Model.Id, week = week.WeekNumber, dayId = day.Id })" 
+                               class="block px-6 py-5 hover:bg-slate-50/60 transition-colors group">
+                                <div class="flex justify-between items-center gap-4">
+                                    <div>
+                                        <h5 class="text-sm font-bold text-slate-900 group-hover:text-brand-600 transition-colors mb-1">
+                                            @day.Name
+                                        </h5>
+                                        @if(!string.IsNullOrWhiteSpace(day.Description)) {
+                                            <p class="text-xs text-slate-500 line-clamp-1">@day.Description</p>
+                                        }
+                                    </div>
+                                    <div class="shrink-0">
+                                        @if (isCompleted) {
+                                            <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3.5 py-1 rounded-full text-2xs font-bold uppercase tracking-wider shadow-2xs">
+                                                <i class="fa-solid fa-check text-3xs"></i> Completed
+                                            </span>
+                                        } else {
+                                            <span class="inline-flex items-center gap-1.5 bg-brand-50 text-brand-700 border border-brand-200 px-4 py-1 rounded-full text-2xs font-bold uppercase tracking-wider group-hover:bg-brand-600 group-hover:text-white transition-all shadow-2xs">
+                                                <i class="fa-solid fa-play text-3xs"></i> Start
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

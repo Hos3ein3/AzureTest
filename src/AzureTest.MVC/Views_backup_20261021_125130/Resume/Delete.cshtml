@@ -1,0 +1,69 @@
+@model AzureTest.Contracts.DTOs.Resumes.ResumeDto
+@using AzureTest.MVC.Models
+@{
+    ViewData["Title"] = "Delete Resume";
+    var pageHeader = new PageHeaderModel
+    {
+        Title = "Delete Resume",
+        Subtitle = "Confirm deletion of application record",
+        Icon = "fa-solid fa-trash-can",
+        Breadcrumbs = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Resumes", Url.Action("Index", "Resume")),
+            new BreadcrumbItem(Model.PositionTitle, Url.Action("Details", "Resume", new { id = Model.Id })),
+            new BreadcrumbItem("Delete", active: true)
+        }
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="pageHeader" />
+
+<div class="max-w-xl">
+    <div class="bg-white rounded-2xl border border-rose-200 shadow-2xs overflow-hidden">
+        <div class="px-6 py-4 bg-rose-50/70 border-b border-rose-100 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h3 class="text-xs font-bold text-rose-900 m-0">Confirm Deletion</h3>
+                <p class="text-2xs text-rose-700 mt-0.5">This resume application will be soft-deleted and can be recovered by an administrator.</p>
+            </div>
+        </div>
+        <div class="p-6">
+            <dl class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs">
+                <div class="flex justify-between py-1 border-b border-slate-200/60">
+                    <dt class="font-medium text-slate-500">Position</dt>
+                    <dd class="font-bold text-slate-900">@Model.PositionTitle</dd>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-200/60">
+                    <dt class="font-medium text-slate-500">Location</dt>
+                    <dd class="text-slate-800">@(string.IsNullOrWhiteSpace(Model.Location) ? "—" : Model.Location)</dd>
+                </div>
+                <div class="flex justify-between py-1 border-b border-slate-200/60">
+                    <dt class="font-medium text-slate-500">Status</dt>
+                    <dd>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-semibold bg-brand-50 border border-brand-200/60 text-brand-800">
+                            @Model.Status
+                        </span>
+                    </dd>
+                </div>
+                <div class="flex justify-between py-1">
+                    <dt class="font-medium text-slate-500">Applied On</dt>
+                    <dd class="text-slate-800">@Model.CreatedOn.ToString("MMMM d, yyyy")</dd>
+                </div>
+            </dl>
+        </div>
+        <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-3">
+            <a asp-action="Details" asp-route-id="@Model.Id" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors">
+                <span>Cancel</span>
+            </a>
+            <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm transition-colors">
+                    <i class="fa-solid fa-trash text-2xs"></i>
+                    <span>Yes, Delete</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

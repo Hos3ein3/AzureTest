@@ -1,0 +1,189 @@
+@model AzureTest.Contracts.DTOs.Resumes.IResumeFormDto
+@* Shared form fields for Create and Edit Resume views. *@
+
+<div class="space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <div class="md:col-span-8">
+            <label asp-for="PositionTitle" class="block text-xs font-semibold text-slate-700 mb-1.5">
+                Position Title <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                    <i class="fa-solid fa-briefcase"></i>
+                </span>
+                <input asp-for="PositionTitle" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="e.g. Senior Software Engineer" />
+            </div>
+            <span asp-validation-for="PositionTitle" class="text-rose-600 text-2xs mt-1 block"></span>
+        </div>
+        <div class="md:col-span-4">
+            <label asp-for="CreatedOn" class="block text-xs font-semibold text-slate-700 mb-1.5">Date Applied</label>
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                    <i class="fa-solid fa-calendar"></i>
+                </span>
+                <input asp-for="CreatedOn" type="date" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+            </div>
+            <span asp-validation-for="CreatedOn" class="text-rose-600 text-2xs mt-1 block"></span>
+        </div>
+    </div>
+
+    @* Company Field with UiComponents Searchable Dropdown *@
+    <div>
+        <div class="flex justify-between items-center mb-1.5">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Company</label>
+            <button type="button" class="text-2xs font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 focus:outline-none inline-flex items-center gap-1" id="toggleNewCompany">
+                <i class="fa-solid fa-plus text-3xs"></i> Add new company
+            </button>
+        </div>
+
+        @{
+            var companiesList = ViewBag.Companies as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>;
+            var selectedCompany = companiesList?.FirstOrDefault(c => c.Value == Model.CompanyId?.ToString());
+            var selectedCompanyText = selectedCompany?.Text;
+        }
+
+        <!-- UiComponents Searchable Single Select Dropdown -->
+        <div class="relative">
+            <input type="hidden" id="companyIdInput" name="CompanyId" value="@(Model.CompanyId?.ToString() ?? "")" />
+            <button id="companyDropdownBtn" type="button" onclick="toggleCompanyDropdownMenu()"
+                    class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 hover:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 shadow-2xs transition-all text-left">
+                <span id="companySelectedLabel" class="@(!string.IsNullOrWhiteSpace(selectedCompanyText) ? "text-slate-900 dark:text-white font-bold" : "text-slate-400 dark:text-slate-400") truncate">
+                    @(!string.IsNullOrWhiteSpace(selectedCompanyText) ? selectedCompanyText : "— Search or select existing company —")
+                </span>
+                <i class="fa-solid fa-chevron-down text-2xs text-slate-400 shrink-0 ml-2"></i>
+            </button>
+
+            <!-- Searchable Dropdown Popup Menu -->
+            <div id="companyDropdownMenu" class="hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-30 p-2 space-y-1.5">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-3xs"></i>
+                    <input type="text" id="companyFilterInput" onkeyup="filterCompanyOptions(this.value)" placeholder="Type to filter companies..."
+                           class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-750 text-slate-800 dark:text-slate-100 text-xs focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                </div>
+                <ul id="companyOptionsList" class="max-h-52 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/50 list-none p-0 m-0">
+                    <li onclick="selectCompanyOption('', '— Search or select existing company —')"
+                        class="company-option p-2 hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-lg cursor-pointer flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 italic">
+                        <span>None / Clear selection</span>
+                    </li>
+                    @if (companiesList != null)
+                    {
+                        foreach (var item in companiesList)
+                        {
+                            var isSelected = Model.CompanyId?.ToString() == item.Value;
+                            <li onclick="selectCompanyOption('@item.Value', '@Html.Raw(item.Text.Replace("'", "\\'"))')"
+                                class="company-option p-2 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-lg cursor-pointer flex items-center justify-between text-xs text-slate-800 dark:text-slate-200">
+                                <span class="truncate">@item.Text</span>
+                                @if (isSelected)
+                                {
+                                    <i class="fa-solid fa-check text-2xs text-brand-600 dark:text-brand-400 shrink-0 ml-2 checkmark-icon"></i>
+                                }
+                            </li>
+                        }
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <div id="newCompanyPanel" class="mt-3 bg-slate-50 dark:bg-slate-750 p-4 rounded-xl border border-slate-200 dark:border-slate-700" style="display:none;">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">New Company Name</label>
+            <input type="text" id="newCompanyInput" name="NewCompanyName" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white dark:bg-slate-700"
+                   placeholder="Type new company name..." autocomplete="off" />
+            <div id="companyAutocomplete" class="absolute z-10 w-full mt-1 bg-white dark:bg-slate-800 shadow-lg rounded-xl border border-slate-200 dark:border-slate-700 max-h-60 overflow-y-auto" style="display:none;"></div>
+            <p class="mt-2 text-2xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-info text-brand-500"></i>
+                If this company already exists it will be linked automatically; otherwise a new one will be created.
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label asp-for="Source" class="block text-xs font-semibold text-slate-700 mb-1.5">Source</label>
+            <select asp-for="Source" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white"
+                    asp-items="Html.GetEnumSelectList<AzureTest.Domain.Enums.ResumeSource>()">
+            </select>
+            <span asp-validation-for="Source" class="text-rose-600 text-2xs mt-1 block"></span>
+        </div>
+        <div>
+            <label asp-for="Status" class="block text-xs font-semibold text-slate-700 mb-1.5">Status</label>
+            <select asp-for="Status" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white"
+                    asp-items="Html.GetEnumSelectList<AzureTest.Domain.Enums.ResumeStatus>()">
+            </select>
+            <span asp-validation-for="Status" class="text-rose-600 text-2xs mt-1 block"></span>
+        </div>
+    </div>
+
+    <div>
+        <label asp-for="Location" class="block text-xs font-semibold text-slate-700 mb-1.5">
+            Location <span class="text-rose-500">*</span>
+        </label>
+        <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                <i class="fa-solid fa-location-dot"></i>
+            </span>
+            <input asp-for="Location" list="locationOptions" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="e.g. Remote, Amsterdam, NL" />
+        </div>
+        <datalist id="locationOptions">
+            @if (ViewBag.Locations != null)
+            {
+                foreach (var loc in (List<string>)ViewBag.Locations)
+                {
+                    <option value="@loc" />
+                }
+            }
+        </datalist>
+        <span asp-validation-for="Location" class="text-rose-600 text-2xs mt-1 block"></span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label asp-for="JobLink" class="block text-xs font-semibold text-slate-700 mb-1.5">
+                Job Link <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                    <i class="fa-solid fa-link"></i>
+                </span>
+                <input asp-for="JobLink" type="url" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="https://..." />
+            </div>
+            <span asp-validation-for="JobLink" class="text-rose-600 text-2xs mt-1 block"></span>
+        </div>
+        <div>
+            <label asp-for="ChatUrl" class="block text-xs font-semibold text-slate-700 mb-1.5">Chat / Thread Link</label>
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                    <i class="fa-solid fa-comments"></i>
+                </span>
+                <input asp-for="ChatUrl" type="url" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="https://..." />
+            </div>
+            <span asp-validation-for="ChatUrl" class="text-rose-600 text-2xs mt-1 block"></span>
+        </div>
+    </div>
+
+    <div>
+        <label asp-for="AtsScore" class="block text-xs font-semibold text-slate-700 mb-1.5">ATS Score (0–100)</label>
+        <div class="relative md:w-1/3">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                <i class="fa-solid fa-chart-line"></i>
+            </span>
+            <input asp-for="AtsScore" type="number" min="0" max="100" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="e.g. 85" />
+        </div>
+        <span asp-validation-for="AtsScore" class="text-rose-600 text-2xs mt-1 block"></span>
+    </div>
+
+    <div>
+        <label asp-for="Description" class="block text-xs font-semibold text-slate-700 mb-1.5">
+            Description <span class="text-rose-500">*</span>
+        </label>
+        <textarea asp-for="Description" rows="4" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white"
+                  placeholder="Job description or notes about the role..."></textarea>
+        <span asp-validation-for="Description" class="text-rose-600 text-2xs mt-1 block"></span>
+    </div>
+
+    <div>
+        <label asp-for="Note" class="block text-xs font-semibold text-slate-700 mb-1.5">Personal Notes</label>
+        <textarea asp-for="Note" rows="3" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white"
+                  placeholder="Your thoughts, contact details, interview feedback..."></textarea>
+        <span asp-validation-for="Note" class="text-rose-600 text-2xs mt-1 block"></span>
+    </div>
+</div>

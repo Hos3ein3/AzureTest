@@ -1,0 +1,137 @@
+@using AzureTest.MVC.Models
+@using AzureTest.Domain.Enums
+@model AzureTest.Contracts.DTOs.Pages.UpdatePageDto
+@{
+    ViewData["Title"] = "Edit Page";
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Dashboard", Url.Action("Index", "Home"), "fa-solid fa-house"),
+        new BreadcrumbItem("Pages", Url.Action("Index"), "fa-regular fa-file-lines"),
+        new BreadcrumbItem(Model.Title ?? "Page", Url.Action("Read", new { slug = Model.Slug }), "fa-regular fa-file"),
+        new BreadcrumbItem("Edit", null, "fa-solid fa-pen", true)
+    };
+
+    var headerModel = new PageHeaderModel(
+        "Edit Page",
+        $"Update settings and content for \"{Model.Title}\".",
+        "fa-solid fa-pen-to-square",
+        new HeaderAction("View Live", Url.Action("Read", new { slug = Model.Slug }), "fa-solid fa-arrow-up-right-from-square", "secondary")
+    );
+}
+
+<div class="px-4 sm:px-6 lg:px-8 py-8 mx-auto max-w-5xl space-y-6">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
+
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8">
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="ImagePath" />
+
+            <div asp-validation-summary="ModelOnly" class="p-4 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-sm font-medium"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label asp-for="Title" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Page Title <span class="text-rose-500">*</span></label>
+                    <input asp-for="Title"
+                           class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-semibold text-slate-800 placeholder:text-slate-400" />
+                    <span asp-validation-for="Title" class="text-rose-500 text-xs mt-1 block font-medium"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Slug" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">URL Slug <span class="text-rose-500">*</span></label>
+                    <div class="flex rounded-xl border border-slate-200 overflow-hidden focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 bg-slate-50">
+                        <span class="inline-flex items-center px-3.5 border-r border-slate-200 text-xs font-mono text-slate-500 bg-slate-100">/Page/</span>
+                        <input asp-for="Slug" class="flex-1 block w-full px-3.5 py-2.5 border-none focus:ring-0 text-sm bg-transparent font-medium text-slate-800" />
+                    </div>
+                    <span asp-validation-for="Slug" class="text-rose-500 text-xs mt-1 block font-medium"></span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label asp-for="Status" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Status</label>
+                    <select asp-for="Status" asp-items="Html.GetEnumSelectList<PageStatus>()"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-semibold text-slate-800"></select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Update Feature Image</label>
+                    <div class="flex items-center gap-3">
+                        @if (!string.IsNullOrEmpty(Model.ImagePath))
+                        {
+                            <img src="@Model.ImagePath" class="w-11 h-11 rounded-xl object-cover border border-slate-200 shadow-sm shrink-0" alt="Current Image" />
+                        }
+                        <input id="ImageFile" name="ImageFile" type="file" accept="image/*"
+                               class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 transition-colors cursor-pointer border border-slate-200 rounded-xl bg-slate-50" />
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label asp-for="Content" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Page Content <span class="text-rose-500">*</span></label>
+                <div class="border border-slate-200 rounded-2xl shadow-sm overflow-hidden bg-white">
+                    <textarea asp-for="Content" id="Content" class="w-full border-none focus:ring-0"></textarea>
+                </div>
+                <span asp-validation-for="Content" class="text-rose-500 text-xs mt-1 block font-medium"></span>
+            </div>
+
+            <div class="pt-6 border-t border-slate-100 flex items-center justify-between">
+                <div class="text-xs text-slate-500 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-slate-400"></i>
+                    <span>Changes will immediately update the live route.</span>
+                </div>
+                <div class="flex gap-3">
+                    <a href="@Url.Action("Index")" class="px-5 py-2.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl transition">
+                        Cancel
+                    </a>
+                    <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow transition">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
+    <script>
+        tinymce.init({
+            selector: '#Content',
+            plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table help wordcount',
+            toolbar: 'undo redo | formatselect | bold italic forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | image media table | removeformat | help',
+            images_upload_url: '/IdeaTracker/UploadImage',
+            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #334155; }',
+            height: 550,
+            promotion: false,
+            branding: false,
+            image_title: true,
+            automatic_uploads: true,
+            file_picker_types: 'image',
+            file_picker_callback: function (cb, value, meta) {
+                var input = document.createElement('input');
+                input.setAttribute('type', 'file');
+                input.setAttribute('accept', 'image/*');
+                input.onchange = function () {
+                    var file = this.files[0];
+                    var reader = new FileReader();
+                    reader.onload = function () {
+                        var id = 'blobid' + (new Date()).getTime();
+                        var blobCache = tinymce.activeEditor.editorUpload.blobCache;
+                        var base64 = reader.result.split(',')[1];
+                        var blobInfo = blobCache.create(id, file, base64);
+                        blobCache.add(blobInfo);
+                        cb(blobInfo.blobUri(), { title: file.name });
+                    };
+                    reader.readAsDataURL(file);
+                };
+                input.click();
+            },
+            setup: function(editor) {
+                editor.on('change', function() { editor.save(); });
+            }
+        });
+    </script>
+}

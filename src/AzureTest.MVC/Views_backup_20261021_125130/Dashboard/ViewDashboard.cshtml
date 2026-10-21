@@ -1,0 +1,255 @@
+@using AzureTest.MVC.Models
+@model AzureTest.MVC.Controllers.DashboardViewModel
+@{
+    ViewData["Title"] = Model.Dashboard.Name;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var allComponents = ViewBag.AllComponents as Dictionary<Guid, AzureTest.Domain.Documents.DashboardComponent>;
+    var allRawComponents = ViewBag.AllRawComponents as Dictionary<Guid, AzureTest.Domain.Documents.DashboardRawComponent>;
+
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Dashboard", Url.Action("Index", "Home"), "fa-solid fa-house"),
+        new BreadcrumbItem("Manage Dashboards", Url.Action("Manage", "Dashboard"), "fa-solid fa-layer-group"),
+        new BreadcrumbItem(Model.Dashboard.Name, null, "fa-solid fa-chart-line", true)
+    };
+}
+
+@section Styles {
+    <link href="https://cdn.jsdelivr.net/npm/gridstack@8.2.3/dist/gridstack.min.css" rel="stylesheet"/>
+}
+
+<div class="px-4 sm:px-6 lg:px-8 py-6 mx-auto max-w-7xl space-y-6">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl shrink-0">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                        @Model.Dashboard.Name
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200">
+                            Custom Layout
+                        </span>
+                    </h1>
+                    <div class="flex items-center text-xs text-slate-500 mt-0.5">
+                        <i class="fa-solid fa-link text-slate-400 mr-1.5 text-[11px]"></i>
+                        <span class="font-mono">/@Model.Dashboard.Slug</span>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.HomeModel.IsAdmin && !string.IsNullOrWhiteSpace(Model.HomeModel.CurrentUserName))
+            {
+                <p class="text-xs font-semibold text-brand-700 mt-3 inline-flex items-center gap-1.5 px-3 py-1 bg-brand-50 rounded-lg">
+                    <i class="fa-solid fa-eye text-brand-600"></i> Viewing Data For: @Model.HomeModel.CurrentUserName
+                </p>
+            }
+        </div>
+
+        <div class="flex flex-wrap gap-2.5 items-center w-full sm:w-auto">
+            @if (Model.HomeModel.IsAdmin)
+            {
+                <form method="get" class="flex items-center gap-2">
+                    <select name="targetUserId" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500">
+                        <option value="">-- All Users (Aggregate) --</option>
+                        @foreach (var user in Model.HomeModel.AvailableUsers)
+                        {
+                            var selected = user.Key == Model.HomeModel.CurrentUserId ? "selected" : null;
+                            <option value="@user.Key" selected="@selected">@user.Value</option>
+                        }
+                    </select>
+                    <button type="submit" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xs transition">
+                        Switch
+                    </button>
+                </form>
+            }
+            <a asp-controller="Home" asp-action="Index" asp-route-ignorePreference="true"
+               class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-xs transition">
+                <i class="fa-solid fa-table-cells-large text-slate-500"></i> Standard View
+            </a>
+            <a asp-controller="Dashboard" asp-action="Builder" asp-route-slug="@Model.Dashboard.Slug"
+               class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-sm hover:shadow transition">
+                <i class="fa-solid fa-pen"></i> Edit Layout
+            </a>
+        </div>
+    </div>
+
+    <div class="space-y-8">
+        @if (Model.Dashboard.Sections.Any())
+        {
+            foreach (var dashboardSection in Model.Dashboard.Sections)
+            {
+                <div class="section-container bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+                    @if (Model.Dashboard.Sections.Count > 1 || dashboardSection.Name != "Main Layout")
+                    {
+                        <h2 class="text-base font-bold text-slate-900 mb-4 pb-3 border-b border-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-grip-vertical text-slate-300 text-xs"></i>
+                            @dashboardSection.Name
+                        </h2>
+                    }
+
+                    <div class="grid-stack" id="grid-@dashboardSection.Id">
+                        @foreach (var c in dashboardSection.Components)
+                        {
+                            if (c.Type == "Standard" && allComponents != null && allComponents.TryGetValue(c.ComponentId, out var comp))
+                            {
+                                <div class="grid-stack-item" gs-x="@c.X" gs-y="@c.Y" gs-w="@c.Width" gs-h="@c.Height" gs-no-resize="true" gs-no-move="true">
+                                    <div class="grid-stack-item-content">
+                                        @await Html.PartialAsync($"Widgets/{comp.PartialViewName}", Model.HomeModel)
+                                    </div>
+                                </div>
+                            }
+                            else if (c.Type != "Standard" && allRawComponents != null && c.RawComponentId.HasValue && allRawComponents.TryGetValue(c.RawComponentId.Value, out var rawComp))
+                            {
+                                <div class="grid-stack-item" gs-x="@c.X" gs-y="@c.Y" gs-w="@c.Width" gs-h="@c.Height" gs-no-resize="true" gs-no-move="true">
+                                    <div class="grid-stack-item-content">
+                                        @if (rawComp.Type == "RawHtml" && !string.IsNullOrWhiteSpace(rawComp.HtmlContent))
+                                        {
+                                            <div class="h-full w-full">
+                                                @Html.Raw(rawComp.HtmlContent)
+                                            </div>
+                                        }
+                                        else if (rawComp.Type == "JsonConfig" && !string.IsNullOrWhiteSpace(rawComp.JsonConfiguration))
+                                        {
+                                            <div class="p-5 bg-white rounded-2xl shadow-sm h-full w-full border border-slate-200/80 flex flex-col" id="widget-@rawComp.Id">
+                                                <h3 class="font-bold text-sm text-slate-800 mb-3" id="title-@rawComp.Id">@rawComp.Name</h3>
+                                                <div class="flex-1 min-h-0 relative">
+                                                    <canvas id="chart-@rawComp.Id-@(dashboardSection.Id)" class="w-full h-full"></canvas>
+                                                </div>
+
+                                                <script>
+                                                    document.addEventListener("DOMContentLoaded", function () {
+                                                        try {
+                                                            const config = JSON.parse(`@Html.Raw(rawComp.JsonConfiguration.Replace("'", "\\'").Replace("\n", ""))`);
+
+                                                            const isPie = config.chartType === 'pie' || config.chartType === 'doughnut';
+                                                            const bgColors = isPie ? ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6', '#f43f5e', '#0ea5e9'] : (config.themeColor || '#3b82f6');
+
+                                                            if (!config.endpointUrl) {
+                                                                document.getElementById('title-@rawComp.Id').style.display = 'none';
+                                                                new Chart(document.getElementById('chart-@rawComp.Id-@(dashboardSection.Id)'), {
+                                                                    type: config.chartType || 'bar',
+                                                                    data: {
+                                                                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+                                                                        datasets: [{
+                                                                            label: config.title || 'Dynamic Data',
+                                                                            data: [12, 19, 3, 5, 2],
+                                                                            backgroundColor: bgColors,
+                                                                            borderColor: config.themeColor || '#3b82f6',
+                                                                            borderWidth: 2,
+                                                                            tension: 0.3
+                                                                        }]
+                                                                    },
+                                                                    options: {
+                                                                        maintainAspectRatio: false,
+                                                                        plugins: {
+                                                                            legend: { position: isPie ? 'right' : 'top', labels: { boxWidth: 12 } }
+                                                                        }
+                                                                    }
+                                                                });
+                                                                return;
+                                                            }
+
+                                                            let fetchUrl = config.endpointUrl;
+                                                            const viewName = '@Html.Raw(rawComp.ViewName ?? "")';
+                                                            if (viewName) {
+                                                                fetchUrl += (fetchUrl.includes('?') ? '&' : '?') + 'viewName=' + encodeURIComponent(viewName);
+                                                                fetch(fetchUrl)
+                                                                    .then(res => res.text())
+                                                                    .then(html => {
+                                                                        document.getElementById('title-@rawComp.Id').style.display = 'none';
+                                                                        document.getElementById('widget-@rawComp.Id').innerHTML = html;
+                                                                    })
+                                                                    .catch(err => {
+                                                                        console.error('Error fetching view', err);
+                                                                        document.getElementById('widget-@rawComp.Id').innerHTML = '<p class="text-rose-500 text-xs p-2">Error loading view.</p>';
+                                                                    });
+                                                                return;
+                                                            }
+
+                                                            fetch(config.endpointUrl)
+                                                                .then(res => res.json())
+                                                                .then(data => {
+                                                                    if (config.chartType === 'kpi') {
+                                                                        document.getElementById('widget-@rawComp.Id').innerHTML = `
+                                                                            <div class="flex items-center justify-center h-full flex-col">
+                                                                                <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider">${config.title || '@Html.Raw(rawComp.Name.Replace("'", "\\'"))'}</p>
+                                                                                <h2 class="text-3xl font-extrabold mt-2 tracking-tight" style="color: ${config.themeColor || '#1e293b'}">${data.value !== undefined ? data.value : data}</h2>
+                                                                            </div>
+                                                                        `;
+                                                                        return;
+                                                                    }
+                                                                    if (config.chartType === 'list') {
+                                                                        let html = '<ul class="space-y-2.5 overflow-y-auto h-full p-1">';
+                                                                        data.forEach(item => {
+                                                                            html += `<li class="border-b border-slate-100 pb-2"><p class="font-bold text-xs text-slate-800">${item.title}</p><p class="text-[11px] text-slate-500">${item.subtitle || ''}</p></li>`;
+                                                                        });
+                                                                        html += '</ul>';
+                                                                        document.getElementById('widget-@rawComp.Id').innerHTML = `
+                                                                            <h3 class="font-bold text-xs text-slate-800 mb-2 px-1">${config.title || '@Html.Raw(rawComp.Name.Replace("'", "\\'"))'}</h3>
+                                                                            <div class="flex-1 relative min-h-0">
+                                                                                ${html}
+                                                                            </div>
+                                                                        `;
+                                                                        return;
+                                                                    }
+
+                                                                    document.getElementById('title-@rawComp.Id').style.display = 'none';
+                                                                    new Chart(document.getElementById('chart-@rawComp.Id-@(dashboardSection.Id)'), {
+                                                                        type: config.chartType || 'bar',
+                                                                        data: {
+                                                                            labels: data.map(d => d.title || d.name || 'Item'),
+                                                                            datasets: [{
+                                                                                label: config.title || 'Dynamic Data',
+                                                                                data: data.map(d => d.value || d.amount || 0),
+                                                                                backgroundColor: bgColors,
+                                                                                borderColor: config.themeColor || '#3b82f6',
+                                                                                borderWidth: 2,
+                                                                                tension: 0.3
+                                                                            }]
+                                                                        },
+                                                                        options: {
+                                                                            maintainAspectRatio: false,
+                                                                            plugins: {
+                                                                                legend: { position: isPie ? 'right' : 'top', labels: { boxWidth: 12 } }
+                                                                            }
+                                                                        }
+                                                                    });
+                                                                });
+                                                        } catch (e) {
+                                                            console.error('Error rendering dynamic widget @rawComp.Id', e);
+                                                            document.getElementById('widget-@rawComp.Id').innerHTML += '<p class="text-rose-500 text-xs mt-2">Error parsing configuration.</p>';
+                                                        }
+                                                    });
+                                                </script>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@8.2.3/dist/gridstack-all.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            GridStack.initAll({
+                staticGrid: true,
+                cellHeight: 80,
+                margin: 12,
+                float: true,
+                disableOneColumnMode: true
+            }, '.grid-stack');
+        });
+    </script>
+    @await Html.PartialAsync("Widgets/_DashboardScripts", Model.HomeModel)
+}

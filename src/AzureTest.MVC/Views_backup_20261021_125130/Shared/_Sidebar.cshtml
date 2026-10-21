@@ -1,0 +1,1084 @@
+@using AzureTest.Application.Interfaces.Services
+@inject ICurrentUser _CurrentUser
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment _HostEnv
+@inject Microsoft.Extensions.Options.IOptions<AzureTest.Infrastructure.Configuration.InfrastructureFeatureOptions> _FeatureOptionsAccessor
+
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+    var isMobileFloating = _FeatureOptionsAccessor?.Value?.MobileFloatingNavigation ?? true;
+    var isTabletFloating = _FeatureOptionsAccessor?.Value?.TabletFloatingNavigation ?? true;
+    var enableFloatingNav = isMobileFloating || isTabletFloating;
+
+    var overlayResponsiveClass = isTabletFloating ? "lg:hidden" : "md:hidden";
+    var sidebarResponsiveClass = isTabletFloating
+        ? "fixed lg:relative inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 text-slate-800 flex flex-col shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out h-full"
+        : "fixed md:relative inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 text-slate-800 flex flex-col shadow-2xl md:shadow-none transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out h-full";
+    var closeBtnResponsiveClass = isTabletFloating ? "lg:hidden" : "md:hidden";
+    var desktopToggleResponsiveClass = isTabletFloating ? "hidden lg:flex" : "hidden md:flex";
+
+    string floatingNavBreakpointClass = "";
+    if (isMobileFloating && isTabletFloating)
+    {
+        floatingNavBreakpointClass = "lg:hidden";
+    }
+    else if (isMobileFloating)
+    {
+        floatingNavBreakpointClass = "md:hidden";
+    }
+    else if (isTabletFloating)
+    {
+        floatingNavBreakpointClass = "hidden md:block lg:hidden";
+    }
+    else
+    {
+        floatingNavBreakpointClass = "hidden";
+    }
+
+    string GetActiveClasses(string controller)
+    {
+        return currentController == controller
+            ? "bg-brand-50 text-brand-700"
+            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900";
+    }
+
+    string GetActiveIconClasses(string controller)
+    {
+        return currentController == controller
+            ? "text-brand-600"
+            : "text-slate-400 group-hover:text-slate-600";
+    }
+}
+
+
+
+<!-- Mobile Sidebar Backdrop -->
+<div id="mobileSidebarOverlay"
+     class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 @overlayResponsiveClass transition-opacity opacity-0 pointer-events-none"></div>
+
+<!-- Sidebar Container -->
+<aside id="sidebar"
+       class="@sidebarResponsiveClass">
+
+    <div class="h-16 flex items-center px-5 border-b border-slate-100 flex-shrink-0">
+        <div class="flex items-center flex-1 overflow-hidden">
+            <i class="fa-solid fa-briefcase text-brand-600 text-2xl mr-3 logo-icon transition-all"></i>
+            <span class="logo-brand text-xl font-black tracking-tight text-slate-800 truncate">Tracker<span
+                    class="text-brand-600">Pro</span></span>
+        </div>
+        <button id="sidebarToggleDesktop"
+                class="@desktopToggleResponsiveClass text-slate-400 hover:text-brand-600 transition-colors p-2 rounded-lg hover:bg-slate-50 focus:outline-none">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <button id="sidebarToggleMobileClose"
+                class="@closeBtnResponsiveClass text-slate-400 hover:text-slate-600 transition-colors p-2 focus:outline-none">
+            <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar Search -->
+    <div id="sidebarSearchWrapper" class="px-3 pt-3 pb-1 flex-shrink-0">
+        <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </span>
+            <input type="text"
+                   id="sidebarMenuSearch"
+                   placeholder="Search menu..."
+                   autocomplete="off"
+                   class="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all sidebar-text"/>
+            <button type="button"
+                    id="sidebarSearchClear"
+                    onclick="clearSidebarMenuSearch()"
+                    class="hidden absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                    title="Clear search">
+                <i class="fa-solid fa-xmark text-xs"></i>
+            </button>
+        </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto py-4 scrollbar-hide px-3">
+        <ul class="space-y-1">
+            <li>
+                <a asp-area="" asp-controller="Home" asp-action="Index" data-title="Dashboard"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Home")">
+                    <i class="fa-solid fa-gauge-high w-6 text-center text-lg transition-colors @GetActiveIconClasses("Home")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a asp-area="" asp-controller="IdeaTracker" asp-action="Index" data-title="Idea Tracker"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("IdeaTracker")">
+                    <i class="fa-solid fa-brain w-6 text-center text-lg transition-colors @GetActiveIconClasses("IdeaTracker")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Idea Tracker</span>
+                </a>
+            </li>
+
+            <li>
+                <a asp-area="" asp-controller="HouseCrawler" asp-action="Index" data-title="House Crawler"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("HouseCrawler")">
+                    <i class="fa-solid fa-house-chimney w-6 text-center text-lg transition-colors @GetActiveIconClasses("HouseCrawler")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">House Crawler</span>
+                </a>
+            </li>
+            <li>
+                <a asp-area="" asp-controller="Ticket" asp-action="Index" data-title="Support Tickets"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Ticket")">
+                    <i class="fa-solid fa-ticket w-6 text-center text-lg transition-colors @GetActiveIconClasses("Ticket")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Support Tickets</span>
+                </a>
+            </li>
+            <li>
+                <a asp-area="" asp-controller="SampleNote" asp-action="Index" data-title="Sample Notes (Dev)"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("SampleNote")">
+                    <i class="fa-solid fa-flask w-6 text-center text-lg transition-colors @GetActiveIconClasses("SampleNote")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Sample Notes <span
+                                                                                                                               class="text-xs text-brand-500">(Dev)</span></span>
+                </a>
+            </li>
+            <!-- Daily Section-->
+            <li class="pt-4 mt-4 border-t border-slate-100">
+                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sidebar-text transition-all duration-300">
+                    Daily</p>
+
+                <a asp-area="" asp-controller="Calendar" asp-action="Index" data-title="Calendar"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Calendar")">
+                    <i class="fa-solid fa-calendar-days w-6 text-center text-lg transition-colors @GetActiveIconClasses("Calendar")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Calendar</span>
+                </a>
+                <a asp-area="" asp-controller="DateTimeConverter" asp-action="Index" data-title="DateTime Converter"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("DateTimeConverter")">
+                    <i class="fa-solid fa-clock-rotate-left w-6 text-center text-lg transition-colors @GetActiveIconClasses("DateTimeConverter")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">DateTime Converter</span>
+                </a>
+                <a asp-area="" asp-controller="Task" asp-action="Index" data-title="Tasks"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Task")">
+                    <i class="fa-solid fa-list-check w-6 text-center text-lg transition-colors @GetActiveIconClasses("Task")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Tasks</span>
+                </a>
+                <a asp-area="" asp-controller="Event" asp-action="Index" data-title="Events"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Event")">
+                    <i class="fa-solid fa-calendar-plus w-6 text-center text-lg transition-colors @GetActiveIconClasses("Event")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Events</span>
+                </a>
+                <a asp-area="" asp-controller="Habit" asp-action="Index" data-title="Habits"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Habit")">
+                    <i class="fa-solid fa-seedling w-6 text-center text-lg transition-colors @GetActiveIconClasses("Habit")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Habits</span>
+                </a>
+                <a asp-area="" asp-controller="Pomodoro" asp-action="Index" data-title="Pomodoro"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Pomodoro")">
+                    <i class="fa-solid fa-stopwatch w-6 text-center text-lg transition-colors @GetActiveIconClasses("Pomodoro")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Pomodoro</span>
+                </a>
+
+            </li>
+
+            
+            <!-- Application Section -->
+            <li class="pt-4 mt-4 border-t border-slate-100">
+                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sidebar-text transition-all duration-300">
+                    Application</p>
+
+
+                <a asp-area="" asp-controller="Resume" asp-action="Index" data-title="Resumes"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Resume")">
+                    <i class="fa-solid fa-file-lines w-6 text-center text-lg transition-colors @GetActiveIconClasses("Resume")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Resumes</span>
+                </a>
+
+                <a asp-area="" asp-controller="JobCrawler" asp-action="Index" data-title="Job Crawler"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("JobCrawler")">
+                    <i class="fa-solid fa-spider w-6 text-center text-lg transition-colors @GetActiveIconClasses("JobCrawler")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Job Crawler</span>
+                </a>
+
+                <a asp-area="" asp-controller="Company" asp-action="Index" data-title="Companies"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Company")">
+                    <i class="fa-solid fa-building w-6 text-center text-lg transition-colors @GetActiveIconClasses("Company")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Companies</span>
+                </a>
+                <a asp-area="" asp-controller="ResumeFile" asp-action="Index" data-title="Resume Files"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("ResumeFile")">
+                    <i class="fa-solid fa-file-pdf w-6 text-center text-lg transition-colors @GetActiveIconClasses("ResumeFile")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Resume Files</span>
+                </a>
+
+            </li>
+            <!-- Gym Section -->
+            <li class="pt-4 mt-4 border-t border-slate-100">
+                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sidebar-text transition-all duration-300">
+                    Gym</p>
+
+                <a asp-area="" asp-controller="Workout" asp-action="Index" data-title="Workout"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(ViewContext.RouteData.Values["controller"]?.ToString() == "Workout" && ViewContext.RouteData.Values["action"]?.ToString() != "Analytics" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-person-running w-6 text-center text-lg transition-colors @(ViewContext.RouteData.Values["controller"]?.ToString() == "Workout" && ViewContext.RouteData.Values["action"]?.ToString() != "Analytics" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Workout</span>
+                </a>
+
+                <a asp-area="" asp-controller="Workout" asp-action="Analytics" data-title="Weight Tracker & Analytics"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(ViewContext.RouteData.Values["controller"]?.ToString() == "Workout" && ViewContext.RouteData.Values["action"]?.ToString() == "Analytics" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-weight-scale w-6 text-center text-lg transition-colors @(ViewContext.RouteData.Values["controller"]?.ToString() == "Workout" && ViewContext.RouteData.Values["action"]?.ToString() == "Analytics" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Weight & Analytics</span>
+                </a>
+
+                <a asp-area="" asp-controller="GymCourses" asp-action="Index" data-title="Gym Courses"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("GymCourses")">
+                    <i class="fa-solid fa-chalkboard-user w-6 text-center text-lg transition-colors @GetActiveIconClasses("GymCourses")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Gym Courses</span>
+                </a>
+
+                <a asp-area="" asp-controller="GymAdmin" asp-action="Index" data-title="Gym Admin"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("GymAdmin")">
+                    <i class="fa-solid fa-dumbbell w-6 text-center text-lg transition-colors @GetActiveIconClasses("GymAdmin")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Gym Trainings</span>
+                </a>
+            </li>
+
+            <!-- Food & Cooking Section -->
+            <li class="pt-4 mt-4 border-t border-slate-100">
+                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sidebar-text transition-all duration-300">
+                    Food & Nutrition</p>
+
+                <a asp-area="" asp-controller="Food" asp-action="Index" data-title="Daily Diary"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-utensils w-6 text-center text-lg transition-colors @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Daily Diary</span>
+                </a>
+
+                <a asp-area="" asp-controller="Food" asp-action="Recipes" data-title="Recipes"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Food" && (ViewContext.RouteData.Values["action"]?.ToString() == "Recipes" || ViewContext.RouteData.Values["action"]?.ToString() == "RecipeDetails") ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-book-open w-6 text-center text-lg transition-colors @(currentController == "Food" && (ViewContext.RouteData.Values["action"]?.ToString() == "Recipes" || ViewContext.RouteData.Values["action"]?.ToString() == "RecipeDetails") ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Recipes</span>
+                </a>
+
+                <a asp-area="" asp-controller="Food" asp-action="Chef" data-title="Chef Workspace"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "Chef" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-kitchen-set w-6 text-center text-lg transition-colors @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "Chef" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Chef Workspace</span>
+                </a>
+
+                <a asp-area="" asp-controller="Food" asp-action="Athlete" data-title="Athlete Hub"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "Athlete" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-dumbbell w-6 text-center text-lg transition-colors @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "Athlete" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Athlete Hub</span>
+                </a>
+
+                <a asp-area="" asp-controller="Food" asp-action="Planner" data-title="Weekly Planner"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "Planner" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-calendar-week w-6 text-center text-lg transition-colors @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "Planner" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Weekly Planner</span>
+                </a>
+
+                <a asp-area="" asp-controller="Food" asp-action="Stock" data-title="Pantry & Stock"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Food" && (ViewContext.RouteData.Values["action"]?.ToString() == "Stock" || ViewContext.RouteData.Values["action"]?.ToString() == "Movements") ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-boxes-stacked w-6 text-center text-lg transition-colors @(currentController == "Food" && (ViewContext.RouteData.Values["action"]?.ToString() == "Stock" || ViewContext.RouteData.Values["action"]?.ToString() == "Movements") ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Pantry & Stock</span>
+                </a>
+
+                <a asp-area="" asp-controller="Food" asp-action="ShoppingList" data-title="Shopping List"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "ShoppingList" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-cart-shopping w-6 text-center text-lg transition-colors @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "ShoppingList" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Shopping List</span>
+                </a>
+
+                <a asp-area="" asp-controller="Food" asp-action="Ingredients" data-title="Ingredients"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "Ingredients" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-carrot w-6 text-center text-lg transition-colors @(currentController == "Food" && ViewContext.RouteData.Values["action"]?.ToString() == "Ingredients" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Ingredients</span>
+                </a>
+            </li>
+
+
+
+
+
+
+            <!-- Financials Section -->
+            <li class="pt-4 mt-4 border-t border-slate-100">
+                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sidebar-text transition-all duration-300">
+                    Financials</p>
+
+                <a asp-area="" asp-controller="Expense" asp-action="Index" data-title="Expenses"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Expense")">
+                    <i class="fa-solid fa-money-bill-wave w-6 text-center text-lg transition-colors @GetActiveIconClasses("Expense")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Expenses</span>
+                </a>
+
+                <a asp-area="" asp-controller="ExpenseCategory" asp-action="Index" data-title="Expense Categories"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("ExpenseCategory")">
+                    <i class="fa-solid fa-tags w-6 text-center text-lg transition-colors @GetActiveIconClasses("ExpenseCategory")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Categories</span>
+                </a>
+
+                <a asp-area="" asp-controller="Debt" asp-action="Index" data-title="Debts"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(ViewContext.RouteData.Values["controller"]?.ToString() == "Debt" && ViewContext.RouteData.Values["action"]?.ToString() != "Analytics" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-handshake-angle w-6 text-center text-lg transition-colors @(ViewContext.RouteData.Values["controller"]?.ToString() == "Debt" && ViewContext.RouteData.Values["action"]?.ToString() != "Analytics" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Debts</span>
+                </a>
+
+                <a asp-area="" asp-controller="Debt" asp-action="Analytics" data-title="Debt Analytics"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(ViewContext.RouteData.Values["controller"]?.ToString() == "Debt" && ViewContext.RouteData.Values["action"]?.ToString() == "Analytics" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-chart-pie w-6 text-center text-lg transition-colors @(ViewContext.RouteData.Values["controller"]?.ToString() == "Debt" && ViewContext.RouteData.Values["action"]?.ToString() == "Analytics" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Debt Analytics</span>
+                </a>
+
+                <a asp-area="" asp-controller="DebtPerson" asp-action="Index" data-title="Debt Persons"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("DebtPerson")">
+                    <i class="fa-solid fa-users-line w-6 text-center text-lg transition-colors @GetActiveIconClasses("DebtPerson")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Persons</span>
+                </a>
+            </li>
+
+            <!-- Entertainment & Media Section -->
+            <li class="pt-4 mt-4 border-t border-slate-100">
+                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sidebar-text transition-all duration-300">
+                    Media & Anime</p>
+
+                <a asp-area="" asp-controller="Media" asp-action="Index" data-title="Watchlist"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-film w-6 text-center text-lg transition-colors @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Watchlist</span>
+                </a>
+
+                <a asp-area="" asp-controller="Media" asp-action="Discover" data-title="Discover"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "Discover" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-compass w-6 text-center text-lg transition-colors @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "Discover" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Discover</span>
+                </a>
+
+                <a asp-area="" asp-controller="Media" asp-action="Search" data-title="Search TMDb"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "Search" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-magnifying-glass w-6 text-center text-lg transition-colors @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "Search" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Search TMDb</span>
+                </a>
+
+                <a asp-area="" asp-controller="Media" asp-action="People" data-title="Actors & Directors"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Media" && (ViewContext.RouteData.Values["action"]?.ToString() == "People" || ViewContext.RouteData.Values["action"]?.ToString() == "PersonDetails") ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-user-astronaut w-6 text-center text-lg transition-colors @(currentController == "Media" && (ViewContext.RouteData.Values["action"]?.ToString() == "People" || ViewContext.RouteData.Values["action"]?.ToString() == "PersonDetails") ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Actors & Talent</span>
+                </a>
+
+                <a asp-area="" asp-controller="Media" asp-action="Calendar" data-title="Release Calendar"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "Calendar" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-calendar-days w-6 text-center text-lg transition-colors @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "Calendar" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Release Calendar</span>
+                </a>
+
+                <a asp-area="" asp-controller="Media" asp-action="News" data-title="News Feed"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "News" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-newspaper w-6 text-center text-lg transition-colors @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "News" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">News Feed</span>
+                </a>
+
+                <a asp-area="" asp-controller="Media" asp-action="Lists" data-title="Playlists"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Media" && (ViewContext.RouteData.Values["action"]?.ToString() == "Lists" || ViewContext.RouteData.Values["action"]?.ToString() == "ListDetails") ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-list-ul w-6 text-center text-lg transition-colors @(currentController == "Media" && (ViewContext.RouteData.Values["action"]?.ToString() == "Lists" || ViewContext.RouteData.Values["action"]?.ToString() == "ListDetails") ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span
+                        class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Playlists</span>
+                </a>
+
+                <a asp-area="" asp-controller="Media" asp-action="Stats" data-title="Watch Stats"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "Stats" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-chart-simple w-6 text-center text-lg transition-colors @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "Stats" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Watch Stats</span>
+                </a>
+            </li>
+
+            <!-- System Section -->
+            <li class="pt-4 mt-4 border-t border-slate-100">
+                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sidebar-text transition-all duration-300">
+                    System</p>
+
+                @if (_CurrentUser.HasAccess("User/Index"))
+                {
+                    <a asp-area="" asp-controller="User" asp-action="Index" data-title="User Management"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("User")">
+                        <i class="fa-solid fa-users w-6 text-center text-lg transition-colors @GetActiveIconClasses("User")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">User Management</span>
+                    </a>
+                }
+
+                @if (_CurrentUser.HasAccess("Role/Index"))
+                {
+                    <a asp-area="" asp-controller="Role" asp-action="Index" data-title="Roles & Permissions"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Role")">
+                        <i class="fa-solid fa-user-shield w-6 text-center text-lg transition-colors @GetActiveIconClasses("Role")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Roles & Permissions</span>
+                    </a>
+                }
+
+                @if (_CurrentUser.HasAccess("IdentitySetting/Edit"))
+                {
+                    <a asp-area="" asp-controller="IdentitySetting" asp-action="Edit" data-title="Identity Setting"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("IdentitySetting")">
+                        <i class="fa-solid fa-gears w-6 text-center text-lg transition-colors @GetActiveIconClasses("IdentitySetting")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Identity Setting</span>
+                    </a>
+                }
+
+                @if (_CurrentUser.HasAccess("Permissions/Index"))
+                {
+                    <a asp-area="" asp-controller="Permission" asp-action="Index" data-title="Permissions"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Permission")">
+                        <i class="fa-solid fa-user-lock w-6 text-center text-lg transition-colors @GetActiveIconClasses("Permission")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Permissions</span>
+                    </a>
+                }
+
+                @if (_CurrentUser.HasAccess("FileExplorer/Index"))
+                {
+                    <a asp-area="" asp-controller="FileExplorer" asp-action="Index" data-title="File Explorer"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("FileExplorer")">
+                        <i class="fa-solid fa-folder-tree w-6 text-center text-lg transition-colors @GetActiveIconClasses("FileExplorer")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">File Explorer</span>
+                    </a>
+                }
+
+                @if (_CurrentUser.HasAccess("Component/Index"))
+                {
+                    <a asp-area="" asp-controller="Component" asp-action="Index" data-title="Components"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Component")">
+                        <i class="fa-solid fa-cubes w-6 text-center text-lg transition-colors @GetActiveIconClasses("Component")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Components</span>
+                    </a>
+                }
+
+                <a asp-area="" asp-controller="Icon" asp-action="Index" data-title="Icon Gallery"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Icon")">
+                    <i class="fa-solid fa-icons w-6 text-center text-lg transition-colors @GetActiveIconClasses("Icon")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Icon Gallery</span>
+                </a>
+
+                <a asp-area="" asp-controller="UiComponents" asp-action="Index" data-title="UI Components"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("UiComponents")">
+                    <i class="fa-solid fa-shapes w-6 text-center text-lg transition-colors @GetActiveIconClasses("UiComponents")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">UI Components</span>
+                </a>
+
+                <a asp-area="" asp-controller="AuditLog" asp-action="Index" data-title="Audit Trail"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("AuditLog")">
+                    <i class="fa-solid fa-clock-rotate-left w-6 text-center text-lg transition-colors @GetActiveIconClasses("AuditLog")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Audit Trail</span>
+                </a>
+
+                @if (_CurrentUser.IsAdmin)
+                {
+                    <a asp-area="" asp-controller="Tenant" asp-action="Index" data-title="Tenant Management"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Tenant")">
+                        <i class="fa-solid fa-building-user w-6 text-center text-lg transition-colors @GetActiveIconClasses("Tenant")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Tenant Management</span>
+                    </a>
+                    <a href="/healthchecks-ui" target="_blank" data-title="Health Status"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group text-slate-600 hover:bg-slate-50 hover:text-slate-900">
+                        <i class="fa-solid fa-heart-pulse w-6 text-center text-lg text-slate-400 group-hover:text-slate-600"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Health Status</span>
+                    </a>
+                    <a href="/hangfire" target="_blank" data-title="Background Jobs"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group text-slate-600 hover:bg-slate-50 hover:text-slate-900">
+                        <i class="fa-solid fa-server w-6 text-center text-lg text-slate-400 group-hover:text-slate-600"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Background Jobs</span>
+                    </a>
+                }
+            </li>
+
+            @if (_HostEnv.IsDevelopment())
+            {
+                <!-- Fantasy Football Section -->
+                <li class="pt-4 mt-4 border-t border-slate-100">
+                    <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sidebar-text transition-all duration-300">
+                        Football Fantasy</p>
+                    <a asp-area="FootballFantasy" asp-controller="FantasyLeague" asp-action="Index"
+                       data-title="Fantasy Leagues"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("FantasyLeague")">
+                        <i class="fa-solid fa-trophy w-6 text-center text-lg transition-colors @GetActiveIconClasses("FantasyLeague")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Fantasy Leagues</span>
+                    </a>
+                    <a asp-area="FootballFantasy" asp-controller="PredictClub" asp-action="Index"
+                       data-title="Predict Clubs"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("PredictClub")">
+                        <i class="fa-solid fa-bullseye w-6 text-center text-lg transition-colors @GetActiveIconClasses("PredictClub")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Predict Clubs</span>
+                    </a>
+                    <a asp-area="FootballFantasy" asp-controller="Achievement" asp-action="Index"
+                       data-title="Achievements"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Achievement")">
+                        <i class="fa-solid fa-award w-6 text-center text-lg transition-colors @GetActiveIconClasses("Achievement")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Achievements</span>
+                    </a>
+                    <a asp-area="FootballFantasy" asp-controller="FantasyAdmin" asp-action="Index"
+                       data-title="Fantasy Admin"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("FantasyAdmin")">
+                        <i class="fa-solid fa-screwdriver-wrench w-6 text-center text-lg transition-colors @GetActiveIconClasses("FantasyAdmin")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Fantasy Admin</span>
+                    </a>
+                    <a asp-area="FootballFantasy" asp-controller="Venue" asp-action="Index"
+                       data-title="Venues & Stadiums"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Venue")">
+                        <i class="fa-solid fa-landmark w-6 text-center text-lg transition-colors @GetActiveIconClasses("Venue")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Venues & Stadiums</span>
+                    </a>
+                </li>
+            }
+
+            <!-- Pages & Documentation Section (At the End of Side Panel) -->
+            <li class="pt-4 mt-4 border-t border-slate-100" id="sidebarPagesSection">
+                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 sidebar-text transition-all duration-300">
+                    Pages & Docs</p>
+
+                @await Component.InvokeAsync("PagesMenu")
+
+                @if (_CurrentUser.HasAccess("Pages/Index"))
+                {
+                    <a asp-area="" asp-controller="Pages" asp-action="Index" data-title="Manage Pages"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Pages")">
+                        <i class="fa-solid fa-book-open w-6 text-center text-lg transition-colors @GetActiveIconClasses("Pages")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Manage Pages</span>
+                    </a>
+                }
+            </li>
+
+            <!-- PWA Mobile App Install Action -->
+            <li class="pt-3 mt-3 border-t border-slate-100" id="sidebarInstallSection">
+                <button type="button" onclick="triggerPwaInstall()"
+                        class="w-full flex items-center px-3 py-2.5 rounded-xl transition-colors group text-brand-600 bg-brand-50 hover:bg-brand-100 text-left">
+                    <i class="fa-solid fa-mobile-screen-button w-6 text-center text-lg text-brand-600 shrink-0"></i>
+                    <span class="ml-2 font-bold text-xs sidebar-text whitespace-nowrap transition-all duration-300">Install Mobile App</span>
+                </button>
+            </li>
+
+        </ul>
+    </nav>
+</aside>
+
+@if (enableFloatingNav)
+{
+    <!-- Mobile & Tablet Floating Bottom Navigation -->
+    <div id="floatingBottomNavWrapper"
+         class="@floatingNavBreakpointClass fixed bottom-3 inset-x-0 mx-auto w-[94%] max-w-lg z-40 transition-all duration-300 ease-out select-none">
+
+        <!-- Main Floating Nav (8 Section Icons Only) -->
+        <div id="floatingNavMain"
+             class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-2xl rounded-2xl px-2 py-2 flex items-center justify-between gap-1 transition-all duration-300 ease-in-out transform translate-y-0 opacity-100">
+
+            <!-- 1. General -->
+            <button type="button" onclick="openFloatingSection('general')"
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 @(currentController == "Home" || currentController == "IdeaTracker" || currentController == "HouseCrawler" || currentController == "Ticket" || currentController == "SampleNote" ? "bg-brand-50 text-brand-600 dark:bg-brand-950/40 font-bold border border-brand-200 dark:border-brand-800" : "text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-800") active:scale-95 transition-all"
+                    title="General" aria-label="General">
+                <i class="fa-solid fa-house text-base"></i>
+            </button>
+
+            <!-- 2. Daily -->
+            <button type="button" onclick="openFloatingSection('daily')"
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 @(currentController == "Calendar" || currentController == "DateTimeConverter" || currentController == "Task" || currentController == "Event" || currentController == "Habit" || currentController == "Pomodoro" ? "bg-brand-50 text-brand-600 dark:bg-brand-950/40 font-bold border border-brand-200 dark:border-brand-800" : "text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-800") active:scale-95 transition-all"
+                    title="Daily" aria-label="Daily">
+                <i class="fa-solid fa-calendar-check text-base"></i>
+            </button>
+
+            <!-- 3. Application -->
+            <button type="button" onclick="openFloatingSection('application')"
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 @(currentController == "Resume" || currentController == "JobCrawler" || currentController == "Company" || currentController == "ResumeFile" ? "bg-brand-50 text-brand-600 dark:bg-brand-950/40 font-bold border border-brand-200 dark:border-brand-800" : "text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-800") active:scale-95 transition-all"
+                    title="Application" aria-label="Application">
+                <i class="fa-solid fa-briefcase text-base"></i>
+            </button>
+
+            <!-- 4. Gym -->
+            <button type="button" onclick="openFloatingSection('gym')"
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 @(currentController == "Workout" || currentController == "GymCourses" || currentController == "GymAdmin" ? "bg-brand-50 text-brand-600 dark:bg-brand-950/40 font-bold border border-brand-200 dark:border-brand-800" : "text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-800") active:scale-95 transition-all"
+                    title="Gym" aria-label="Gym">
+                <i class="fa-solid fa-dumbbell text-base"></i>
+            </button>
+
+            <!-- 5. Food & Cooking -->
+            <button type="button" onclick="openFloatingSection('food')"
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 @(currentController == "Food" ? "bg-brand-50 text-brand-600 dark:bg-brand-950/40 font-bold border border-brand-200 dark:border-brand-800" : "text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-800") active:scale-95 transition-all"
+                    title="Food & Cooking" aria-label="Food & Cooking">
+                <i class="fa-solid fa-utensils text-base"></i>
+            </button>
+
+            <!-- 6. Financials Section -->
+            <button type="button" onclick="openFloatingSection('financials')"
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 @(currentController == "Expense" || currentController == "ExpenseCategory" || currentController == "Debt" || currentController == "DebtPerson" ? "bg-brand-50 text-brand-600 dark:bg-brand-950/40 font-bold border border-brand-200 dark:border-brand-800" : "text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-800") active:scale-95 transition-all"
+                    title="Financials Section" aria-label="Financials Section">
+                <i class="fa-solid fa-wallet text-base"></i>
+            </button>
+
+            <!-- 7. Entertainment & Media -->
+            <button type="button" onclick="openFloatingSection('media')"
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 @(currentController == "Media" ? "bg-brand-50 text-brand-600 dark:bg-brand-950/40 font-bold border border-brand-200 dark:border-brand-800" : "text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-800") active:scale-95 transition-all"
+                    title="Entertainment & Media" aria-label="Entertainment & Media">
+                <i class="fa-solid fa-film text-base"></i>
+            </button>
+
+            <!-- 8. System -->
+            <button type="button" onclick="openFloatingSection('system')"
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 @(currentController == "User" || currentController == "Role" || currentController == "IdentitySetting" || currentController == "Permission" || currentController == "FileExplorer" || currentController == "Component" || currentController == "Icon" || currentController == "UiComponents" || currentController == "AuditLog" || currentController == "Tenant" ? "bg-brand-50 text-brand-600 dark:bg-brand-950/40 font-bold border border-brand-200 dark:border-brand-800" : "text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-800") active:scale-95 transition-all"
+                    title="System" aria-label="System">
+                <i class="fa-solid fa-gear text-base"></i>
+            </button>
+        </div>
+
+        <!-- Sub Floating Nav (Comes up with new icons and back button) -->
+        <div id="floatingNavSub"
+             class="hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-2xl rounded-2xl px-2 py-2 items-center gap-2 transition-all duration-300 ease-in-out transform translate-y-20 opacity-0 pointer-events-none">
+
+            <!-- Back Button to return to main floating nav -->
+            <button type="button" onclick="closeFloatingSubNav()"
+                    class="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-brand-500 hover:text-white active:scale-95 transition-all flex items-center justify-center shadow-xs"
+                    title="Back to Sections" aria-label="Back">
+                <i class="fa-solid fa-arrow-left text-base"></i>
+            </button>
+
+            <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 flex-shrink-0"></div>
+
+            <!-- Sub-Section Features Container -->
+            <div id="floatingNavSubItems" class="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5 px-1 flex-1">
+
+                <!-- Sub-Section: General -->
+                <div id="subSection_general" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                    <a asp-controller="Home" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Home" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Dashboard">
+                        <i class="fa-solid fa-gauge-high text-base"></i>
+                    </a>
+                    <a asp-controller="IdeaTracker" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "IdeaTracker" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Idea Tracker">
+                        <i class="fa-solid fa-brain text-base"></i>
+                    </a>
+                    <a asp-controller="HouseCrawler" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "HouseCrawler" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="House Crawler">
+                        <i class="fa-solid fa-house-chimney text-base"></i>
+                    </a>
+                    <a asp-controller="Ticket" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Ticket" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Support Tickets">
+                        <i class="fa-solid fa-ticket text-base"></i>
+                    </a>
+                    <a asp-controller="SampleNote" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "SampleNote" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Sample Notes">
+                        <i class="fa-solid fa-flask text-base"></i>
+                    </a>
+                </div>
+
+                <!-- Sub-Section: Daily -->
+                <div id="subSection_daily" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                    <a asp-controller="Calendar" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Calendar" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Calendar">
+                        <i class="fa-solid fa-calendar-days text-base"></i>
+                    </a>
+                    <a asp-controller="DateTimeConverter" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "DateTimeConverter" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="DateTime Converter">
+                        <i class="fa-solid fa-clock-rotate-left text-base"></i>
+                    </a>
+                    <a asp-controller="Task" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Task" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Tasks">
+                        <i class="fa-solid fa-list-check text-base"></i>
+                    </a>
+                    <a asp-controller="Event" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Event" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Events">
+                        <i class="fa-solid fa-calendar-plus text-base"></i>
+                    </a>
+                    <a asp-controller="Habit" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Habit" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Habits">
+                        <i class="fa-solid fa-seedling text-base"></i>
+                    </a>
+                    <a asp-controller="Pomodoro" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Pomodoro" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Pomodoro">
+                        <i class="fa-solid fa-stopwatch text-base"></i>
+                    </a>
+                </div>
+
+                <!-- Sub-Section: Application -->
+                <div id="subSection_application" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                    <a asp-controller="Resume" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Resume" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Resumes">
+                        <i class="fa-solid fa-file-lines text-base"></i>
+                    </a>
+                    <a asp-controller="JobCrawler" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "JobCrawler" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Job Crawler">
+                        <i class="fa-solid fa-spider text-base"></i>
+                    </a>
+                    <a asp-controller="Company" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Company" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Companies">
+                        <i class="fa-solid fa-building text-base"></i>
+                    </a>
+                    <a asp-controller="ResumeFile" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "ResumeFile" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Resume Files">
+                        <i class="fa-solid fa-file-pdf text-base"></i>
+                    </a>
+                </div>
+
+                <!-- Sub-Section: Gym -->
+                <div id="subSection_gym" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                    <a asp-controller="Workout" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Workout" && currentAction != "Analytics" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Workout">
+                        <i class="fa-solid fa-person-running text-base"></i>
+                    </a>
+                    <a asp-controller="Workout" asp-action="Analytics" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Workout" && currentAction == "Analytics" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Weight & Analytics">
+                        <i class="fa-solid fa-weight-scale text-base"></i>
+                    </a>
+                    <a asp-controller="GymCourses" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "GymCourses" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Gym Courses">
+                        <i class="fa-solid fa-chalkboard-user text-base"></i>
+                    </a>
+                    <a asp-controller="GymAdmin" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "GymAdmin" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Gym Trainings">
+                        <i class="fa-solid fa-dumbbell text-base"></i>
+                    </a>
+                </div>
+
+                <!-- Sub-Section: Food & Cooking -->
+                <div id="subSection_food" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                    <a asp-controller="Food" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Food" && currentAction == "Index" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Daily Diary">
+                        <i class="fa-solid fa-utensils text-base"></i>
+                    </a>
+                    <a asp-controller="Food" asp-action="Recipes" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Food" && (currentAction == "Recipes" || currentAction == "RecipeDetails") ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Recipes">
+                        <i class="fa-solid fa-book-open text-base"></i>
+                    </a>
+                    <a asp-controller="Food" asp-action="Chef" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Food" && currentAction == "Chef" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Chef Workspace">
+                        <i class="fa-solid fa-kitchen-set text-base"></i>
+                    </a>
+                    <a asp-controller="Food" asp-action="Athlete" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Food" && currentAction == "Athlete" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Athlete Hub">
+                        <i class="fa-solid fa-dumbbell text-base"></i>
+                    </a>
+                    <a asp-controller="Food" asp-action="Planner" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Food" && currentAction == "Planner" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Weekly Planner">
+                        <i class="fa-solid fa-calendar-week text-base"></i>
+                    </a>
+                    <a asp-controller="Food" asp-action="Stock" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Food" && (currentAction == "Stock" || currentAction == "Movements") ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Pantry & Stock">
+                        <i class="fa-solid fa-boxes-stacked text-base"></i>
+                    </a>
+                    <a asp-controller="Food" asp-action="ShoppingList" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Food" && currentAction == "ShoppingList" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Shopping List">
+                        <i class="fa-solid fa-cart-shopping text-base"></i>
+                    </a>
+                    <a asp-controller="Food" asp-action="Ingredients" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Food" && currentAction == "Ingredients" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Ingredients">
+                        <i class="fa-solid fa-carrot text-base"></i>
+                    </a>
+                </div>
+
+                <!-- Sub-Section: Financials -->
+                <div id="subSection_financials" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                    <a asp-controller="Expense" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Expense" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Expenses">
+                        <i class="fa-solid fa-money-bill-wave text-base"></i>
+                    </a>
+                    <a asp-controller="ExpenseCategory" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "ExpenseCategory" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Categories">
+                        <i class="fa-solid fa-tags text-base"></i>
+                    </a>
+                    <a asp-controller="Debt" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Debt" && currentAction != "Analytics" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Debts">
+                        <i class="fa-solid fa-handshake-angle text-base"></i>
+                    </a>
+                    <a asp-controller="Debt" asp-action="Analytics" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Debt" && currentAction == "Analytics" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Debt Analytics">
+                        <i class="fa-solid fa-chart-pie text-base"></i>
+                    </a>
+                    <a asp-controller="DebtPerson" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "DebtPerson" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Debt Persons">
+                        <i class="fa-solid fa-users-line text-base"></i>
+                    </a>
+                </div>
+
+                <!-- Sub-Section: Entertainment & Media -->
+                <div id="subSection_media" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                    <a asp-controller="Media" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Media" && currentAction == "Index" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Watchlist">
+                        <i class="fa-solid fa-film text-base"></i>
+                    </a>
+                    <a asp-controller="Media" asp-action="Discover" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Media" && currentAction == "Discover" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Discover">
+                        <i class="fa-solid fa-compass text-base"></i>
+                    </a>
+                    <a asp-controller="Media" asp-action="Search" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Media" && currentAction == "Search" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Search TMDb">
+                        <i class="fa-solid fa-magnifying-glass text-base"></i>
+                    </a>
+                    <a asp-controller="Media" asp-action="People" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Media" && (currentAction == "People" || currentAction == "PersonDetails") ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Actors & Talent">
+                        <i class="fa-solid fa-user-astronaut text-base"></i>
+                    </a>
+                    <a asp-controller="Media" asp-action="Calendar" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Media" && currentAction == "Calendar" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Release Calendar">
+                        <i class="fa-solid fa-calendar-days text-base"></i>
+                    </a>
+                    <a asp-controller="Media" asp-action="News" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Media" && currentAction == "News" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="News Feed">
+                        <i class="fa-solid fa-newspaper text-base"></i>
+                    </a>
+                    <a asp-controller="Media" asp-action="Lists" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Media" && (currentAction == "Lists" || currentAction == "ListDetails") ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Playlists">
+                        <i class="fa-solid fa-list-ul text-base"></i>
+                    </a>
+                    <a asp-controller="Media" asp-action="Stats" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Media" && currentAction == "Stats" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Watch Stats">
+                        <i class="fa-solid fa-chart-simple text-base"></i>
+                    </a>
+                </div>
+
+                <!-- Sub-Section: System -->
+                <div id="subSection_system" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                    @if (_CurrentUser.HasAccess("User/Index"))
+                    {
+                        <a asp-controller="User" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "User" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="User Management">
+                            <i class="fa-solid fa-users text-base"></i>
+                        </a>
+                    }
+                    @if (_CurrentUser.HasAccess("Role/Index"))
+                    {
+                        <a asp-controller="Role" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Role" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Roles & Permissions">
+                            <i class="fa-solid fa-user-shield text-base"></i>
+                        </a>
+                    }
+                    @if (_CurrentUser.HasAccess("IdentitySetting/Edit"))
+                    {
+                        <a asp-controller="IdentitySetting" asp-action="Edit" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "IdentitySetting" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Identity Setting">
+                            <i class="fa-solid fa-gears text-base"></i>
+                        </a>
+                    }
+                    @if (_CurrentUser.HasAccess("Permissions/Index"))
+                    {
+                        <a asp-controller="Permission" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Permission" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Permissions">
+                            <i class="fa-solid fa-user-lock text-base"></i>
+                        </a>
+                    }
+                    @if (_CurrentUser.HasAccess("FileExplorer/Index"))
+                    {
+                        <a asp-controller="FileExplorer" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "FileExplorer" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="File Explorer">
+                            <i class="fa-solid fa-folder-tree text-base"></i>
+                        </a>
+                    }
+                    @if (_CurrentUser.HasAccess("Component/Index"))
+                    {
+                        <a asp-controller="Component" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Component" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Components">
+                            <i class="fa-solid fa-cubes text-base"></i>
+                        </a>
+                    }
+                    <a asp-controller="Icon" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Icon" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Icon Gallery">
+                        <i class="fa-solid fa-icons text-base"></i>
+                    </a>
+                    <a asp-controller="UiComponents" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "UiComponents" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="UI Components">
+                        <i class="fa-solid fa-shapes text-base"></i>
+                    </a>
+                    <a asp-controller="AuditLog" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "AuditLog" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Audit Trail">
+                        <i class="fa-solid fa-clock-rotate-left text-base"></i>
+                    </a>
+                    @if (_CurrentUser?.IsAdmin == true)
+                    {
+                        <a asp-controller="Tenant" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Tenant" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Tenant Management">
+                            <i class="fa-solid fa-building-user text-base"></i>
+                        </a>
+                    }
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const sidebar = document.getElementById("sidebar");
+        const desktopToggle = document.getElementById("sidebarToggleDesktop");
+        const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+        const mobileCloseBtn = document.getElementById("sidebarToggleMobileClose");
+        const mobileOverlay = document.getElementById("mobileSidebarOverlay");
+
+        // Desktop Toggle Logic
+        if (localStorage.getItem('sidebarCollapsed') === 'true' && window.innerWidth >= 768) {
+            sidebar?.classList.add("collapsed");
+        }
+
+        desktopToggle?.addEventListener("click", function () {
+            sidebar?.classList.toggle("collapsed");
+            localStorage.setItem('sidebarCollapsed', sidebar?.classList.contains("collapsed"));
+        });
+
+        // Mobile / Tablet Drawer Toggle Logic
+        function openMobileSidebar() {
+            if (!sidebar || !mobileOverlay) return;
+            sidebar.classList.remove("-translate-x-full");
+            mobileOverlay.classList.remove("pointer-events-none");
+            mobileOverlay.classList.add("active");
+            setTimeout(() => mobileOverlay.classList.add("opacity-100"), 10);
+        }
+
+        function closeMobileSidebar() {
+            if (!sidebar || !mobileOverlay) return;
+            sidebar.classList.add("-translate-x-full");
+            mobileOverlay.classList.remove("opacity-100");
+            setTimeout(() => {
+                mobileOverlay.classList.remove("active");
+                mobileOverlay.classList.add("pointer-events-none");
+            }, 300);
+        }
+
+        window.openMobileSidebar = openMobileSidebar;
+        window.closeMobileSidebar = closeMobileSidebar;
+
+        mobileMenuBtn?.addEventListener("click", openMobileSidebar);
+        mobileCloseBtn?.addEventListener("click", closeMobileSidebar);
+        mobileOverlay?.addEventListener("click", closeMobileSidebar);
+
+        // Floating Bottom Navigation Interaction Logic
+        window.openFloatingSection = function (sectionKey) {
+            const mainNav = document.getElementById("floatingNavMain");
+            const subNav = document.getElementById("floatingNavSub");
+            if (!mainNav || !subNav) return;
+
+            document.querySelectorAll(".floating-sub-content").forEach(el => el.classList.add("hidden"));
+            const target = document.getElementById("subSection_" + sectionKey);
+            if (target) {
+                target.classList.remove("hidden");
+            }
+
+            mainNav.classList.remove("translate-y-0", "opacity-100");
+            mainNav.classList.add("translate-y-20", "opacity-0", "pointer-events-none");
+
+            setTimeout(() => {
+                mainNav.classList.add("hidden");
+                subNav.classList.remove("hidden");
+                subNav.classList.add("flex");
+                requestAnimationFrame(() => {
+                    subNav.classList.remove("translate-y-20", "opacity-0", "pointer-events-none");
+                    subNav.classList.add("translate-y-0", "opacity-100", "pointer-events-auto");
+                });
+            }, 120);
+        };
+
+        window.closeFloatingSubNav = function () {
+            const mainNav = document.getElementById("floatingNavMain");
+            const subNav = document.getElementById("floatingNavSub");
+            if (!mainNav || !subNav) return;
+
+            subNav.classList.remove("translate-y-0", "opacity-100", "pointer-events-auto");
+            subNav.classList.add("translate-y-20", "opacity-0", "pointer-events-none");
+
+            setTimeout(() => {
+                subNav.classList.add("hidden");
+                subNav.classList.remove("flex");
+                mainNav.classList.remove("hidden");
+                requestAnimationFrame(() => {
+                    mainNav.classList.remove("translate-y-20", "opacity-0", "pointer-events-none");
+                    mainNav.classList.add("translate-y-0", "opacity-100");
+                });
+            }, 120);
+        };
+
+        // Scroll Hide/Show Behavior for Floating Nav
+        let lastScrollY = 0;
+        let isScrollTicking = false;
+
+        function updateFloatingNavOnScroll(currentY) {
+            const bottomNav = document.getElementById("floatingBottomNavWrapper");
+            const topOmnibar = document.getElementById("floatingOmnibarWrapper");
+
+            if (currentY <= 20) {
+                bottomNav?.classList.remove("translate-y-28", "opacity-0", "pointer-events-none");
+                topOmnibar?.classList.remove("-translate-y-20", "opacity-0", "pointer-events-none");
+                lastScrollY = currentY;
+                return;
+            }
+
+            const diff = currentY - lastScrollY;
+            if (Math.abs(diff) < 8) return;
+
+            if (diff > 0 && currentY > 50) {
+                // Scrolling down -> bottom nav goes down and disappears, top omnibar search box goes up and disappears
+                bottomNav?.classList.add("translate-y-28", "opacity-0", "pointer-events-none");
+                topOmnibar?.classList.add("-translate-y-20", "opacity-0", "pointer-events-none");
+            } else if (diff < 0) {
+                // Scrolling up -> bottom nav comes up and appears, top omnibar search box comes down and appears
+                bottomNav?.classList.remove("translate-y-28", "opacity-0", "pointer-events-none");
+                topOmnibar?.classList.remove("-translate-y-20", "opacity-0", "pointer-events-none");
+            }
+            lastScrollY = currentY;
+        }
+
+        function triggerScrollCheck(y) {
+            if (!isScrollTicking) {
+                window.requestAnimationFrame(() => {
+                    updateFloatingNavOnScroll(y);
+                    isScrollTicking = false;
+                });
+                isScrollTicking = true;
+            }
+        }
+
+        window.addEventListener("scroll", () => triggerScrollCheck(window.scrollY || window.pageYOffset || 0), { passive: true });
+        const mainScrollEl = document.querySelector("main");
+        if (mainScrollEl) {
+            mainScrollEl.addEventListener("scroll", () => triggerScrollCheck(mainScrollEl.scrollTop || 0), { passive: true });
+        }
+
+        // Sidebar Quick Filter / Search
+        const searchInput = document.getElementById("sidebarMenuSearch");
+        const clearBtn = document.getElementById("sidebarSearchClear");
+        const nav = document.querySelector("#sidebar nav");
+        const navUl = nav?.querySelector("ul");
+
+        let emptyMsg = document.getElementById("sidebarSearchEmpty");
+        if (!emptyMsg && navUl) {
+            emptyMsg = document.createElement("li");
+            emptyMsg.id = "sidebarSearchEmpty";
+            emptyMsg.className = "hidden px-4 py-8 text-center text-xs text-slate-400";
+            emptyMsg.innerHTML = '<i class="fa-solid fa-magnifying-glass text-slate-300 text-base mb-2 block"></i>No matching menu items';
+            navUl.appendChild(emptyMsg);
+        }
+
+        window.clearSidebarMenuSearch = function () {
+            if (searchInput) {
+                searchInput.value = "";
+                filterMenu();
+                searchInput.focus();
+            }
+        };
+
+        function filterMenu() {
+            if (!searchInput || !nav) return;
+            const query = searchInput.value.trim().toLowerCase();
+
+            if (clearBtn) {
+                clearBtn.classList.toggle("hidden", query.length === 0);
+            }
+
+            const allSections = nav.querySelectorAll("ul > li");
+
+            if (!query) {
+                // Restore all items and sections
+                allSections.forEach(sec => {
+                    if (sec.id === "sidebarSearchEmpty") return;
+                    sec.style.display = "";
+                    sec.querySelectorAll("a.nav-item-link").forEach(a => a.style.display = "");
+                });
+                if (emptyMsg) emptyMsg.classList.add("hidden");
+                return;
+            }
+
+            let anyVisible = false;
+
+            allSections.forEach(sec => {
+                if (sec.id === "sidebarSearchEmpty") return;
+
+                const links = sec.querySelectorAll("a.nav-item-link");
+                if (links.length === 0) {
+                    sec.style.display = "none";
+                    return;
+                }
+
+                let sectionHasMatch = false;
+                links.forEach(link => {
+                    const text = (link.textContent || "").toLowerCase();
+                    const title = (link.getAttribute("data-title") || "").toLowerCase();
+                    const matches = text.includes(query) || title.includes(query);
+
+                    link.style.display = matches ? "" : "none";
+
+                    // Handle dropdown parent (e.g. PagesMenu)
+                    const dropdownParent = link.closest(".pages-dropdown-list");
+                    if (dropdownParent && matches) {
+                        dropdownParent.style.display = "";
+                        dropdownParent.classList.remove("hidden");
+                    }
+
+                    if (matches) {
+                        sectionHasMatch = true;
+                        anyVisible = true;
+                    }
+                });
+
+                sec.style.display = sectionHasMatch ? "" : "none";
+            });
+
+            if (emptyMsg) {
+                emptyMsg.classList.toggle("hidden", anyVisible);
+            }
+        }
+
+        searchInput?.addEventListener("input", filterMenu);
+    });
+</script>

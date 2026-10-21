@@ -1,0 +1,262 @@
+@model AzureTest.MVC.Models.ExpenseAnalyticsViewModel
+@{
+    ViewData["Title"] = "Advanced Expense Analytics";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Expenses", Url = "/Expense/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Analytics", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Expense Analytics",
+        Subtitle = "Track spending momentum, category breakdown, and monthly transaction trends.",
+        Icon = "fa-solid fa-chart-pie",
+        Breadcrumbs = breadcrumbs
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+<!-- KPI Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shrink-0">
+                <i class="fa-solid fa-calendar-day"></i>
+            </div>
+            <div>
+                <p class="text-3xs font-bold uppercase tracking-wider text-slate-400">Total Spent This Month</p>
+                <p class="text-2xl font-black text-slate-900 font-mono mt-0.5">@Model.TotalThisMonth.ToString("C")</p>
+            </div>
+        </div>
+        <span class="text-3xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Current</span>
+    </div>
+    
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-5 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl @(Model.MonthOverMonthChangePercentage > 0 ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600") flex items-center justify-center text-lg shrink-0">
+                <i class="fa-solid @(Model.MonthOverMonthChangePercentage > 0 ? "fa-arrow-trend-up" : "fa-arrow-trend-down")"></i>
+            </div>
+            <div>
+                <p class="text-3xs font-bold uppercase tracking-wider text-slate-400">Month-over-Month Delta</p>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <p class="text-2xl font-black text-slate-900 font-mono">@Math.Abs(Model.MonthOverMonthChangePercentage).ToString("0.##")%</p>
+                    @if (Model.MonthOverMonthChangePercentage > 0)
+                    {
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-3xs font-bold bg-rose-50 text-rose-700 border border-rose-200/80">Higher Spend</span>
+                    }
+                    else if (Model.MonthOverMonthChangePercentage < 0)
+                    {
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-3xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">Savings</span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-semibold bg-slate-100 text-slate-700">Stable</span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="text-right hidden sm:block">
+            <p class="text-3xs text-slate-400 font-bold uppercase">Last Month</p>
+            <p class="text-base font-black text-slate-700 font-mono">@Model.TotalLastMonth.ToString("C")</p>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col h-full overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-chart-column text-brand-600 text-xs"></i>
+                <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Monthly Spending Trend</h5>
+            </div>
+            <span class="text-3xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Volume</span>
+        </div>
+        <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
+            @if(Model.ExpensesByMonth.Any())
+            {
+                <canvas id="monthlyChart"></canvas>
+            }
+            else
+            {
+                <p class="text-xs text-slate-400">No monthly data available.</p>
+            }
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col h-full overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-brand-600 text-xs"></i>
+                <h5 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Category Breakdown</h5>
+            </div>
+            <span class="text-3xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Ratio</span>
+        </div>
+        <div class="p-6 flex-1 flex items-center justify-center min-h-[300px]">
+            @if(Model.ExpensesByCategory.Any())
+            {
+                <canvas id="categoryChart"></canvas>
+            }
+            else
+            {
+                <p class="text-xs text-slate-400">No category data available.</p>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Breakdown Accordion -->
+<div class="mb-4 flex items-center justify-between">
+    <div>
+        <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Detailed Monthly Breakdown</h2>
+        <p class="text-2xs text-slate-400 mt-0.5">Click any month to expand itemized expense entries.</p>
+    </div>
+</div>
+
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden divide-y divide-slate-100 mb-8" id="monthlyAccordion">
+    @if (!Model.MonthlyDetails.Any())
+    {
+        <div class="p-8">
+            <partial name="UiComponents/_EmptyState" model='new AzureTest.MVC.Models.EmptyStateModel { Title = "No Monthly Details", Description = "No expenses recorded to build monthly summaries.", Icon = "fa-solid fa-calendar-xmark" }' />
+        </div>
+    }
+    else
+    {
+        int index = 0;
+        foreach (var group in Model.MonthlyDetails)
+        {
+            var headingId = $"heading_{index}";
+            var collapseId = $"collapse_{index}";
+            var expanded = index == 0 ? "true" : "false";
+            var contentClass = index == 0 ? "" : "hidden";
+            var iconClass = index == 0 ? "fa-chevron-up" : "fa-chevron-down";
+
+            <div class="group">
+                <button type="button" 
+                        class="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-slate-50/70 transition-colors select-none"
+                        onclick="toggleAccordion('@collapseId', '@headingId')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-brand-50 border border-brand-100 text-brand-700 flex items-center justify-center font-bold text-xs">
+                            @(group.MonthName.Length >= 3 ? group.MonthName.Substring(0, 3) : group.MonthName)
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-800">@group.MonthName @group.Year</h3>
+                            <p class="text-3xs text-slate-400 font-mono">@group.Expenses.Count transactions</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-black text-rose-600 font-mono">-@group.TotalAmount.ToString("C")</span>
+                        <i id="icon_@headingId" class="fa-solid @iconClass text-slate-400 text-3xs transition-transform duration-200"></i>
+                    </div>
+                </button>
+                
+                <div id="@collapseId" class="@contentClass bg-slate-50/50 border-t border-slate-100">
+                    <div class="p-4 overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100/70 text-slate-500 uppercase tracking-wider text-3xs font-semibold">
+                                <tr>
+                                    <th class="py-2.5 px-4">Date</th>
+                                    <th class="py-2.5 px-4">Category</th>
+                                    <th class="py-2.5 px-4">Description</th>
+                                    <th class="py-2.5 px-4 text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 bg-white">
+                                @foreach (var exp in group.Expenses.OrderByDescending(e => e.Date))
+                                {
+                                    <tr class="hover:bg-slate-50/70 transition-colors">
+                                        <td class="py-3 px-4 text-slate-600 whitespace-nowrap font-mono text-2xs">@exp.Date.ToString("MMM dd, yyyy")</td>
+                                        <td class="py-3 px-4 whitespace-nowrap">
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-3xs font-semibold bg-brand-50 text-brand-700 border border-brand-200/80">
+                                                <i class="fa-solid fa-tag text-3xs"></i> @(exp.CategoryName ?? "Uncategorized")
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4 text-slate-700 font-medium max-w-[200px] truncate" title="@exp.Description">@exp.Description</td>
+                                        <td class="py-3 px-4 text-right font-black text-rose-600 whitespace-nowrap font-mono text-xs">-@exp.Amount.ToString("C")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            index++;
+        }
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function toggleAccordion(collapseId, headingId) {
+            const content = document.getElementById(collapseId);
+            const icon = document.getElementById('icon_' + headingId);
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                content.classList.add('hidden');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            };
+
+            if (document.getElementById('monthlyChart')) {
+                const monthLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpensesByMonth.Keys));
+                const monthData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpensesByMonth.Values));
+                new Chart(document.getElementById('monthlyChart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [{
+                            label: 'Total Expenses ($)',
+                            data: monthData,
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+
+            if (document.getElementById('categoryChart')) {
+                const catLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpensesByCategory.Keys));
+                const catData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpensesByCategory.Values));
+                new Chart(document.getElementById('categoryChart').getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: catLabels,
+                        datasets: [{ 
+                            data: catData, 
+                            backgroundColor: ['#f87171', '#fb923c', '#fbbf24', '#a3e635', '#4ade80', '#2dd4bf', '#38bdf8', '#818cf8', '#c084fc', '#f472b6'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: commonOptions
+                });
+            }
+        });
+    </script>
+}

@@ -1,0 +1,77 @@
+@model AzureTest.MVC.ViewModels.Users.UserEditViewModel
+@{
+    ViewData["Title"] = "Edit User";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Administration", Url = "#" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Users", Url = "/User/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Edit Profile", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Edit User Profile",
+        Subtitle = $"Modify account information for {Model.Email}",
+        Icon = "fa-solid fa-user-pen",
+        Breadcrumbs = breadcrumbs
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden max-w-2xl">
+    <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-address-card text-brand-600 text-xs"></i>
+            <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Profile Information</h2>
+        </div>
+        <span class="text-2xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">ID: @Model.Id.ToString().Substring(0, 8)...</span>
+    </div>
+
+    <form asp-action="Edit" method="post" class="p-6 md:p-8">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="p-3 mb-6 bg-rose-50 border border-rose-200/80 rounded-xl text-rose-700 text-xs"></div>
+
+        <div class="mb-5">
+            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Address</label>
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                    <i class="fa-solid fa-envelope"></i>
+                </div>
+                <input asp-for="Email" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 text-xs cursor-not-allowed font-medium" readonly />
+            </div>
+            <p class="text-3xs text-slate-400 mt-1 flex items-center gap-1">
+                <i class="fa-solid fa-lock text-slate-400"></i> Primary login identifier cannot be altered.
+            </p>
+        </div>
+
+        <partial name="_UpsertPartial" />
+
+        <div class="mb-6">
+            <label asp-for="PhoneNumber" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Phone Number</label>
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                    <i class="fa-solid fa-phone"></i>
+                </div>
+                <input asp-for="PhoneNumber" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="+1 (555) 000-0000" />
+            </div>
+            <span asp-validation-for="PhoneNumber" class="text-2xs text-rose-600 mt-1 block"></span>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-5 border-t border-slate-100">
+            <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+                Cancel
+            </a>
+            <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                <i class="fa-solid fa-floppy-disk"></i> Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

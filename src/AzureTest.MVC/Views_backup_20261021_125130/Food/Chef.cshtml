@@ -1,0 +1,448 @@
+@model AzureTest.Contracts.DTOs.Food.NutritionTargetDto
+@{
+    ViewData["Title"] = "Chef Workspace";
+    var pantryMatches = ViewBag.PantryMatches as List<AzureTest.Contracts.DTOs.Food.RecipeDto> ?? new();
+    var availableIngredients = ViewBag.AvailableIngredients as List<AzureTest.Contracts.DTOs.Food.IngredientDto> ?? new();
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new("Dashboard", "/"),
+        new("Food & Nutrition", Url.Action("Index")),
+        new("Chef Workspace", IsActive: true)
+    };
+}
+
+<div class="mb-4">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+</div>
+
+<!-- Header -->
+<div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                <i class="fa-solid fa-kitchen-set mr-1.5"></i> Culinary Command
+            </span>
+        </div>
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Chef Workspace</h1>
+        <p class="text-slate-500 text-xs mt-0.5">Pantry inventory management, leftover recipe matcher, unit conversion, and smart shopping list.</p>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+        <a href="@Url.Action("Index")" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors">
+            <i class="fa-solid fa-arrow-left mr-1.5 text-3xs"></i> Daily Diary
+        </a>
+        <a href="@Url.Action("Recipes")" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-3.5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-brand-700 transition-colors">
+            <i class="fa-solid fa-book-open mr-1.5 text-3xs"></i> Recipe Catalog
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
+    <!-- Left Column: Pantry & Recipe Matcher -->
+    <div class="lg:col-span-7 space-y-8">
+        <!-- Pantry Inventory -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Pantry & Fridge Inventory</h3>
+                        <p class="text-xs text-slate-500">Track on-hand ingredients to reduce food waste</p>
+                    </div>
+                </div>
+
+                <button type="button" onclick="openPantryModal()" class="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                    <i class="fa-solid fa-plus mr-1"></i> Add Item
+                </button>
+            </div>
+
+            @if (Model != null && Model.Pantry.Any())
+            {
+                <div class="divide-y divide-slate-100">
+                    @foreach (var item in Model.Pantry)
+                    {
+                        var locClass = item.Location switch
+                        {
+                            "Fridge" => "bg-blue-50 text-blue-700 border-blue-100",
+                            "Freezer" => "bg-cyan-50 text-cyan-700 border-cyan-100",
+                            _ => "bg-amber-50 text-amber-700 border-amber-100"
+                        };
+
+                        <div class="p-4 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-3xs font-bold border @locClass">
+                                    @item.Location
+                                </span>
+                                <div>
+                                    <span class="font-bold text-slate-900 text-sm">@item.Name</span>
+                                    <span class="text-xs text-slate-500 font-mono ml-2">@item.Quantity @item.Unit</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                                @if (item.ExpiryDate.HasValue)
+                                {
+                                    var daysLeft = (item.ExpiryDate.Value.Date - DateTime.UtcNow.Date).TotalDays;
+                                    <span class="text-3xs font-semibold @(daysLeft <= 2 ? "text-rose-600 font-bold" : "text-slate-400")">
+                                        Exp: @item.ExpiryDate.Value.ToString("MMM dd")
+                                    </span>
+                                }
+                                <form asp-action="DeletePantryItem" method="post" class="inline" onsubmit="return confirm('Remove item from pantry?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="itemId" value="@item.Id" />
+                                    <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors" title="Delete">
+                                        <i class="fa-regular fa-trash-can text-xs"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="p-8 text-center text-slate-400">
+                    <p class="text-xs">Your pantry inventory is currently empty. Add items to discover matching recipes!</p>
+                </div>
+            }
+        </div>
+
+        <!-- "What Can I Cook?" Matcher -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Leftover Matcher ("What Can I Cook?")</h3>
+                        <p class="text-xs text-slate-500">Recipes matched against your on-hand pantry ingredients</p>
+                    </div>
+                </div>
+            </div>
+
+            @if (pantryMatches.Any())
+            {
+                <div class="divide-y divide-slate-100">
+                    @foreach (var rec in pantryMatches.Take(6))
+                    {
+                        <div class="p-4 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-sm">
+                                    <a href="@Url.Action("RecipeDetails", new { id = rec.Id })" class="hover:text-brand-600">@rec.Name</a>
+                                </h4>
+                                <p class="text-xs text-slate-400">
+                                    @rec.TotalTimeMinutes min &bull; @rec.PerServingCalories kcal/serving &bull; @rec.Ingredients.Count ingredients
+                                </p>
+                            </div>
+
+                            <a href="@Url.Action("RecipeDetails", new { id = rec.Id })" class="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors">
+                                View <i class="fa-solid fa-arrow-right ml-1.5 text-3xs"></i>
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="p-8 text-center text-slate-400">
+                    <p class="text-xs">Add ingredients to your pantry above to find recipes you can cook immediately.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Right Column: Unit Converter & Smart Shopping List -->
+    <div class="lg:col-span-5 space-y-8">
+        <!-- Interactive Unit Conversion Calculator -->
+        <div class="bg-gradient-to-br from-white to-slate-50 rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+            <div class="flex items-center gap-3 mb-4 pb-2 border-b border-slate-100">
+                <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-calculator"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-900 text-sm">Culinary Unit Converter</h3>
+                    <p class="text-2xs text-slate-400">Volume to mass conversion with density</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Ingredient / Density Preset</label>
+                    <select id="convDensitySelect" onchange="onDensityChange(this)" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-purple-500">
+                        <option value="1.0">Water / Standard Liquid (1.00 g/ml)</option>
+                        <option value="0.92">Olive Oil / Vegetable Oil (0.92 g/ml)</option>
+                        <option value="1.03">Whole Milk (1.03 g/ml)</option>
+                        <option value="1.42">Honey / Maple Syrup (1.42 g/ml)</option>
+                        <option value="0.55">All-Purpose Flour (Dry, ~0.55 g/ml)</option>
+                        <option value="0.85">White Granulated Sugar (~0.85 g/ml)</option>
+                        <option value="0.45">Rolled Oats (~0.45 g/ml)</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Value</label>
+                        <input type="number" step="any" min="0" id="convInputValue" value="1" oninput="calculateConversion()" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-purple-500" />
+                    </div>
+                    <div>
+                        <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">From Unit</label>
+                        <select id="convFromUnit" onchange="calculateConversion()" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-purple-500">
+                            <option value="cup">Cups (US)</option>
+                            <option value="tbsp">Tablespoons (tbsp)</option>
+                            <option value="tsp">Teaspoons (tsp)</option>
+                            <option value="ml">Milliliters (ml)</option>
+                            <option value="l">Liters (l)</option>
+                            <option value="oz">Ounces (oz)</option>
+                            <option value="lb">Pounds (lb)</option>
+                            <option value="g">Grams (g)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Calculated Output Card -->
+                <div class="p-4 rounded-xl bg-purple-50/70 border border-purple-100 text-center">
+                    <span class="block text-3xs uppercase font-bold text-purple-700">Calculated Mass & Volume</span>
+                    <div class="text-2xl font-black text-purple-900 font-mono mt-1" id="convResultGrams">120 g</div>
+                    <div class="text-xs text-purple-700/80 mt-0.5" id="convResultOther">~ 4.23 oz &bull; 240 ml</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Smart Shopping List -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm">Smart Shopping List</h3>
+                        <p class="text-2xs text-slate-500">Check off items while at the store</p>
+                    </div>
+                </div>
+
+                <button type="button" onclick="openShoppingModal()" class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                    <i class="fa-solid fa-plus mr-1"></i> Add Item
+                </button>
+            </div>
+
+            @if (Model != null && Model.ShoppingList.Any())
+            {
+                <div class="divide-y divide-slate-100 max-h-96 overflow-y-auto">
+                    @foreach (var item in Model.ShoppingList.OrderBy(s => s.IsPurchased))
+                    {
+                        <div class="p-3.5 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" checked="@(item.IsPurchased ? "checked" : null)" onchange="toggleShoppingItem('@item.Id', this)" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 cursor-pointer" />
+                                <div>
+                                    <span class="text-xs font-bold text-slate-900 @(item.IsPurchased ? "line-through text-slate-400" : "")">@item.Name</span>
+                                    <span class="text-2xs text-slate-500 font-mono ml-1">(@item.Quantity @item.Unit)</span>
+                                    @if (!string.IsNullOrWhiteSpace(item.Notes))
+                                    {
+                                        <span class="text-3xs text-slate-400 block italic">@item.Notes</span>
+                                    }
+                                </div>
+                            </div>
+
+                            <form asp-action="DeleteShoppingItem" method="post" class="inline" onsubmit="return confirm('Delete shopping item?');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="itemId" value="@item.Id" />
+                                <button type="submit" class="p-1 text-slate-300 hover:text-rose-600 rounded">
+                                    <i class="fa-regular fa-trash-can text-xs"></i>
+                                </button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="p-8 text-center text-slate-400">
+                    <p class="text-xs">Your shopping list is clear!</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add Pantry Item -->
+<div id="pantryModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+        <button type="button" onclick="closePantryModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+
+        <h3 class="text-lg font-black text-slate-900 mb-1">Add Pantry Item</h3>
+        <p class="text-xs text-slate-500 mb-4">Stock up your home inventory</p>
+
+        <form asp-action="UpsertPantryItem" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <div>
+                <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Item Name *</label>
+                <input type="text" name="Name" placeholder="e.g. Rolled Oats, Chicken" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Quantity</label>
+                    <input type="number" step="any" min="0.1" name="Quantity" value="500" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required />
+                </div>
+                <div>
+                    <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Unit</label>
+                    <input type="text" name="Unit" value="g" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Location</label>
+                    <select name="Location" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500">
+                        <option value="Pantry">Pantry</option>
+                        <option value="Fridge">Fridge</option>
+                        <option value="Freezer">Freezer</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Expiry Date</label>
+                    <input type="date" name="ExpiryDate" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                </div>
+            </div>
+
+            <div class="pt-3 flex items-center justify-end gap-3">
+                <button type="button" onclick="closePantryModal()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700">Cancel</button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-xs font-semibold text-white shadow-sm">Save to Pantry</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Add Shopping Item -->
+<div id="shoppingModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+        <button type="button" onclick="closeShoppingModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+
+        <h3 class="text-lg font-black text-slate-900 mb-1">Add Shopping Item</h3>
+        <p class="text-xs text-slate-500 mb-4">Add grocery need</p>
+
+        <form asp-action="UpsertShoppingItem" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <div>
+                <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Item Name *</label>
+                <input type="text" name="Name" placeholder="e.g. Almond Milk, Salmon" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Quantity</label>
+                    <input type="number" step="any" min="0.1" name="Quantity" value="1" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required />
+                </div>
+                <div>
+                    <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Unit</label>
+                    <input type="text" name="Unit" value="item" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" required />
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-3xs uppercase font-bold text-slate-500 mb-1">Category / Note</label>
+                <input type="text" name="Notes" placeholder="e.g. for dinner, organic only" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500" />
+            </div>
+
+            <div class="pt-3 flex items-center justify-end gap-3">
+                <button type="button" onclick="closeShoppingModal()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700">Cancel</button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-xs font-semibold text-white shadow-sm">Add to List</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function openPantryModal() { document.getElementById('pantryModal').classList.remove('hidden'); }
+    function closePantryModal() { document.getElementById('pantryModal').classList.add('hidden'); }
+    function openShoppingModal() { document.getElementById('shoppingModal').classList.remove('hidden'); }
+    function closeShoppingModal() { document.getElementById('shoppingModal').classList.add('hidden'); }
+
+    async function toggleShoppingItem(itemId, chk) {
+        try {
+            await fetch('@Url.Action("ToggleShoppingItem")?itemId=' + itemId, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const textSpan = chk.parentElement.querySelector('span');
+            if (chk.checked) {
+                textSpan.classList.add('line-through', 'text-slate-400');
+            } else {
+                textSpan.classList.remove('line-through', 'text-slate-400');
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // Unit Converter logic
+    let currentDensity = 1.0;
+    function onDensityChange(sel) {
+        currentDensity = parseFloat(sel.value) || 1.0;
+        calculateConversion();
+    }
+
+    function calculateConversion() {
+        const val = parseFloat(document.getElementById('convInputValue').value) || 0;
+        const fromUnit = document.getElementById('convFromUnit').value;
+
+        // Convert fromUnit to grams
+        let grams = 0;
+        let ml = 0;
+
+        switch (fromUnit) {
+            case 'cup':
+                ml = val * 240.0;
+                grams = ml * currentDensity;
+                break;
+            case 'tbsp':
+                ml = val * 15.0;
+                grams = ml * currentDensity;
+                break;
+            case 'tsp':
+                ml = val * 5.0;
+                grams = ml * currentDensity;
+                break;
+            case 'ml':
+                ml = val;
+                grams = ml * currentDensity;
+                break;
+            case 'l':
+                ml = val * 1000.0;
+                grams = ml * currentDensity;
+                break;
+            case 'oz':
+                grams = val * 28.3495;
+                ml = grams / currentDensity;
+                break;
+            case 'lb':
+                grams = val * 453.592;
+                ml = grams / currentDensity;
+                break;
+            case 'g':
+                grams = val;
+                ml = grams / currentDensity;
+                break;
+        }
+
+        const oz = grams / 28.3495;
+
+        document.getElementById('convResultGrams').innerText = grams.toFixed(1) + " g";
+        document.getElementById('convResultOther').innerText = "~ " + oz.toFixed(2) + " oz • " + ml.toFixed(1) + " ml";
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        calculateConversion();
+    });
+</script>
+}

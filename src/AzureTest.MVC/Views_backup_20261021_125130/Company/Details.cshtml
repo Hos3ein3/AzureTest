@@ -1,0 +1,84 @@
+@model AzureTest.Contracts.DTOs.Companies.CompanyDto
+@using AzureTest.MVC.Models
+@{
+    ViewData["Title"] = "Company Details";
+    var pageHeader = new PageHeaderModel
+    {
+        Title = Model.CompanyName,
+        Subtitle = "View IND sponsor credentials, KVK number, and location",
+        Icon = "fa-solid fa-building",
+        Breadcrumbs = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Companies", Url.Action("Index", "Company")),
+            new BreadcrumbItem(Model.CompanyName, active: true)
+        },
+        ActionText = "Edit Company",
+        ActionUrl = Url.Action("Edit", "Company", new { id = Model.Id }),
+        ActionIcon = "fa-solid fa-pen-to-square"
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="pageHeader" />
+
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden mb-6 max-w-3xl">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+        <h2 class="text-sm font-bold text-slate-800 m-0 flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-brand-600"></i>
+            Company Overview
+        </h2>
+        <div class="flex items-center gap-2">
+            <a asp-action="Delete" asp-route-id="@Model.Id" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition-colors">
+                <i class="fa-solid fa-trash text-2xs"></i>
+                <span>Delete</span>
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6">
+            <div class="sm:col-span-2">
+                <dt class="text-2xs font-semibold text-slate-400 uppercase tracking-wider">Company Name</dt>
+                <dd class="mt-1 text-base font-bold text-slate-900">@Model.CompanyName</dd>
+            </div>
+
+            <div>
+                <dt class="text-2xs font-semibold text-slate-400 uppercase tracking-wider">Location</dt>
+                <dd class="mt-1 text-xs text-slate-800 font-medium flex items-center gap-2">
+                    <i class="fa-solid fa-location-dot text-brand-500"></i>
+                    <span>@(string.IsNullOrWhiteSpace(Model.Location) ? "—" : Model.Location)</span>
+                </dd>
+            </div>
+
+            <div>
+                <dt class="text-2xs font-semibold text-slate-400 uppercase tracking-wider">KVK Number</dt>
+                <dd class="mt-1 text-xs text-slate-800 font-mono font-semibold flex items-center gap-2">
+                    <i class="fa-solid fa-id-card text-brand-500"></i>
+                    <span>@(string.IsNullOrWhiteSpace(Model.KvkNumber) ? "—" : Model.KvkNumber)</span>
+                </dd>
+            </div>
+
+            <div class="sm:col-span-2">
+                <dt class="text-2xs font-semibold text-slate-400 uppercase tracking-wider">IND Recognized Sponsor</dt>
+                <dd class="mt-1.5">
+                    @if (Model.IsINDMember)
+                    {
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/60 px-3 py-1 text-2xs font-semibold text-emerald-800">
+                            <i class="fa-solid fa-circle-check text-emerald-600"></i> Recognized IND Sponsor
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-2xs font-semibold text-slate-600">
+                            Not listed on IND register
+                        </span>
+                    }
+                </dd>
+            </div>
+        </dl>
+    </div>
+    <div class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center gap-3">
+        <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+            <i class="fa-solid fa-arrow-left text-2xs"></i>
+            <span>Back to Companies</span>
+        </a>
+    </div>
+</div>

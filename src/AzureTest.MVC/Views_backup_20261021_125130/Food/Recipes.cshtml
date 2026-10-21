@@ -1,0 +1,223 @@
+@model AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.Food.RecipeDto, AzureTest.Contracts.DTOs.Food.RecipeFilter>
+@{
+    ViewData["Title"] = "Recipes Catalog";
+    var filter = ViewBag.Filter as AzureTest.Contracts.DTOs.Food.RecipeFilter ?? new();
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new("Dashboard", "/"),
+        new("Food & Nutrition", Url.Action("Index")),
+        new("Recipes Catalog", IsActive: true)
+    };
+}
+
+<div class="mb-4">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+</div>
+
+<div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                <i class="fa-solid fa-book-open mr-1.5"></i> Culinary Collection
+            </span>
+        </div>
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Recipes & Dishes</h1>
+        <p class="text-slate-500 text-xs mt-0.5">Explore cooked recipes, scale ingredient servings, and review prep instructions.</p>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+        <a href="@Url.Action("Index")" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors">
+            <i class="fa-solid fa-arrow-left mr-1.5 text-3xs"></i> Daily Diary
+        </a>
+        <a href="@Url.Action("CreateRecipe")" class="inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-brand-700 transition-colors">
+            <i class="fa-solid fa-plus mr-1.5 text-2xs"></i> Create Recipe
+        </a>
+    </div>
+</div>
+
+<!-- Search & Filters -->
+<div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-sm mb-8">
+    <form asp-action="Recipes" method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Search Dish</label>
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                </span>
+                <input type="text" name="SearchTerm" value="@filter.SearchTerm" placeholder="Recipe name..." class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Difficulty</label>
+            <select name="Difficulty" class="w-full py-2 px-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <option value="">All Difficulties</option>
+                @foreach (AzureTest.Domain.Documents.Food.Enums.RecipeDifficulty d in Enum.GetValues(typeof(AzureTest.Domain.Documents.Food.Enums.RecipeDifficulty)))
+                {
+                    <option value="@d" selected="@(filter.Difficulty == d ? "selected" : null)">@d</option>
+                }
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Favorites</label>
+            <select name="FavoritesOnly" class="w-full py-2 px-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <option value="">All Recipes</option>
+                <option value="true" selected="@(filter.FavoritesOnly == true ? "selected" : null)">Favorites Only</option>
+            </select>
+        </div>
+
+        <div class="flex items-end gap-2">
+            <button type="submit" class="flex-1 py-2 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold shadow-sm transition-colors">
+                Apply Filters
+            </button>
+            <a href="@Url.Action("Recipes")" class="py-2 px-3 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold transition-colors">
+                Reset
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Recipe Cards Grid -->
+@if (Model.Items.Any())
+{
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        @foreach (var recipe in Model.Items)
+        {
+            var diffClass = recipe.Difficulty switch
+            {
+                AzureTest.Domain.Documents.Food.Enums.RecipeDifficulty.Easy => "bg-emerald-100 text-emerald-800",
+                AzureTest.Domain.Documents.Food.Enums.RecipeDifficulty.Medium => "bg-amber-100 text-amber-800",
+                AzureTest.Domain.Documents.Food.Enums.RecipeDifficulty.Hard => "bg-rose-100 text-rose-800",
+                _ => "bg-purple-100 text-purple-800"
+            };
+
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group">
+                <div>
+                    <!-- Card Top Header -->
+                    <div class="p-5 border-b border-slate-100 flex items-start justify-between gap-3 bg-gradient-to-br from-slate-50/50 to-white">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-3xs font-bold @diffClass">
+                                    @recipe.Difficulty
+                                </span>
+                                <span class="text-xs font-semibold text-slate-500">
+                                    @recipe.Category
+                                </span>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900 group-hover:text-brand-600 transition-colors line-clamp-1">
+                                <a href="@Url.Action("RecipeDetails", new { id = recipe.Id })">@recipe.Name</a>
+                            </h3>
+                        </div>
+
+                        <button type="button" onclick="toggleFav('@recipe.Id', this)" class="p-2 text-slate-300 hover:text-rose-500 transition-colors" title="Favorite">
+                            <i class="fa-@(recipe.IsFavorite ? "solid" : "regular") fa-heart text-base @(recipe.IsFavorite ? "text-rose-500" : "")"></i>
+                        </button>
+                    </div>
+
+                    <!-- Details & Timers -->
+                    <div class="p-5 space-y-4">
+                        @if (!string.IsNullOrWhiteSpace(recipe.Description))
+                        {
+                            <p class="text-xs text-slate-500 line-clamp-2">@recipe.Description</p>
+                        }
+
+                        <div class="flex items-center gap-4 text-xs text-slate-600">
+                            <div>
+                                <i class="fa-regular fa-clock mr-1 text-slate-400"></i>
+                                <span class="font-semibold">@recipe.TotalTimeMinutes min</span> (prep: @recipe.PrepTimeMinutes m, cook: @recipe.CookTimeMinutes m)
+                            </div>
+                            <div>
+                                <i class="fa-solid fa-users mr-1 text-slate-400"></i>
+                                <span class="font-semibold">@recipe.Servings</span> serv
+                            </div>
+                        </div>
+
+                        <!-- Macro Badges (Per Serving) -->
+                        <div class="grid grid-cols-4 gap-2 pt-2 border-t border-slate-100 text-center">
+                            <div class="p-2 rounded-xl bg-orange-50/70 border border-orange-100">
+                                <span class="block text-3xs uppercase font-bold text-orange-600">Calories</span>
+                                <span class="text-xs font-black text-slate-900 font-mono">@recipe.PerServingCalories.ToString("0.#")</span>
+                            </div>
+                            <div class="p-2 rounded-xl bg-blue-50/70 border border-blue-100">
+                                <span class="block text-3xs uppercase font-bold text-blue-600">Protein</span>
+                                <span class="text-xs font-black text-slate-900 font-mono">@recipe.PerServingProtein.ToString("0.#")g</span>
+                            </div>
+                            <div class="p-2 rounded-xl bg-amber-50/70 border border-amber-100">
+                                <span class="block text-3xs uppercase font-bold text-amber-600">Carbs</span>
+                                <span class="text-xs font-black text-slate-900 font-mono">@recipe.PerServingCarbs.ToString("0.#")g</span>
+                            </div>
+                            <div class="p-2 rounded-xl bg-rose-50/70 border border-rose-100">
+                                <span class="block text-3xs uppercase font-bold text-rose-600">Fat</span>
+                                <span class="text-xs font-black text-slate-900 font-mono">@recipe.PerServingFat.ToString("0.#")g</span>
+                            </div>
+                        </div>
+
+                        <!-- Yield Info Pill -->
+                        <div class="text-3xs text-slate-400 flex items-center justify-between">
+                            <span>Raw weight: @recipe.RawWeightGrams g</span>
+                            <span>Cooked yield: @recipe.CookedWeightGrams g (x@recipe.CookingYieldFactor)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="p-4 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between">
+                    <a href="@Url.Action("RecipeDetails", new { id = recipe.Id })" class="text-xs font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1">
+                        View Recipe & Cook <i class="fa-solid fa-arrow-right text-3xs"></i>
+                    </a>
+
+                    <div class="flex items-center gap-1">
+                        <a href="@Url.Action("EditRecipe", new { id = recipe.Id })" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200/60 transition-colors" title="Edit">
+                            <i class="fa-regular fa-pen-to-square text-xs"></i>
+                        </a>
+                        <form asp-action="DeleteRecipe" asp-route-id="@recipe.Id" method="post" class="inline" onsubmit="return confirm('Delete this recipe?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="p-1.5 text-rose-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors" title="Delete">
+                                <i class="fa-regular fa-trash-can text-xs"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-12 text-center text-slate-400">
+        <i class="fa-solid fa-utensils text-4xl text-slate-300 mb-3 block"></i>
+        <p class="font-bold text-slate-700 text-base">No recipes found</p>
+        <p class="text-xs text-slate-400 mt-1">Try adjusting your search criteria or create your first recipe.</p>
+        <a href="@Url.Action("CreateRecipe")" class="inline-flex items-center mt-4 px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 transition-colors">
+            <i class="fa-solid fa-plus mr-1.5"></i> Create Recipe
+        </a>
+    </div>
+}
+
+@section Scripts {
+<script>
+    async function toggleFav(recipeId, btn) {
+        try {
+            const resp = await fetch('@Url.Action("ToggleFavorite")?id=' + recipeId, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await resp.json();
+            if (data.success) {
+                const icon = btn.querySelector('i');
+                if (data.isFavorite) {
+                    icon.classList.remove('fa-regular');
+                    icon.classList.add('fa-solid', 'text-rose-500');
+                } else {
+                    icon.classList.remove('fa-solid', 'text-rose-500');
+                    icon.classList.add('fa-regular');
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+</script>
+}

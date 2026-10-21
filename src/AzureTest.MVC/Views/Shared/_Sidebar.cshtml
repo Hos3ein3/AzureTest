@@ -954,11 +954,12 @@
         let isScrollTicking = false;
 
         function updateFloatingNavOnScroll(currentY) {
-            const wrapper = document.getElementById("floatingBottomNavWrapper");
-            if (!wrapper) return;
+            const bottomNav = document.getElementById("floatingBottomNavWrapper");
+            const topOmnibar = document.getElementById("floatingOmnibarWrapper");
 
             if (currentY <= 20) {
-                wrapper.classList.remove("translate-y-28", "opacity-0", "pointer-events-none");
+                bottomNav?.classList.remove("translate-y-28", "opacity-0", "pointer-events-none");
+                topOmnibar?.classList.remove("-translate-y-20", "opacity-0", "pointer-events-none");
                 lastScrollY = currentY;
                 return;
             }
@@ -967,11 +968,13 @@
             if (Math.abs(diff) < 8) return;
 
             if (diff > 0 && currentY > 50) {
-                // Scrolling down -> hide floating navigation
-                wrapper.classList.add("translate-y-28", "opacity-0", "pointer-events-none");
+                // Scrolling down -> bottom nav goes down and disappears, top omnibar search box goes up and disappears
+                bottomNav?.classList.add("translate-y-28", "opacity-0", "pointer-events-none");
+                topOmnibar?.classList.add("-translate-y-20", "opacity-0", "pointer-events-none");
             } else if (diff < 0) {
-                // Scrolling up -> reveal floating navigation
-                wrapper.classList.remove("translate-y-28", "opacity-0", "pointer-events-none");
+                // Scrolling up -> bottom nav comes up and appears, top omnibar search box comes down and appears
+                bottomNav?.classList.remove("translate-y-28", "opacity-0", "pointer-events-none");
+                topOmnibar?.classList.remove("-translate-y-20", "opacity-0", "pointer-events-none");
             }
             lastScrollY = currentY;
         }

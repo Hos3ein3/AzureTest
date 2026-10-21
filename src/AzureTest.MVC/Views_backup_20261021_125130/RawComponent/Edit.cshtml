@@ -1,0 +1,70 @@
+@using AzureTest.MVC.Models
+@model AzureTest.Domain.Documents.DashboardRawComponent
+@{
+    ViewData["Title"] = "Edit Dynamic Component";
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Dashboard", Url.Action("Index", "Home"), "fa-solid fa-house"),
+        new BreadcrumbItem("Components", Url.Action("Index", "Component"), "fa-solid fa-puzzle-piece"),
+        new BreadcrumbItem(Model.Name ?? "Dynamic Component", null, "fa-solid fa-code"),
+        new BreadcrumbItem("Edit", null, "fa-solid fa-pen", true)
+    };
+
+    var headerModel = new PageHeaderModel(
+        "Edit Dynamic Component",
+        $"Modify settings for \"{Model.Name}\".",
+        "fa-solid fa-code",
+        new HeaderAction("Back to Components", Url.Action("Index", "Component"), "fa-solid fa-arrow-left", "secondary")
+    );
+}
+
+<div class="px-4 sm:px-6 lg:px-8 py-8 mx-auto max-w-4xl space-y-6">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
+
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-8">
+        <form asp-action="Edit" method="post" class="space-y-6">
+            <input type="hidden" asp-for="Id" />
+            @if (ViewBag.ReturnUrl != null)
+            {
+                <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+            }
+
+            <div asp-validation-summary="ModelOnly" class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-700"></div>
+
+            <partial name="_UpsertPartial" />
+
+            <div class="pt-6 border-t border-slate-100 flex justify-end gap-3">
+                <a asp-action="Index" asp-controller="Component"
+                   class="px-5 py-2.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl transition">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow transition">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const select = document.getElementById('componentTypeSelect');
+            const htmlSection = document.getElementById('htmlSection');
+            const jsonSection = document.getElementById('jsonSection');
+
+            select.addEventListener('change', function() {
+                if (this.value === 'RawHtml') {
+                    htmlSection.classList.remove('hidden');
+                    jsonSection.classList.add('hidden');
+                } else {
+                    htmlSection.classList.add('hidden');
+                    jsonSection.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
+}

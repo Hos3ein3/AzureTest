@@ -1,0 +1,116 @@
+@model AzureTest.Contracts.DTOs.Debts.DebtDto
+@{
+    ViewData["Title"] = "Debt Details";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Debts", Url = "/Debt/Index" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Details", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Debt Details",
+        Subtitle = $"Counterparty record for {Model.DebtPersonName}",
+        Icon = "fa-solid fa-file-invoice-dollar",
+        Badge = Model.IsDone ? "Settled" : "Active",
+        Breadcrumbs = breadcrumbs
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+<div class="max-w-3xl">
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-info text-brand-600 text-xs"></i>
+                <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Loan Specification</h2>
+            </div>
+            <div class="flex items-center gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+                    <i class="fa-solid fa-pen-to-square text-brand-600"></i> Edit
+                </a>
+                <a asp-action="Index" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition-colors">
+                    Back to List
+                </a>
+            </div>
+        </div>
+
+        <div class="p-6 md:p-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                    <div class="text-3xs font-bold uppercase tracking-wider text-slate-400">Counterparty</div>
+                    <div class="text-sm font-bold text-slate-800 mt-1 flex items-center gap-2">
+                        <i class="fa-solid fa-user text-brand-600 text-xs"></i>
+                        <span>@Model.DebtPersonName</span>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                    <div class="text-3xs font-bold uppercase tracking-wider text-slate-400">Amount</div>
+                    <div class="text-lg font-black text-slate-900 mt-1 font-mono">
+                        @Model.Amount.ToString("C")
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                    <div class="text-3xs font-bold uppercase tracking-wider text-slate-400">Date of Borrow</div>
+                    <div class="text-xs font-bold text-slate-800 mt-1 flex items-center gap-2 font-mono">
+                        <i class="fa-solid fa-calendar text-slate-400"></i>
+                        <span>@Model.DateOfBorrow.ToString("MMM dd, yyyy")</span>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                    <div class="text-3xs font-bold uppercase tracking-wider text-slate-400">Promised Return Date</div>
+                    <div class="text-xs font-bold text-slate-800 mt-1 flex items-center gap-2 font-mono">
+                        <i class="fa-solid fa-calendar-check text-slate-400"></i>
+                        <span>@(Model.PromissedReturnDate?.ToString("MMM dd, yyyy") ?? "Not specified")</span>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                    <div class="text-3xs font-bold uppercase tracking-wider text-slate-400">Actual Date of Return</div>
+                    <div class="text-xs font-bold text-slate-800 mt-1 flex items-center gap-2 font-mono">
+                        <i class="fa-solid fa-clock-rotate-left text-slate-400"></i>
+                        <span>@(Model.DateOfReturn?.ToString("MMM dd, yyyy") ?? "Not yet returned")</span>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                    <div class="text-3xs font-bold uppercase tracking-wider text-slate-400">Profit / Yield</div>
+                    <div class="text-sm font-bold text-purple-700 mt-1 font-mono">
+                        @Model.Profit.ToString("C")
+                    </div>
+                </div>
+
+                <div class="sm:col-span-2 p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                    <div class="text-3xs font-bold uppercase tracking-wider text-slate-400">Status</div>
+                    <div class="mt-1">
+                        @if (Model.IsDone)
+                        {
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                                <i class="fa-solid fa-circle-check text-3xs"></i> Settled / Closed
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-2xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80">
+                                <i class="fa-solid fa-hourglass-half text-3xs"></i> Active / Pending Recovery
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <div class="sm:col-span-2 p-4 rounded-xl border border-slate-200/80 bg-white">
+                    <div class="text-3xs font-bold uppercase tracking-wider text-slate-400 mb-1">Description & Notes</div>
+                    <p class="text-xs text-slate-700 leading-relaxed">
+                        @(string.IsNullOrWhiteSpace(Model.Description) ? "No notes recorded for this transaction." : Model.Description)
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

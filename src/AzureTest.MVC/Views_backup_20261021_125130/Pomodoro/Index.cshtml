@@ -1,0 +1,910 @@
+@model AzureTest.MVC.Models.PomodoroIndexViewModel
+@using AzureTest.Domain.Enums.Pomodoro
+@using AzureTest.MVC.Extensions
+@{
+    ViewData["Title"] = "Pomodoro Focus Timer";
+    var currentSkin = (int)Model.Setting.DefaultSkin;
+}
+
+<style>
+    /* Candle flame animation */
+    @@keyframes flicker {
+        0%, 100% { transform: scale(1) rotate(-1deg); opacity: 0.95; }
+        25% { transform: scale(1.08, 0.96) rotate(1deg); opacity: 1; }
+        50% { transform: scale(0.95, 1.05) rotate(-2deg); opacity: 0.9; }
+        75% { transform: scale(1.04, 1) rotate(2deg); opacity: 0.98; }
+    }
+    .flame-flicker {
+        animation: flicker 1.8s infinite ease-in-out;
+        transform-origin: bottom center;
+    }
+
+    /* Sand grains stream */
+    @@keyframes sandFall {
+        0% { transform: translateY(0); opacity: 0.8; }
+        100% { transform: translateY(90px); opacity: 0.2; }
+    }
+    .sand-stream {
+        animation: sandFall 0.7s infinite linear;
+    }
+
+    /* Glow utility */
+    .glow-cyan {
+        text-shadow: 0 0 25px rgba(6, 182, 212, 0.75), 0 0 50px rgba(6, 182, 212, 0.4);
+    }
+    .glow-rose {
+        text-shadow: 0 0 25px rgba(244, 63, 94, 0.75), 0 0 50px rgba(244, 63, 94, 0.4);
+    }
+    .glow-emerald {
+        text-shadow: 0 0 25px rgba(16, 185, 129, 0.75), 0 0 50px rgba(16, 185, 129, 0.4);
+    }
+
+    /* Fullscreen mode */
+    #pomodoro-timer-card:fullscreen,
+    #pomodoro-timer-card:-webkit-full-screen,
+    #pomodoro-timer-card.pomodoro-fullscreen {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: none !important;
+        border-radius: 0 !important;
+        z-index: 99999 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        overflow-y: auto !important;
+        margin: 0 !important;
+        padding: 2.5rem 1.5rem !important;
+        background: radial-gradient(circle at top, #0f172a 0%, #020617 100%) !important;
+    }
+    #pomodoro-timer-card:fullscreen .timer-inner-wrap,
+    #pomodoro-timer-card:-webkit-full-screen .timer-inner-wrap,
+    #pomodoro-timer-card.pomodoro-fullscreen .timer-inner-wrap {
+        transform: scale(1.12);
+        transition: transform 0.3s ease;
+    }
+</style>
+
+@using AzureTest.MVC.Models
+
+<partial name="UiComponents/_Breadcrumb" model='new List<BreadcrumbItem> { new BreadcrumbItem("Home", "/"), new BreadcrumbItem("Pomodoro", active: true) }' />
+
+<div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 text-lg shadow-2xs shrink-0">
+            <i class="fa-solid fa-stopwatch"></i>
+        </div>
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+                Pomodoro Focus Timer
+            </h1>
+            <p class="text-xs text-slate-500 mt-0.5">Boost deep work productivity with rhythm and beautiful themed timers.</p>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+        <a asp-action="Analytics" class="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-50 transition-colors shadow-2xs">
+            <i class="fa-solid fa-chart-pie text-brand-500"></i>
+            <span>Analytics & Logs</span>
+        </a>
+        <button type="button" onclick="openSettingsModal()" class="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition-colors shadow-2xs">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Settings</span>
+        </button>
+    </div>
+</div>
+
+<!-- Daily Snapshot Header Strip -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-stopwatch"></i>
+        </div>
+        <div>
+            <span class="text-xs text-slate-400 block font-medium">Today's Focus</span>
+            <span class="text-xl font-bold text-slate-800" id="stat-today-mins">@Model.TodayFocusMinutes min</span>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+            <span class="text-xs text-slate-400 block font-medium">Completed</span>
+            <span class="text-xl font-bold text-slate-800" id="stat-completed-count">@Model.TodayCompletedCount</span>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-fire text-amber-500"></i>
+        </div>
+        <div>
+            <span class="text-xs text-slate-400 block font-medium">Daily Streak</span>
+            <span class="text-xl font-bold text-slate-800">@Model.CurrentStreak days</span>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-repeat"></i>
+        </div>
+        <div>
+            <span class="text-xs text-slate-400 block font-medium">Current Cycle</span>
+            <span class="text-xl font-bold text-slate-800" id="stat-cycle">1 / @Model.Setting.LongBreakInterval</span>
+        </div>
+    </div>
+</div>
+
+<!-- Main Timer Card -->
+<div id="pomodoro-timer-card" class="bg-slate-900 rounded-3xl p-6 md:p-10 shadow-2xl border border-slate-800 text-white relative overflow-hidden mb-8">
+    <!-- Ambient Backdrop Glow -->
+    <div class="absolute -top-32 -left-32 w-80 h-80 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-32 -right-32 w-80 h-80 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Fullscreen Toggle Button -->
+    <button id="btn-fullscreen" type="button" onclick="toggleFullscreen()" class="absolute top-6 right-6 w-10 h-10 rounded-2xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-all border border-slate-700/80 shadow-md z-30" title="Full Screen (F)">
+        <i id="fullscreen-icon" class="fa-solid fa-expand"></i>
+    </button>
+
+    <div class="max-w-2xl mx-auto flex flex-col items-center timer-inner-wrap w-full">
+        <!-- Session Type Mode Selector Tabs -->
+        <div class="flex items-center gap-2 p-1.5 bg-slate-800/80 rounded-2xl border border-slate-700/60 mb-6 backdrop-blur-md">
+            <button id="mode-work" onclick="setMode('work')" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-rose-600 text-white shadow-md flex items-center gap-1.5">
+                <i class="fa-solid fa-stopwatch"></i> Focus (@Model.Setting.WorkDurationMinutes m)
+            </button>
+            <button id="mode-short" onclick="setMode('shortBreak')" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-mug-hot"></i> Short Break (@Model.Setting.ShortBreakMinutes m)
+            </button>
+            <button id="mode-long" onclick="setMode('longBreak')" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-umbrella-beach"></i> Long Break (@Model.Setting.LongBreakMinutes m)
+            </button>
+        </div>
+
+        <!-- Timer Theme Skin Switcher Pills -->
+        <div class="flex items-center gap-1.5 p-1 bg-slate-950/60 rounded-xl border border-slate-800 text-xs mb-8 flex-wrap justify-center">
+            <span class="text-slate-500 text-[11px] px-2 uppercase tracking-wider font-semibold">Skin:</span>
+            <button onclick="switchSkin(1)" id="skin-btn-1" class="px-3 py-1 rounded-lg font-medium transition-all @(currentSkin == 1 ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-200")">
+                <i class="fa-solid fa-laptop-code mr-1"></i> Digital
+            </button>
+            <button onclick="switchSkin(2)" id="skin-btn-2" class="px-3 py-1 rounded-lg font-medium transition-all @(currentSkin == 2 ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-200")">
+                <i class="fa-regular fa-clock mr-1"></i> Analog
+            </button>
+            <button onclick="switchSkin(3)" id="skin-btn-3" class="px-3 py-1 rounded-lg font-medium transition-all @(currentSkin == 3 ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-200")">
+                <i class="fa-solid fa-hourglass-half mr-1"></i> Sand Glass
+            </button>
+            <button onclick="switchSkin(4)" id="skin-btn-4" class="px-3 py-1 rounded-lg font-medium transition-all @(currentSkin == 4 ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-200")">
+                <i class="fa-solid fa-stopwatch-20 mr-1"></i> Kitchen Timer
+            </button>
+            <button onclick="switchSkin(5)" id="skin-btn-5" class="px-3 py-1 rounded-lg font-medium transition-all @(currentSkin == 5 ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-200")">
+                <i class="fa-solid fa-fire-flame-curved mr-1"></i> Candle
+            </button>
+        </div>
+
+        <!-- ════════════════════ SKIN 1: DIGITAL LED ════════════════════ -->
+        <div id="skin-view-1" class="skin-display flex flex-col items-center relative my-4">
+            <div class="relative w-72 h-72 flex items-center justify-center">
+                <!-- SVG Progress Ring -->
+                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 240 240">
+                    <circle cx="120" cy="120" r="102" stroke="currentColor" stroke-width="8" class="text-slate-800" fill="transparent"></circle>
+                    <circle id="digital-progress-ring" cx="120" cy="120" r="102" stroke="currentColor" stroke-width="8" stroke-dasharray="640.88" stroke-dashoffset="0" stroke-linecap="round" class="text-rose-500 transition-all duration-300" fill="transparent"></circle>
+                </svg>
+                <!-- Timer Text -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <span id="digital-time-display" class="font-mono text-6xl font-extrabold tracking-wider glow-rose text-white">25:00</span>
+                    <span id="digital-mode-label" class="text-xs uppercase tracking-widest text-slate-400 font-semibold mt-2">Deep Focus</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════ SKIN 2: ANALOG CLOCK ════════════════════ -->
+        <div id="skin-view-2" class="skin-display hidden flex flex-col items-center my-4">
+            <div class="relative w-72 h-72 rounded-full border-8 border-slate-700 bg-slate-950 shadow-2xl flex items-center justify-center">
+                <!-- Pie Slice Progress Canvas -->
+                <canvas id="analog-canvas" width="280" height="280" class="absolute inset-0"></canvas>
+                <!-- Center Pin -->
+                <div class="w-4 h-4 bg-rose-500 rounded-full border-2 border-white z-20 shadow-md"></div>
+                <!-- Digital Subtext -->
+                <div class="absolute bottom-12 text-center z-20">
+                    <span id="analog-time-display" class="font-mono text-sm font-bold text-slate-300 tracking-wider">25:00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════ SKIN 3: SAND GLASS (HOURGLASS) ════════════════════ -->
+        <div id="skin-view-3" class="skin-display hidden flex flex-col items-center my-4">
+            <div class="relative w-64 h-80 flex flex-col items-center justify-center">
+                <canvas id="sandglass-canvas" width="240" height="300" class="w-60 h-72"></canvas>
+                <div class="mt-2 text-center">
+                    <span id="sandglass-time-display" class="font-mono text-2xl font-bold text-amber-400 tracking-wider">25:00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════ SKIN 4: KITCHEN TIMER ════════════════════ -->
+        <div id="skin-view-4" class="skin-display hidden flex flex-col items-center my-4">
+            <div class="relative w-72 h-72 rounded-full bg-gradient-to-b from-slate-200 to-slate-400 p-2 shadow-2xl flex items-center justify-center border-4 border-slate-600">
+                <!-- Rotatable Dial Plate -->
+                <div id="kitchen-dial" class="relative w-64 h-64 rounded-full bg-white text-slate-800 shadow-inner flex items-center justify-center transition-transform duration-500">
+                    <canvas id="kitchen-canvas" width="256" height="256" class="absolute inset-0"></canvas>
+                    <!-- Center Metallic Knob -->
+                    <div class="w-24 h-24 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 border-4 border-slate-300 shadow-lg flex items-center justify-center z-10">
+                        <div class="w-2 h-8 bg-rose-500 rounded-full mb-4"></div>
+                    </div>
+                </div>
+                <!-- Fixed Top Indicator Triangle -->
+                <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[14px] border-t-rose-600 z-30 drop-shadow"></div>
+            </div>
+            <div class="mt-4 text-center">
+                <span id="kitchen-time-display" class="font-mono text-2xl font-bold text-slate-200">25:00</span>
+            </div>
+        </div>
+
+        <!-- ════════════════════ SKIN 5: CANDLE ════════════════════ -->
+        <div id="skin-view-5" class="skin-display hidden flex flex-col items-center my-4">
+            <div class="relative w-56 h-72 flex flex-col items-center justify-end">
+                <!-- Candle Flame -->
+                <div class="relative flex flex-col items-center mb-1">
+                    <!-- Flame Halo / Glow -->
+                    <div class="absolute -top-6 w-16 h-16 bg-amber-500/20 rounded-full blur-lg pointer-events-none"></div>
+                    <!-- Flame Core -->
+                    <div class="w-6 h-12 bg-gradient-to-t from-orange-500 via-yellow-400 to-white rounded-full flame-flicker shadow-[0_0_20px_#f59e0b]"></div>
+                    <!-- Wick -->
+                    <div class="w-1 h-3 bg-slate-950"></div>
+                </div>
+
+                <!-- Candle Body Container -->
+                <div class="w-24 h-48 bg-slate-950/40 rounded-b-2xl border-2 border-slate-700/60 overflow-hidden flex flex-col justify-end p-0.5">
+                    <!-- Melting Candle Wax (height shrinks as time elapses) -->
+                    <div id="candle-wax" class="w-full bg-gradient-to-t from-amber-200 to-amber-100 rounded-b-xl transition-all duration-500 relative flex items-center justify-center" style="height: 100%;">
+                        <!-- Wax Droplets Effect -->
+                        <div class="absolute -left-1 top-4 w-2 h-6 bg-amber-200 rounded-full"></div>
+                        <div class="absolute -right-1 top-8 w-2 h-4 bg-amber-200 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3 text-center">
+                <span id="candle-time-display" class="font-mono text-2xl font-bold text-amber-300">25:00</span>
+            </div>
+        </div>
+
+        <!-- Task & Tag Input -->
+        <div class="w-full max-w-md mt-6 space-y-3">
+            <div class="relative">
+                <select id="select-linked-task" onchange="onTaskSelectChanged(this)"
+                        class="w-full bg-slate-800/90 border border-slate-700 rounded-2xl py-2.5 px-3.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all">
+                    <option value="">Link to an active task (optional)</option>
+                    @if (Model.ActiveTasks != null && Model.ActiveTasks.Any())
+                    {
+                        @foreach (var task in Model.ActiveTasks)
+                        {
+                            var isPreSelected = ViewBag.SelectedTaskId != null && (Guid)ViewBag.SelectedTaskId == task.Id;
+                            <option value="@task.Id" data-title="@task.Title" selected="@(isPreSelected ? "selected" : null)">@task.Title</option>
+                        }
+                    }
+                    else
+                    {
+                        <option value="" disabled>No active tasks found (go to /Tasks to create one)</option>
+                    }
+                </select>
+            </div>
+
+            <div class="relative">
+                <input id="input-task-title" type="text" placeholder="What are you focusing on?"
+                       class="w-full bg-slate-800/90 border border-slate-700 rounded-2xl py-3 px-4 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all shadow-inner" />
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input id="input-task-category" type="text" placeholder="Category/Tag (e.g. Coding, Design, Reading)"
+                       class="flex-1 bg-slate-800/90 border border-slate-700 rounded-xl py-2 px-3 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all" />
+                <div class="flex items-center gap-1 text-slate-400 text-xs px-2">
+                    <i class="fa-solid fa-bell text-xs"></i>
+                    <span id="sound-status-label">@(Model.Setting.SoundEnabled ? "Sound On" : "Muted")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timer Primary Controls -->
+        <div class="flex items-center gap-4 mt-8">
+            <button id="btn-reset" onclick="resetTimer()" class="w-12 h-12 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-all border border-slate-700 focus:outline-none shadow-md" title="Reset Timer">
+                <i class="fa-solid fa-rotate-left"></i>
+            </button>
+
+            <button id="btn-play-pause" onclick="toggleTimer()" class="px-8 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-base transition-all shadow-lg shadow-rose-900/40 flex items-center gap-2.5 focus:outline-none active:scale-95">
+                <i id="play-pause-icon" class="fa-solid fa-play"></i>
+                <span id="play-pause-text">START FOCUS</span>
+            </button>
+
+            <button id="btn-skip" onclick="skipOrComplete()" class="w-12 h-12 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-all border border-slate-700 focus:outline-none shadow-md" title="Skip / Complete Session Early">
+                <i class="fa-solid fa-forward-step"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal Dialog -->
+<div id="settings-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-slate-800">Timer Settings</h3>
+            <button type="button" onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <form asp-action="UpdateSettings" method="post" class="p-6 space-y-4">
+            @Html.AntiForgeryToken()
+
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Focus (min)</label>
+                    <input type="number" name="WorkDurationMinutes" min="1" max="120" value="@Model.Setting.WorkDurationMinutes" required
+                           class="w-full rounded-xl border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Short (min)</label>
+                    <input type="number" name="ShortBreakMinutes" min="1" max="60" value="@Model.Setting.ShortBreakMinutes" required
+                           class="w-full rounded-xl border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Long (min)</label>
+                    <input type="number" name="LongBreakMinutes" min="1" max="120" value="@Model.Setting.LongBreakMinutes" required
+                           class="w-full rounded-xl border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500" />
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Long Break Interval (cycles)</label>
+                <input type="number" name="LongBreakInterval" min="1" max="12" value="@Model.Setting.LongBreakInterval" required
+                       class="w-full rounded-xl border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Default Skin</label>
+                <select name="DefaultSkin" class="w-full rounded-xl border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500">
+                    @foreach (var skinItem in EnumExtensions.ToSelectList<TimerSkin>(Model.Setting.DefaultSkin))
+                    {
+                        <option value="@skinItem.Value" selected="@skinItem.Selected">@skinItem.Text</option>
+                    }
+                </select>
+            </div>
+
+            <div class="space-y-2 pt-2 border-t border-slate-100">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="AutoStartBreaks" value="true" @(Model.Setting.AutoStartBreaks ? "checked" : "") class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                    <span class="text-xs font-medium text-slate-700">Auto-start Breaks</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="AutoStartPomodoros" value="true" @(Model.Setting.AutoStartPomodoros ? "checked" : "") class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                    <span class="text-xs font-medium text-slate-700">Auto-start Focus sessions</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="SoundEnabled" value="true" @(Model.Setting.SoundEnabled ? "checked" : "") class="rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                    <span class="text-xs font-medium text-slate-700">Enable Sound Notification (Chime)</span>
+                </label>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 rounded-xl text-slate-600 text-sm font-semibold hover:bg-slate-100">
+                    Cancel
+                </button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm">
+                    Save Settings
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Configuration state from backend
+        const config = {
+            workMinutes: @Model.Setting.WorkDurationMinutes,
+            shortBreakMinutes: @Model.Setting.ShortBreakMinutes,
+            longBreakMinutes: @Model.Setting.LongBreakMinutes,
+            longBreakInterval: @Model.Setting.LongBreakInterval,
+            autoStartBreaks: @Model.Setting.AutoStartBreaks.ToString().ToLower(),
+            autoStartPomodoros: @Model.Setting.AutoStartPomodoros.ToString().ToLower(),
+            soundEnabled: @Model.Setting.SoundEnabled.ToString().ToLower(),
+            defaultSkin: @currentSkin
+        };
+
+        let currentMode = 'work'; // 'work', 'shortBreak', 'longBreak'
+        let currentSkin = config.defaultSkin;
+        let totalSeconds = config.workMinutes * 60;
+        let remainingSeconds = totalSeconds;
+        let isRunning = false;
+        let timerInterval = null;
+        let sessionStartTime = null;
+        let cycleCount = 1;
+
+        // Audio Context Synthesizer (Zero file dependencies, high quality chime)
+        function playChime() {
+            if (!config.soundEnabled) return;
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 (Bright cheerful chord)
+                notes.forEach((freq, index) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime + index * 0.12);
+
+                    gain.gain.setValueAtTime(0, ctx.currentTime + index * 0.12);
+                    gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + index * 0.12 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + index * 0.12 + 1.2);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc.start(ctx.currentTime + index * 0.12);
+                    osc.stop(ctx.currentTime + index * 0.12 + 1.3);
+                });
+            } catch (e) {
+                console.warn("Audio chime failed", e);
+            }
+        }
+
+        // Timer Tick Engine
+        function tick() {
+            if (remainingSeconds > 0) {
+                remainingSeconds--;
+                renderAllSkins();
+            } else {
+                onSessionFinished();
+            }
+        }
+
+        function toggleTimer() {
+            if (isRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        }
+
+        function startTimer() {
+            if (isRunning) return;
+            if (!sessionStartTime) sessionStartTime = new Date();
+            isRunning = true;
+            timerInterval = setInterval(tick, 1000);
+
+            document.getElementById('play-pause-icon').className = 'fa-solid fa-pause';
+            document.getElementById('play-pause-text').textContent = 'PAUSE';
+            document.getElementById('btn-play-pause').classList.replace('bg-rose-600', 'bg-amber-600');
+            document.getElementById('btn-play-pause').classList.replace('hover:bg-rose-500', 'hover:bg-amber-500');
+        }
+
+        function pauseTimer() {
+            if (!isRunning) return;
+            isRunning = false;
+            clearInterval(timerInterval);
+            timerInterval = null;
+
+            document.getElementById('play-pause-icon').className = 'fa-solid fa-play';
+            document.getElementById('play-pause-text').textContent = 'RESUME';
+            document.getElementById('btn-play-pause').classList.replace('bg-amber-600', 'bg-rose-600');
+            document.getElementById('btn-play-pause').classList.replace('hover:bg-amber-500', 'hover:bg-rose-500');
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            sessionStartTime = null;
+            if (currentMode === 'work') totalSeconds = config.workMinutes * 60;
+            else if (currentMode === 'shortBreak') totalSeconds = config.shortBreakMinutes * 60;
+            else totalSeconds = config.longBreakMinutes * 60;
+            remainingSeconds = totalSeconds;
+            renderAllSkins();
+            document.getElementById('play-pause-text').textContent = 'START ' + (currentMode === 'work' ? 'FOCUS' : 'BREAK');
+        }
+
+        function setMode(mode) {
+            pauseTimer();
+            currentMode = mode;
+            sessionStartTime = null;
+
+            const modeWork = document.getElementById('mode-work');
+            const modeShort = document.getElementById('mode-short');
+            const modeLong = document.getElementById('mode-long');
+
+            [modeWork, modeShort, modeLong].forEach(btn => {
+                btn.className = 'px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition-all';
+            });
+
+            if (mode === 'work') {
+                modeWork.className = 'px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-rose-600 text-white shadow-md';
+                totalSeconds = config.workMinutes * 60;
+                document.getElementById('digital-mode-label').textContent = 'Deep Focus';
+            } else if (mode === 'shortBreak') {
+                modeShort.className = 'px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-emerald-600 text-white shadow-md';
+                totalSeconds = config.shortBreakMinutes * 60;
+                document.getElementById('digital-mode-label').textContent = 'Short Break';
+            } else {
+                modeLong.className = 'px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all bg-indigo-600 text-white shadow-md';
+                totalSeconds = config.longBreakMinutes * 60;
+                document.getElementById('digital-mode-label').textContent = 'Long Break';
+            }
+
+            remainingSeconds = totalSeconds;
+            renderAllSkins();
+            document.getElementById('play-pause-text').textContent = 'START ' + (mode === 'work' ? 'FOCUS' : 'BREAK');
+        }
+
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        // Render each theme
+        function renderAllSkins() {
+            const timeStr = formatTime(remainingSeconds);
+            const progress = (totalSeconds - remainingSeconds) / totalSeconds; // 0 to 1
+
+            // 1. Digital
+            document.getElementById('digital-time-display').textContent = timeStr;
+            const dashOffset = 640.88 * progress;
+            document.getElementById('digital-progress-ring').style.strokeDashoffset = dashOffset;
+
+            // 2. Analog
+            document.getElementById('analog-time-display').textContent = timeStr;
+            renderAnalogClock(progress);
+
+            // 3. Sandglass
+            document.getElementById('sandglass-time-display').textContent = timeStr;
+            renderSandglass(progress);
+
+            // 4. Kitchen Timer
+            document.getElementById('kitchen-time-display').textContent = timeStr;
+            renderKitchenTimer(progress);
+
+            // 5. Candle
+            document.getElementById('candle-time-display').textContent = timeStr;
+            const remainingRatio = Math.max(0.08, remainingSeconds / totalSeconds);
+            document.getElementById('candle-wax').style.height = `${remainingRatio * 100}%`;
+        }
+
+        // Analog Face Drawing
+        function renderAnalogClock(progress) {
+            const canvas = document.getElementById('analog-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 110;
+
+            // Elapsed Pie Sector
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius - 4, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * progress));
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(244, 63, 94, 0.35)';
+            ctx.fill();
+
+            // Minute Ticks
+            for (let i = 0; i < 60; i++) {
+                const angle = (i * 6) * Math.PI / 180;
+                const isMajor = i % 5 === 0;
+                const inner = isMajor ? radius - 16 : radius - 8;
+
+                ctx.beginPath();
+                ctx.moveTo(centerX + Math.sin(angle) * inner, centerY - Math.cos(angle) * inner);
+                ctx.lineTo(centerX + Math.sin(angle) * radius, centerY - Math.cos(angle) * radius);
+                ctx.strokeStyle = isMajor ? '#94a3b8' : '#475569';
+                ctx.lineWidth = isMajor ? 3 : 1;
+                ctx.stroke();
+            }
+
+            // Sweeping Hand
+            const handAngle = progress * Math.PI * 2 - Math.PI / 2;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX + Math.cos(handAngle) * (radius - 12), centerY + Math.sin(handAngle) * (radius - 12));
+            ctx.strokeStyle = '#f43f5e';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+        }
+
+        // Sandglass Drawing
+        function renderSandglass(progress) {
+            const canvas = document.getElementById('sandglass-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Bulbs outlines
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 4;
+
+            // Top bulb
+            ctx.beginPath();
+            ctx.moveTo(40, 20);
+            ctx.lineTo(200, 20);
+            ctx.bezierCurveTo(200, 110, 130, 140, 120, 150);
+            ctx.bezierCurveTo(110, 140, 40, 110, 40, 20);
+            ctx.stroke();
+
+            // Bottom bulb
+            ctx.beginPath();
+            ctx.moveTo(120, 150);
+            ctx.bezierCurveTo(130, 160, 200, 190, 200, 280);
+            ctx.lineTo(40, 280);
+            ctx.bezierCurveTo(40, 190, 110, 160, 120, 150);
+            ctx.stroke();
+
+            // Sand top (diminishing)
+            const remainingFraction = 1 - progress;
+            if (remainingFraction > 0.02) {
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                const topY = 25 + (1 - remainingFraction) * 110;
+                ctx.moveTo(50 + (1 - remainingFraction) * 40, topY);
+                ctx.lineTo(190 - (1 - remainingFraction) * 40, topY);
+                ctx.bezierCurveTo(180, 120, 130, 140, 120, 150);
+                ctx.bezierCurveTo(110, 140, 60, 120, 50 + (1 - remainingFraction) * 40, topY);
+                ctx.fill();
+            }
+
+            // Falling stream if running
+            if (isRunning && remainingFraction > 0.01) {
+                ctx.fillStyle = '#fbbf24';
+                ctx.fillRect(118, 150, 4, 110);
+            }
+
+            // Sand bottom (building up)
+            if (progress > 0.02) {
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.moveTo(45, 275);
+                ctx.lineTo(195, 275);
+                const moundHeight = progress * 70;
+                ctx.lineTo(120, 275 - moundHeight);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // Kitchen Timer Dial
+        function renderKitchenTimer(progress) {
+            const canvas = document.getElementById('kitchen-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 110;
+
+            // Numbers 0, 5, 10, ... 55
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (let i = 0; i < 60; i += 5) {
+                const angle = (i * 6) * Math.PI / 180;
+                const numX = centerX + Math.sin(angle) * (radius - 20);
+                const numY = centerY - Math.cos(angle) * (radius - 20);
+                ctx.fillText(i.toString(), numX, numY);
+            }
+
+            // Rotational angle for the dial plate
+            const dialElement = document.getElementById('kitchen-dial');
+            if (dialElement) {
+                const degrees = progress * 360;
+                dialElement.style.transform = `rotate(-${degrees}deg)`;
+            }
+        }
+
+        // Switch Skins
+        function switchSkin(skinId) {
+            currentSkin = skinId;
+            document.querySelectorAll('.skin-display').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(`skin-view-${skinId}`);
+            if (target) target.classList.remove('hidden');
+
+            for (let i = 1; i <= 5; i++) {
+                const btn = document.getElementById(`skin-btn-${i}`);
+                if (btn) {
+                    if (i === skinId) {
+                        btn.className = 'px-3 py-1 rounded-lg font-medium transition-all bg-slate-700 text-white shadow-sm';
+                    } else {
+                        btn.className = 'px-3 py-1 rounded-lg font-medium transition-all text-slate-400 hover:text-slate-200';
+                    }
+                }
+            }
+            renderAllSkins();
+        }
+
+        // Session Lifecycle Completion & Auto-Save
+        async function onSessionFinished() {
+            pauseTimer();
+            playChime();
+
+            const isFocus = currentMode === 'work';
+            const spentSec = totalSeconds;
+            const taskTitle = document.getElementById('input-task-title').value.trim() || (isFocus ? 'Focus Session' : 'Rest Break');
+            const category = document.getElementById('input-task-category').value.trim() || null;
+
+            await sendSessionLog(taskTitle, category, isFocus ? 1 : (currentMode === 'shortBreak' ? 2 : 3), spentSec, 2);
+
+            // Update stats
+            if (isFocus) {
+                const currentTodayMins = parseInt(document.getElementById('stat-today-mins').textContent) || 0;
+                document.getElementById('stat-today-mins').textContent = `${currentTodayMins + Math.round(spentSec / 60)} min`;
+
+                const completedEl = document.getElementById('stat-completed-count');
+                completedEl.textContent = (parseInt(completedEl.textContent) || 0) + 1;
+
+                if (cycleCount < config.longBreakInterval) {
+                    cycleCount++;
+                    document.getElementById('stat-cycle').textContent = `${cycleCount} / ${config.longBreakInterval}`;
+                    setMode('shortBreak');
+                    if (config.autoStartBreaks) startTimer();
+                } else {
+                    cycleCount = 1;
+                    document.getElementById('stat-cycle').textContent = `1 / ${config.longBreakInterval}`;
+                    setMode('longBreak');
+                    if (config.autoStartBreaks) startTimer();
+                }
+            } else {
+                setMode('work');
+                if (config.autoStartPomodoros) startTimer();
+            }
+        }
+
+        // Early Complete / Skip
+        async function skipOrComplete() {
+            if (!isRunning && remainingSeconds === totalSeconds) {
+                // Not even started, simply switch mode
+                if (currentMode === 'work') setMode('shortBreak');
+                else setMode('work');
+                return;
+            }
+
+            const spentSec = totalSeconds - remainingSeconds;
+            const isFocus = currentMode === 'work';
+            const taskTitle = document.getElementById('input-task-title').value.trim() || (isFocus ? 'Focus Session' : 'Rest Break');
+            const category = document.getElementById('input-task-category').value.trim() || null;
+
+            if (spentSec >= 30) {
+                // If more than 30s spent, save as abandoned or partial
+                await sendSessionLog(taskTitle, category, isFocus ? 1 : 2, spentSec, 3);
+            }
+
+            if (currentMode === 'work') setMode('shortBreak');
+            else setMode('work');
+        }
+
+        let selectedTaskItemId = null;
+
+        function onTaskSelectChanged(select) {
+            selectedTaskItemId = select.value || null;
+            if (select.value) {
+                const opt = select.options[select.selectedIndex];
+                const taskTitle = opt.getAttribute('data-title');
+                if (taskTitle) {
+                    document.getElementById('input-task-title').value = taskTitle;
+                }
+            }
+        }
+
+        // Backend Sync API
+        async function sendSessionLog(title, category, sessionType, actualSeconds, status) {
+            try {
+                const selectEl = document.getElementById('select-linked-task');
+                const taskItemId = (selectEl && selectEl.value) ? selectEl.value : (selectedTaskItemId || null);
+
+                const payload = {
+                    title: title,
+                    category: category,
+                    taskItemId: taskItemId,
+                    sessionType: sessionType,
+                    plannedDurationSeconds: totalSeconds,
+                    actualDurationSeconds: actualSeconds,
+                    startedAtUtc: sessionStartTime ? sessionStartTime.toISOString() : new Date().toISOString(),
+                    endedAtUtc: new Date().toISOString(),
+                    status: status,
+                    interruptionCount: 0,
+                    notes: null,
+                    usedSkin: currentSkin
+                };
+
+                const res = await fetch('/Pomodoro/SaveSession', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+            } catch (err) {
+                console.error("Failed to save pomodoro session", err);
+            }
+        }
+
+        // Fullscreen Handling
+        function toggleFullscreen() {
+            const card = document.getElementById('pomodoro-timer-card');
+            if (!card) return;
+
+            if (!document.fullscreenElement && !card.classList.contains('pomodoro-fullscreen')) {
+                if (card.requestFullscreen) {
+                    card.requestFullscreen().catch(() => {
+                        card.classList.add('pomodoro-fullscreen');
+                        updateFullscreenIcon(true);
+                    });
+                } else {
+                    card.classList.add('pomodoro-fullscreen');
+                    updateFullscreenIcon(true);
+                }
+            } else {
+                if (document.fullscreenElement && document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {
+                        card.classList.remove('pomodoro-fullscreen');
+                        updateFullscreenIcon(false);
+                    });
+                } else {
+                    card.classList.remove('pomodoro-fullscreen');
+                    updateFullscreenIcon(false);
+                }
+            }
+        }
+
+        function updateFullscreenIcon(isFs) {
+            const icon = document.getElementById('fullscreen-icon');
+            if (icon) {
+                icon.className = isFs ? 'fa-solid fa-compress' : 'fa-solid fa-expand';
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            updateFullscreenIcon(!!document.fullscreenElement);
+        });
+
+        // Keyboard shortcuts (F for fullscreen, Escape to exit custom fallback fullscreen)
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 'f' || e.key === 'F') && !['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+                e.preventDefault();
+                toggleFullscreen();
+            }
+            if (e.key === 'Escape') {
+                const card = document.getElementById('pomodoro-timer-card');
+                if (card && card.classList.contains('pomodoro-fullscreen')) {
+                    card.classList.remove('pomodoro-fullscreen');
+                    updateFullscreenIcon(false);
+                }
+            }
+        });
+
+        // Settings Modal
+        function openSettingsModal() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', function () {
+            switchSkin(config.defaultSkin);
+            renderAllSkins();
+
+            // Pre-select task if provided via query string
+            const selectEl = document.getElementById('select-linked-task');
+            if (selectEl && selectEl.value) {
+                onTaskSelectChanged(selectEl);
+            }
+        });
+    </script>
+}

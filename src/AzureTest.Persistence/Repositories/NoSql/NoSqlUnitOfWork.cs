@@ -49,7 +49,7 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     public ICompanyRepository Companies => _companies ??= new CompanyRepository(_database);
     public IResumeStatusLogRepository ResumeStatusLogs => _resumeStatusLogs ??= new ResumeStatusLogRepository(_database);
     public IDebtPersonRepository DebtPersons => _debtPersons ??= new DebtPersonRepository(_database);
-    public IExpenseCategoryRepository ExpenseCategories => _expenseCategories ??= new ExpenseCategoryRepository(_database);
+    public IExpenseCategoryRepository ExpenseCategories => _expenseCategories ??= new ExpenseCategoryRepository(_database, _tenantProvider);
     public IUserPreferenceRepository UserPreferences => _userPreferences ??= new UserPreferenceRepository(_database);
     public IDashboardComponentRepository DashboardComponents => _dashboardComponents ??= new DashboardComponentRepository(_database);
     public IDashboardRawComponentRepository DashboardRawComponents => _dashboardRawComponents ??= new DashboardRawComponentRepository(_database);

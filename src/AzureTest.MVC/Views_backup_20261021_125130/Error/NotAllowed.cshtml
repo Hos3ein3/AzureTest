@@ -1,0 +1,17 @@
+@{
+    ViewData["Title"] = "Access Denied";
+    var emptyModel = new AzureTest.MVC.Models.EmptyStateModel(
+        "403 - Access Denied",
+        "You do not have the required permissions to view this page or perform this operation. If you believe this is an error, please contact your administrator.",
+        "fa-solid fa-shield-halved",
+        ActionText: "Return to Dashboard",
+        ActionUrl: "/",
+        ActionIcon: "fa-solid fa-house"
+    );
+}
+
+<div class="max-w-2xl mx-auto py-12">
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-8 shadow-2xs text-center">
+        <partial name="UiComponents/_EmptyState" model="emptyModel" />
+    </div>
+</div>

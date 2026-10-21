@@ -1,0 +1,232 @@
+@using AzureTest.MVC.Models
+@using AzureTest.Domain.Enums
+@model AzureTest.Contracts.DTOs.Common.PagedResult<AzureTest.Contracts.DTOs.Tickets.TicketDto, AzureTest.Contracts.DTOs.Tickets.GetAllTicketsFilters>
+@{
+    ViewData["Title"] = "Support Tickets";
+    bool isAdmin = ViewBag.IsAdmin == true;
+    string? currentStatus = ViewBag.Status as string;
+    string? currentPriority = ViewBag.Priority as string;
+    string? currentSortBy = ViewBag.SortBy as string ?? "date";
+    string? currentSortOrder = ViewBag.SortOrder as string ?? "desc";
+    int pageSize = ViewBag.PageSize is int ps ? ps : 10;
+
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Dashboard", Url.Action("Index", "Home"), "fa-solid fa-house"),
+        new BreadcrumbItem("Support Tickets", null, "fa-solid fa-headset", true)
+    };
+
+    var headerModel = new PageHeaderModel(
+        isAdmin ? "Support Ticket Central" : "My Support Tickets",
+        isAdmin ? "Respond to client queries, bug reports, and assistance requests." : "Track and manage your submitted support tickets.",
+        "fa-solid fa-headset",
+        isAdmin ? null : new HeaderAction("Open New Ticket", Url.Action("Create"), "fa-solid fa-plus", "primary")
+    );
+
+    string GetSortUrl(string field)
+    {
+        string newOrder = (currentSortBy == field && currentSortOrder == "asc") ? "desc" : "asc";
+        return $"?page=1&pageSize={pageSize}&status={currentStatus}&priority={currentPriority}&sortBy={field}&sortOrder={newOrder}";
+    }
+
+    string GetSortIcon(string field)
+    {
+        if (currentSortBy == field)
+        {
+            return currentSortOrder == "asc" ? "fa-solid fa-arrow-up-short-wide text-brand-600 ml-1 text-xs" : "fa-solid fa-arrow-down-wide-short text-brand-600 ml-1 text-xs";
+        }
+        return "fa-solid fa-sort text-slate-300 ml-1 text-xs hover:text-slate-500";
+    }
+
+    string BuildPageUrl(int targetPage)
+    {
+        return $"?page={targetPage}&pageSize={pageSize}&status={currentStatus}&priority={currentPriority}&sortBy={currentSortBy}&sortOrder={currentSortOrder}";
+    }
+}
+
+<div class="px-4 sm:px-6 lg:px-8 py-8 mx-auto max-w-7xl space-y-6">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
+
+    <!-- Filter Card -->
+    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+        <form asp-action="Index" method="get">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <div class="md:col-span-3">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Search</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </div>
+                        <input name="SearchTerm" type="text" value="@(ViewBag.Filters?.SearchTerm)"
+                               class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-slate-800 placeholder:text-slate-400"
+                               placeholder="Subject or content..." />
+                    </div>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Status</label>
+                    <select name="status"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-slate-800">
+                        <option value="">All Statuses</option>
+                        @foreach (var s in Enum.GetNames<TicketStatus>())
+                        {
+                            var selected = string.Equals(currentStatus, s, StringComparison.OrdinalIgnoreCase) ? "selected" : null;
+                            <option value="@s" selected="@selected">@s</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Priority</label>
+                    <select name="priority"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-slate-800">
+                        <option value="">All Priorities</option>
+                        @foreach (var p in Enum.GetNames<TicketPriority>())
+                        {
+                            var selected = string.Equals(currentPriority, p, StringComparison.OrdinalIgnoreCase) ? "selected" : null;
+                            <option value="@p" selected="@selected">@p</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Sort By</label>
+                    <select name="sortBy"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-slate-800">
+                        <option value="date" selected="@(currentSortBy == "date" ? "selected" : null)">Date Opened</option>
+                        <option value="subject" selected="@(currentSortBy == "subject" ? "selected" : null)">Subject</option>
+                        <option value="priority" selected="@(currentSortBy == "priority" ? "selected" : null)">Priority</option>
+                        <option value="status" selected="@(currentSortBy == "status" ? "selected" : null)">Status</option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-3 flex items-center gap-2">
+                    <button type="submit"
+                            class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow transition-all duration-200">
+                        <i class="fa-solid fa-filter"></i> Filter
+                    </button>
+                    <a asp-action="Index"
+                       class="inline-flex items-center justify-center p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 rounded-xl transition-all"
+                       title="Reset Filters">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table Card -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm whitespace-nowrap">
+                <thead class="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                    <tr>
+                        <th scope="col" class="px-6 py-4 font-semibold">
+                            <a href="@GetSortUrl("subject")" class="inline-flex items-center hover:text-slate-900 transition-colors">
+                                Subject <i class="@GetSortIcon("subject")"></i>
+                            </a>
+                        </th>
+                        <th scope="col" class="px-6 py-4 font-semibold">
+                            <a href="@GetSortUrl("priority")" class="inline-flex items-center hover:text-slate-900 transition-colors">
+                                Priority <i class="@GetSortIcon("priority")"></i>
+                            </a>
+                        </th>
+                        <th scope="col" class="px-6 py-4 font-semibold">
+                            <a href="@GetSortUrl("status")" class="inline-flex items-center hover:text-slate-900 transition-colors">
+                                Status <i class="@GetSortIcon("status")"></i>
+                            </a>
+                        </th>
+                        <th scope="col" class="px-6 py-4 font-semibold">
+                            <a href="@GetSortUrl("date")" class="inline-flex items-center hover:text-slate-900 transition-colors">
+                                Date Opened <i class="@GetSortIcon("date")"></i>
+                            </a>
+                        </th>
+                        <th scope="col" class="px-6 py-4 font-semibold text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach (var t in Model.Items)
+                    {
+                        var unread = !isAdmin && t.Messages.Any(m => m.UserId != t.UserId && !m.IsReadByCreator);
+                        var priorityStyle = t.Priority switch
+                        {
+                            TicketPriority.Low => "bg-slate-100 text-slate-700 border-slate-200",
+                            TicketPriority.Medium => "bg-blue-50 text-blue-700 border-blue-200",
+                            TicketPriority.High => "bg-amber-50 text-amber-700 border-amber-200",
+                            TicketPriority.Urgent => "bg-rose-50 text-rose-700 border-rose-200",
+                            _ => "bg-slate-100 text-slate-700"
+                        };
+
+                        var statusStyle = t.Status switch
+                        {
+                            TicketStatus.Open => "bg-emerald-50 text-emerald-700 border-emerald-200",
+                            TicketStatus.InProgress => "bg-indigo-50 text-indigo-700 border-indigo-200",
+                            TicketStatus.Answered => "bg-brand-50 text-brand-700 border-brand-200",
+                            TicketStatus.Closed => "bg-slate-100 text-slate-600 border-slate-200",
+                            _ => "bg-slate-100 text-slate-700"
+                        };
+
+                        <tr class="hover:bg-slate-50/70 transition-colors @(unread ? "bg-brand-50/20" : "")">
+                            <td class="px-6 py-4 font-semibold text-slate-900">
+                                <div class="flex items-center gap-2.5">
+                                    @if (unread)
+                                    {
+                                        <span class="w-2.5 h-2.5 rounded-full bg-brand-500 animate-pulse shrink-0" title="Unread Messages"></span>
+                                    }
+                                    <a asp-action="Details" asp-route-id="@t.Id" class="hover:text-brand-600 transition-colors">
+                                        @t.Subject
+                                    </a>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border @priorityStyle">
+                                    <i class="fa-solid fa-flag text-[10px]"></i> @t.Priority
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border @statusStyle">
+                                    <i class="fa-solid fa-circle text-[6px]"></i> @t.Status
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-xs font-medium text-slate-500">
+                                @t.CreatedOn.ToLocalTime().ToString("MMM dd, yyyy HH:mm")
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <a asp-action="Details" asp-route-id="@t.Id"
+                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 rounded-lg text-xs font-semibold transition">
+                                    <span>Details</span>
+                                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                                <i class="fa-solid fa-ticket text-3xl text-slate-300 mb-2 block"></i>
+                                <p class="text-sm font-semibold text-slate-800">No support tickets found</p>
+                                <p class="text-xs text-slate-400 mt-1">Try adjusting your filters or open a new support ticket.</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            var paginationModel = new PaginationModel(
+                Model.PageNumber,
+                Model.TotalPages,
+                Model.PageSize,
+                Model.TotalCount,
+                p => BuildPageUrl(p)
+            );
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+                <partial name="UiComponents/_Pagination" model="paginationModel" />
+            </div>
+        }
+    </div>
+</div>

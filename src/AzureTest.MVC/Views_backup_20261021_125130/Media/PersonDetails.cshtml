@@ -1,0 +1,370 @@
+@using AzureTest.Contracts.DTOs.Media
+@using AzureTest.Domain.Media.Enums
+@using AzureTest.MVC.Models
+@model FollowedPersonDto
+
+@{
+    ViewData["Title"] = Model.Name;
+    var isFollowed = Model.Id != Guid.Empty;
+
+    string ProfileUrl(string? path) => string.IsNullOrWhiteSpace(path)
+        ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80"
+        : $"https://image.tmdb.org/t/p/w500{path}";
+
+    string PosterUrl(string? path) => string.IsNullOrWhiteSpace(path)
+        ? "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=400&q=80"
+        : $"https://image.tmdb.org/t/p/w500{path}";
+
+    string Slugify(string? title) => string.IsNullOrWhiteSpace(title)
+        ? "details"
+        : System.Text.RegularExpressions.Regex.Replace(title.ToLowerInvariant(), @"[^a-z0-9]+", "-").Trim('-');
+
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new("Media", Url.Action("Index", "Media")),
+        new("Actors & Directors", Url.Action("People", "Media")),
+        new(Model.Name, null, IsActive: true)
+    };
+}
+
+<div class="space-y-8">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+
+    <!-- Profile Hero Card -->
+    <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 shadow-2xs flex flex-col md:flex-row gap-6 items-start">
+        <img src="@ProfileUrl(Model.ProfilePath)" alt="@Model.Name"
+             class="w-36 h-36 md:w-48 md:h-48 rounded-2xl object-cover border-2 border-slate-100 dark:border-slate-700 shadow-md mx-auto md:mx-0 flex-shrink-0" />
+
+        <div class="flex-1 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">@Model.Name</h1>
+                        <span class="px-2.5 py-1 rounded-xl text-xs font-bold uppercase bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 border border-purple-100 dark:border-purple-800/50">
+                            @Model.KnownForDepartment
+                        </span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        @if (Model.Birthday.HasValue)
+                        {
+                            <span>
+                                <i class="fa-regular fa-cake-candles mr-1 text-slate-400"></i>
+                                Born @Model.Birthday.Value.ToString("MMM dd, yyyy")
+                            </span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.PlaceOfBirth))
+                        {
+                            <span>
+                                <i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>
+                                @Model.PlaceOfBirth
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <!-- Follow Toggle Form -->
+                <div>
+                    <form asp-action="ToggleFollowPerson" asp-controller="Media" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="tmdbPersonId" value="@Model.TmdbPersonId" />
+                        <input type="hidden" name="name" value="@Model.Name" />
+                        <input type="hidden" name="department" value="@Model.KnownForDepartment" />
+                        <input type="hidden" name="profilePath" value="@Model.ProfilePath" />
+                        <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                        @if (isFollowed)
+                        {
+                            <button type="submit"
+                                    class="group px-4 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 hover:bg-rose-50 dark:hover:bg-rose-950/50 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-300 dark:hover:border-rose-800 text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5"
+                                    title="Click to toggle follow state">
+                                <i class="fa-solid fa-check group-hover:hidden text-2xs"></i>
+                                <i class="fa-solid fa-user-minus hidden group-hover:inline text-2xs"></i>
+                                <span class="group-hover:hidden">Following</span>
+                                <span class="hidden group-hover:inline">Unfollow</span>
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5"
+                                    title="Follow @Model.Name">
+                                <i class="fa-solid fa-heart mr-1"></i> Follow @Model.Name
+                            </button>
+                        }
+                    </form>
+                </div>
+            </div>
+
+            <!-- Filmography Completion Banner -->
+            <div class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700 space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 text-xs"></i>
+                        <span>Your Filmography Progress</span>
+                    </span>
+                    <span class="font-bold text-brand-600 dark:text-brand-400">
+                        @Model.WatchedCount of @Model.TotalCreditsCount watched (@Model.ProgressPercentage%)
+                    </span>
+                </div>
+                <div class="w-full h-2.5 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
+                    <div class="h-full bg-brand-600 dark:bg-brand-500 rounded-full transition-all duration-500" style="width: @(Model.ProgressPercentage)%"></div>
+                </div>
+            </div>
+
+            <!-- Biography -->
+            @if (!string.IsNullOrWhiteSpace(Model.Biography))
+            {
+                <div class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl space-y-2">
+                    <p id="biographyText" class="line-clamp-4 transition-all">@Model.Biography</p>
+                    <button type="button" id="bioToggleBtn" onclick="toggleBiography()"
+                            class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors">
+                        <span id="bioToggleText">Read more</span>
+                        <i id="bioToggleIcon" class="fa-solid fa-chevron-down text-3xs transition-transform"></i>
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Upcoming Projects Alert -->
+    @if (Model.UpcomingProjects.Any())
+    {
+        <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-5 space-y-3">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm shadow-2xs">
+                    <i class="fa-solid fa-bell animate-bounce"></i>
+                </span>
+                <div>
+                    <h3 class="text-sm font-bold text-amber-950 dark:text-amber-200">New & Upcoming Projects (@Model.UpcomingProjects.Count)</h3>
+                    <p class="text-xs text-amber-800 dark:text-amber-300">Add these upcoming movies or series to your wishlist.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-1">
+                @foreach (var proj in Model.UpcomingProjects)
+                {
+                    <div class="bg-white/80 dark:bg-slate-800/90 backdrop-blur-xs p-3 rounded-xl border border-amber-200/60 dark:border-amber-800/40 flex items-center gap-3">
+                        <img src="@PosterUrl(proj.PosterPath)" alt="@proj.Title" class="w-12 h-16 rounded-lg object-cover flex-shrink-0" />
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">@proj.Title</h4>
+                            <p class="text-3xs text-slate-500 dark:text-slate-400 truncate">Role: @(proj.CharacterOrJob ?? "Cast")</p>
+                            <p class="text-3xs font-semibold text-amber-700 dark:text-amber-400 mt-1">
+                                <i class="fa-regular fa-calendar mr-1"></i>@(proj.ReleaseDate?.ToString("MMM yyyy") ?? "Release Date TBA")
+                            </p>
+                        </div>
+                        <button type="button" onclick="openQuickAddModal('@proj.Id', '@proj.Type', '@Html.Raw(proj.Title.Replace("'", "\\\'"))', '@proj.PosterPath')"
+                                class="px-2.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-3xs font-bold transition-colors flex items-center gap-1 flex-shrink-0" title="Add to Watchlist or Playlist">
+                            <i class="fa-solid fa-plus text-3xs"></i> Add
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Full Filmography Section -->
+    <div class="space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-film"></i>
+                </span>
+                <div>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Complete Filmography</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">All movies, series, and appearances ordered by release date.</p>
+                </div>
+            </div>
+
+            <!-- Search and Filter Controls -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="relative w-full sm:w-64">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="filmographySearchInput" oninput="filterCreditsBySearch(this.value)" placeholder="Search filmography..."
+                           class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500" />
+                </div>
+
+                <!-- Quick Filter Pill Buttons -->
+                <div class="flex items-center gap-1.5 text-xs font-semibold">
+                    <button type="button" onclick="filterCredits('all')" class="credit-filter px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-brand-600 text-white transition-colors" data-filter="all">
+                        All (@Model.Filmography.Count)
+                    </button>
+                    <button type="button" onclick="filterCredits('watched')" class="credit-filter px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 transition-colors" data-filter="watched">
+                        Watched (@Model.WatchedCount)
+                    </button>
+                    <button type="button" onclick="filterCredits('unwatched')" class="credit-filter px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 transition-colors" data-filter="unwatched">
+                        Unwatched (@(Model.TotalCreditsCount - Model.WatchedCount))
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Credits Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" id="creditsGrid">
+            @foreach (var credit in Model.Filmography)
+            {
+                var creditSlug = Slugify(credit.Title);
+                <div class="credit-card group relative bg-white dark:bg-slate-800 rounded-2xl border @(credit.IsWatched ? "border-emerald-300 dark:border-emerald-600 ring-2 ring-emerald-500/20" : "border-slate-200 dark:border-slate-700") overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
+                     data-id="@credit.Id"
+                     data-watched="@credit.IsWatched.ToString().ToLower()"
+                     data-title="@credit.Title.ToLower()">
+                    <div class="relative aspect-2/3 bg-slate-900 overflow-hidden">
+                        <img src="@PosterUrl(credit.PosterPath)" alt="@credit.Title"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                             loading="lazy" />
+
+                        <!-- Top Badges -->
+                        <div class="absolute top-2 left-2 flex flex-col gap-1">
+                            @if (credit.IsWatched)
+                            {
+                                <span class="px-2 py-0.5 rounded-lg text-3xs font-bold bg-emerald-600 text-white flex items-center gap-1 shadow-xs">
+                                    <i class="fa-solid fa-check text-3xs"></i> Watched
+                                </span>
+                            }
+                        </div>
+
+                        @if (credit.VoteAverage.HasValue && credit.VoteAverage > 0)
+                        {
+                            <div class="absolute top-2 right-2 px-1.5 py-0.5 rounded-lg bg-slate-900/80 backdrop-blur-xs text-amber-400 text-3xs font-bold flex items-center gap-1">
+                                <i class="fa-solid fa-star text-3xs"></i>
+                                <span>@credit.VoteAverage.Value.ToString("0.0")</span>
+                            </div>
+                        }
+
+                        <!-- Overlay on Hover -->
+                        <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2.5 gap-1.5">
+                            <a asp-action="Details" asp-controller="Media" asp-route-id="@credit.Id" asp-route-slug="@creditSlug" asp-route-type="@credit.Type"
+                               class="w-full py-1.5 rounded-xl bg-white/95 hover:bg-white text-slate-900 dark:bg-slate-800/95 dark:hover:bg-slate-700 dark:text-white dark:border dark:border-slate-600 text-3xs font-bold text-center transition-colors shadow-xs">
+                                <i class="fa-solid fa-circle-info mr-1"></i> Details
+                            </a>
+                            @if (!credit.IsWatched)
+                            {
+                                <button type="button" onclick="openQuickAddModal('@credit.Id', '@credit.Type', '@Html.Raw(credit.Title.Replace("'", "\\\'"))', '@credit.PosterPath')"
+                                        class="w-full py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-3xs font-bold transition-colors shadow-xs flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-plus text-3xs"></i> Add
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="p-2.5 flex-1 flex flex-col justify-between">
+                        <div>
+                            <a asp-action="Details" asp-controller="Media" asp-route-id="@credit.Id" asp-route-slug="@creditSlug" asp-route-type="@credit.Type"
+                               class="text-xs font-bold text-slate-900 dark:text-white hover:text-brand-600 dark:hover:text-brand-400 line-clamp-1 transition-colors" title="@credit.Title">
+                                @credit.Title
+                            </a>
+                            <p class="text-3xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">@(credit.CharacterOrJob ?? "Cast")</p>
+                        </div>
+                        <div class="flex items-center justify-between text-3xs text-slate-500 dark:text-slate-400 mt-2 pt-1 border-t border-slate-100 dark:border-slate-700">
+                            <span>@(credit.ReleaseDate?.Year.ToString() ?? "TBA")</span>
+                            <span class="uppercase font-semibold">@credit.Type</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleBiography() {
+        const text = document.getElementById('biographyText');
+        const btnText = document.getElementById('bioToggleText');
+        const icon = document.getElementById('bioToggleIcon');
+        if (!text) return;
+
+        const isCollapsed = text.classList.contains('line-clamp-4');
+        if (isCollapsed) {
+            text.classList.remove('line-clamp-4');
+            if (btnText) btnText.innerText = 'Show less';
+            if (icon) icon.className = 'fa-solid fa-chevron-up text-3xs transition-transform';
+        } else {
+            text.classList.add('line-clamp-4');
+            if (btnText) btnText.innerText = 'Read more';
+            if (icon) icon.className = 'fa-solid fa-chevron-down text-3xs transition-transform';
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const text = document.getElementById('biographyText');
+        const btn = document.getElementById('bioToggleBtn');
+        if (text && btn) {
+            if (text.scrollHeight <= text.clientHeight + 4) {
+                btn.style.display = 'none';
+            }
+        }
+    });
+
+    let currentFilterType = 'all';
+    let currentSearchQuery = '';
+
+    function applyCreditFilters() {
+        const query = currentSearchQuery.trim().toLowerCase();
+        const cards = document.querySelectorAll('.credit-card');
+        cards.forEach(card => {
+            const isWatched = card.dataset.watched === 'true';
+            const title = (card.dataset.title || '').toLowerCase();
+
+            let matchesType = true;
+            if (currentFilterType === 'watched') matchesType = isWatched;
+            else if (currentFilterType === 'unwatched') matchesType = !isWatched;
+
+            let matchesQuery = true;
+            if (query.length > 0) matchesQuery = title.includes(query);
+
+            card.style.display = (matchesType && matchesQuery) ? 'flex' : 'none';
+        });
+    }
+
+    function filterCredits(filter) {
+        currentFilterType = filter;
+        document.querySelectorAll('.credit-filter').forEach(btn => {
+            if (btn.dataset.filter === filter) {
+                btn.className = 'credit-filter px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-brand-600 text-white transition-colors';
+            } else {
+                btn.className = 'credit-filter px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 transition-colors';
+            }
+        });
+        applyCreditFilters();
+    }
+
+    function filterCreditsBySearch(query) {
+        currentSearchQuery = query;
+        applyCreditFilters();
+    }
+
+    // Dynamic UI update when title added via QuickAdd modal without reload
+    window.addEventListener('quickMediaAdded', function (e) {
+        if (!e.detail || !e.detail.id) return;
+        const tmdbId = e.detail.id;
+        const status = e.detail.status;
+
+        const card = document.querySelector(`.credit-card[data-id="${tmdbId}"]`);
+        if (card) {
+            const isCompleted = status === 'Completed' || status === '2';
+            if (isCompleted) {
+                card.dataset.watched = 'true';
+                card.className = 'credit-card group relative bg-white dark:bg-slate-800 rounded-2xl border border-emerald-300 dark:border-emerald-600 ring-2 ring-emerald-500/20 overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between';
+
+                const badgesContainer = card.querySelector('.absolute.top-2.left-2');
+                if (badgesContainer && !badgesContainer.querySelector('.fa-check')) {
+                    badgesContainer.innerHTML = `
+                        <span class="px-2 py-0.5 rounded-lg text-3xs font-bold bg-emerald-600 text-white flex items-center gap-1 shadow-xs">
+                            <i class="fa-solid fa-check text-3xs"></i> Watched
+                        </span>
+                    `;
+                }
+
+                const addBtn = card.querySelector('button[onclick*="openQuickAddModal"]');
+                if (addBtn) addBtn.remove();
+            } else {
+                const addBtn = card.querySelector('button[onclick*="openQuickAddModal"]');
+                if (addBtn) {
+                    addBtn.className = 'w-full py-1.5 rounded-xl bg-amber-600 text-white text-3xs font-bold transition-colors shadow-xs flex items-center justify-center gap-1';
+                    addBtn.innerHTML = '<i class="fa-solid fa-bookmark text-3xs"></i> In Watchlist';
+                }
+            }
+            applyCreditFilters();
+        }
+    });
+</script>
+
+<partial name="_QuickAddModal" />

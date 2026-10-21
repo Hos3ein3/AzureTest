@@ -1,0 +1,12 @@
+@model AzureTest.MVC.Models.HomeDashboardViewModel
+
+<!-- Stat Card: Expenses This Month -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex items-center hover:shadow-md transition-shadow">
+    <div class="h-14 w-14 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+        <i class="fa-solid fa-receipt text-orange-500 text-2xl"></i>
+    </div>
+    <div class="ml-4 truncate">
+        <p class="text-sm font-medium text-slate-500 truncate">Monthly Expenses</p>
+        <p class="text-3xl font-bold text-slate-800">@Model.TotalExpensesThisMonth.ToString("C")</p>
+    </div>
+</div>
