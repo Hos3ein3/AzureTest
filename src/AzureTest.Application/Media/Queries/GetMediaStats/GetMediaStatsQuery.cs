@@ -32,6 +32,9 @@ public sealed class GetMediaStatsQueryHandler : IQueryHandler<GetMediaStatsQuery
         int totalSeries = 0;
         int totalAnime = 0;
         int totalWatchedMinutes = 0;
+        int movieMinutes = 0;
+        int seriesMinutes = 0;
+        int animeMinutes = 0;
 
         var genreCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var ratings = new List<int>();
@@ -64,21 +67,29 @@ public sealed class GetMediaStatsQueryHandler : IQueryHandler<GetMediaStatsQuery
 
             if (item.Status == WatchStatus.Completed || item.Status == WatchStatus.Watching)
             {
-                totalWatchedMinutes += item.GetEstimatedWatchedMinutes();
+                var itemMinutes = item.GetEstimatedWatchedMinutes();
+                totalWatchedMinutes += itemMinutes;
+
+                var episodesWatched = (item.Status == WatchStatus.Completed && item.TotalEpisodes > 0)
+                    ? Math.Max(item.CurrentEpisode, item.TotalEpisodes)
+                    : item.CurrentEpisode;
 
                 if (item.Type == MediaType.Movie)
                 {
                     if (item.Status == WatchStatus.Completed) totalMovies++;
+                    movieMinutes += itemMinutes;
                 }
                 else if (item.Type == MediaType.Anime)
                 {
                     totalAnime++;
-                    totalEpisodes += item.CurrentEpisode;
+                    totalEpisodes += episodesWatched;
+                    animeMinutes += itemMinutes;
                 }
                 else
                 {
                     totalSeries++;
-                    totalEpisodes += item.CurrentEpisode;
+                    totalEpisodes += episodesWatched;
+                    seriesMinutes += itemMinutes;
                 }
 
                 foreach (var g in item.Genres)
@@ -118,9 +129,9 @@ public sealed class GetMediaStatsQueryHandler : IQueryHandler<GetMediaStatsQuery
 
         var typeBreakdown = new List<TypeCountDto>
         {
-            new("Movies", totalMovies, totalMovies * 110 / 60),
-            new("Series", totalSeries, (totalEpisodes * 45) / 60),
-            new("Anime", totalAnime, (totalAnime * 24) / 60)
+            new("Movies", totalMovies, movieMinutes / 60),
+            new("Series", totalSeries, seriesMinutes / 60),
+            new("Anime", totalAnime, animeMinutes / 60)
         };
 
         var stats = new MediaStatsDto(

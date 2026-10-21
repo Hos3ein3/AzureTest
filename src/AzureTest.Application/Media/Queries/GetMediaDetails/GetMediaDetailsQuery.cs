@@ -11,7 +11,7 @@ using AzureTest.Domain.Media.Enums;
 
 namespace AzureTest.Application.Media.Queries.GetMediaDetails;
 
-public sealed record GetMediaDetailsQuery(int TmdbId, MediaType Type, Guid UserId) : IQuery<Result<TmdbTitleDetailsDto>>;
+public sealed record GetMediaDetailsQuery(int TmdbId, MediaType? Type = null, Guid UserId = default, string? Slug = null) : IQuery<Result<TmdbTitleDetailsDto>>;
 
 public sealed class GetMediaDetailsQueryHandler : IQueryHandler<GetMediaDetailsQuery, Result<TmdbTitleDetailsDto>>
 {
@@ -28,20 +28,72 @@ public sealed class GetMediaDetailsQueryHandler : IQueryHandler<GetMediaDetailsQ
     {
         TmdbTitleDetailsDto? details = null;
 
-        if (request.Type == MediaType.Movie)
+        static bool MatchesSlug(string? title, string? originalTitle, string? slug)
+        {
+            if (string.IsNullOrWhiteSpace(slug)) return false;
+            var cleanSlug = System.Text.RegularExpressions.Regex.Replace(slug.ToLowerInvariant(), @"[^a-z0-9]+", "-").Trim('-');
+            if (string.IsNullOrWhiteSpace(cleanSlug)) return false;
+
+            bool Check(string? t)
+            {
+                if (string.IsNullOrWhiteSpace(t)) return false;
+                var cleanTitle = System.Text.RegularExpressions.Regex.Replace(t.ToLowerInvariant(), @"[^a-z0-9]+", "-").Trim('-');
+                return cleanTitle.Contains(cleanSlug) || cleanSlug.Contains(cleanTitle);
+            }
+
+            return Check(title) || Check(originalTitle);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Slug))
+        {
+            // Disambiguate when TMDb has both a movie and a TV show with the same ID (e.g. 1429: Attack on Titan TV vs 25th Hour Movie)
+            var tvTask = _tmdbService.GetTvShowDetailsAsync(request.TmdbId, ct);
+            var movieTask = _tmdbService.GetMovieDetailsAsync(request.TmdbId, ct);
+            await Task.WhenAll(tvTask, movieTask);
+
+            var tv = tvTask.Result;
+            var movie = movieTask.Result;
+
+            if (tv != null && MatchesSlug(tv.Title, tv.OriginalTitle, request.Slug))
+            {
+                details = tv;
+            }
+            else if (movie != null && MatchesSlug(movie.Title, movie.OriginalTitle, request.Slug))
+            {
+                details = movie;
+            }
+            else if (request.Type.HasValue)
+            {
+                details = request.Type.Value == MediaType.Movie
+                    ? (movie ?? tv)
+                    : (tv ?? movie);
+            }
+            else
+            {
+                details = (tv != null && tv.Seasons.Count > 0) ? tv : (movie ?? tv);
+            }
+        }
+        else if (request.Type.HasValue && request.Type.Value == MediaType.Movie)
         {
             details = await _tmdbService.GetMovieDetailsAsync(request.TmdbId, ct)
                       ?? await _tmdbService.GetTvShowDetailsAsync(request.TmdbId, ct);
         }
-        else if (request.Type == MediaType.TvSeries || request.Type == MediaType.Anime)
+        else if (request.Type.HasValue && (request.Type.Value == MediaType.TvSeries || request.Type.Value == MediaType.Anime))
         {
             details = await _tmdbService.GetTvShowDetailsAsync(request.TmdbId, ct)
                       ?? await _tmdbService.GetMovieDetailsAsync(request.TmdbId, ct);
         }
         else
         {
-            details = await _tmdbService.GetTvShowDetailsAsync(request.TmdbId, ct)
-                      ?? await _tmdbService.GetMovieDetailsAsync(request.TmdbId, ct);
+            var tv = await _tmdbService.GetTvShowDetailsAsync(request.TmdbId, ct);
+            if (tv != null && tv.Seasons.Count > 0)
+            {
+                details = tv;
+            }
+            else
+            {
+                details = await _tmdbService.GetMovieDetailsAsync(request.TmdbId, ct) ?? tv;
+            }
         }
 
         if (details == null)
@@ -62,6 +114,11 @@ public sealed class GetMediaDetailsQueryHandler : IQueryHandler<GetMediaDetailsQ
         {
             // Also check under Anime in case user saved as Anime
             userItem = await _uow.WatchItems.GetByUserAndTmdbAsync(request.UserId, request.TmdbId, MediaType.Anime, ct);
+        }
+        else if (userItem == null)
+        {
+            var allWatchList = await _uow.WatchItems.GetUserWatchListAsync(request.UserId, ct: ct);
+            userItem = allWatchList.FirstOrDefault(w => w.TmdbId == request.TmdbId);
         }
 
         WatchItemDto? userDto = userItem != null ? GetWatchListQuery.Mapping.ToDto(userItem) : null;

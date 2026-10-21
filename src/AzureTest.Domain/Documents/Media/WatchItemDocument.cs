@@ -18,6 +18,7 @@ public class WatchItemDocument : ITenantEntity
         public const int MinEpisode = 0;
         public const int MaxEpisode = 5000;
         public const int DefaultEpisodeDurationMinutes = 45;
+        public const int DefaultAnimeEpisodeDurationMinutes = 24;
         public const int DefaultMovieDurationMinutes = 110;
     }
 
@@ -196,12 +197,22 @@ public class WatchItemDocument : ITenantEntity
         if (Type == MediaType.Movie)
         {
             return Status == WatchStatus.Completed 
-                ? (RuntimeMinutes ?? Rules.DefaultMovieDurationMinutes) 
+                ? (RuntimeMinutes.HasValue && RuntimeMinutes.Value > 0 ? RuntimeMinutes.Value : Rules.DefaultMovieDurationMinutes) 
                 : 0;
         }
 
-        var episodesWatched = CurrentEpisode;
-        var avgDuration = RuntimeMinutes ?? Rules.DefaultEpisodeDurationMinutes;
+        var episodesWatched = (Status == WatchStatus.Completed && TotalEpisodes > 0)
+            ? Math.Max(CurrentEpisode, TotalEpisodes)
+            : CurrentEpisode;
+
+        int defaultDuration = Type == MediaType.Anime 
+            ? Rules.DefaultAnimeEpisodeDurationMinutes 
+            : Rules.DefaultEpisodeDurationMinutes;
+
+        var avgDuration = (RuntimeMinutes.HasValue && RuntimeMinutes.Value > 0) 
+            ? RuntimeMinutes.Value 
+            : defaultDuration;
+
         return episodesWatched * avgDuration;
     }
 }

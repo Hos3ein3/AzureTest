@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using AzureTest.Application.Media.Commands.AddWatchItem;
 using AzureTest.Application.Media.Commands.CreateCustomList;
 using AzureTest.Application.Media.Commands.RateWatchItem;
@@ -7,6 +10,7 @@ using AzureTest.Application.Media.Commands.UpdateWatchProgress;
 using AzureTest.Domain.Documents.Media;
 using AzureTest.Domain.Media.Enums;
 using FluentValidation.TestHelper;
+using Moq;
 using Xunit;
 
 namespace AzureTest.UnitTest.Media;
@@ -264,6 +268,97 @@ public class MediaTests
         var validCommand = new AzureTest.Application.Media.Queries.GetSeasonEpisodes.GetSeasonEpisodesQuery(1429, 1);
         var validResult = validator.TestValidate(validCommand);
         validResult.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void EstimatedDuration_Calculates_AccurateMinutes_ForAnime_And_Series()
+    {
+        var anime = WatchItemDocument.Create(
+            userId: Guid.NewGuid(),
+            tenantId: Guid.NewGuid(),
+            tmdbId: 1429,
+            type: MediaType.Anime,
+            title: "Attack on Titan",
+            status: WatchStatus.Completed,
+            currentSeason: 4,
+            currentEpisode: 87,
+            totalSeasons: 4,
+            totalEpisodes: 87,
+            runtimeMinutes: null // TMDb returns null/0 for Attack on Titan
+        );
+
+        // 87 episodes * 24 min (default anime) = 2088 minutes (~34.8 hours)
+        Assert.Equal(2088, anime.GetEstimatedWatchedMinutes());
+
+        var series = WatchItemDocument.Create(
+            userId: Guid.NewGuid(),
+            tenantId: Guid.NewGuid(),
+            tmdbId: 1399,
+            type: MediaType.TvSeries,
+            title: "Game of Thrones",
+            status: WatchStatus.Completed,
+            currentSeason: 8,
+            currentEpisode: 73,
+            totalSeasons: 8,
+            totalEpisodes: 73,
+            runtimeMinutes: null // defaults to 45 min
+        );
+
+        // 73 episodes * 45 min = 3285 minutes
+        Assert.Equal(3285, series.GetEstimatedWatchedMinutes());
+    }
+
+    [Fact]
+    public async Task GetMediaStats_Calculates_AccurateHours_ForAnime_WithoutMixingSeries()
+    {
+        var userId = Guid.NewGuid();
+        var anime = WatchItemDocument.Create(
+            userId: userId,
+            tenantId: Guid.NewGuid(),
+            tmdbId: 1429,
+            type: MediaType.Anime,
+            title: "Attack on Titan",
+            status: WatchStatus.Completed,
+            currentSeason: 4,
+            currentEpisode: 87,
+            totalSeasons: 4,
+            totalEpisodes: 87,
+            runtimeMinutes: null
+        );
+
+        var mockUow = new Moq.Mock<AzureTest.Application.Interfaces.Data.NoSql.INoSqlUnitOfWork>();
+        var mockWatchItems = new Moq.Mock<AzureTest.Application.Interfaces.Data.NoSql.IWatchItemRepository>();
+        var mockFollowed = new Moq.Mock<AzureTest.Application.Interfaces.Data.NoSql.IFollowedPersonRepository>();
+
+        mockWatchItems.Setup(r => r.GetUserWatchListAsync(userId, null, null, Moq.It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<WatchItemDocument> { anime });
+        mockFollowed.Setup(r => r.GetUserFollowedPeopleAsync(userId, Moq.It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<AzureTest.Domain.Documents.Media.FollowedPersonDocument>());
+
+        mockUow.Setup(u => u.WatchItems).Returns(mockWatchItems.Object);
+        mockUow.Setup(u => u.FollowedPeople).Returns(mockFollowed.Object);
+
+        var handler = new AzureTest.Application.Media.Queries.GetMediaStats.GetMediaStatsQueryHandler(mockUow.Object);
+        var result = await handler.HandleAsync(new AzureTest.Application.Media.Queries.GetMediaStats.GetMediaStatsQuery(userId));
+
+        Assert.True(result.IsSuccess);
+        var stats = result.Value;
+
+        Assert.Equal(1, stats.TotalAnimeWatched);
+        Assert.Equal(0, stats.TotalSeriesWatched);
+        Assert.Equal(0, stats.TotalMoviesWatched);
+        Assert.Equal(87, stats.TotalEpisodesWatched);
+        Assert.Equal(34, stats.TotalEstimatedHoursWatched); // 2088 / 60 = 34 hours, NOT 65!
+
+        var animeBreakdown = stats.TypeBreakdown.FirstOrDefault(t => t.MediaType == "Anime");
+        Assert.NotNull(animeBreakdown);
+        Assert.Equal(1, animeBreakdown.Count);
+        Assert.Equal(34, animeBreakdown.HoursWatched);
+
+        var seriesBreakdown = stats.TypeBreakdown.FirstOrDefault(t => t.MediaType == "Series");
+        Assert.NotNull(seriesBreakdown);
+        Assert.Equal(0, seriesBreakdown.Count);
+        Assert.Equal(0, seriesBreakdown.HoursWatched);
     }
 }
 

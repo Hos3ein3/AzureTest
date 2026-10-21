@@ -105,10 +105,11 @@ public class MediaController : Controller
     [Route("Media/Details/{idOrSlug}")]
     [DisplayName("Title Details")]
     [Description("View synopsis, cast, trailers, streaming providers, and update your watch status.")]
-    public async Task<IActionResult> Details(string? idOrSlug, int? id, [FromQuery] MediaType type, CancellationToken ct)
+    public async Task<IActionResult> Details(string? idOrSlug, int? id, string? slug, [FromQuery] MediaType? type, CancellationToken ct)
     {
         int tmdbId = id.HasValue && id.Value > 0 ? id.Value : 0;
-        MediaType effectiveType = type;
+        string? effectiveSlug = slug;
+        MediaType? effectiveType = Request.Query.ContainsKey("type") ? type : null;
 
         if (tmdbId <= 0 && !string.IsNullOrWhiteSpace(idOrSlug))
         {
@@ -118,30 +119,30 @@ public class MediaController : Controller
             }
             else
             {
-                var matchLeading = System.Text.RegularExpressions.Regex.Match(idOrSlug, @"^(\d+)[-_]");
+                var matchLeading = System.Text.RegularExpressions.Regex.Match(idOrSlug, @"^(\d+)[-_](.*)$");
                 if (matchLeading.Success && int.TryParse(matchLeading.Groups[1].Value, out var leadingId))
                 {
                     tmdbId = leadingId;
+                    effectiveSlug = matchLeading.Groups[2].Value;
                 }
                 else
                 {
-                    var matchTrailing = System.Text.RegularExpressions.Regex.Match(idOrSlug, @"[-_](\d+)$");
-                    if (matchTrailing.Success && int.TryParse(matchTrailing.Groups[1].Value, out var trailingId))
+                    var matchTrailing = System.Text.RegularExpressions.Regex.Match(idOrSlug, @"^(.*)[-_](\d+)$");
+                    if (matchTrailing.Success && int.TryParse(matchTrailing.Groups[2].Value, out var trailingId))
                     {
                         tmdbId = trailingId;
+                        effectiveSlug = matchTrailing.Groups[1].Value;
                     }
                     else
                     {
+                        effectiveSlug = idOrSlug;
                         var cleanQuery = idOrSlug.Replace("-", " ").Replace("_", " ");
                         var searchResult = await _queries.SearchMediaAsync(new SearchMediaQuery(cleanQuery, "titles"), ct);
                         if (searchResult.IsSuccess && searchResult.Value != null && searchResult.Value.Count > 0)
                         {
                             var bestMatch = searchResult.Value[0];
                             tmdbId = bestMatch.Id;
-                            if (effectiveType == 0)
-                            {
-                                effectiveType = bestMatch.Type;
-                            }
+                            effectiveType ??= bestMatch.Type;
                         }
                     }
                 }
@@ -153,7 +154,7 @@ public class MediaController : Controller
             return NotFound("Media title not found.");
         }
 
-        var result = await _queries.GetMediaDetailsAsync(new GetMediaDetailsQuery(tmdbId, effectiveType, _currentUser.Id), ct);
+        var result = await _queries.GetMediaDetailsAsync(new GetMediaDetailsQuery(tmdbId, effectiveType, _currentUser.Id, effectiveSlug), ct);
         return result.ToView(this);
     }
 

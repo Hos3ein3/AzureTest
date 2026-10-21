@@ -235,14 +235,13 @@
                                 Details
                             </a>
 
-                            <!-- Delete Form -->
-                            <form asp-action="Delete" method="post" onsubmit="return confirm('Remove from watchlist?');" class="inline">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="WatchItemId" value="@item.Id" />
-                                <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Remove">
-                                    <i class="fa-solid fa-trash-can text-xs"></i>
-                                </button>
-                            </form>
+                            <!-- Delete Button Trigger (Shows Confirmation Modal) -->
+                            <button type="button" 
+                                    onclick="openDeleteModal('@item.Id', '@item.Title.Replace("'", "\\'").Replace("\"", "&quot;")')"
+                                    class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 dark:hover:text-rose-400 transition-colors" 
+                                    title="Remove from watchlist">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -283,15 +282,48 @@
     }
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 dark:border-slate-700 space-y-4">
+        <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                <i class="fa-solid fa-trash-can text-rose-500"></i>
+                <span>Remove from Watchlist</span>
+            </h3>
+            <button type="button" onclick="closeDeleteModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            Are you sure you want to remove <span id="deleteModalTitle" class="font-semibold text-slate-900 dark:text-white"></span> from your watchlist?
+        </p>
+
+        <form asp-action="Delete" method="post" class="space-y-3">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="deleteWatchItemId" name="WatchItemId" />
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeDeleteModal()" class="px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 text-xs rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold shadow-2xs transition-colors">
+                    Remove
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Progress Modal -->
 <div id="progressModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 space-y-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 dark:border-slate-700 space-y-4">
         <div class="flex items-center justify-between">
-            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                 <i class="fa-solid fa-forward-step text-brand-600"></i>
                 <span id="progressModalTitle">Update Progress</span>
             </h3>
-            <button type="button" onclick="document.getElementById('progressModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+            <button type="button" onclick="document.getElementById('progressModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -303,17 +335,17 @@
             <input type="hidden" id="progressTotalEpisodes" name="TotalEpisodes" />
 
             <div>
-                <label class="block text-2xs font-semibold text-slate-600 mb-1">Season</label>
-                <input type="number" id="progressSeason" name="Season" min="1" max="200" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                <label class="block text-2xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Season</label>
+                <input type="number" id="progressSeason" name="Season" min="1" max="200" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
             </div>
 
             <div>
-                <label class="block text-2xs font-semibold text-slate-600 mb-1">Episode where you stopped</label>
-                <input type="number" id="progressEpisode" name="Episode" min="0" max="5000" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                <label class="block text-2xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Episode where you stopped</label>
+                <input type="number" id="progressEpisode" name="Episode" min="0" max="5000" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
             </div>
 
             <div class="flex justify-end gap-2 pt-2">
-                <button type="button" onclick="document.getElementById('progressModal').classList.add('hidden')" class="px-3 py-2 text-xs rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold">
+                <button type="button" onclick="document.getElementById('progressModal').classList.add('hidden')" class="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold">
                     Cancel
                 </button>
                 <button type="submit" class="px-4 py-2 text-xs rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-2xs">
@@ -326,13 +358,13 @@
 
 <!-- Rate Modal -->
 <div id="rateModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 space-y-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 dark:border-slate-700 space-y-4">
         <div class="flex items-center justify-between">
-            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                 <i class="fa-solid fa-star text-amber-500"></i>
                 <span id="rateModalTitle">Rate and Review</span>
             </h3>
-            <button type="button" onclick="document.getElementById('rateModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+            <button type="button" onclick="document.getElementById('rateModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -342,8 +374,8 @@
             <input type="hidden" id="rateWatchItemId" name="WatchItemId" />
 
             <div>
-                <label class="block text-2xs font-semibold text-slate-600 mb-1">Your Rating (1 to 10)</label>
-                <select id="rateRating" name="Rating" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                <label class="block text-2xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Your Rating (1 to 10)</label>
+                <select id="rateRating" name="Rating" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20">
                     <option value="">No rating</option>
                     @for (int i = 10; i >= 1; i--)
                     {
@@ -353,12 +385,12 @@
             </div>
 
             <div>
-                <label class="block text-2xs font-semibold text-slate-600 mb-1">Short Review</label>
-                <textarea id="rateReview" name="Review" rows="3" maxlength="2000" placeholder="What did you think of it?" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20"></textarea>
+                <label class="block text-2xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Short Review</label>
+                <textarea id="rateReview" name="Review" rows="3" maxlength="2000" placeholder="What did you think of it?" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"></textarea>
             </div>
 
             <div class="flex justify-end gap-2 pt-2">
-                <button type="button" onclick="document.getElementById('rateModal').classList.add('hidden')" class="px-3 py-2 text-xs rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold">
+                <button type="button" onclick="document.getElementById('rateModal').classList.add('hidden')" class="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold">
                     Cancel
                 </button>
                 <button type="submit" class="px-4 py-2 text-xs rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-2xs">
@@ -371,13 +403,13 @@
 
 <!-- Import Modal -->
 <div id="importModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 space-y-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 dark:border-slate-700 space-y-4">
         <div class="flex items-center justify-between">
-            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                 <i class="fa-solid fa-file-import text-brand-600"></i>
                 <span>Import Backup</span>
             </h3>
-            <button type="button" onclick="document.getElementById('importModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+            <button type="button" onclick="document.getElementById('importModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -385,12 +417,12 @@
         <form asp-action="Import" method="post" enctype="multipart/form-data" class="space-y-3">
             @Html.AntiForgeryToken()
             <div>
-                <label class="block text-2xs font-semibold text-slate-600 mb-1">Select JSON File</label>
+                <label class="block text-2xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Select JSON File</label>
                 <input type="file" name="file" accept=".json" required class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
             </div>
 
             <div class="flex justify-end gap-2 pt-2">
-                <button type="button" onclick="document.getElementById('importModal').classList.add('hidden')" class="px-3 py-2 text-xs rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold">
+                <button type="button" onclick="document.getElementById('importModal').classList.add('hidden')" class="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold">
                     Cancel
                 </button>
                 <button type="submit" class="px-4 py-2 text-xs rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-2xs">
@@ -402,6 +434,16 @@
 </div>
 
 <script>
+    function openDeleteModal(id, title) {
+        document.getElementById('deleteWatchItemId').value = id;
+        document.getElementById('deleteModalTitle').innerText = title;
+        document.getElementById('deleteModal').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+    }
+
     function openProgressModal(id, title, season, episode, totalSeasons, totalEpisodes) {
         document.getElementById('progressWatchItemId').value = id;
         document.getElementById('progressModalTitle').innerText = title;
