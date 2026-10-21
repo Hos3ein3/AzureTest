@@ -44,6 +44,38 @@ public sealed record ForexSessionDto(
     string ActiveOverlap
 );
 
+public sealed record ContextMarketQuoteDto(
+    string Symbol, // US10Y, DE10Y, XAU/USD, SPX, DXY, BRENT
+    string Name,
+    string Category, // "Bond Yield", "Metal", "Index", "Energy", "Currency Index"
+    decimal Price,
+    decimal ChangePercent,
+    string Unit
+);
+
+public sealed record SessionSpreadLiquidityDto(
+    string SessionName, // Sydney, Tokyo, London, London-NY Overlap, New York
+    int LiquidityScore, // 0-100
+    decimal AverageEurUsdSpreadPips,
+    decimal AverageGbpUsdSpreadPips,
+    decimal AverageUsdJpySpreadPips
+);
+
+public sealed record BrokerSpreadComparisonDto(
+    string BrokerName,
+    string Regulation,
+    decimal TypicalSpreadPips,
+    decimal CommissionPerLot,
+    int AverageExecutionLatencyMs
+);
+
+public sealed record HourlyVolatilityDto(
+    int UtcHour, // 0 to 23
+    decimal AveragePipsMovement,
+    string PrimarySession,
+    string ActivityLevel // "Low", "Moderate", "High", "Peak Volatility"
+);
+
 public sealed class ForexMarketFilter
 {
     public string? Category { get; set; }
@@ -55,5 +87,9 @@ public sealed class ForexMarketFilter
 public sealed record MarketOverviewDto(
     IReadOnlyList<ForexQuoteDto> Quotes,
     IReadOnlyList<ForexSessionDto> Sessions,
-    IReadOnlyList<ForexQuoteDto> MetalsAndIndices
+    IReadOnlyList<ForexQuoteDto> MetalsAndIndices,
+    IReadOnlyList<ContextMarketQuoteDto>? ContextMarkets = null,
+    IReadOnlyList<SessionSpreadLiquidityDto>? SessionSpreads = null,
+    IReadOnlyList<BrokerSpreadComparisonDto>? BrokerComparisons = null,
+    IReadOnlyList<HourlyVolatilityDto>? HourlyVolatility = null
 );

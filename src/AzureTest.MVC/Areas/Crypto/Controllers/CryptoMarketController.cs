@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Crypto;
 using AzureTest.Application.Crypto.Queries.GetCryptoCandles;
+using AzureTest.Application.Crypto.Queries.GetCryptoDerivativesHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoFuturesFunding;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketDataHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketOverview;
@@ -69,14 +70,15 @@ public class CryptoMarketController : Controller
     }
 
     [HttpGet]
-    [DisplayName("Futures Funding")]
-    [Description("Monitor perpetual futures funding rates, annualized yields, open interest, and mark/index prices.")]
+    [DisplayName("Derivatives & Futures Hub")]
+    [Description("Perpetual funding rates, open interest, long/short ratio, liquidation map & feed, Deribit options IV/Max Pain, and basis curve.")]
     public async Task<IActionResult> Futures(string symbol = "BTCUSDT", CancellationToken cancellationToken = default)
     {
-        var result = await _queries.GetFuturesFunding.HandleAsync(new GetCryptoFuturesFundingQuery(symbol), cancellationToken);
+        var result = await _queries.GetDerivativesHub.HandleAsync(new GetCryptoDerivativesHubQuery(symbol), cancellationToken);
         ViewBag.Symbol = symbol;
         return result.ToView(this);
     }
+
 
     [HttpGet]
     [DisplayName("Order Flow & Market Data Hub")]

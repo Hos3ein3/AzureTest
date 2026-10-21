@@ -14,4 +14,8 @@ public interface IForexMarketDataService
     Task<IReadOnlyList<ForexCandleDto>> GetCandlesAsync(string symbol, ForexTimeframe timeframe, int count = 100, CancellationToken cancellationToken = default);
     Task<ForexTickDto> GetLiveTickAsync(string symbol, CancellationToken cancellationToken = default);
     IReadOnlyList<ForexSessionDto> GetMarketSessions();
+    IReadOnlyList<ContextMarketQuoteDto> GetContextMarkets();
+    IReadOnlyList<SessionSpreadLiquidityDto> GetSessionSpreads();
+    IReadOnlyList<BrokerSpreadComparisonDto> GetBrokerComparisons(string? symbol = null);
+    IReadOnlyList<HourlyVolatilityDto> GetHourlyVolatilityHeatmap(string? symbol = null);
 }

@@ -50,6 +50,40 @@ public sealed record BacktestTradeLogDto(
     ForexExitReason Reason
 );
 
+public sealed record MonteCarloConfidenceBandDto(
+    int Percentile,
+    decimal ProjectedFinalBalance,
+    decimal ProjectedMaxDrawdownPercent
+);
+
+public sealed record MonteCarloSimulationDto(
+    int TotalIterations,
+    decimal ProbabilityOfRuinPercent,
+    decimal ProbabilityOfProfitPercent,
+    decimal MedianMaxDrawdownPercent,
+    decimal WorstCase95thPercentileMaxDrawdownPercent,
+    IReadOnlyList<MonteCarloConfidenceBandDto> ConfidenceBands
+);
+
+public sealed record OverfittingDiagnosticDto(
+    decimal DeflatedSharpeRatio,
+    decimal ProbabilityOfBacktestOverfittingPercent,
+    int MinTrackRecordLengthDays,
+    bool IsLikelyOverfitted,
+    string StatusMessage
+);
+
+public sealed record PortfolioBacktestResultDto(
+    IReadOnlyList<string> Symbols,
+    decimal InitialBalance,
+    decimal FinalBalance,
+    decimal TotalNetProfit,
+    decimal MaxDrawdownPercent,
+    decimal PortfolioSharpeRatio,
+    decimal DiversificationBenefitPercent,
+    IReadOnlyList<BacktestResultDto> IndividualResults
+);
+
 public sealed record BacktestResultDto(
     Guid Id,
     string StrategyName,
@@ -75,7 +109,10 @@ public sealed record BacktestResultDto(
     bool IsWalkForward,
     decimal OutOfSampleEfficiency,
     IReadOnlyList<BacktestTradeLogDto> TradeLogs,
-    IReadOnlyList<decimal> EquityCurve
+    IReadOnlyList<decimal> EquityCurve,
+    decimal SortinoRatio = 0m,
+    MonteCarloSimulationDto? MonteCarlo = null,
+    OverfittingDiagnosticDto? Overfitting = null
 );
 
 public sealed record WalkForwardResultDto(

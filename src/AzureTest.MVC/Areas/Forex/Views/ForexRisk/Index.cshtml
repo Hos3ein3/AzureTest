@@ -222,6 +222,190 @@
             </div>
         </div>
     </div>
+
+    <!-- Prop Firm Challenge Monitor (Pillar 7 & 8) -->
+    @if (Model.PropFirm != null)
+    {
+        var pf = Model.PropFirm;
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-medal text-amber-500"></i> Prop Firm Challenge Tracker (@pf.FirmName)
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Enforcing institutional evaluation rules (5% daily drawdown, 10% max trailing drawdown, 10% target)</p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-xs font-bold @(pf.OverallPassed ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-rose-100 text-rose-700")">
+                    @pf.StatusSummary.Split(':')[0]
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono text-xs">
+                <!-- Daily Loss Limit -->
+                <div class="p-4 rounded-xl border @(pf.DailyLossPassed ? "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700" : "bg-rose-500/10 border-rose-500/30")">
+                    <div class="flex items-center justify-between text-2xs font-sans text-slate-400 uppercase">
+                        <span>Max Daily Loss (5.0%)</span>
+                        <span class="font-bold @(pf.DailyLossPassed ? "text-emerald-600" : "text-rose-600")">@(pf.DailyLossPassed ? "PASS" : "BREACHED")</span>
+                    </div>
+                    <div class="text-xl font-bold mt-2 @(pf.TodayLossPercent > 3.0m ? "text-rose-600" : "text-slate-800 dark:text-white")">
+                        @pf.TodayLossPercent.ToString("F2")%
+                    </div>
+                    <div class="text-3xs text-slate-400 mt-1 font-sans">
+                        -$@pf.TodayLossAmount.ToString("N2") loss today (Cap: $@(pf.StartingCapital * 0.05m).ToString("N0"))
+                    </div>
+                </div>
+
+                <!-- Max Trailing Drawdown -->
+                <div class="p-4 rounded-xl border @(pf.MaxDrawdownPassed ? "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700" : "bg-rose-500/10 border-rose-500/30")">
+                    <div class="flex items-center justify-between text-2xs font-sans text-slate-400 uppercase">
+                        <span>Max Trailing DD (10.0%)</span>
+                        <span class="font-bold @(pf.MaxDrawdownPassed ? "text-emerald-600" : "text-rose-600")">@(pf.MaxDrawdownPassed ? "PASS" : "BREACHED")</span>
+                    </div>
+                    <div class="text-xl font-bold mt-2 @(pf.CurrentTrailingDrawdownPercent > 6.0m ? "text-amber-500" : "text-slate-800 dark:text-white")">
+                        @pf.CurrentTrailingDrawdownPercent.ToString("F2")%
+                    </div>
+                    <div class="text-3xs text-slate-400 mt-1 font-sans">
+                        From peak equity (Cap: $@(pf.StartingCapital * 0.10m).ToString("N0"))
+                    </div>
+                </div>
+
+                <!-- Profit Target -->
+                <div class="p-4 rounded-xl border bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center justify-between text-2xs font-sans text-slate-400 uppercase">
+                        <span>Profit Target (10.0%)</span>
+                        <span class="font-bold text-brand-600">@(pf.ProfitTargetReached ? "REACHED" : "IN PROGRESS")</span>
+                    </div>
+                    <div class="text-xl font-bold mt-2 text-emerald-600">
+                        @pf.CurrentProfitPercent.ToString("F2")%
+                    </div>
+                    <div class="text-3xs text-slate-400 mt-1 font-sans">
+                        Target: +$@(pf.StartingCapital * 0.10m).ToString("N0")
+                    </div>
+                </div>
+
+                <!-- Trading Days -->
+                <div class="p-4 rounded-xl border bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center justify-between text-2xs font-sans text-slate-400 uppercase">
+                        <span>Trading Days</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-300">Min @pf.MinimumTradingDaysRequired Days</span>
+                    </div>
+                    <div class="text-xl font-bold mt-2 text-slate-800 dark:text-white">
+                        @pf.DaysTradedCount / @pf.MinimumTradingDaysRequired
+                    </div>
+                    <div class="text-3xs text-slate-400 mt-1 font-sans">
+                        Active trading days recorded
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 text-xs text-slate-600 dark:text-slate-300">
+                <i class="fa-solid fa-circle-info text-brand-500 mr-1.5"></i>
+                @pf.StatusSummary
+            </div>
+        </div>
+    }
+
+    <!-- Weekend Gap Risk & Triple Swap Calendar (Pillar 7) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Weekend Gap Protection -->
+        @if (Model.WeekendGap != null)
+        {
+            var wg = Model.WeekendGap;
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-shield-cat text-rose-500"></i> Weekend Gap Protection
+                            </h2>
+                            <p class="text-xs text-slate-400">Prevent catastrophic slippage and black swan news gaps across Saturday & Sunday</p>
+                        </div>
+                        <span class="px-2.5 py-1 rounded text-2xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                            AUTO-FLATTEN ACTIVE
+                        </span>
+                    </div>
+
+                    <div class="space-y-3 font-mono text-xs">
+                        <div class="flex justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900">
+                            <span class="font-sans text-slate-400">Scheduled Auto-Flatten Time:</span>
+                            <span class="font-bold text-slate-800 dark:text-white">Friday @wg.FridayFlattenTimeUtc.ToString(@"hh\:mm") UTC</span>
+                        </div>
+                        <div class="flex justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900">
+                            <span class="font-sans text-slate-400">Open Positions at Risk:</span>
+                            <span class="font-bold text-amber-500">@wg.OpenTradesAtRiskCount Trades</span>
+                        </div>
+                        <div class="flex justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900">
+                            <span class="font-sans text-slate-400">Total Notional Exposure at Risk:</span>
+                            <span class="font-bold">$@wg.TotalNotionalExposureAtRisk.ToString("N0")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-800 dark:text-amber-300">
+                    <i class="fa-solid fa-triangle-exclamation mr-1.5"></i>
+                    Stop-loss orders do NOT protect against weekend price gaps. If an emergency announcement happens over the weekend, the market opens Sunday at 21:00 UTC with slippage that completely bypasses stop loss orders.
+                </div>
+            </div>
+        }
+
+        <!-- Triple Swap Rollover Schedule -->
+        @if (Model.SwapCalendar != null)
+        {
+            var sc = Model.SwapCalendar;
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-calendar-week text-indigo-500"></i> Triple Swap Rollover Schedule
+                        </h2>
+                        <p class="text-xs text-slate-400">Overnight interest financing charged at 21:00 UTC daily</p>
+                    </div>
+                    <span class="px-2.5 py-1 rounded text-2xs font-mono font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+                        @sc.TripleSwapDayOfWeek
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto max-h-56">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="text-2xs text-slate-400 uppercase font-sans border-b border-slate-100 dark:border-slate-700">
+                            <tr>
+                                <th class="py-2">Pair</th>
+                                <th class="py-2">Long Swap (pips)</th>
+                                <th class="py-2">Short Swap (pips)</th>
+                                <th class="py-2 text-right">Triple Swap Today?</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                            @foreach (var s in sc.SwapRates)
+                            {
+                                <tr>
+                                    <td class="py-2 font-bold font-sans text-slate-800 dark:text-white">@s.Symbol</td>
+                                    <td class="py-2 @(s.LongSwapPips >= 0 ? "text-emerald-600 font-bold" : "text-rose-600")">
+                                        @(s.LongSwapPips >= 0 ? "+" : "")@s.LongSwapPips.ToString("F2")
+                                    </td>
+                                    <td class="py-2 @(s.ShortSwapPips >= 0 ? "text-emerald-600 font-bold" : "text-rose-600")">
+                                        @(s.ShortSwapPips >= 0 ? "+" : "")@s.ShortSwapPips.ToString("F2")
+                                    </td>
+                                    <td class="py-2 text-right">
+                                        <span class="px-2 py-0.5 rounded text-3xs font-bold @(s.IsTripleSwapDay ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-500")">
+                                            @(s.IsTripleSwapDay ? "YES (3x)" : "No (1x)")
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs font-mono">
+                    <span class="font-sans text-slate-400">Estimated Portfolio Daily Swap:</span>
+                    <span class="font-bold @(sc.EstimatedPortfolioDailySwapCost >= 0 ? "text-emerald-600" : "text-rose-600")">
+                        @(sc.EstimatedPortfolioDailySwapCost >= 0 ? "+$" : "-$")@Math.Abs(sc.EstimatedPortfolioDailySwapCost).ToString("N2")
+                    </span>
+                </div>
+            </div>
+        }
+    </div>
 </div>
 
 <script>

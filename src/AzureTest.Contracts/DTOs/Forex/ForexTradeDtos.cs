@@ -93,3 +93,20 @@ public sealed class ForexOrderFilter
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 20;
 }
+
+public sealed record PartialCloseRequestDto(
+    Guid TradeId,
+    decimal LotsToClose
+);
+
+public sealed record TradingViewWebhookPayloadDto(
+    string Ticker,
+    string Action,
+    decimal LotSize,
+    string SecretToken,
+    decimal? Price = null,
+    decimal? StopLoss = null,
+    decimal? TakeProfit = null,
+    string? OrderId = null
+);
+

@@ -40,7 +40,45 @@ public sealed record TaxReportSummaryDto(
     decimal NetRealizedGainLoss,
     decimal TotalFeesAndSwaps,
     int TotalTradesClosed,
-    IReadOnlyList<TaxTradeRowDto> ClosedTrades
+    IReadOnlyList<TaxTradeRowDto> ClosedTrades,
+    decimal Box3DeemedYieldEstimate = 0m,
+    string NetherlandsTaxNotes = "Box 3 capital assets threshold rules apply. Professional active day trading may fall under Box 1 freelance income."
+);
+
+public sealed record RMultipleDistributionBucketDto(
+    string RRangeLabel,
+    int TradeCount,
+    decimal PercentageOfTotal,
+    decimal TotalNetProfit
+);
+
+public sealed record PerformanceByDimensionDto(
+    string Category,
+    string Name,
+    int TotalTrades,
+    decimal WinRatePercent,
+    decimal ProfitFactor,
+    decimal NetProfit,
+    decimal ExpectancyPips
+);
+
+public sealed record JournalAnalyticsDashboardDto(
+    decimal TotalNetProfit,
+    decimal ProfitFactor,
+    decimal WinRatePercent,
+    decimal ExpectancyPips,
+    decimal ExpectancyDollars,
+    decimal SharpeRatio,
+    decimal SortinoRatio,
+    decimal MaxDrawdownPercent,
+    decimal AverageWinAmount,
+    decimal AverageLossAmount,
+    decimal WinLossRatio,
+    IReadOnlyList<RMultipleDistributionBucketDto> RMultipleDistribution,
+    IReadOnlyList<PerformanceByDimensionDto> PerformanceBySession,
+    IReadOnlyList<PerformanceByDimensionDto> PerformanceByWeekday,
+    IReadOnlyList<PerformanceByDimensionDto> PerformanceByPair,
+    IReadOnlyList<PerformanceByDimensionDto> PerformanceByStrategy
 );
 
 public sealed class ForexJournalFilter

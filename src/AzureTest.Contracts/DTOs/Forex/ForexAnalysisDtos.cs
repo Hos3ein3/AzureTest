@@ -14,7 +14,8 @@ public sealed record EconomicEventDto(
     string Actual,
     string Forecast,
     string Previous,
-    bool IsPending
+    bool IsPending,
+    decimal SurpriseZScore = 0m
 );
 
 public sealed record CentralBankRateDto(
@@ -42,7 +43,12 @@ public sealed record CotReportDto(
     long NonCommercialShort,
     long NetPositions,
     long ChangeFromPreviousWeek,
-    DateTime ReportDate
+    DateTime ReportDate,
+    long CommercialLong = 0,
+    long CommercialShort = 0,
+    decimal Percentile3Year = 50m,
+    decimal ZScore = 0m,
+    string ExtremePositioningStatus = "Neutral"
 );
 
 public sealed record TechnicalIndicatorsDto(
@@ -100,6 +106,114 @@ public sealed record MultiTimeframeSignalDto(
     string OverallVerdict
 );
 
+public sealed record CentralBankExpectationDto(
+    string CentralBank,
+    string Currency,
+    decimal CurrentRatePercent,
+    DateTime NextDecisionDateUtc,
+    decimal PricedRateCutProbabilityPercent,
+    decimal PricedRateHikeProbabilityPercent,
+    decimal MarketImpliedRate12MPercent,
+    int CarryTradeRank
+);
+
+public sealed record SpeechScheduleDto(
+    string SpeakerName,
+    string CentralBank,
+    string Title,
+    string Topic,
+    DateTime ScheduledTimeUtc,
+    ForexImpactLevel Impact,
+    string LocationOrEvent
+);
+
+public sealed record CountryMacroDashboardDto(
+    string CountryName,
+    string Currency,
+    decimal InflationRatePercent,
+    decimal GdpGrowthRatePercent,
+    decimal UnemploymentRatePercent,
+    decimal TradeBalanceBillions,
+    string PolicyStance // "Hawkish", "Dovish", "Neutral"
+);
+
+public sealed record RetailSentimentDto(
+    string Symbol,
+    decimal LongPercentage,
+    decimal ShortPercentage,
+    decimal LongShortRatio,
+    int SampleTraderCount,
+    string ContrarianBias // "Strongly Bullish", "Bullish", "Neutral", "Bearish", "Strongly Bearish"
+);
+
+public sealed record OptionsExpiryClusterDto(
+    string Symbol,
+    DateTime ExpiryDateUtc, // 10:00 AM NY cut
+    decimal MaxPainStrike,
+    decimal LargestCallStrike,
+    decimal LargestPutStrike,
+    decimal TotalOpenInterestNotionalMillions,
+    decimal RiskReversal25Delta // positive = calls expensive, negative = puts expensive
+);
+
+public sealed record IntermarketYieldSpreadDto(
+    string PairSymbol,
+    string BaseBondYieldName, // e.g. "US 10-Year"
+    decimal BaseYieldPercent,
+    string QuoteBondYieldName, // e.g. "German 10-Year Bund"
+    decimal QuoteYieldPercent,
+    decimal SpreadBasisPoints,
+    string ImpliedDirectionalBias
+);
+
+public sealed record MarketStructureDto(
+    string Symbol,
+    ForexTimeframe Timeframe,
+    string CurrentStructure, // "Bullish (HH/HL)", "Bearish (LH/LL)", "Ranging"
+    string BosDirection, // "Bullish", "Bearish", "None"
+    decimal LastBosPrice,
+    string ChochDirection, // "Bullish", "Bearish", "None"
+    decimal LastChochPrice,
+    decimal OrderBlockDemandLow,
+    decimal OrderBlockDemandHigh,
+    decimal OrderBlockSupplyLow,
+    decimal OrderBlockSupplyHigh,
+    decimal LiquiditySweepHigh,
+    decimal LiquiditySweepLow
+);
+
+public sealed record FibonacciLevelsDto(
+    string Symbol,
+    decimal SwingHigh,
+    decimal SwingLow,
+    decimal Retracement236,
+    decimal Retracement382,
+    decimal Retracement500,
+    decimal Retracement618,
+    decimal Retracement786,
+    decimal Extension1272,
+    decimal Extension1618
+);
+
+public sealed record VwapSessionDto(
+    string Symbol,
+    decimal VwapPrice,
+    decimal UpperBand1Sigma,
+    decimal LowerBand1Sigma,
+    decimal UpperBand2Sigma,
+    decimal LowerBand2Sigma,
+    decimal CurrentStdDevFromVwap
+);
+
+public sealed record AdrVolatilityDto(
+    string Symbol,
+    decimal Adr14Pips,
+    decimal TodayRangePips,
+    decimal PercentAdrUsed,
+    decimal ImpliedVolatilityPercent,
+    string MarketRegime // "Trending Expansion", "Mean-Reverting Range", "Compressed Consolidation"
+);
+
 public sealed class ForexEconomicEventFilter
 {
     public string? Currency { get; set; }
@@ -113,12 +227,22 @@ public sealed record TechnicalOverviewDto(
     PivotPointsDto Pivots,
     IReadOnlyList<CurrencyStrengthDto> CurrencyStrength,
     IReadOnlyList<PairCorrelationDto> Correlations,
-    MultiTimeframeSignalDto MultiTimeframe
+    MultiTimeframeSignalDto MultiTimeframe,
+    MarketStructureDto? MarketStructure = null,
+    FibonacciLevelsDto? Fibonacci = null,
+    VwapSessionDto? Vwap = null,
+    AdrVolatilityDto? Volatility = null,
+    RetailSentimentDto? RetailSentiment = null,
+    OptionsExpiryClusterDto? OptionsExpiry = null,
+    IntermarketYieldSpreadDto? YieldSpread = null
 );
 
 public sealed record FundamentalOverviewDto(
     IReadOnlyList<EconomicEventDto> UpcomingEvents,
     IReadOnlyList<CentralBankRateDto> CentralBankRates,
     IReadOnlyList<ForexNewsDto> NewsFeed,
-    IReadOnlyList<CotReportDto> CotReports
+    IReadOnlyList<CotReportDto> CotReports,
+    IReadOnlyList<CentralBankExpectationDto>? CentralBankExpectations = null,
+    IReadOnlyList<SpeechScheduleDto>? UpcomingSpeeches = null,
+    IReadOnlyList<CountryMacroDashboardDto>? CountryDashboards = null
 );

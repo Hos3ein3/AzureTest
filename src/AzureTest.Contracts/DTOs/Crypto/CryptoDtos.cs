@@ -60,6 +60,79 @@ public sealed record CryptoFuturesFundingDto(
     decimal OpenInterestUsd,
     decimal Volume24h);
 
+public sealed record CryptoLongShortRatioDto(
+    string Symbol,
+    decimal LongAccountPercent,
+    decimal ShortAccountPercent,
+    decimal LongShortRatio,
+    decimal TopTradersLongPercent,
+    decimal TopTradersShortPercent,
+    decimal TopTradersRatio,
+    string SentimentBias);
+
+public sealed record CryptoLiquidationClusterDto(
+    decimal PriceLevel,
+    decimal EstimatedLiquidationUsd,
+    string LeverageLevel,
+    string Side,
+    decimal DistancePercent);
+
+public sealed record CryptoLiquidationOrderDto(
+    string Id,
+    string Symbol,
+    string Side,
+    decimal Price,
+    decimal Quantity,
+    decimal TotalUsd,
+    DateTime Time);
+
+public sealed record CryptoLiquidationMapDto(
+    string Symbol,
+    decimal CurrentPrice,
+    decimal Total24hLiquidationsUsd,
+    decimal LongLiquidations24hUsd,
+    decimal ShortLiquidations24hUsd,
+    IReadOnlyList<CryptoLiquidationClusterDto> Clusters,
+    IReadOnlyList<CryptoLiquidationOrderDto> LiveFeed);
+
+public sealed record CryptoOptionsMarketDto(
+    string UnderlyingSymbol,
+    decimal ImpliedVolatilityDvol,
+    decimal HistoricalVolatility30d,
+    decimal MaxPainStrike,
+    decimal CurrentSpotPrice,
+    decimal PutCallRatioOi,
+    decimal PutCallRatioVolume24h,
+    decimal Skew25Delta,
+    decimal TotalOpenInterestUsd,
+    decimal Total24hVolumeUsd);
+
+public sealed record CryptoFuturesContractDto(
+    string ContractName,
+    DateTime ExpiryDateUtc,
+    int DaysToExpiry,
+    decimal FuturesPrice,
+    decimal BasisUsd,
+    decimal BasisPercent,
+    decimal AnnualizedYieldPercent);
+
+public sealed record CryptoFuturesCurveDto(
+    string Symbol,
+    decimal SpotPrice,
+    string Regime,
+    decimal AverageAnnualizedBasisPercent,
+    IReadOnlyList<CryptoFuturesContractDto> Contracts);
+
+public sealed record CryptoDerivativesHubDto(
+    string Symbol,
+    CryptoFuturesFundingDto Funding,
+    CryptoLongShortRatioDto LongShortRatio,
+    CryptoLiquidationMapDto LiquidationMap,
+    CryptoOptionsMarketDto Options,
+    CryptoFuturesCurveDto Curve,
+    DateTime LastUpdatedUtc);
+
+
 public sealed class CryptoMarketFilter
 {
     public string? Search { get; set; }

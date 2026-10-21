@@ -46,10 +46,65 @@ public sealed record EsmaAfmComplianceDto(
     string Country
 );
 
+public sealed record PropFirmEvaluationDto(
+    string FirmName, // FTMO / FundedNext
+    decimal StartingCapital,
+    decimal MaxDailyLossLimitPercent,
+    decimal TodayLossAmount,
+    decimal TodayLossPercent,
+    bool DailyLossPassed,
+    decimal MaxTrailingDrawdownLimitPercent,
+    decimal CurrentTrailingDrawdownPercent,
+    bool MaxDrawdownPassed,
+    decimal ProfitTargetPercent,
+    decimal CurrentProfitPercent,
+    bool ProfitTargetReached,
+    int MinimumTradingDaysRequired,
+    int DaysTradedCount,
+    bool OverallPassed,
+    string StatusSummary
+);
+
+public sealed record WeekendGapProtectionDto(
+    bool IsAutoFlattenEnabled,
+    System.TimeSpan FridayFlattenTimeUtc,
+    bool IsMarketCloseApproaching,
+    System.TimeSpan TimeUntilFridayClose,
+    int OpenTradesAtRiskCount,
+    decimal TotalNotionalExposureAtRisk
+);
+
+public sealed record PairSwapRateDto(
+    string Symbol,
+    decimal LongSwapPips,
+    decimal ShortSwapPips,
+    decimal DailyFinancingCostLong,
+    decimal DailyFinancingCostShort,
+    bool IsTripleSwapDay
+);
+
+public sealed record SwapRolloverCalendarDto(
+    string TripleSwapDayOfWeek,
+    System.DateTime NextTripleSwapDateUtc,
+    IReadOnlyList<PairSwapRateDto> SwapRates,
+    decimal EstimatedPortfolioDailySwapCost
+);
+
+public sealed record KillSwitchStatusDto(
+    bool IsActive,
+    System.DateTime? ActivatedAtUtc,
+    string? Reason,
+    int PositionsLiquidated
+);
+
 public sealed record ForexRiskOverviewDto(
     ForexAccountDto Account,
     LotSizeCalculationResultDto SampleSizing,
     IReadOnlyList<CurrencyExposureDto> CurrencyExposures,
     NewsRiskFilterDto NewsFilter,
-    EsmaAfmComplianceDto Compliance
+    EsmaAfmComplianceDto Compliance,
+    PropFirmEvaluationDto? PropFirm = null,
+    WeekendGapProtectionDto? WeekendGap = null,
+    SwapRolloverCalendarDto? SwapCalendar = null,
+    KillSwitchStatusDto? KillSwitch = null
 );
