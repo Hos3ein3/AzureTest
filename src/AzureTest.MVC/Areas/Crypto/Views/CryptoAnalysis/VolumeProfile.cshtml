@@ -1,0 +1,270 @@
+@model CryptoVolumeProfileHubDto
+@{
+    var symbol = ViewBag.Symbol as string ?? "BTCUSDT";
+    var timeframe = ViewBag.Timeframe is CryptoTimeframe tf ? tf : CryptoTimeframe.H1;
+    ViewData["Title"] = $"{symbol} Volume Profile & Anchored VWAP";
+
+    var currentPrice = Model?.CurrentPrice ?? 0m;
+    var pocPrice = Model?.PocPrice ?? 0m;
+    var vah = Model?.ValueAreaHigh ?? 0m;
+    var val = Model?.ValueAreaLow ?? 0m;
+    var maxBucketVol = Model?.Buckets != null && Model.Buckets.Any() ? Model.Buckets.Max(b => b.TotalVolume) : 1m;
+}
+
+<div class="space-y-6">
+    <!-- Header with Sub-Navigation -->
+    <div class="flex flex-col gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center text-lg font-bold">
+                        <i class="fa-solid fa-bars-staggered"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-xl font-bold text-slate-800 dark:text-white">@symbol Volume Profile (VPVR) & Anchored VWAP</h1>
+                            <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-blue-500/10 text-blue-500">@timeframe</span>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Point of Control (POC), Value Area (70% Volume), High/Low Volume Nodes (HVN/LVN), and Multi-Anchor VWAP bands</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeframe & Symbol Picker -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl">
+                    @foreach (var s in new[] { "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT" })
+                    {
+                        <a asp-action="VolumeProfile" asp-route-symbol="@s" asp-route-timeframe="@timeframe" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors @(s == symbol ? "bg-white dark:bg-slate-800 text-blue-600 shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800")">
+                            @s.Replace("USDT", "")
+                        </a>
+                    }
+                </div>
+                <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl">
+                    @foreach (CryptoTimeframe tfVal in Enum.GetValues(typeof(CryptoTimeframe)))
+                    {
+                        <a asp-action="VolumeProfile" asp-route-symbol="@symbol" asp-route-timeframe="@tfVal" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors @(tfVal == timeframe ? "bg-white dark:bg-slate-800 text-blue-600 shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800")">
+                            @tfVal
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex items-center gap-2 border-t border-slate-100 dark:border-slate-700/60 pt-4 overflow-x-auto text-xs font-semibold">
+            <a asp-action="Index" asp-route-symbol="@symbol" asp-route-timeframe="@timeframe" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-chart-line mr-1 text-slate-400"></i> Technicals
+            </a>
+            <a asp-action="MarketStructure" asp-route-symbol="@symbol" asp-route-timeframe="@timeframe" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-shapes mr-1 text-slate-400"></i> ICT / SMC Structure
+            </a>
+            <a asp-action="VolumeProfile" asp-route-symbol="@symbol" asp-route-timeframe="@timeframe" class="px-3 py-1.5 rounded-xl bg-blue-600 text-white shadow-xs">
+                <i class="fa-solid fa-bars-staggered mr-1"></i> Volume Profile (VPVR) & AVWAP
+            </a>
+            <a asp-action="MarketRegime" asp-route-symbol="@symbol" asp-route-timeframe="@timeframe" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-compass mr-1 text-slate-400"></i> Market Regime & Quant
+            </a>
+            <a asp-action="Sentiment" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-gauge-high mr-1 text-slate-400"></i> Sentiment & News
+            </a>
+            <a asp-action="Screener" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-filter mr-1 text-slate-400"></i> Screener
+            </a>
+        </div>
+    </div>
+
+    <!-- Core VPVR KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- POC -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <span>Point of Control (POC)</span>
+                <i class="fa-solid fa-bullseye text-amber-500"></i>
+            </div>
+            <div class="mt-2 text-xl font-bold font-mono text-amber-500">
+                $@pocPrice.ToString("N2")
+            </div>
+            <div class="mt-1 text-2xs text-slate-500 dark:text-slate-400">
+                Highest traded volume node
+            </div>
+        </div>
+
+        <!-- Value Area High -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <span>Value Area High (VAH)</span>
+                <i class="fa-solid fa-arrow-up text-rose-500"></i>
+            </div>
+            <div class="mt-2 text-xl font-bold font-mono text-rose-500">
+                $@vah.ToString("N2")
+            </div>
+            <div class="mt-1 text-2xs text-slate-500 dark:text-slate-400">
+                Upper boundary of 70% volume
+            </div>
+        </div>
+
+        <!-- Value Area Low -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <span>Value Area Low (VAL)</span>
+                <i class="fa-solid fa-arrow-down text-emerald-500"></i>
+            </div>
+            <div class="mt-2 text-xl font-bold font-mono text-emerald-500">
+                $@val.ToString("N2")
+            </div>
+            <div class="mt-1 text-2xs text-slate-500 dark:text-slate-400">
+                Lower boundary of 70% volume
+            </div>
+        </div>
+
+        <!-- Auction State Signal -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <span>Auction Market State</span>
+                <i class="fa-solid fa-gavel text-blue-500"></i>
+            </div>
+            <div class="mt-2 text-sm font-bold text-slate-800 dark:text-white truncate" title="@Model?.VolumeProfileSignal">
+                @(Model?.VolumeProfileSignal ?? "Balanced")
+            </div>
+            <div class="mt-1 text-2xs text-slate-500 dark:text-slate-400">
+                Visible Traded: $@((Model?.TotalVisibleVolumeUsd ?? 0).ToString("N0"))
+            </div>
+        </div>
+    </div>
+
+    <!-- VPVR Histogram & Auction Heatmap -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-chart-simple text-blue-500"></i> Visible Range Volume Profile Distribution (VPVR)
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Horizontal depth distribution showing Buy Volume (Green) and Sell Volume (Red) per price node.</p>
+            </div>
+            <div class="flex items-center gap-4 text-2xs font-bold">
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Buyer Taker Delta</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Seller Taker Delta</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Point of Control (POC)</span>
+            </div>
+        </div>
+
+        <div class="space-y-1.5">
+            @if (Model?.Buckets != null && Model.Buckets.Any())
+            {
+                <!-- Render buckets from Highest Price to Lowest Price -->
+                @foreach (var b in Model.Buckets.OrderByDescending(x => x.PriceLevel))
+                {
+                    var isCurrentPriceBucket = Math.Abs(currentPrice - b.PriceLevel) <= (vah - val) / 24m;
+                    var widthPercent = maxBucketVol > 0 ? (b.TotalVolume / maxBucketVol) * 100m : 0m;
+                    var buyPercent = b.TotalVolume > 0 ? (b.BuyVolume / b.TotalVolume) * 100m : 50m;
+                    var sellPercent = 100m - buyPercent;
+
+                    <div class="flex items-center gap-3 text-xs p-1 rounded-lg transition-colors @(b.IsPoc ? "bg-amber-500/10 border border-amber-500/30" : b.IsValueArea ? "bg-blue-500/5" : "hover:bg-slate-50 dark:hover:bg-slate-700/30")">
+                        <!-- Price Label -->
+                        <div class="w-24 font-mono font-semibold text-right @(b.IsPoc ? "text-amber-500 font-bold" : "text-slate-700 dark:text-slate-300")">
+                            $@b.PriceLevel.ToString("N2")
+                        </div>
+
+                        <!-- Node Type Badge -->
+                        <div class="w-20">
+                            @if (b.IsPoc)
+                            {
+                                <span class="px-1.5 py-0.5 rounded text-3xs font-extrabold bg-amber-500 text-slate-900">POC</span>
+                            }
+                            else if (b.NodeClassification.Contains("HVN"))
+                            {
+                                <span class="px-1.5 py-0.5 rounded text-3xs font-bold bg-blue-500/10 text-blue-500">HVN</span>
+                            }
+                            else if (b.NodeClassification.Contains("LVN"))
+                            {
+                                <span class="px-1.5 py-0.5 rounded text-3xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-400">LVN</span>
+                            }
+                        </div>
+
+                        <!-- Stacked Bar Histogram -->
+                        <div class="flex-1 bg-slate-100 dark:bg-slate-700/60 rounded-full h-3 overflow-hidden flex">
+                            <div style="width: @widthPercent%" class="flex h-full rounded-full overflow-hidden">
+                                <div class="bg-emerald-500 h-full" style="width: @buyPercent%" title="Buy Volume: @b.BuyVolume.ToString("N1")"></div>
+                                <div class="bg-rose-500 h-full" style="width: @sellPercent%" title="Sell Volume: @b.SellVolume.ToString("N1")"></div>
+                            </div>
+                        </div>
+
+                        <!-- Traded Volume Number -->
+                        <div class="w-24 text-right font-mono text-2xs text-slate-500 dark:text-slate-400">
+                            @b.TotalVolume.ToString("N0")
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- Multi-Anchored VWAP (AVWAP) Table -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-anchor text-blue-500"></i> Multi-Anchored VWAP Engine with Standard Deviation Bands
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Volume-Weighted Average Price anchored from key macroeconomic catalysts with ±1σ and ±2σ statistical deviation envelopes.</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-500/10 text-blue-500">
+                @(Model?.AnchoredVwaps.Count ?? 0) Anchors Active
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-700 text-2xs uppercase tracking-wider text-slate-400 font-bold">
+                        <th class="pb-3">Anchor Event</th>
+                        <th class="pb-3">Anchor Date</th>
+                        <th class="pb-3">VWAP Baseline</th>
+                        <th class="pb-3">±1σ Envelope (68.2%)</th>
+                        <th class="pb-3">±2σ Extreme (95.4%)</th>
+                        <th class="pb-3">Deviation %</th>
+                        <th class="pb-3 text-right">Auction Verdict</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 text-xs font-medium">
+                    @if (Model?.AnchoredVwaps != null && Model.AnchoredVwaps.Any())
+                    {
+                        @foreach (var vwap in Model.AnchoredVwaps)
+                        {
+                            var isAbove = vwap.CurrentDeviationPercent >= 0;
+                            <tr>
+                                <td class="py-3.5">
+                                    <div class="flex items-center gap-2 font-bold text-slate-800 dark:text-white">
+                                        <i class="fa-solid fa-anchor text-blue-500 text-2xs"></i>
+                                        <span>@vwap.AnchorName</span>
+                                    </div>
+                                </td>
+                                <td class="py-3.5 text-slate-500 font-mono text-2xs">
+                                    @vwap.AnchorDateUtc.ToString("yyyy-MM-dd")
+                                </td>
+                                <td class="py-3.5 font-mono font-bold text-blue-500">
+                                    $@vwap.VwapPrice.ToString("N2")
+                                </td>
+                                <td class="py-3.5 font-mono text-slate-600 dark:text-slate-300">
+                                    $@vwap.LowerBand1Sigma.ToString("N2") – $@vwap.UpperBand1Sigma.ToString("N2")
+                                </td>
+                                <td class="py-3.5 font-mono text-slate-500">
+                                    $@vwap.LowerBand2Sigma.ToString("N2") – $@vwap.UpperBand2Sigma.ToString("N2")
+                                </td>
+                                <td class="py-3.5 font-mono font-bold @(isAbove ? "text-emerald-500" : "text-rose-500")">
+                                    @(isAbove ? "+" : "")@vwap.CurrentDeviationPercent.ToString("N2")%
+                                </td>
+                                <td class="py-3.5 text-right">
+                                    <span class="px-2.5 py-1 rounded-full text-2xs font-bold @(vwap.PositionVerdict.Contains("Markup") ? "bg-emerald-500/10 text-emerald-500" : vwap.PositionVerdict.Contains("Discount") ? "bg-amber-500/10 text-amber-500" : vwap.PositionVerdict.Contains("Extreme") ? "bg-purple-500/10 text-purple-500" : "bg-blue-500/10 text-blue-500")">
+                                        @vwap.PositionVerdict
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

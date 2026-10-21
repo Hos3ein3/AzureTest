@@ -567,7 +567,114 @@ public sealed record CryptoAnalysisDto(
     CryptoSupportResistanceDto SupportResistance,
     CryptoSentimentDto Sentiment,
     IReadOnlyList<CryptoWhaleAlertDto> WhaleAlerts,
-    IReadOnlyList<CryptoScreenerItemDto> ScreenerResults);
+    IReadOnlyList<CryptoScreenerItemDto> ScreenerResults,
+    CryptoMarketStructureDto? MarketStructure = null,
+    CryptoVolumeProfileHubDto? VolumeProfile = null,
+    CryptoMarketRegimeDto? MarketRegime = null);
+
+// ── Feature 4: Analysis DTOs (4.1 SMC, 4.2 VPVR & AVWAP, 4.3 Market Regime) ──
+
+public sealed record CryptoOrderBlockDto(
+    string Type,
+    decimal TopPrice,
+    decimal BottomPrice,
+    decimal MeanThreshold,
+    DateTime FormedAtUtc,
+    bool IsMitigated,
+    decimal MitigationPrice,
+    decimal StrengthScore);
+
+public sealed record CryptoFairValueGapDto(
+    string Type,
+    decimal TopPrice,
+    decimal BottomPrice,
+    decimal ConsequentEncroachment,
+    DateTime FormedAtUtc,
+    bool IsFilled,
+    decimal PercentFilled);
+
+public sealed record CryptoLiquidityPoolDto(
+    string Type,
+    decimal PriceLevel,
+    string Status,
+    DateTime? SweptAtUtc,
+    decimal EstimatedVolumeUsd);
+
+public sealed record CryptoMarketStructureDto(
+    string Symbol,
+    CryptoTimeframe Timeframe,
+    string CurrentTrend,
+    string LastBreakType,
+    decimal LastBreakPrice,
+    DateTime LastBreakTimeUtc,
+    decimal RecentSwingHigh,
+    decimal RecentSwingLow,
+    decimal EquilibriumPrice,
+    string CurrentZone,
+    IReadOnlyList<CryptoOrderBlockDto> OrderBlocks,
+    IReadOnlyList<CryptoFairValueGapDto> FairValueGaps,
+    IReadOnlyList<CryptoLiquidityPoolDto> LiquidityPools,
+    string SmcTradeBias,
+    DateTime LastUpdatedUtc);
+
+public sealed record CryptoVolumeProfileBucketDto(
+    decimal PriceLevel,
+    decimal BuyVolume,
+    decimal SellVolume,
+    decimal TotalVolume,
+    bool IsPoc,
+    bool IsValueArea,
+    string NodeClassification);
+
+public sealed record CryptoAnchoredVwapDto(
+    string AnchorName,
+    DateTime AnchorDateUtc,
+    decimal VwapPrice,
+    decimal UpperBand1Sigma,
+    decimal LowerBand1Sigma,
+    decimal UpperBand2Sigma,
+    decimal LowerBand2Sigma,
+    decimal CurrentDeviationPercent,
+    string PositionVerdict);
+
+public sealed record CryptoVolumeProfileHubDto(
+    string Symbol,
+    CryptoTimeframe Timeframe,
+    decimal CurrentPrice,
+    decimal PocPrice,
+    decimal ValueAreaHigh,
+    decimal ValueAreaLow,
+    decimal TotalVisibleVolumeUsd,
+    decimal ValueAreaVolumePercent,
+    IReadOnlyList<CryptoVolumeProfileBucketDto> Buckets,
+    IReadOnlyList<CryptoAnchoredVwapDto> AnchoredVwaps,
+    string VolumeProfileSignal,
+    DateTime LastUpdatedUtc);
+
+public sealed record CryptoMarketRegimeDto(
+    string Symbol,
+    string RegimeName,
+    decimal RegimeConfidencePercent,
+    decimal AdxValue,
+    decimal AtrPercent,
+    decimal BollingerBandwidth,
+    bool IsBollingerSqueeze,
+    decimal HurstExponent,
+    string PrimaryMarketDriver,
+    string OptimalStrategy,
+    string TacticalGuidance,
+    DateTime LastUpdatedUtc);
+
+public sealed record CryptoAnalysisHubDto(
+    string Symbol,
+    CryptoTimeframe Timeframe,
+    decimal CurrentPrice,
+    CryptoTechnicalIndicatorsDto Technical,
+    CryptoSupportResistanceDto SupportResistance,
+    CryptoMarketStructureDto MarketStructure,
+    CryptoVolumeProfileHubDto VolumeProfile,
+    CryptoMarketRegimeDto MarketRegime,
+    DateTime LastUpdatedUtc);
 
 // ── Strategy & Backtest DTOs ───────────────────────────────────────────────
 

@@ -21,6 +21,8 @@ using AzureTest.Application.Crypto.Queries.GetCryptoExchangeFlow;
 using AzureTest.Application.Crypto.Queries.GetCryptoFuturesFunding;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketDataHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketOverview;
+using AzureTest.Application.Crypto.Queries.GetCryptoMarketRegime;
+using AzureTest.Application.Crypto.Queries.GetCryptoMarketStructure;
 using AzureTest.Application.Crypto.Queries.GetCryptoOnChainHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoOrderBook;
 using AzureTest.Application.Crypto.Queries.GetCryptoTokenUnlocks;
@@ -31,6 +33,7 @@ using AzureTest.Application.Crypto.Queries.GetCryptoSettings;
 using AzureTest.Application.Crypto.Queries.GetCryptoStrategies;
 using AzureTest.Application.Crypto.Queries.GetCryptoTaxReport;
 using AzureTest.Application.Crypto.Queries.GetCryptoTradeTerminal;
+using AzureTest.Application.Crypto.Queries.GetCryptoVolumeProfile;
 using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.Crypto;
 
@@ -113,6 +116,9 @@ public interface ICryptoQueryUnit
     IQueryHandler<GetCryptoExchangeFlowQuery, Result<CryptoExchangeFlowAnalysisHubDto>> GetExchangeFlow { get; }
     IQueryHandler<GetCryptoTokenUnlocksQuery, Result<CryptoTokenUnlocksHubDto>> GetTokenUnlocks { get; }
     IQueryHandler<GetCryptoDexScreenerQuery, Result<CryptoDexScreenerHubDto>> GetDexScreener { get; }
+    IQueryHandler<GetCryptoMarketStructureQuery, Result<CryptoMarketStructureDto>> GetMarketStructure { get; }
+    IQueryHandler<GetCryptoVolumeProfileQuery, Result<CryptoVolumeProfileHubDto>> GetVolumeProfile { get; }
+    IQueryHandler<GetCryptoMarketRegimeQuery, Result<CryptoMarketRegimeDto>> GetMarketRegime { get; }
 }
 
 public sealed class CryptoQueryUnit : ICryptoQueryUnit
@@ -136,6 +142,9 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
     public IQueryHandler<GetCryptoExchangeFlowQuery, Result<CryptoExchangeFlowAnalysisHubDto>> GetExchangeFlow { get; }
     public IQueryHandler<GetCryptoTokenUnlocksQuery, Result<CryptoTokenUnlocksHubDto>> GetTokenUnlocks { get; }
     public IQueryHandler<GetCryptoDexScreenerQuery, Result<CryptoDexScreenerHubDto>> GetDexScreener { get; }
+    public IQueryHandler<GetCryptoMarketStructureQuery, Result<CryptoMarketStructureDto>> GetMarketStructure { get; }
+    public IQueryHandler<GetCryptoVolumeProfileQuery, Result<CryptoVolumeProfileHubDto>> GetVolumeProfile { get; }
+    public IQueryHandler<GetCryptoMarketRegimeQuery, Result<CryptoMarketRegimeDto>> GetMarketRegime { get; }
 
     public CryptoQueryUnit(
         IQueryHandler<GetCryptoMarketOverviewQuery, Result<CryptoMarketOverviewDto>> getMarketOverview,
@@ -156,7 +165,10 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
         IQueryHandler<GetCryptoOnChainHubQuery, Result<CryptoOnChainHubDto>> getOnChainHub,
         IQueryHandler<GetCryptoExchangeFlowQuery, Result<CryptoExchangeFlowAnalysisHubDto>> getExchangeFlow,
         IQueryHandler<GetCryptoTokenUnlocksQuery, Result<CryptoTokenUnlocksHubDto>> getTokenUnlocks,
-        IQueryHandler<GetCryptoDexScreenerQuery, Result<CryptoDexScreenerHubDto>> getDexScreener)
+        IQueryHandler<GetCryptoDexScreenerQuery, Result<CryptoDexScreenerHubDto>> getDexScreener,
+        IQueryHandler<GetCryptoMarketStructureQuery, Result<CryptoMarketStructureDto>> getMarketStructure,
+        IQueryHandler<GetCryptoVolumeProfileQuery, Result<CryptoVolumeProfileHubDto>> getVolumeProfile,
+        IQueryHandler<GetCryptoMarketRegimeQuery, Result<CryptoMarketRegimeDto>> getMarketRegime)
     {
         GetMarketOverview = getMarketOverview;
         GetCandles = getCandles;
@@ -177,6 +189,10 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
         GetExchangeFlow = getExchangeFlow;
         GetTokenUnlocks = getTokenUnlocks;
         GetDexScreener = getDexScreener;
+        GetMarketStructure = getMarketStructure;
+        GetVolumeProfile = getVolumeProfile;
+        GetMarketRegime = getMarketRegime;
     }
 }
+
 

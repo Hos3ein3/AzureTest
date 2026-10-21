@@ -4,7 +4,10 @@ using System.Threading.Tasks;
 using AzureTest.Application.Crypto;
 using AzureTest.Application.Crypto.Queries.GetCryptoAnalysis;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketOverview;
+using AzureTest.Application.Crypto.Queries.GetCryptoMarketRegime;
+using AzureTest.Application.Crypto.Queries.GetCryptoMarketStructure;
 using AzureTest.Application.Crypto.Queries.GetCryptoScreener;
+using AzureTest.Application.Crypto.Queries.GetCryptoVolumeProfile;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Contracts.DTOs.Crypto;
 using AzureTest.Domain.Entities.Crypto.Enums;
@@ -17,7 +20,7 @@ namespace AzureTest.MVC.Areas.Crypto.Controllers;
 [Area("Crypto")]
 [Authorize]
 [DisplayName("Crypto Analysis")]
-[Description("Technical indicators, support/resistance pivots, Fear & Greed sentiment index, on-chain whale activity, and market screener.")]
+[Description("Technical indicators, ICT/SMC structure, Volume Profile, Anchored VWAP, quant market regimes, and screener.")]
 public class CryptoAnalysisController : Controller
 {
     private readonly ICryptoQueryUnit _queries;
@@ -43,6 +46,39 @@ public class CryptoAnalysisController : Controller
         ViewBag.Symbol = symbol;
         ViewBag.Timeframe = timeframe;
         return result.ToView(this);
+    }
+
+    [HttpGet]
+    [DisplayName("ICT / SMC Market Structure")]
+    [Description("Institutional Smart Money Concepts: Break of Structure (BOS), Change of Character (CHoCH), Order Blocks (+OB/-OB), Fair Value Gaps (FVG), Liquidity Sweeps, and Premium/Discount OTE zones.")]
+    public async Task<IActionResult> MarketStructure(string symbol = "BTCUSDT", CryptoTimeframe timeframe = CryptoTimeframe.H1, CancellationToken cancellationToken = default)
+    {
+        var result = await _queries.GetMarketStructure.HandleAsync(new GetCryptoMarketStructureQuery(symbol, timeframe), cancellationToken);
+        ViewBag.Symbol = symbol;
+        ViewBag.Timeframe = timeframe;
+        return result.ToView(this, viewName: "MarketStructure");
+    }
+
+    [HttpGet]
+    [DisplayName("Volume Profile & Anchored VWAP")]
+    [Description("Visible Range Volume Profile (VPVR): Point of Control (POC), Value Area High (VAH), Value Area Low (VAL), High/Low Volume Nodes (HVN/LVN), and Multi-Anchor VWAP with ±1σ and ±2σ standard deviation bands.")]
+    public async Task<IActionResult> VolumeProfile(string symbol = "BTCUSDT", CryptoTimeframe timeframe = CryptoTimeframe.H1, CancellationToken cancellationToken = default)
+    {
+        var result = await _queries.GetVolumeProfile.HandleAsync(new GetCryptoVolumeProfileQuery(symbol, timeframe), cancellationToken);
+        ViewBag.Symbol = symbol;
+        ViewBag.Timeframe = timeframe;
+        return result.ToView(this, viewName: "VolumeProfile");
+    }
+
+    [HttpGet]
+    [DisplayName("Market Regime & Quant Analysis")]
+    [Description("Quantitative regime detection: ADX trend strength, ATR% volatility, Bollinger Bandwidth squeeze detection, Hurst Exponent mean-reversion analysis, and optimal algorithmic strategy allocation.")]
+    public async Task<IActionResult> MarketRegime(string symbol = "BTCUSDT", CryptoTimeframe timeframe = CryptoTimeframe.H1, CancellationToken cancellationToken = default)
+    {
+        var result = await _queries.GetMarketRegime.HandleAsync(new GetCryptoMarketRegimeQuery(symbol, timeframe), cancellationToken);
+        ViewBag.Symbol = symbol;
+        ViewBag.Timeframe = timeframe;
+        return result.ToView(this, viewName: "MarketRegime");
     }
 
     [HttpGet]
@@ -97,3 +133,4 @@ public class CryptoAnalysisController : Controller
         return result.ToView(this, viewName: "OnChain");
     }
 }
+

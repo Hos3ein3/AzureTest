@@ -1,0 +1,281 @@
+@model CryptoMarketRegimeDto
+@{
+    var symbol = ViewBag.Symbol as string ?? "BTCUSDT";
+    var timeframe = ViewBag.Timeframe is CryptoTimeframe tf ? tf : CryptoTimeframe.H1;
+    ViewData["Title"] = $"{symbol} Market Regime & Quant Analysis";
+
+    var isBull = Model?.RegimeName.Contains("Bull") ?? false;
+    var isBear = Model?.RegimeName.Contains("Bear") ?? false;
+    var isSqueeze = Model?.IsBollingerSqueeze ?? false;
+    var isClimax = Model?.RegimeName.Contains("Climax") ?? false;
+    var isRange = Model?.RegimeName.Contains("Range") ?? false;
+
+    var hurst = Model?.HurstExponent ?? 0.5m;
+    var isHurstPersistent = hurst > 0.52m;
+    var isHurstAnti = hurst < 0.48m;
+}
+
+<div class="space-y-6">
+    <!-- Header with Sub-Navigation -->
+    <div class="flex flex-col gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-lg font-bold">
+                        <i class="fa-solid fa-compass"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-xl font-bold text-slate-800 dark:text-white">@symbol Market Regime & Quant Engine</h1>
+                            <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-emerald-500/10 text-emerald-500">@timeframe</span>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Quantitative regime classification: ADX trend strength, ATR% volatility, Hurst exponent, and algorithmic allocation</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeframe & Symbol Picker -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl">
+                    @foreach (var s in new[] { "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT" })
+                    {
+                        <a asp-action="MarketRegime" asp-route-symbol="@s" asp-route-timeframe="@timeframe" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors @(s == symbol ? "bg-white dark:bg-slate-800 text-emerald-600 shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800")">
+                            @s.Replace("USDT", "")
+                        </a>
+                    }
+                </div>
+                <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl">
+                    @foreach (CryptoTimeframe tfVal in Enum.GetValues(typeof(CryptoTimeframe)))
+                    {
+                        <a asp-action="MarketRegime" asp-route-symbol="@symbol" asp-route-timeframe="@tfVal" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors @(tfVal == timeframe ? "bg-white dark:bg-slate-800 text-emerald-600 shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800")">
+                            @tfVal
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex items-center gap-2 border-t border-slate-100 dark:border-slate-700/60 pt-4 overflow-x-auto text-xs font-semibold">
+            <a asp-action="Index" asp-route-symbol="@symbol" asp-route-timeframe="@timeframe" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-chart-line mr-1 text-slate-400"></i> Technicals
+            </a>
+            <a asp-action="MarketStructure" asp-route-symbol="@symbol" asp-route-timeframe="@timeframe" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-shapes mr-1 text-slate-400"></i> ICT / SMC Structure
+            </a>
+            <a asp-action="VolumeProfile" asp-route-symbol="@symbol" asp-route-timeframe="@timeframe" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-bars-staggered mr-1 text-slate-400"></i> Volume Profile (VPVR) & AVWAP
+            </a>
+            <a asp-action="MarketRegime" asp-route-symbol="@symbol" asp-route-timeframe="@timeframe" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white shadow-xs">
+                <i class="fa-solid fa-compass mr-1"></i> Market Regime & Quant
+            </a>
+            <a asp-action="Sentiment" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-gauge-high mr-1 text-slate-400"></i> Sentiment & News
+            </a>
+            <a asp-action="Screener" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-filter mr-1 text-slate-400"></i> Screener
+            </a>
+        </div>
+    </div>
+
+    <!-- Active Regime Hero Banner -->
+    <div class="p-6 rounded-2xl border shadow-xs @(isBull ? "bg-emerald-500/10 border-emerald-500/30" : isBear ? "bg-rose-500/10 border-rose-500/30" : isSqueeze ? "bg-purple-500/10 border-purple-500/30" : "bg-blue-500/10 border-blue-500/30")">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+                <div class="flex items-center gap-2 text-2xs uppercase tracking-wider font-extrabold @(isBull ? "text-emerald-500" : isBear ? "text-rose-500" : isSqueeze ? "text-purple-500" : "text-blue-500")">
+                    <i class="fa-solid fa-circle-dot animate-pulse"></i> Active Quantitative Regime
+                </div>
+                <div class="mt-2 text-2xl font-black text-slate-800 dark:text-white">
+                    @(Model?.RegimeName ?? "Consolidation Regime")
+                </div>
+                <div class="mt-2 text-xs text-slate-600 dark:text-slate-300 max-w-2xl">
+                    <span class="font-bold">Primary Market Driver:</span> @(Model?.PrimaryMarketDriver ?? "Equilibrium Order Flow")
+                </div>
+            </div>
+
+            <!-- Confidence Gauge -->
+            <div class="flex items-center gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div class="text-right">
+                    <div class="text-2xs text-slate-400 uppercase font-bold">Model Confidence</div>
+                    <div class="text-2xl font-black text-slate-800 dark:text-white">@Model?.RegimeConfidencePercent.ToString("N0")%</div>
+                </div>
+                <div class="w-12 h-12 rounded-full border-4 @(isBull ? "border-emerald-500" : isBear ? "border-rose-500" : "border-brand-500") flex items-center justify-center font-bold text-xs">
+                    <i class="fa-solid fa-shield-halved text-brand-500"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4 Quantitative Engine Pillars -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- ADX Trend Strength -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <span>ADX (14) Trend Strength</span>
+                <i class="fa-solid fa-gauge text-brand-500"></i>
+            </div>
+            <div class="mt-2 text-2xl font-bold font-mono @((Model?.AdxValue ?? 0) >= 25 ? "text-emerald-500" : "text-amber-500")">
+                @Model?.AdxValue.ToString("N1")
+            </div>
+            <div class="mt-1 text-2xs text-slate-500 dark:text-slate-400">
+                @((Model?.AdxValue ?? 0) >= 25 ? "Strong Trending Regime (>25)" : "Non-Trending / Chop (<20)")
+            </div>
+        </div>
+
+        <!-- ATR Volatility % -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <span>ATR (14) Volatility %</span>
+                <i class="fa-solid fa-wave-square text-blue-500"></i>
+            </div>
+            <div class="mt-2 text-2xl font-bold font-mono text-slate-800 dark:text-white">
+                @Model?.AtrPercent.ToString("N2")%
+            </div>
+            <div class="mt-1 text-2xs text-slate-500 dark:text-slate-400">
+                Normalized candle range / price
+            </div>
+        </div>
+
+        <!-- Bollinger Bandwidth & Squeeze -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <span>Bollinger Bandwidth</span>
+                <i class="fa-solid fa-arrows-to-dot @(isSqueeze ? "text-purple-500" : "text-slate-400")"></i>
+            </div>
+            <div class="mt-2 text-2xl font-bold font-mono text-slate-800 dark:text-white">
+                @Model?.BollingerBandwidth.ToString("N2")%
+            </div>
+            <div class="mt-1 text-2xs font-bold @(isSqueeze ? "text-purple-500" : "text-slate-400")">
+                @(isSqueeze ? "⚡ VOLATILITY SQUEEZE ACTIVE" : "Normal Volatility Bandwidth")
+            </div>
+        </div>
+
+        <!-- Hurst Exponent -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <span>Hurst Exponent (H)</span>
+                <i class="fa-solid fa-infinity text-violet-500"></i>
+            </div>
+            <div class="mt-2 text-2xl font-bold font-mono @(isHurstPersistent ? "text-emerald-500" : isHurstAnti ? "text-amber-500" : "text-slate-400")">
+                @Model?.HurstExponent.ToString("N3")
+            </div>
+            <div class="mt-1 text-2xs text-slate-500 dark:text-slate-400">
+                @(isHurstPersistent ? "Persistent / Trending (>0.52)" : isHurstAnti ? "Anti-Persistent / Mean-Reverting (<0.48)" : "Random Walk (~0.50)")
+            </div>
+        </div>
+    </div>
+
+    <!-- Strategy Allocation & Tactical Playbook -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Optimal Strategy Card -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-robot text-brand-500"></i> Optimal Algorithmic Strategy
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Quant model recommendation for maximizing Sharpe ratio in the current regime.</p>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-brand-500/10 border border-brand-500/20">
+                    <div class="text-xs font-bold uppercase text-brand-600 dark:text-brand-400">Recommended Allocation</div>
+                    <div class="mt-1 text-lg font-black text-slate-800 dark:text-white">
+                        @(Model?.OptimalStrategy ?? "Trend Following / Dynamic Trailing Stop")
+                    </div>
+                </div>
+
+                <div class="mt-4 flex items-center gap-3">
+                    <a asp-area="Crypto" asp-controller="CryptoStrategy" asp-action="Index" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold transition-colors">
+                        <i class="fa-solid fa-flask"></i> Configure Strategy Bot
+                    </a>
+                    <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" asp-route-symbol="@symbol" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 rounded-xl text-xs font-semibold transition-colors">
+                        <i class="fa-solid fa-terminal"></i> Open Terminal
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tactical Execution Playbook -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-chess-knight text-emerald-500"></i> Tactical Playbook & Rules
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Institutional execution directives derived from statistical regime parameters.</p>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                    @(Model?.TacticalGuidance ?? "Monitor support and resistance levels for directional confirmation before deploying leverage.")
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quantitative Framework Decision Matrix -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-table-list text-slate-400"></i> Quantitative Regime Decision Matrix
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Mathematical taxonomy used by the quant classification engine.</p>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-700 text-2xs uppercase tracking-wider text-slate-400 font-bold">
+                        <th class="pb-3">Regime Classification</th>
+                        <th class="pb-3">ADX (14)</th>
+                        <th class="pb-3">Hurst (H)</th>
+                        <th class="pb-3">Bandwidth / Squeeze</th>
+                        <th class="pb-3">Execution Play</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 text-xs font-medium">
+                    <tr class="@(isBull ? "bg-emerald-500/5 font-bold" : "")">
+                        <td class="py-3 text-emerald-500">Strong Bull Trend</td>
+                        <td class="py-3 font-mono">> 25.0</td>
+                        <td class="py-3 font-mono">> 0.52 (Persistent)</td>
+                        <td class="py-3">Expanding</td>
+                        <td class="py-3">Long Pullbacks into OTE & VWAP; Trail Stops</td>
+                    </tr>
+                    <tr class="@(isBear ? "bg-rose-500/5 font-bold" : "")">
+                        <td class="py-3 text-rose-500">Strong Bear Trend</td>
+                        <td class="py-3 font-mono">> 25.0</td>
+                        <td class="py-3 font-mono">> 0.52 (Persistent)</td>
+                        <td class="py-3">Expanding</td>
+                        <td class="py-3">Short Bearish FVG Relief Rallies; Avoid Bottom Fishing</td>
+                    </tr>
+                    <tr class="@(isRange ? "bg-blue-500/5 font-bold" : "")">
+                        <td class="py-3 text-blue-500">Mean-Reverting Range</td>
+                        <td class="py-3 font-mono">< 20.0</td>
+                        <td class="py-3 font-mono">< 0.48 (Anti-Persistent)</td>
+                        <td class="py-3">Moderate</td>
+                        <td class="py-3">Grid Trading Bots; Fade Extremes to POC Equilibrium</td>
+                    </tr>
+                    <tr class="@(isSqueeze ? "bg-purple-500/5 font-bold" : "")">
+                        <td class="py-3 text-purple-500">Volatility Squeeze Imminent</td>
+                        <td class="py-3 font-mono">Any</td>
+                        <td class="py-3 font-mono">Any</td>
+                        <td class="py-3 font-mono">< 3.8% (Coiled)</td>
+                        <td class="py-3">Straddle / Bidirectional Stop-Market Breakout Orders</td>
+                    </tr>
+                    <tr class="@(isClimax ? "bg-amber-500/5 font-bold" : "")">
+                        <td class="py-3 text-amber-500">Exhaustion Climax</td>
+                        <td class="py-3 font-mono">> 35.0</td>
+                        <td class="py-3 font-mono">Any</td>
+                        <td class="py-3">Extreme Expansion</td>
+                        <td class="py-3">Scale Out / Realize Profit; Prepare for Mean Reversion</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

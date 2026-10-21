@@ -6,26 +6,41 @@
 }
 
 <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
-        <div>
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center text-lg font-bold">
-                    <i class="fa-solid fa-gauge-high"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Sentiment & News Intelligence</h1>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Alternative.me Fear & Greed Index combined with CryptoPanic free headlines</p>
+    <!-- Header with Sub-Navigation -->
+    <div class="flex flex-col gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center text-lg font-bold">
+                        <i class="fa-solid fa-gauge-high"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-800 dark:text-white">Sentiment & News Intelligence</h1>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Alternative.me Fear & Greed Index combined with curated market-moving headlines</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="flex items-center gap-2">
-            <a asp-action="Index" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors">
-                <i class="fa-solid fa-chart-line"></i> Technicals
+        <!-- Navigation Tabs -->
+        <div class="flex items-center gap-2 border-t border-slate-100 dark:border-slate-700/60 pt-4 overflow-x-auto text-xs font-semibold">
+            <a asp-action="Index" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-chart-line mr-1 text-slate-400"></i> Technicals
             </a>
-            <a asp-action="Screener" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors">
-                <i class="fa-solid fa-filter"></i> Screener
+            <a asp-action="MarketStructure" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-shapes mr-1 text-slate-400"></i> ICT / SMC Structure
+            </a>
+            <a asp-action="VolumeProfile" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-bars-staggered mr-1 text-slate-400"></i> Volume Profile (VPVR) & AVWAP
+            </a>
+            <a asp-action="MarketRegime" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-compass mr-1 text-slate-400"></i> Market Regime & Quant
+            </a>
+            <a asp-action="Sentiment" class="px-3 py-1.5 rounded-xl bg-rose-600 text-white shadow-xs">
+                <i class="fa-solid fa-gauge-high mr-1"></i> Sentiment & News
+            </a>
+            <a asp-action="Screener" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-filter mr-1 text-slate-400"></i> Screener
             </a>
         </div>
     </div>

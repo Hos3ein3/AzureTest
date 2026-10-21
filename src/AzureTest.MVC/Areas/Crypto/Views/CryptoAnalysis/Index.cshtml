@@ -8,31 +8,55 @@
 }
 
 <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
-        <div>
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-600 flex items-center justify-center text-lg font-bold">
-                    <i class="fa-solid fa-chart-line"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h1 class="text-xl font-bold text-slate-800 dark:text-white">@symbol Technical Analysis</h1>
-                        <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-brand-500/10 text-brand-600">@timeframe</span>
+    <!-- Header with Sub-Navigation -->
+    <div class="flex flex-col gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-600 flex items-center justify-center text-lg font-bold">
+                        <i class="fa-solid fa-chart-line"></i>
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Moving averages, oscillators, volatility bands, and classical pivot points</p>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-xl font-bold text-slate-800 dark:text-white">@symbol Technical Analysis</h1>
+                            <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-brand-500/10 text-brand-600">@timeframe</span>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Moving averages, oscillators, volatility bands, and classical pivot points</p>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Timeframe Toolbar -->
+            <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl">
+                @foreach (CryptoTimeframe tfVal in Enum.GetValues(typeof(CryptoTimeframe)))
+                {
+                    <a asp-action="Index" asp-route-symbol="@symbol" asp-route-timeframe="@tfVal" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors @(tfVal == timeframe ? "bg-white dark:bg-slate-800 text-brand-600 shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800")">
+                        @tfVal
+                    </a>
+                }
             </div>
         </div>
 
-        <!-- Timeframe Toolbar -->
-        <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/60 p-1 rounded-xl">
-            @foreach (CryptoTimeframe tfVal in Enum.GetValues(typeof(CryptoTimeframe)))
-            {
-                <a asp-action="Index" asp-route-symbol="@symbol" asp-route-timeframe="@tfVal" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors @(tfVal == timeframe ? "bg-white dark:bg-slate-800 text-brand-600 shadow-xs" : "text-slate-500 dark:text-slate-400 hover:text-slate-800")">
-                    @tfVal
-                </a>
-            }
+        <!-- Navigation Tabs -->
+        <div class="flex items-center gap-2 border-t border-slate-100 dark:border-slate-700/60 pt-4 overflow-x-auto text-xs font-semibold">
+            <a asp-action="Index" asp-route-symbol="@symbol" asp-route-timeframe="@timeframe" class="px-3 py-1.5 rounded-xl bg-brand-600 text-white shadow-xs">
+                <i class="fa-solid fa-chart-line mr-1"></i> Technicals
+            </a>
+            <a asp-action="MarketStructure" asp-route-symbol="@symbol" asp-route-timeframe="@timeframe" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-shapes mr-1 text-slate-400"></i> ICT / SMC Structure
+            </a>
+            <a asp-action="VolumeProfile" asp-route-symbol="@symbol" asp-route-timeframe="@timeframe" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-bars-staggered mr-1 text-slate-400"></i> Volume Profile (VPVR) & AVWAP
+            </a>
+            <a asp-action="MarketRegime" asp-route-symbol="@symbol" asp-route-timeframe="@timeframe" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-compass mr-1 text-slate-400"></i> Market Regime & Quant
+            </a>
+            <a asp-action="Sentiment" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-gauge-high mr-1 text-slate-400"></i> Sentiment & News
+            </a>
+            <a asp-action="Screener" class="px-3 py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="fa-solid fa-filter mr-1 text-slate-400"></i> Screener
+            </a>
         </div>
     </div>
 
