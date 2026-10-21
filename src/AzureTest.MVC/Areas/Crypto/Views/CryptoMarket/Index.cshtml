@@ -19,17 +19,20 @@
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+            <a asp-action="OnChain" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors">
+                <i class="fa-solid fa-cubes-stacked"></i> On-Chain &amp; Flow
+            </a>
             <a asp-action="OrderFlow" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors">
                 <i class="fa-solid fa-water"></i> Order Flow &amp; CVD
             </a>
-            <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors">
+            <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="Futures" class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors">
+                <i class="fa-solid fa-gauge-high"></i> Derivatives Hub
+            </a>
+            <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors">
                 <i class="fa-solid fa-bolt"></i> Trading Terminal
             </a>
             <a asp-area="Crypto" asp-controller="CryptoAnalysis" asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors">
                 <i class="fa-solid fa-chart-line"></i> Technical Analysis
-            </a>
-            <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="Futures" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors">
-                <i class="fa-solid fa-scale-balanced"></i> Futures &amp; Funding
             </a>
         </div>
     </div>

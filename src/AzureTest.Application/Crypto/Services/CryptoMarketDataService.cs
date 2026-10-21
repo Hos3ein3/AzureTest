@@ -1053,6 +1053,104 @@ public class CryptoMarketDataService : ICryptoMarketDataService
             curve,
             DateTime.UtcNow);
     }
+
+    public Task<CryptoOnChainHubDto> GetOnChainHubAsync(CancellationToken ct = default)
+    {
+        // 1. Exchange Flows (Inflow / Outflow / Reserves)
+        var exchangeFlows = new List<CryptoExchangeFlowDto>
+        {
+            new("Binance", 1240000000m, 1580000000m, -340000000m, 582410m, -0.82m, "Heavy Accumulation / Bullish"),
+            new("Coinbase Prime", 890000000m, 1150000000m, -260000000m, 345120m, -1.15m, "Institutional Outflow / Custody"),
+            new("OKX", 420000000m, 390000000m, +30000000m, 128450m, +0.25m, "Neutral"),
+            new("Bybit", 510000000m, 4850000000m, +25000000m, 64800m, +0.40m, "Perp Collateral Deposit"),
+            new("Kraken", 210000000m, 310000000m, -100000000m, 89300m, -0.75m, "Moderate Outflow")
+        };
+        decimal totalNetExchangeFlow = exchangeFlows.Sum(e => e.NetFlowUsd24h);
+
+        // 2. Whale Transactions Feed (> $5M USD)
+        var whaleTxs = new List<CryptoWhaleTransactionDto>
+        {
+            new("0x4a8b...12c9", "Bitcoin", "BTC", 2450m, 165252500m, "1P5ZEDWT...m9y (Unknown Whale)", "Unknown Whale", "34xp4vRo...rZ6 (Coinbase Prime Custody)", "Coinbase Prime", "Exchange Outflow (Cold Storage Accumulation)", DateTime.UtcNow.AddMinutes(-8)),
+            new("0x7e2d...f91a", "Ethereum", "ETH", 45000m, 121297500m, "0x28c6...821a (Bitfinex Hot)", "Bitfinex", "0x53d2...8a39 (Kraken Custody)", "Kraken", "Whale Internal Shuffle / Market Maker Liquidity", DateTime.UtcNow.AddMinutes(-24)),
+            new("0x19f0...bc43", "Ethereum", "USDT", 80000000m, 80000000m, "0x5754...119c (Tether Treasury)", "Tether Treasury", "0xdfd5...9a3b (Binance Deposit)", "Binance", "Exchange Inflow (Fresh Bullish Dry Powder)", DateTime.UtcNow.AddMinutes(-42)),
+            new("0x9c3e...88ab", "Bitcoin", "BTC", 1200m, 80940000m, "34xp4vRo...rZ6 (Binance Hot)", "Binance", "1LdnfA...8kP (Unknown Cold Wallet)", "Unknown Wallet", "Exchange Outflow (Cold Storage Accumulation)", DateTime.UtcNow.AddHours(-1)),
+            new("5yXw...8kLm", "Solana", "SOL", 350000m, 58187500m, "9xQe...4bTq (Whale Staking Account)", "Unknown Whale", "2ojv...8zWk (Binance Hot Wallet)", "Binance", "Exchange Inflow (Sell Pressure)", DateTime.UtcNow.AddHours(-2)),
+            new("0x3b1c...d442", "Ethereum", "LINK", 500000m, 5825000m, "0x892a...f71c (Unknown Holder)", "Unknown Holder", "0xbc10...3c99 (Chainlink Staking v0.2)", "Chainlink Pool", "Whale OTC Transfer (Staking Lockup)", DateTime.UtcNow.AddHours(-3))
+        };
+
+        // 3. Stablecoin Supply Flows & Mint/Burn
+        var stableSupplies = new List<CryptoStablecoinSupplyFlowDto>
+        {
+            new("USDT (Tether)", 120400000000m, +1000000000m, +3200000000m, 70.8m, "Expanding"),
+            new("USDC (Circle)", 35800000000m, +240000000m, +950000000m, 21.0m, "Expanding"),
+            new("USDe (Ethena)", 2800000000m, +45000000m, +180000000m, 1.6m, "Rapid Expansion"),
+            new("FDUSD (First Digital)", 2400000000m, -20000000m, -80000000m, 1.4m, "Stable"),
+            new("PYUSD (PayPal)", 780000000m, +12000000m, +54000000m, 0.5m, "Expanding")
+        };
+
+        var mintsBurns = new List<CryptoStablecoinMintBurnDto>
+        {
+            new("USDT", "MINT", 1000000000m, "Tron (TRC-20)", "Tether Treasury", DateTime.UtcNow.AddHours(-4), "Net Bullish Expansion"),
+            new("USDC", "MINT", 250000000m, "Ethereum (ERC-20)", "Circle Treasury", DateTime.UtcNow.AddHours(-7), "Net Bullish Expansion"),
+            new("USDT", "MINT", 500000000m, "Ethereum (ERC-20)", "Tether Treasury", DateTime.UtcNow.AddHours(-18), "Net Bullish Expansion"),
+            new("FDUSD", "BURN", 25000000m, "BNB Smart Chain (BEP-20)", "Binance Hot", DateTime.UtcNow.AddHours(-22), "Liquidity Contraction")
+        };
+
+        // 4. Token Unlocks Calendar
+        var unlocks = new List<CryptoTokenUnlockDto>
+        {
+            new("TIA", "Celestia", DateTime.UtcNow.AddDays(9), 9, 175560000m, 948024000m, 79.9m, "Seed & Core Team", "Extreme Dilution (>7%)"),
+            new("SUI", "Sui Network", DateTime.UtcNow.AddDays(12), 12, 64190000m, 136082800m, 2.2m, "Series A/B Investors", "Moderate Risk (1-3%)"),
+            new("ARB", "Arbitrum", DateTime.UtcNow.AddDays(16), 16, 92650000m, 52810500m, 2.5m, "Team & Advisors", "Moderate Risk (1-3%)"),
+            new("OP", "Optimism", DateTime.UtcNow.AddDays(20), 20, 31340000m, 47636800m, 2.6m, "Core Contributors", "Moderate Risk (1-3%)"),
+            new("AVAX", "Avalanche", DateTime.UtcNow.AddDays(24), 24, 1670000m, 47428000m, 0.4m, "Strategic Partners", "Low Risk (<1%)"),
+            new("STRK", "Starknet", DateTime.UtcNow.AddDays(28), 28, 64000000m, 24960000m, 3.4m, "Early Investors", "High Dilution (3-7%)"),
+            new("WLD", "Worldcoin", DateTime.UtcNow.AddDays(31), 31, 37200000m, 78120000m, 6.8m, "TFH Reserve & Investors", "High Dilution (3-7%)")
+        };
+
+        // 5. DEX Liquidity Screening
+        var dexPools = new List<CryptoDexPoolDto>
+        {
+            new("PEPE/WETH", "Uniswap v3", "Ethereum", 0.00000985m, +8.4m, 42500000m, 148200000m, 3.48m, 99.2m, true, true, 18.2m),
+            new("WIF/SOL", "Raydium", "Solana", 2.45m, +14.2m, 28400000m, 96500000m, 3.40m, 97.5m, true, true, 14.5m),
+            new("AERO/USDC", "Aerodrome", "Base", 1.28m, +5.6m, 85200000m, 62100000m, 0.73m, 98.4m, true, true, 12.0m),
+            new("PENDLE/USDT", "Uniswap v3", "Arbitrum", 4.62m, +3.1m, 18400000m, 24800000m, 1.35m, 99.0m, true, true, 9.8m),
+            new("BRETT/WETH", "Aerodrome", "Base", 0.088m, +11.8m, 14600000m, 38500000m, 2.63m, 96.8m, true, true, 15.4m),
+            new("RAY/SOL", "Raydium", "Solana", 2.88m, +18.4m, 45000000m, 82000000m, 1.82m, 98.1m, true, true, 8.5m)
+        };
+
+        // 6. Smart Money Wallets & Copy Alerts
+        var smartWallets = new List<CryptoSmartMoneyWalletDto>
+        {
+            new("0x1111...7e4a", "Wintermute Trading / Algorithmic MM", 4820000m, 78.4m, 82500000m, "ETH, SOL, ARB, ENA", "DEX Arbitrage & Market Making", 3420, true),
+            new("0x7104...4b21", "GMX Top Whale / Swing Long", 2650000m, 84.0m, 34200000m, "BTC, ETH, LINK", "Perpetual Momentum Swings", 4890, true),
+            new("0x9c82...98f3", "DeFi Alpha Fund / Early Rotation", 1940000m, 72.5m, 19800000m, "PENDLE, AERO, SUI", "Ecosystem Liquidity Farming", 2150, true),
+            new("0x3a45...c120", "Memecoin Sniper / Smart Accumulator", 1420000m, 68.2m, 8400000m, "PEPE, WIF, BRETT", "DEX Liquidity Breakouts", 5820, true)
+        };
+
+        var smartActivity = new List<CryptoSmartMoneyActivityDto>
+        {
+            new("0x7a2c...88f1", "GMX Top Whale", "BOUGHT", "ETH", 450m, 1212975m, 2695.50m, "Uniswap v3", DateTime.UtcNow.AddMinutes(-12), "High Conviction Buy"),
+            new("0x4e9d...21b0", "Wintermute Trading", "OPENED LONG", "BTC", 25m, 1686250m, 67450.00m, "Hyperliquid", DateTime.UtcNow.AddMinutes(-34), "Accumulation Dip"),
+            new("0x8c1b...99a4", "DeFi Alpha Fund", "STAKED", "PENDLE", 120000m, 554400m, 4.62m, "Pendle Finance", DateTime.UtcNow.AddHours(-1), "Long Term Conviction"),
+            new("0x2d3e...77c8", "Memecoin Sniper", "BOUGHT", "WIF", 185000m, 453250m, 2.45m, "Raydium", DateTime.UtcNow.AddHours(-2), "Momentum Breakout"),
+            new("0x5f6a...11d2", "GMX Top Whale", "SOLD", "SOL", 25000m, 4156250m, 166.25m, "Coinbase Prime", DateTime.UtcNow.AddHours(-4), "Take Profit / Partial Close")
+        };
+
+        var hub = new CryptoOnChainHubDto(
+            exchangeFlows,
+            totalNetExchangeFlow,
+            whaleTxs,
+            stableSupplies,
+            mintsBurns,
+            unlocks,
+            dexPools,
+            smartWallets,
+            smartActivity,
+            DateTime.UtcNow);
+
+        return Task.FromResult(hub);
+    }
 }
 
 

@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
 using AzureTest.Application.Abstractions;
+using AzureTest.Application.Forex.Commands.ActivateKillSwitch;
 using AzureTest.Application.Forex.Commands.CancelOrder;
 using AzureTest.Application.Forex.Commands.CloseTrade;
 using AzureTest.Application.Forex.Commands.CreateBacktest;
+using AzureTest.Application.Forex.Commands.MoveToBreakEven;
+using AzureTest.Application.Forex.Commands.PartialCloseTrade;
 using AzureTest.Application.Forex.Commands.PlaceOrder;
+using AzureTest.Application.Forex.Commands.ProcessTradingViewWebhook;
 using AzureTest.Application.Forex.Commands.ResetDemoAccount;
 using AzureTest.Application.Forex.Commands.SaveJournalEntry;
 using AzureTest.Application.Forex.Commands.UpdateApiSettings;
@@ -41,6 +45,10 @@ public static class ForexServiceRegistration
         services.AddScoped<ICommandHandler<PlaceOrderCommand, Result<Guid>>, PlaceOrderCommandHandler>();
         services.AddScoped<ICommandHandler<CancelOrderCommand, Result>, CancelOrderCommandHandler>();
         services.AddScoped<ICommandHandler<CloseTradeCommand, Result<decimal>>, CloseTradeCommandHandler>();
+        services.AddScoped<ICommandHandler<PartialCloseTradeCommand, Result<decimal>>, PartialCloseTradeCommandHandler>();
+        services.AddScoped<ICommandHandler<MoveToBreakEvenCommand, Result<bool>>, MoveToBreakEvenCommandHandler>();
+        services.AddScoped<ICommandHandler<ActivateKillSwitchCommand, Result<int>>, ActivateKillSwitchCommandHandler>();
+        services.AddScoped<ICommandHandler<ProcessTradingViewWebhookCommand, Result<Guid>>, ProcessTradingViewWebhookCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateTradeStopsCommand, Result>, UpdateTradeStopsCommandHandler>();
         services.AddScoped<ICommandHandler<CreateBacktestCommand, Result<BacktestResultDto>>, CreateBacktestCommandHandler>();
         services.AddScoped<ICommandHandler<SaveJournalEntryCommand, Result<Guid>>, SaveJournalEntryCommandHandler>();
@@ -51,6 +59,10 @@ public static class ForexServiceRegistration
         services.AddScoped<IValidator<PlaceOrderCommand>, PlaceOrderCommandValidator>();
         services.AddScoped<IValidator<CancelOrderCommand>, CancelOrderCommandValidator>();
         services.AddScoped<IValidator<CloseTradeCommand>, CloseTradeCommandValidator>();
+        services.AddScoped<IValidator<PartialCloseTradeCommand>, PartialCloseTradeCommandValidator>();
+        services.AddScoped<IValidator<MoveToBreakEvenCommand>, MoveToBreakEvenCommandValidator>();
+        services.AddScoped<IValidator<ActivateKillSwitchCommand>, ActivateKillSwitchCommandValidator>();
+        services.AddScoped<IValidator<ProcessTradingViewWebhookCommand>, ProcessTradingViewWebhookCommandValidator>();
         services.AddScoped<IValidator<UpdateTradeStopsCommand>, UpdateTradeStopsCommandValidator>();
         services.AddScoped<IValidator<CreateBacktestCommand>, CreateBacktestCommandValidator>();
         services.AddScoped<IValidator<SaveJournalEntryCommand>, SaveJournalEntryCommandValidator>();

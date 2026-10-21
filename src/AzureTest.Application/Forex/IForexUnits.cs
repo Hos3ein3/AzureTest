@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Abstractions;
+using AzureTest.Application.Forex.Commands.ActivateKillSwitch;
 using AzureTest.Application.Forex.Commands.CancelOrder;
 using AzureTest.Application.Forex.Commands.CloseTrade;
 using AzureTest.Application.Forex.Commands.CreateBacktest;
+using AzureTest.Application.Forex.Commands.MoveToBreakEven;
+using AzureTest.Application.Forex.Commands.PartialCloseTrade;
 using AzureTest.Application.Forex.Commands.PlaceOrder;
+using AzureTest.Application.Forex.Commands.ProcessTradingViewWebhook;
 using AzureTest.Application.Forex.Commands.ResetDemoAccount;
 using AzureTest.Application.Forex.Commands.SaveJournalEntry;
 using AzureTest.Application.Forex.Commands.UpdateApiSettings;
@@ -30,6 +34,10 @@ public interface IForexCommandUnit
     ICommandHandler<PlaceOrderCommand, Result<Guid>> PlaceOrder { get; }
     ICommandHandler<CancelOrderCommand, Result> CancelOrder { get; }
     ICommandHandler<CloseTradeCommand, Result<decimal>> CloseTrade { get; }
+    ICommandHandler<PartialCloseTradeCommand, Result<decimal>> PartialCloseTrade { get; }
+    ICommandHandler<MoveToBreakEvenCommand, Result<bool>> MoveToBreakEven { get; }
+    ICommandHandler<ActivateKillSwitchCommand, Result<int>> ActivateKillSwitch { get; }
+    ICommandHandler<ProcessTradingViewWebhookCommand, Result<Guid>> ProcessTradingViewWebhook { get; }
     ICommandHandler<UpdateTradeStopsCommand, Result> UpdateTradeStops { get; }
     ICommandHandler<CreateBacktestCommand, Result<BacktestResultDto>> CreateBacktest { get; }
     ICommandHandler<SaveJournalEntryCommand, Result<Guid>> SaveJournalEntry { get; }
@@ -42,6 +50,10 @@ public sealed class ForexCommandUnit : IForexCommandUnit
     public ICommandHandler<PlaceOrderCommand, Result<Guid>> PlaceOrder { get; }
     public ICommandHandler<CancelOrderCommand, Result> CancelOrder { get; }
     public ICommandHandler<CloseTradeCommand, Result<decimal>> CloseTrade { get; }
+    public ICommandHandler<PartialCloseTradeCommand, Result<decimal>> PartialCloseTrade { get; }
+    public ICommandHandler<MoveToBreakEvenCommand, Result<bool>> MoveToBreakEven { get; }
+    public ICommandHandler<ActivateKillSwitchCommand, Result<int>> ActivateKillSwitch { get; }
+    public ICommandHandler<ProcessTradingViewWebhookCommand, Result<Guid>> ProcessTradingViewWebhook { get; }
     public ICommandHandler<UpdateTradeStopsCommand, Result> UpdateTradeStops { get; }
     public ICommandHandler<CreateBacktestCommand, Result<BacktestResultDto>> CreateBacktest { get; }
     public ICommandHandler<SaveJournalEntryCommand, Result<Guid>> SaveJournalEntry { get; }
@@ -52,6 +64,10 @@ public sealed class ForexCommandUnit : IForexCommandUnit
         ICommandHandler<PlaceOrderCommand, Result<Guid>> placeOrder,
         ICommandHandler<CancelOrderCommand, Result> cancelOrder,
         ICommandHandler<CloseTradeCommand, Result<decimal>> closeTrade,
+        ICommandHandler<PartialCloseTradeCommand, Result<decimal>> partialCloseTrade,
+        ICommandHandler<MoveToBreakEvenCommand, Result<bool>> moveToBreakEven,
+        ICommandHandler<ActivateKillSwitchCommand, Result<int>> activateKillSwitch,
+        ICommandHandler<ProcessTradingViewWebhookCommand, Result<Guid>> processTradingViewWebhook,
         ICommandHandler<UpdateTradeStopsCommand, Result> updateTradeStops,
         ICommandHandler<CreateBacktestCommand, Result<BacktestResultDto>> createBacktest,
         ICommandHandler<SaveJournalEntryCommand, Result<Guid>> saveJournalEntry,
@@ -61,6 +77,10 @@ public sealed class ForexCommandUnit : IForexCommandUnit
         PlaceOrder = placeOrder;
         CancelOrder = cancelOrder;
         CloseTrade = closeTrade;
+        PartialCloseTrade = partialCloseTrade;
+        MoveToBreakEven = moveToBreakEven;
+        ActivateKillSwitch = activateKillSwitch;
+        ProcessTradingViewWebhook = processTradingViewWebhook;
         UpdateTradeStops = updateTradeStops;
         CreateBacktest = createBacktest;
         SaveJournalEntry = saveJournalEntry;

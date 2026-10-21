@@ -241,6 +241,107 @@ public sealed record CryptoMarketDataHubDto(
     IReadOnlyList<CryptoStablecoinDto> Stablecoins,
     DateTime LastUpdatedUtc);
 
+// ── Feature 3: On-Chain and Flow DTOs ────────────────────────────────────────
+
+public sealed record CryptoExchangeFlowDto(
+    string ExchangeName,
+    decimal InflowUsd24h,
+    decimal OutflowUsd24h,
+    decimal NetFlowUsd24h,
+    decimal ReserveBtc,
+    decimal ReserveChange24hPercent,
+    string FlowSignal);
+
+public sealed record CryptoWhaleTransactionDto(
+    string TxHash,
+    string Blockchain,
+    string AssetSymbol,
+    decimal Amount,
+    decimal AmountUsd,
+    string FromAddress,
+    string FromLabel,
+    string ToAddress,
+    string ToLabel,
+    string FlowType,
+    DateTime TimestampUtc);
+
+public sealed record CryptoStablecoinMintBurnDto(
+    string Stablecoin,
+    string Action,
+    decimal Amount,
+    string Blockchain,
+    string RecipientOrSender,
+    DateTime TimestampUtc,
+    string MarketImpact);
+
+public sealed record CryptoStablecoinSupplyFlowDto(
+    string Stablecoin,
+    decimal CirculatingSupplyUsd,
+    decimal NetSupplyChange24hUsd,
+    decimal NetSupplyChange7dUsd,
+    decimal MarketDominancePercent,
+    string Trend);
+
+public sealed record CryptoTokenUnlockDto(
+    string Symbol,
+    string ProjectName,
+    DateTime UnlockDateUtc,
+    int DaysUntilUnlock,
+    decimal UnlockAmount,
+    decimal UnlockValueUsd,
+    decimal PercentOfCirculatingSupply,
+    string UnlockCategory,
+    string ShockRiskLevel);
+
+public sealed record CryptoDexPoolDto(
+    string Pair,
+    string DexName,
+    string Chain,
+    decimal PriceUsd,
+    decimal PriceChange24hPercent,
+    decimal LiquidityTvlUsd,
+    decimal Volume24hUsd,
+    decimal VolumeToTvlRatio,
+    decimal SafetyScore,
+    bool IsLiquidityLocked,
+    bool IsMintRevoked,
+    decimal Top10HoldersPercent);
+
+public sealed record CryptoSmartMoneyWalletDto(
+    string WalletAddress,
+    string EntityLabel,
+    decimal Realized30dPnlUsd,
+    decimal WinRatePercent,
+    decimal EstimatedNetWorthUsd,
+    string PrimaryAssets,
+    string CurrentStrategy,
+    int CopyAlertSubscribers,
+    bool IsCopyAlertActive);
+
+public sealed record CryptoSmartMoneyActivityDto(
+    string TxHash,
+    string EntityLabel,
+    string Action,
+    string AssetSymbol,
+    decimal Amount,
+    decimal ValueUsd,
+    decimal ExecutionPrice,
+    string Venue,
+    DateTime TimestampUtc,
+    string CopySignal);
+
+public sealed record CryptoOnChainHubDto(
+    IReadOnlyList<CryptoExchangeFlowDto> ExchangeFlows,
+    decimal TotalNetExchangeFlow24hUsd,
+    IReadOnlyList<CryptoWhaleTransactionDto> WhaleTransactions,
+    IReadOnlyList<CryptoStablecoinSupplyFlowDto> StablecoinSupplies,
+    IReadOnlyList<CryptoStablecoinMintBurnDto> RecentMintsAndBurns,
+    IReadOnlyList<CryptoTokenUnlockDto> UpcomingUnlocks,
+    IReadOnlyList<CryptoDexPoolDto> DexScreening,
+    IReadOnlyList<CryptoSmartMoneyWalletDto> SmartMoneyWallets,
+    IReadOnlyList<CryptoSmartMoneyActivityDto> SmartMoneyActivityFeed,
+    DateTime LastUpdatedUtc);
+
 // ── Analysis DTOs ───────────────────────────────────────────────────────────
 
 

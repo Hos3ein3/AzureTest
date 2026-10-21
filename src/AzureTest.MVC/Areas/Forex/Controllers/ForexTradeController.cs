@@ -3,9 +3,13 @@ using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Forex;
+using AzureTest.Application.Forex.Commands.ActivateKillSwitch;
 using AzureTest.Application.Forex.Commands.CancelOrder;
 using AzureTest.Application.Forex.Commands.CloseTrade;
+using AzureTest.Application.Forex.Commands.MoveToBreakEven;
+using AzureTest.Application.Forex.Commands.PartialCloseTrade;
 using AzureTest.Application.Forex.Commands.PlaceOrder;
+using AzureTest.Application.Forex.Commands.ProcessTradingViewWebhook;
 using AzureTest.Application.Forex.Commands.ResetDemoAccount;
 using AzureTest.Application.Forex.Commands.UpdateTradeStops;
 using AzureTest.Application.Forex.Queries.GetForexTradeDashboard;
@@ -93,6 +97,57 @@ public class ForexTradeController : Controller
     {
         var result = await _commands.UpdateTradeStops.HandleAsync(command, cancellationToken);
         return RedirectToAction(nameof(Index));
+    }
+
+using AzureTest.Application.Forex.Commands.ActivateKillSwitch;
+using AzureTest.Application.Forex.Commands.MoveToBreakEven;
+using AzureTest.Application.Forex.Commands.PartialCloseTrade;
+using AzureTest.Application.Forex.Commands.ProcessTradingViewWebhook;
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Partial Close Position")]
+    [Description("Scale out of an open position by closing a fraction of the lots.")]
+    public async Task<IActionResult> PartialClose(Guid tradeId, decimal lotsToClose, CancellationToken cancellationToken)
+    {
+        var result = await _commands.PartialCloseTrade.HandleAsync(new PartialCloseTradeCommand(tradeId, lotsToClose), cancellationToken);
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Move to Break-Even")]
+    [Description("Lock in profit and remove risk by moving Stop Loss to trade entry price.")]
+    public async Task<IActionResult> MoveBreakEven(Guid tradeId, CancellationToken cancellationToken)
+    {
+        var result = await _commands.MoveToBreakEven.HandleAsync(new MoveToBreakEvenCommand(tradeId), cancellationToken);
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Emergency Kill Switch")]
+    [Description("Instantly liquidate all open positions and cancel all pending orders.")]
+    public async Task<IActionResult> KillSwitch(string? reason, CancellationToken cancellationToken)
+    {
+        var result = await _commands.ActivateKillSwitch.HandleAsync(new ActivateKillSwitchCommand(reason ?? "Emergency Manual Kill Switch Triggered"), cancellationToken);
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [AllowAnonymous]
+    [IgnoreAntiforgeryToken]
+    [DisplayName("TradingView Signal Webhook")]
+    [Description("Automated signal receiver from TradingView alert webhooks.")]
+    public async Task<IActionResult> Webhook([FromBody] TradingViewWebhookPayloadDto payload, CancellationToken cancellationToken)
+    {
+        if (payload == null) return BadRequest(new { success = false, message = "Empty webhook payload." });
+        var result = await _commands.ProcessTradingViewWebhook.HandleAsync(new ProcessTradingViewWebhookCommand(payload), cancellationToken);
+        if (result.IsFailure)
+        {
+            return BadRequest(new { success = false, error = result.Error });
+        }
+        return Ok(new { success = true, tradeId = result.Value });
     }
 
     [HttpPost]

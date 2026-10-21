@@ -22,6 +22,7 @@ public interface ICryptoMarketDataService
     Task<CryptoCrossExchangePremiumDto> GetCrossExchangePremiumsAsync(string symbol, CancellationToken ct = default);
     Task<IReadOnlyList<CryptoStablecoinDto>> GetStablecoinDepegMonitorAsync(CancellationToken ct = default);
     Task<CryptoDerivativesHubDto> GetDerivativesHubAsync(string symbol, CancellationToken ct = default);
+    Task<CryptoOnChainHubDto> GetOnChainHubAsync(CancellationToken ct = default);
 }
 
 

@@ -19,4 +19,14 @@ public interface IForexAnalysisService
     IReadOnlyList<CentralBankRateDto> GetCentralBankRates();
     IReadOnlyList<CotReportDto> GetCotReports();
     IReadOnlyList<ForexNewsDto> GetNewsFeed();
+    MarketStructureDto GetMarketStructure(string symbol, ForexTimeframe timeframe, IReadOnlyList<ForexCandleDto>? candles = null);
+    FibonacciLevelsDto CalculateFibonacci(string symbol, IReadOnlyList<ForexCandleDto>? candles = null);
+    VwapSessionDto CalculateVwap(string symbol, IReadOnlyList<ForexCandleDto>? candles = null);
+    AdrVolatilityDto GetAdrAndVolatility(string symbol, IReadOnlyList<ForexCandleDto>? candles = null);
+    RetailSentimentDto GetRetailSentiment(string symbol);
+    OptionsExpiryClusterDto GetOptionsExpiryClusters(string symbol);
+    IntermarketYieldSpreadDto GetIntermarketYieldSpreads(string symbol);
+    IReadOnlyList<CentralBankExpectationDto> GetCentralBankExpectations();
+    IReadOnlyList<SpeechScheduleDto> GetSpeechSchedule();
+    IReadOnlyList<CountryMacroDashboardDto> GetCountryMacroDashboards();
 }

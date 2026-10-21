@@ -12,4 +12,8 @@ public interface IForexRiskService
     IReadOnlyList<CurrencyExposureDto> CalculateCurrencyExposures(IReadOnlyList<ForexTradeDto> openTrades, decimal accountEquity);
     EsmaAfmComplianceDto GetRegulatoryComplianceProfile();
     ForexRiskOverviewDto GetRiskOverview(ForexAccountDto account, IReadOnlyList<ForexTradeDto> openTrades, IReadOnlyList<EconomicEventDto> upcomingEvents);
+    PropFirmEvaluationDto EvaluatePropFirmRules(ForexAccountDto account);
+    WeekendGapProtectionDto CheckWeekendGapRisk(IReadOnlyList<ForexTradeDto> openTrades);
+    SwapRolloverCalendarDto GetSwapRolloverSchedule();
+    KillSwitchStatusDto GetKillSwitchStatus();
 }

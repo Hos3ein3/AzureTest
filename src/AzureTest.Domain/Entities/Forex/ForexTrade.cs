@@ -118,6 +118,16 @@ public sealed class ForexTrade : AggregateRoot, IAudit, ISoftDelete, ITenantEnti
         TrailingStopPips = trailingStopPips;
     }
 
+    public void ReduceLotSize(decimal lotsToReduce)
+    {
+        if (lotsToReduce <= 0 || lotsToReduce >= LotSize) return;
+        LotSize = Math.Round(LotSize - lotsToReduce, 2);
+        if (MarginRequired > 0)
+        {
+            MarginRequired = Math.Round(MarginRequired * (LotSize / (LotSize + lotsToReduce)), 2);
+        }
+    }
+
     public void TriggerBreakEven(decimal breakEvenOffsetPips = 1m)
     {
         if (BreakEvenTriggered) return;

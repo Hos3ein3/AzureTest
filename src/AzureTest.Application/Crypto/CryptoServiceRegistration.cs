@@ -19,6 +19,7 @@ using AzureTest.Application.Crypto.Queries.GetCryptoDerivativesHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoFuturesFunding;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketDataHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketOverview;
+using AzureTest.Application.Crypto.Queries.GetCryptoOnChainHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoOrderBook;
 using AzureTest.Application.Crypto.Queries.GetCryptoPortfolio;
 using AzureTest.Application.Crypto.Queries.GetCryptoRiskOverview;
@@ -88,6 +89,7 @@ public static class CryptoServiceRegistration
         services.AddScoped<IQueryHandler<GetCryptoSettingsQuery, Result<IReadOnlyList<CryptoApiSettingsDto>>>, GetCryptoSettingsQueryHandler>();
         services.AddScoped<IQueryHandler<GetCryptoMarketDataHubQuery, Result<CryptoMarketDataHubDto>>, GetCryptoMarketDataHubQueryHandler>();
         services.AddScoped<IQueryHandler<GetCryptoDerivativesHubQuery, Result<CryptoDerivativesHubDto>>, GetCryptoDerivativesHubQueryHandler>();
+        services.AddScoped<IQueryHandler<GetCryptoOnChainHubQuery, Result<CryptoOnChainHubDto>>, GetCryptoOnChainHubQueryHandler>();
 
         // Query Validators
         services.AddScoped<IValidator<GetCryptoMarketOverviewQuery>, GetCryptoMarketOverviewQueryValidator>();
@@ -105,6 +107,7 @@ public static class CryptoServiceRegistration
         services.AddScoped<IValidator<GetCryptoSettingsQuery>, GetCryptoSettingsQueryValidator>();
         services.AddScoped<IValidator<GetCryptoMarketDataHubQuery>, GetCryptoMarketDataHubQueryValidator>();
         services.AddScoped<IValidator<GetCryptoDerivativesHubQuery>, GetCryptoDerivativesHubQueryValidator>();
+        services.AddScoped<IValidator<GetCryptoOnChainHubQuery>, GetCryptoOnChainHubQueryValidator>();
 
         // Units
         services.AddScoped<ICryptoCommandUnit, CryptoCommandUnit>();

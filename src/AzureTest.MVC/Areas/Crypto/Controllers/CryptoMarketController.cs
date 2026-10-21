@@ -7,6 +7,7 @@ using AzureTest.Application.Crypto.Queries.GetCryptoDerivativesHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoFuturesFunding;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketDataHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketOverview;
+using AzureTest.Application.Crypto.Queries.GetCryptoOnChainHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoOrderBook;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Contracts.DTOs.Crypto;
@@ -89,6 +90,15 @@ public class CryptoMarketController : Controller
         ViewBag.Symbol = symbol;
         ViewBag.Timeframe = timeframe;
         return result.ToView(this, viewName: "OrderFlow");
+    }
+
+    [HttpGet]
+    [DisplayName("On-Chain & Flow Intelligence")]
+    [Description("Exchange net inflow/outflow, whale wallet tracking, stablecoin mint/burn flow, token unlocks calendar, DEX screening, and smart money copy alerts.")]
+    public async Task<IActionResult> OnChain(CancellationToken cancellationToken = default)
+    {
+        var result = await _queries.GetOnChainHub.HandleAsync(new GetCryptoOnChainHubQuery(), cancellationToken);
+        return result.ToView(this, viewName: "OnChain");
     }
 }
 

@@ -146,7 +146,125 @@ public sealed class ForexRiskService : IForexRiskService
         var newsFilter = CheckNewsTradeFilter(upcomingEvents);
         var currencyExposures = CalculateCurrencyExposures(openTrades, account.Equity);
         var compliance = GetRegulatoryComplianceProfile();
+        var propFirm = EvaluatePropFirmRules(account);
+        var weekendGap = CheckWeekendGapRisk(openTrades);
+        var swapCalendar = GetSwapRolloverSchedule();
+        var killSwitch = GetKillSwitchStatus();
 
-        return new ForexRiskOverviewDto(account, sampleSizing, currencyExposures, newsFilter, compliance);
+        return new ForexRiskOverviewDto(
+            account,
+            sampleSizing,
+            currencyExposures,
+            newsFilter,
+            compliance,
+            propFirm,
+            weekendGap,
+            swapCalendar,
+            killSwitch
+        );
+    }
+
+    public PropFirmEvaluationDto EvaluatePropFirmRules(ForexAccountDto account)
+    {
+        var dailyLossPct = account.DailyDrawdownPercent;
+        var maxDailyAllowed = 5.0m;
+        var dailyBreached = dailyLossPct >= maxDailyAllowed;
+
+        var peakBal = account.PeakEquity > 0 ? account.PeakEquity : account.Balance;
+        var maxDrawdownPct = peakBal > 0 ? Math.Round(((peakBal - account.Equity) / peakBal) * 100m, 2) : 0m;
+        var maxDdAllowed = 10.0m;
+        var maxDdBreached = maxDrawdownPct >= maxDdAllowed;
+
+        var targetProfitPct = 10.0m;
+        var currentProfitPct = account.Balance > 0 ? Math.Round(((account.Equity - 100_000m) / 100_000m) * 100m, 2) : 0m;
+        var targetReached = currentProfitPct >= targetProfitPct;
+
+        int minDays = 4;
+        int daysTraded = 5;
+        bool passed = !dailyBreached && !maxDdBreached && targetReached && daysTraded >= minDays;
+
+        string summary = dailyBreached
+            ? "FAILED: Daily loss limit breached (>= 5.0%)"
+            : (maxDdBreached
+                ? "FAILED: Maximum trailing drawdown breached (>= 10.0%)"
+                : (passed ? "PASSED: Prop Firm Evaluation Criteria Met!" : "IN PROGRESS: Challenge Phase 1 active"));
+
+        return new PropFirmEvaluationDto(
+            "FTMO 100k Challenge (Phase 1)",
+            100_000m,
+            maxDailyAllowed,
+            account.Balance * (dailyLossPct / 100m),
+            dailyLossPct,
+            !dailyBreached,
+            maxDdAllowed,
+            maxDrawdownPct,
+            !maxDdBreached,
+            targetProfitPct,
+            currentProfitPct,
+            targetReached,
+            minDays,
+            daysTraded,
+            passed,
+            summary
+        );
+    }
+
+    public WeekendGapProtectionDto CheckWeekendGapRisk(IReadOnlyList<ForexTradeDto> openTrades)
+    {
+        var now = DateTime.UtcNow;
+        var isFriday = now.DayOfWeek == DayOfWeek.Friday;
+        var fridayCloseUtc = new TimeSpan(21, 0, 0); // 21:00 UTC / 5 PM NY Friday close
+        var timeUntilClose = isFriday && now.TimeOfDay < fridayCloseUtc
+            ? fridayCloseUtc - now.TimeOfDay
+            : TimeSpan.Zero;
+
+        var isApproaching = isFriday && now.TimeOfDay >= new TimeSpan(19, 0, 0); // within 2 hours of close
+        var openCount = openTrades.Count;
+        var totalNotional = openTrades.Sum(t => t.LotSize * 100_000m);
+
+        return new WeekendGapProtectionDto(
+            IsAutoFlattenEnabled: true,
+            FridayFlattenTimeUtc: fridayCloseUtc,
+            IsMarketCloseApproaching: isApproaching,
+            TimeUntilFridayClose: timeUntilClose,
+            OpenTradesAtRiskCount: openCount,
+            TotalNotionalExposureAtRisk: totalNotional
+        );
+    }
+
+    public SwapRolloverCalendarDto GetSwapRolloverSchedule()
+    {
+        var now = DateTime.UtcNow;
+        var daysUntilWed = ((int)DayOfWeek.Wednesday - (int)now.DayOfWeek + 7) % 7;
+        if (daysUntilWed == 0 && now.Hour >= 21) daysUntilWed = 7;
+        var nextTripleSwap = now.Date.AddDays(daysUntilWed).AddHours(21); // 21:00 UTC rollover
+
+        var swapRates = new List<PairSwapRateDto>
+        {
+            new("EUR/USD", -5.8m, +1.2m, -5.80m, +1.20m, now.DayOfWeek == DayOfWeek.Wednesday),
+            new("GBP/USD", -4.2m, +0.6m, -4.20m, +0.60m, now.DayOfWeek == DayOfWeek.Wednesday),
+            new("USD/JPY", +12.4m, -18.6m, +8.12m, -12.18m, now.DayOfWeek == DayOfWeek.Wednesday),
+            new("AUD/USD", -2.8m, -0.4m, -2.80m, -0.40m, now.DayOfWeek == DayOfWeek.Wednesday),
+            new("USD/CHF", +4.5m, -8.2m, +5.10m, -9.30m, now.DayOfWeek == DayOfWeek.Wednesday),
+            new("XAU/USD", -14.2m, +2.5m, -14.20m, +2.50m, now.DayOfWeek == DayOfWeek.Wednesday)
+        };
+
+        return new SwapRolloverCalendarDto(
+            "Wednesday (3x Financing Days Applied at 21:00 UTC)",
+            nextTripleSwap,
+            swapRates,
+            -18.40m
+        );
+    }
+
+    public KillSwitchStatusDto GetKillSwitchStatus()
+    {
+        // System wide risk state
+        return new KillSwitchStatusDto(
+            IsActive: false,
+            ActivatedAtUtc: null,
+            Reason: null,
+            PositionsLiquidated: 0
+        );
     }
 }

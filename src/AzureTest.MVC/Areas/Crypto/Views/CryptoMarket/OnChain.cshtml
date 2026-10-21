@@ -1,0 +1,627 @@
+@model CryptoOnChainHubDto
+@{
+    ViewData["Title"] = "On-Chain & Flow Intelligence | Institutional Crypto Radar";
+    var exchangeFlows = Model?.ExchangeFlows ?? Array.Empty<CryptoExchangeFlowDto>();
+    var totalNetFlow = Model?.TotalNetExchangeFlow24hUsd ?? 0m;
+    var whaleTxs = Model?.WhaleTransactions ?? Array.Empty<CryptoWhaleTransactionDto>();
+    var stableSupplies = Model?.StablecoinSupplies ?? Array.Empty<CryptoStablecoinSupplyFlowDto>();
+    var mintsBurns = Model?.RecentMintsAndBurns ?? Array.Empty<CryptoStablecoinMintBurnDto>();
+    var unlocks = Model?.UpcomingUnlocks ?? Array.Empty<CryptoTokenUnlockDto>();
+    var dexPools = Model?.DexScreening ?? Array.Empty<CryptoDexPoolDto>();
+    var smartWallets = Model?.SmartMoneyWallets ?? Array.Empty<CryptoSmartMoneyWalletDto>();
+    var smartActivity = Model?.SmartMoneyActivityFeed ?? Array.Empty<CryptoSmartMoneyActivityDto>();
+
+    var totalStableExpansion24h = stableSupplies.Sum(s => s.NetSupplyChange24hUsd);
+}
+
+<div class="space-y-6">
+    <!-- Header & Navigation -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center gap-3">
+            <a asp-action="Index" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors" title="Back to Crypto Markets">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div class="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-lg font-bold">
+                <i class="fa-solid fa-cubes-stacked"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2.5">
+                    <h1 class="text-xl font-black text-slate-900 dark:text-white">On-Chain &amp; Flow Intelligence</h1>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                        FEATURE 3: LIVE
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-3xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                        INSTITUTIONAL RADAR
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    CEX net reserves &amp; whale tracking, stablecoin mint/burn delta, token unlock cliff calendar, DEX pool screener &amp; smart money copy alerts
+                </p>
+            </div>
+        </div>
+
+        <!-- Quick Switcher Navigation Links -->
+        <div class="flex flex-wrap items-center gap-2">
+            <a asp-action="OrderFlow" asp-route-symbol="BTCUSDT" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-water mr-1 text-amber-500"></i> Order Flow (CVD)
+            </a>
+            <a asp-action="Futures" asp-route-symbol="BTCUSDT" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-gauge-high mr-1 text-purple-500"></i> Derivatives &amp; Options
+            </a>
+            <a asp-action="Chart" asp-route-symbol="BTCUSDT" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-chart-candlestick mr-1 text-blue-500"></i> Advanced Chart
+            </a>
+            <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-bolt"></i> Trading Terminal
+            </a>
+        </div>
+    </div>
+
+    <!-- Macro On-Chain Flow KPI Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 24h Net CEX Flow -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between text-2xs font-bold uppercase tracking-wider text-slate-400">
+                <span>Exchange Net Flow (24h)</span>
+                <i class="fa-solid fa-arrow-right-arrow-left text-slate-400"></i>
+            </div>
+            <div class="flex items-baseline gap-2 font-mono">
+                <span class="text-xl font-black @(totalNetFlow < 0 ? "text-emerald-500" : "text-rose-500")">
+                    @(totalNetFlow < 0 ? "-$" : "+$")@Math.Abs(totalNetFlow / 1000000m).ToString("N1")M
+                </span>
+                <span class="text-3xs font-sans font-bold px-1.5 py-0.5 rounded @(totalNetFlow < 0 ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-rose-100 text-rose-800")">
+                    @(totalNetFlow < 0 ? "NET ACCUMULATION" : "NET INFLOW RISK")
+                </span>
+            </div>
+            <p class="text-3xs text-slate-400">
+                Aggregate flows across Binance, Coinbase, OKX, Bybit &amp; Kraken
+            </p>
+        </div>
+
+        <!-- 24h Stablecoin Net Mint Expansion -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between text-2xs font-bold uppercase tracking-wider text-slate-400">
+                <span>Stablecoin 24h Liquidity Delta</span>
+                <i class="fa-solid fa-coins text-amber-500"></i>
+            </div>
+            <div class="flex items-baseline gap-2 font-mono">
+                <span class="text-xl font-black @(totalStableExpansion24h >= 0 ? "text-emerald-500" : "text-rose-500")">
+                    +@((totalStableExpansion24h / 1000000m).ToString("N0"))M USD
+                </span>
+                <span class="text-3xs font-sans font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    FRESH DRY POWDER
+                </span>
+            </div>
+            <p class="text-3xs text-slate-400">
+                Net capital entering crypto ecosystem via USDT, USDC, USDe
+            </p>
+        </div>
+
+        <!-- Whale Transfers Monitored -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between text-2xs font-bold uppercase tracking-wider text-slate-400">
+                <span>Whale Moves (&gt; $5M USD)</span>
+                <i class="fa-solid fa-shield-halved text-blue-500"></i>
+            </div>
+            <div class="flex items-baseline gap-2 font-mono">
+                <span class="text-xl font-black text-slate-800 dark:text-white">
+                    @whaleTxs.Count Alerts
+                </span>
+                <span class="text-3xs font-sans font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                    $510.4M TOTAL
+                </span>
+            </div>
+            <p class="text-3xs text-slate-400">
+                Cold storage outflows &amp; institutional prime OTC deposits
+            </p>
+        </div>
+
+        <!-- Biggest Upcoming Unlock -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between text-2xs font-bold uppercase tracking-wider text-slate-400">
+                <span>Major Unlock Shock</span>
+                <i class="fa-solid fa-unlock-keyhole text-rose-500"></i>
+            </div>
+            <div class="flex items-baseline gap-2 font-mono">
+                <span class="text-xl font-black text-rose-600">
+                    TIA (In 9d)
+                </span>
+                <span class="text-3xs font-sans font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                    79.9% DILUTION
+                </span>
+            </div>
+            <p class="text-3xs text-slate-400">
+                $948M cliff unlock for Seed investors and core contributors
+            </p>
+        </div>
+    </div>
+
+    <!-- Section 1: Exchange Net Inflow / Outflow & Reserve Radar -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-building-columns text-brand-500"></i> Centralized Exchange (CEX) Net Flows &amp; BTC Reserve Changes
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Monitoring institutional accumulation (outflows to cold storage) versus deposit pressure (inflows for spot selling / perp margin)
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    CEX RADAR ACTIVE
+                </span>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+                <thead class="text-2xs text-slate-400 uppercase font-sans border-b border-slate-100 dark:border-slate-700">
+                    <tr>
+                        <th class="py-3 px-3">Exchange</th>
+                        <th class="py-3 px-3 text-right">24h Inflow</th>
+                        <th class="py-3 px-3 text-right">24h Outflow</th>
+                        <th class="py-3 px-3 text-right">Net Flow (24h)</th>
+                        <th class="py-3 px-3 text-right">BTC Reserves</th>
+                        <th class="py-3 px-3 text-right">Reserve Δ (24h)</th>
+                        <th class="py-3 px-3 text-right">Flow Signal</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @foreach (var ex in exchangeFlows)
+                    {
+                        var isOutflow = ex.NetFlowUsd24h < 0;
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-750 transition-colors">
+                            <td class="py-3 px-3 font-sans font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full @(isOutflow ? "bg-emerald-500" : "bg-rose-500")"></span>
+                                @ex.ExchangeName
+                            </td>
+                            <td class="py-3 px-3 text-right text-slate-600 dark:text-slate-300">
+                                $@((ex.InflowUsd24h / 1000000m).ToString("N0"))M
+                            </td>
+                            <td class="py-3 px-3 text-right text-slate-600 dark:text-slate-300">
+                                $@((ex.OutflowUsd24h / 1000000m).ToString("N0"))M
+                            </td>
+                            <td class="py-3 px-3 text-right font-bold @(isOutflow ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600")">
+                                @(isOutflow ? "-$" : "+$")@Math.Abs(ex.NetFlowUsd24h / 1000000m).ToString("N0")M
+                            </td>
+                            <td class="py-3 px-3 text-right font-bold text-slate-800 dark:text-slate-200">
+                                @ex.ReserveBtc.ToString("N0") BTC
+                            </td>
+                            <td class="py-3 px-3 text-right font-bold @(ex.ReserveChange24hPercent < 0 ? "text-emerald-600" : "text-rose-600")">
+                                @(ex.ReserveChange24hPercent >= 0 ? "+" : "")@ex.ReserveChange24hPercent.ToString("F2")%
+                            </td>
+                            <td class="py-3 px-3 text-right font-sans">
+                                <span class="px-2 py-0.5 rounded text-3xs font-bold @(isOutflow ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300")">
+                                    @ex.FlowSignal
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section 2: Live Whale Alert Feed & Transaction Tape -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-water text-blue-500"></i> Whale Wallet Alert Stream (&gt; $5,000,000 Transfers)
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    High conviction institutional OTC movements, staking lockups, and hot wallet transfers
+                </p>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-2xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 font-mono">
+                FEED ACTIVE
+            </span>
+        </div>
+
+        <div class="divide-y divide-slate-100 dark:divide-slate-700 overflow-x-auto">
+            @foreach (var w in whaleTxs)
+            {
+                var isAccum = w.FlowType.Contains("Accumulation") || w.FlowType.Contains("Staking");
+                var isSellRisk = w.FlowType.Contains("Sell Pressure") || w.FlowType.Contains("Inflow");
+                <div class="py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 font-mono text-xs hover:bg-slate-50/50 dark:hover:bg-slate-750 transition-colors px-2 rounded-xl">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold @(isAccum ? "bg-emerald-500/10 text-emerald-600" : isSellRisk ? "bg-rose-500/10 text-rose-600" : "bg-blue-500/10 text-blue-600")">
+                            <i class="fa-solid @(w.Blockchain == "Bitcoin" ? "fa-bitcoin-sign" : w.Blockchain == "Ethereum" ? "fa-gem" : "fa-cube")"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-sans font-black text-slate-800 dark:text-white">
+                                    @w.Amount.ToString("N0") @w.AssetSymbol
+                                </span>
+                                <span class="text-slate-400">(@w.Blockchain)</span>
+                                <span class="text-emerald-600 dark:text-emerald-400 font-bold">
+                                    $@((w.AmountUsd / 1000000m).ToString("N1"))M USD
+                                </span>
+                            </div>
+                            <div class="text-3xs text-slate-400 font-sans flex items-center gap-1.5 mt-0.5">
+                                <span>From: <strong class="text-slate-600 dark:text-slate-300">@w.FromLabel</strong></span>
+                                <i class="fa-solid fa-arrow-right text-slate-300"></i>
+                                <span>To: <strong class="text-slate-600 dark:text-slate-300">@w.ToLabel</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3 justify-between md:justify-end">
+                        <span class="px-2.5 py-1 rounded text-3xs font-sans font-bold @(isAccum ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : isSellRisk ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300" : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300")">
+                            @w.FlowType
+                        </span>
+                        <span class="text-3xs text-slate-400 font-sans">
+                            @w.TimestampUtc.ToString("HH:mm:ss") UTC
+                        </span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Section 3: Stablecoin Liquidity Matrix & Mint / Burn Streams -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Stablecoin Supply Flows -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-dollar-sign text-emerald-500"></i> Stablecoin Supply &amp; Macro Inflow
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Total circulating supply &amp; 7-day velocity</p>
+                </div>
+                <span class="px-2 py-0.5 rounded text-3xs font-bold bg-emerald-100 text-emerald-800">EXPANDING</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead class="text-2xs text-slate-400 uppercase font-sans border-b border-slate-100 dark:border-slate-700">
+                        <tr>
+                            <th class="py-2.5">Stablecoin</th>
+                            <th class="py-2.5 text-right">Circulating</th>
+                            <th class="py-2.5 text-right">24h Net</th>
+                            <th class="py-2.5 text-right">7d Net</th>
+                            <th class="py-2.5 text-right">Dominance</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                        @foreach (var s in stableSupplies)
+                        {
+                            <tr>
+                                <td class="py-2.5 font-sans font-bold text-slate-800 dark:text-white">@s.Stablecoin</td>
+                                <td class="py-2.5 text-right text-slate-600 dark:text-slate-300">$@((s.CirculatingSupplyUsd / 1000000000m).ToString("N1"))B</td>
+                                <td class="py-2.5 text-right font-bold @(s.NetSupplyChange24hUsd >= 0 ? "text-emerald-600" : "text-rose-600")">
+                                    @(s.NetSupplyChange24hUsd >= 0 ? "+" : "")@((s.NetSupplyChange24hUsd / 1000000m).ToString("N0"))M
+                                </td>
+                                <td class="py-2.5 text-right font-bold @(s.NetSupplyChange7dUsd >= 0 ? "text-emerald-600" : "text-rose-600")">
+                                    @(s.NetSupplyChange7dUsd >= 0 ? "+" : "")@((s.NetSupplyChange7dUsd / 1000000m).ToString("N0"))M
+                                </td>
+                                <td class="py-2.5 text-right font-sans text-slate-500">@s.MarketDominancePercent.ToString("F1")%</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Stablecoin Mint & Burn Real-Time Log -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-fire text-amber-500"></i> Treasury Mint &amp; Burn Feed
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">On-chain issuance directly from Tether, Circle &amp; Paxos</p>
+                </div>
+                <span class="px-2 py-0.5 rounded text-3xs font-mono font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">TREASURY LOG</span>
+            </div>
+
+            <div class="space-y-3 font-mono text-xs">
+                @foreach (var mb in mintsBurns)
+                {
+                    var isMint = mb.Action == "MINT";
+                    <div class="p-3 rounded-xl border bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <span class="px-2 py-0.5 rounded text-2xs font-bold @(isMint ? "bg-emerald-500 text-white" : "bg-rose-500 text-white")">
+                                @mb.Action
+                            </span>
+                            <div>
+                                <div class="font-bold text-slate-800 dark:text-white">
+                                    @mb.Amount.ToString("N0") @mb.Stablecoin
+                                </div>
+                                <div class="text-3xs text-slate-400 font-sans">
+                                    Chain: @mb.Blockchain • Entity: @mb.RecipientOrSender
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right font-sans">
+                            <span class="text-3xs font-bold px-2 py-0.5 rounded @(isMint ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300")">
+                                @mb.MarketImpact
+                            </span>
+                            <div class="text-3xs text-slate-400 mt-0.5">
+                                @mb.TimestampUtc.ToString("HH:mm") UTC
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Token Unlocks Calendar & Dilution Shock Radar -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-xmark text-rose-500"></i> Token Unlocks Calendar &amp; Supply Dilution Shock
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    High supply cliff unlocks create severe structural spot sell pressure from early VC investors and team allocations
+                </p>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-2xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 font-mono">
+                CLIFF UNLOCK MONITOR
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+                <thead class="text-2xs text-slate-400 uppercase font-sans border-b border-slate-100 dark:border-slate-700">
+                    <tr>
+                        <th class="py-3 px-3">Asset</th>
+                        <th class="py-3 px-3">Countdown</th>
+                        <th class="py-3 px-3 text-right">Unlock Amount</th>
+                        <th class="py-3 px-3 text-right">Value (USD)</th>
+                        <th class="py-3 px-3 text-right">% Circulating Supply</th>
+                        <th class="py-3 px-3">Allocation Category</th>
+                        <th class="py-3 px-3 text-right">Dilution Risk</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @foreach (var u in unlocks)
+                    {
+                        var isExtreme = u.ShockRiskLevel.Contains("Extreme");
+                        var isHigh = u.ShockRiskLevel.Contains("High");
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-750 transition-colors">
+                            <td class="py-3 px-3 font-sans font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono text-2xs">@u.Symbol</span>
+                                @u.ProjectName
+                            </td>
+                            <td class="py-3 px-3 font-sans">
+                                <span class="px-2 py-0.5 rounded text-3xs font-bold @(u.DaysUntilUnlock <= 10 ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300")">
+                                    In @u.DaysUntilUnlock Days (@u.UnlockDateUtc.ToString("dd MMM"))
+                                </span>
+                            </td>
+                            <td class="py-3 px-3 text-right font-bold text-slate-700 dark:text-slate-200">
+                                @((u.UnlockAmount / 1000000m).ToString("N2"))M @u.Symbol
+                            </td>
+                            <td class="py-3 px-3 text-right font-black @(isExtreme ? "text-rose-600" : "text-slate-800 dark:text-white")">
+                                $@((u.UnlockValueUsd / 1000000m).ToString("N1"))M
+                            </td>
+                            <td class="py-3 px-3 text-right font-bold @(isExtreme ? "text-rose-600 font-black text-sm" : isHigh ? "text-amber-600" : "text-emerald-600")">
+                                @u.PercentOfCirculatingSupply.ToString("F1")%
+                            </td>
+                            <td class="py-3 px-3 font-sans text-slate-500 dark:text-slate-400">
+                                @u.UnlockCategory
+                            </td>
+                            <td class="py-3 px-3 text-right font-sans">
+                                <span class="px-2.5 py-1 rounded-full text-3xs font-bold @(isExtreme ? "bg-rose-600 text-white animate-pulse" : isHigh ? "bg-amber-500 text-white" : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300")">
+                                    @u.ShockRiskLevel
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section 5: DEX Liquidity & New Pool / Gem Screener -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-split-up-and-left text-indigo-500"></i> DEX Liquidity, Volume Efficiency &amp; Safety Screener
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Real-time liquidity across Uniswap v3, Raydium &amp; Aerodrome with automated contract safety audits
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded text-2xs font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 font-mono">
+                    UNISWAP V3 • RAYDIUM • BASE
+                </span>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+                <thead class="text-2xs text-slate-400 uppercase font-sans border-b border-slate-100 dark:border-slate-700">
+                    <tr>
+                        <th class="py-3 px-3">Pair &amp; Chain</th>
+                        <th class="py-3 px-3">DEX Venue</th>
+                        <th class="py-3 px-3 text-right">Price</th>
+                        <th class="py-3 px-3 text-right">24h Change</th>
+                        <th class="py-3 px-3 text-right">Liquidity (TVL)</th>
+                        <th class="py-3 px-3 text-right">24h Volume</th>
+                        <th class="py-3 px-3 text-right">Vol / TVL</th>
+                        <th class="py-3 px-3 text-right">Audit Safety Score</th>
+                        <th class="py-3 px-3 text-right">Honeypot Checks</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @foreach (var p in dexPools)
+                    {
+                        var isPos = p.PriceChange24hPercent >= 0;
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-750 transition-colors">
+                            <td class="py-3 px-3 font-sans font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 font-mono text-2xs">@p.Chain</span>
+                                @p.Pair
+                            </td>
+                            <td class="py-3 px-3 font-sans text-slate-600 dark:text-slate-300">
+                                @p.DexName
+                            </td>
+                            <td class="py-3 px-3 text-right font-bold text-slate-800 dark:text-white">
+                                $@(p.PriceUsd < 0.01m ? p.PriceUsd.ToString("0.00000000") : p.PriceUsd.ToString("N4"))
+                            </td>
+                            <td class="py-3 px-3 text-right font-bold @(isPos ? "text-emerald-600" : "text-rose-600")">
+                                @(isPos ? "+" : "")@p.PriceChange24hPercent.ToString("F1")%
+                            </td>
+                            <td class="py-3 px-3 text-right font-bold text-slate-700 dark:text-slate-200">
+                                $@((p.LiquidityTvlUsd / 1000000m).ToString("N1"))M
+                            </td>
+                            <td class="py-3 px-3 text-right font-bold text-indigo-600 dark:text-indigo-400">
+                                $@((p.Volume24hUsd / 1000000m).ToString("N1"))M
+                            </td>
+                            <td class="py-3 px-3 text-right font-bold text-slate-700 dark:text-slate-300">
+                                @p.VolumeToTvlRatio.ToString("F2")x
+                            </td>
+                            <td class="py-3 px-3 text-right font-sans">
+                                <span class="px-2 py-0.5 rounded text-3xs font-bold @(p.SafetyScore >= 95 ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-amber-100 text-amber-800")">
+                                    @p.SafetyScore.ToString("F0")/100 SAFE
+                                </span>
+                            </td>
+                            <td class="py-3 px-3 text-right font-sans">
+                                <div class="flex items-center justify-end gap-1.5 text-3xs">
+                                    <span class="px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 font-bold" title="Liquidity Pool Locked">
+                                        <i class="fa-solid fa-lock mr-0.5"></i> LP Locked
+                                    </span>
+                                    <span class="px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 font-bold" title="Mint Authority Revoked">
+                                        <i class="fa-solid fa-ban mr-0.5"></i> No Mint
+                                    </span>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section 6: Smart Money Wallet Tracking & Live Copy Alerts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Smart Money Wallet Profiles -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-brain text-purple-500"></i> Smart Money Wallet Leaderboard
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Consistently profitable wallets &amp; market maker entities</p>
+                </div>
+                <span class="px-2 py-0.5 rounded text-3xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                    ALPHA TRACKER
+                </span>
+            </div>
+
+            <div class="space-y-3 font-mono text-xs">
+                @foreach (var sm in smartWallets)
+                {
+                    <div class="p-3.5 rounded-xl border bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-700 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-sans font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                    @sm.EntityLabel
+                                    <span class="text-3xs font-mono text-slate-400">(@sm.WalletAddress)</span>
+                                </div>
+                                <div class="text-3xs text-slate-400 font-sans mt-0.5">
+                                    Strategy: <strong class="text-slate-600 dark:text-slate-300">@sm.CurrentStrategy</strong> • Holdings: @sm.PrimaryAssets
+                                </div>
+                            </div>
+                            <button onclick="toggleCopyAlert('@sm.EntityLabel')" class="px-2.5 py-1 rounded-lg text-3xs font-sans font-bold bg-purple-600 hover:bg-purple-700 text-white transition-colors flex items-center gap-1 shadow-xs">
+                                <i class="fa-solid fa-bell"></i> Copy Alert
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50 text-2xs">
+                            <div>
+                                <span class="font-sans text-slate-400 block text-3xs">30d Realized PnL</span>
+                                <span class="font-bold text-emerald-600">+$@((sm.Realized30dPnlUsd / 1000000m).ToString("N2"))M</span>
+                            </div>
+                            <div>
+                                <span class="font-sans text-slate-400 block text-3xs">Win Rate</span>
+                                <span class="font-bold text-slate-800 dark:text-white">@sm.WinRatePercent.ToString("F1")%</span>
+                            </div>
+                            <div>
+                                <span class="font-sans text-slate-400 block text-3xs">Est. Net Worth</span>
+                                <span class="font-bold text-slate-800 dark:text-white">$@((sm.EstimatedNetWorthUsd / 1000000m).ToString("N1"))M</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Smart Money Live Copy Signals Tape -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-satellite-dish text-emerald-500"></i> Live Smart Money Execution Tape
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Real-time trade copy signals across DEX &amp; CEX venues</p>
+                </div>
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-3xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    STREAMING
+                </span>
+            </div>
+
+            <div class="space-y-3 font-mono text-xs">
+                @foreach (var act in smartActivity)
+                {
+                    var isBuy = act.Action == "BOUGHT" || act.Action == "OPENED LONG";
+                    <div class="p-3.5 rounded-xl border bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded text-3xs font-bold @(isBuy ? "bg-emerald-500 text-white" : "bg-rose-500 text-white")">
+                                    @act.Action
+                                </span>
+                                <span class="font-bold text-slate-800 dark:text-white">
+                                    @act.Amount.ToString("N0") @act.AssetSymbol
+                                </span>
+                                <span class="text-slate-400 text-3xs">@@ $@act.ExecutionPrice.ToString("N2")</span>
+                            </div>
+                            <div class="text-3xs text-slate-400 font-sans mt-0.5">
+                                Entity: <strong class="text-slate-700 dark:text-slate-300">@act.EntityLabel</strong> • Venue: @act.Venue
+                            </div>
+                        </div>
+
+                        <div class="text-right font-sans">
+                            <span class="px-2 py-0.5 rounded text-3xs font-bold @(isBuy ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300")">
+                                @act.CopySignal
+                            </span>
+                            <div class="text-3xs font-mono font-bold text-slate-800 dark:text-slate-200 mt-0.5">
+                                $@((act.ValueUsd / 1000m).ToString("N0"))k USD
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Copy Alert Confirmation Toast Modal -->
+<div id="copyAlertToast" class="hidden fixed bottom-6 right-6 z-50 bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-purple-500/30 flex items-center gap-3">
+    <div class="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center text-sm font-bold">
+        <i class="fa-solid fa-bell"></i>
+    </div>
+    <div>
+        <div class="text-xs font-bold" id="copyAlertToastTitle">Copy Trade Alert Activated</div>
+        <div class="text-3xs text-slate-400" id="copyAlertToastDesc">Push &amp; Webhook alerts will fire when this wallet trades</div>
+    </div>
+</div>
+
+<script>
+    function toggleCopyAlert(entityName) {
+        var toast = document.getElementById('copyAlertToast');
+        document.getElementById('copyAlertToastTitle').textContent = 'Subscribed to ' + entityName;
+        toast.classList.remove('hidden');
+        setTimeout(function() {
+            toast.classList.add('hidden');
+        }, 3500);
+    }
+</script>

@@ -27,8 +27,30 @@ public sealed class ForexAnalysisService : IForexAnalysisService
         var currencyStrength = await GetCurrencyStrengthAsync(cancellationToken);
         var correlations = await GetCorrelationMatrixAsync(cancellationToken);
         var multiTimeframe = await GetMultiTimeframeSignalAsync(symbol, cancellationToken);
+        var candles = await _marketData.GetCandlesAsync(symbol, timeframe, 150, cancellationToken);
 
-        return new TechnicalOverviewDto(indicators, pivots, currencyStrength, correlations, multiTimeframe);
+        var structure = GetMarketStructure(symbol, timeframe, candles);
+        var fibonacci = CalculateFibonacci(symbol, candles);
+        var vwap = CalculateVwap(symbol, candles);
+        var volatility = GetAdrAndVolatility(symbol, candles);
+        var retailSentiment = GetRetailSentiment(symbol);
+        var optionsExpiry = GetOptionsExpiryClusters(symbol);
+        var yieldSpread = GetIntermarketYieldSpreads(symbol);
+
+        return new TechnicalOverviewDto(
+            indicators,
+            pivots,
+            currencyStrength,
+            correlations,
+            multiTimeframe,
+            structure,
+            fibonacci,
+            vwap,
+            volatility,
+            retailSentiment,
+            optionsExpiry,
+            yieldSpread
+        );
     }
 
     public async Task<FundamentalOverviewDto> GetFundamentalOverviewAsync(CancellationToken cancellationToken = default)
@@ -37,8 +59,19 @@ public sealed class ForexAnalysisService : IForexAnalysisService
         var centralBankRates = GetCentralBankRates();
         var newsFeed = GetNewsFeed();
         var cotReports = GetCotReports();
+        var centralBankExpectations = GetCentralBankExpectations();
+        var upcomingSpeeches = GetSpeechSchedule();
+        var countryDashboards = GetCountryMacroDashboards();
 
-        return new FundamentalOverviewDto(upcomingEvents, centralBankRates, newsFeed, cotReports);
+        return new FundamentalOverviewDto(
+            upcomingEvents,
+            centralBankRates,
+            newsFeed,
+            cotReports,
+            centralBankExpectations,
+            upcomingSpeeches,
+            countryDashboards
+        );
     }
 
     public async Task<TechnicalIndicatorsDto> CalculateIndicatorsAsync(string symbol, ForexTimeframe timeframe, CancellationToken cancellationToken = default)
@@ -428,4 +461,231 @@ public sealed class ForexAnalysisService : IForexAnalysisService
     }
 
     #endregion
+
+    public MarketStructureDto GetMarketStructure(string symbol, ForexTimeframe timeframe, IReadOnlyList<ForexCandleDto>? candles = null)
+    {
+        candles ??= _marketData.GetCandlesAsync(symbol, timeframe, 50).GetAwaiter().GetResult();
+        if (candles.Count < 10)
+        {
+            return new MarketStructureDto(symbol, timeframe, "Consolidating", "None", 0m, "None", 0m, 0m, 0m, 0m, 0m, 0m, 0m);
+        }
+
+        var recentHigh = candles.TakeLast(30).Max(c => c.High);
+        var recentLow = candles.TakeLast(30).Min(c => c.Low);
+        var currentClose = candles.Last().Close;
+        var firstClose = candles.First().Close;
+
+        var isBullish = currentClose >= firstClose;
+        var structure = isBullish ? "Bullish (HH/HL)" : "Bearish (LH/LL)";
+        var bos = isBullish ? "Bullish" : "Bearish";
+        var choch = isBullish ? "None" : "Bearish";
+
+        // Demand zone around recent swing low
+        var demandLow = Math.Round(recentLow * 0.9995m, 5);
+        var demandHigh = Math.Round(recentLow * 1.0015m, 5);
+
+        // Supply zone around recent swing high
+        var supplyLow = Math.Round(recentHigh * 0.9985m, 5);
+        var supplyHigh = Math.Round(recentHigh * 1.0005m, 5);
+
+        var sweepHigh = Math.Round(recentHigh * 1.0008m, 5);
+        var sweepLow = Math.Round(recentLow * 0.9992m, 5);
+
+        return new MarketStructureDto(
+            symbol,
+            timeframe,
+            structure,
+            bos,
+            isBullish ? recentHigh : recentLow,
+            choch,
+            isBullish ? recentLow : recentHigh,
+            demandLow,
+            demandHigh,
+            supplyLow,
+            supplyHigh,
+            sweepHigh,
+            sweepLow
+        );
+    }
+
+    public FibonacciLevelsDto CalculateFibonacci(string symbol, IReadOnlyList<ForexCandleDto>? candles = null)
+    {
+        candles ??= _marketData.GetCandlesAsync(symbol, ForexTimeframe.H4, 50).GetAwaiter().GetResult();
+        var high = candles.Count > 0 ? candles.Max(c => c.High) : 1.1000m;
+        var low = candles.Count > 0 ? candles.Min(c => c.Low) : 1.0800m;
+        var diff = high - low;
+        if (diff <= 0) diff = 0.0100m;
+
+        return new FibonacciLevelsDto(
+            symbol,
+            high,
+            low,
+            Math.Round(high - (diff * 0.236m), 5),
+            Math.Round(high - (diff * 0.382m), 5),
+            Math.Round(high - (diff * 0.500m), 5),
+            Math.Round(high - (diff * 0.618m), 5), // Golden Pocket
+            Math.Round(high - (diff * 0.786m), 5),
+            Math.Round(high + (diff * 0.272m), 5), // Extension 127.2%
+            Math.Round(high + (diff * 0.618m), 5)  // Extension 161.8%
+        );
+    }
+
+    public VwapSessionDto CalculateVwap(string symbol, IReadOnlyList<ForexCandleDto>? candles = null)
+    {
+        candles ??= _marketData.GetCandlesAsync(symbol, ForexTimeframe.M15, 60).GetAwaiter().GetResult();
+        if (candles.Count == 0)
+        {
+            return new VwapSessionDto(symbol, 1.0850m, 1.0870m, 1.0830m, 1.0890m, 1.0810m, 0.25m);
+        }
+
+        decimal cumVolume = 0m;
+        decimal cumPriceVolume = 0m;
+
+        foreach (var c in candles)
+        {
+            var typical = (c.High + c.Low + c.Close) / 3m;
+            var vol = c.Volume > 0 ? c.Volume : 100m;
+            cumPriceVolume += typical * vol;
+            cumVolume += vol;
+        }
+
+        var vwap = cumVolume > 0 ? (cumPriceVolume / cumVolume) : candles.Last().Close;
+        var variance = candles.Average(c => Math.Pow((double)(((c.High + c.Low + c.Close) / 3m) - vwap), 2));
+        var stdDev = (decimal)Math.Sqrt(variance);
+        if (stdDev == 0) stdDev = 0.0012m;
+
+        var currentPrice = candles.Last().Close;
+        var sigmaDiff = Math.Round((currentPrice - vwap) / stdDev, 2);
+
+        return new VwapSessionDto(
+            symbol,
+            Math.Round(vwap, 5),
+            Math.Round(vwap + stdDev, 5),
+            Math.Round(vwap - stdDev, 5),
+            Math.Round(vwap + (2m * stdDev), 5),
+            Math.Round(vwap - (2m * stdDev), 5),
+            sigmaDiff
+        );
+    }
+
+    public AdrVolatilityDto GetAdrAndVolatility(string symbol, IReadOnlyList<ForexCandleDto>? candles = null)
+    {
+        candles ??= _marketData.GetCandlesAsync(symbol, ForexTimeframe.H1, 48).GetAwaiter().GetResult();
+        var isJpy = symbol.Contains("JPY", StringComparison.OrdinalIgnoreCase);
+        var mult = isJpy ? 100m : 10000m;
+
+        decimal adrPips = 68.5m;
+        decimal todayRangePips = 48.2m;
+
+        if (candles.Count >= 24)
+        {
+            var last24 = candles.TakeLast(24).ToList();
+            todayRangePips = Math.Round((last24.Max(c => c.High) - last24.Min(c => c.Low)) * mult, 1);
+        }
+
+        var pctUsed = Math.Round((todayRangePips / (adrPips > 0 ? adrPips : 70m)) * 100m, 1);
+        var regime = pctUsed > 85m ? "Trending Expansion" : (pctUsed > 45m ? "Mean-Reverting Range" : "Compressed Consolidation");
+
+        return new AdrVolatilityDto(
+            symbol,
+            adrPips,
+            todayRangePips,
+            pctUsed,
+            7.45m,
+            regime
+        );
+    }
+
+    public RetailSentimentDto GetRetailSentiment(string symbol)
+    {
+        var sym = symbol.ToUpperInvariant();
+        if (sym.Contains("EURUSD"))
+        {
+            return new RetailSentimentDto(symbol, 34.2m, 65.8m, 0.52m, 14280, "Bullish (Contrarian: 66% Short)");
+        }
+        if (sym.Contains("USDJPY"))
+        {
+            return new RetailSentimentDto(symbol, 71.5m, 28.5m, 2.51m, 11450, "Bearish (Contrarian: 72% Long)");
+        }
+        if (sym.Contains("GBPUSD"))
+        {
+            return new RetailSentimentDto(symbol, 42.0m, 58.0m, 0.72m, 9800, "Bullish (Contrarian: 58% Short)");
+        }
+
+        return new RetailSentimentDto(symbol, 48.5m, 51.5m, 0.94m, 6200, "Neutral");
+    }
+
+    public OptionsExpiryClusterDto GetOptionsExpiryClusters(string symbol)
+    {
+        var now = DateTime.UtcNow.Date.AddHours(15); // 10 AM NY Cut = 15:00 UTC
+        if (now <= DateTime.UtcNow) now = now.AddDays(1);
+
+        var sym = symbol.ToUpperInvariant();
+        if (sym.Contains("EURUSD"))
+        {
+            return new OptionsExpiryClusterDto(symbol, now, 1.0850m, 1.0900m, 1.0800m, 1450.0m, +0.32m);
+        }
+        if (sym.Contains("USDJPY"))
+        {
+            return new OptionsExpiryClusterDto(symbol, now, 152.00m, 153.50m, 150.50m, 1120.0m, -0.45m);
+        }
+
+        return new OptionsExpiryClusterDto(symbol, now, 1.2950m, 1.3050m, 1.2900m, 850.0m, +0.15m);
+    }
+
+    public IntermarketYieldSpreadDto GetIntermarketYieldSpreads(string symbol)
+    {
+        var sym = symbol.ToUpperInvariant();
+        if (sym.Contains("EURUSD"))
+        {
+            return new IntermarketYieldSpreadDto("EUR/USD", "US 10-Year Treasury", 4.38m, "German 10-Year Bund", 2.31m, +207.0m, "USD Yield Advantage (EUR/USD Headwind)");
+        }
+        if (sym.Contains("GBPUSD"))
+        {
+            return new IntermarketYieldSpreadDto("GBP/USD", "US 10-Year Treasury", 4.38m, "UK 10-Year Gilt", 4.12m, +26.0m, "Mild USD Advantage");
+        }
+        if (sym.Contains("USDJPY"))
+        {
+            return new IntermarketYieldSpreadDto("USD/JPY", "US 10-Year Treasury", 4.38m, "Japan 10-Year JGB", 0.95m, +343.0m, "Massive USD Carry Advantage (Tailwind for USD/JPY)");
+        }
+
+        return new IntermarketYieldSpreadDto(symbol, "US 10-Year Treasury", 4.38m, "Foreign 10-Year Bond", 3.20m, +118.0m, "Moderate Carry Spread");
+    }
+
+    public IReadOnlyList<CentralBankExpectationDto> GetCentralBankExpectations()
+    {
+        return new List<CentralBankExpectationDto>
+        {
+            new("Federal Reserve (Fed)", "USD", 5.00m, DateTime.UtcNow.AddDays(18), 84.5m, 0.0m, 4.00m, 2),
+            new("European Central Bank (ECB)", "EUR", 3.25m, DateTime.UtcNow.AddDays(24), 78.0m, 0.0m, 2.50m, 5),
+            new("Bank of England (BoE)", "GBP", 5.00m, DateTime.UtcNow.AddDays(14), 65.2m, 0.0m, 4.25m, 3),
+            new("Bank of Japan (BoJ)", "JPY", 0.25m, DateTime.UtcNow.AddDays(9), 0.0m, 42.5m, 0.75m, 8),
+            new("Reserve Bank of Australia (RBA)", "AUD", 4.35m, DateTime.UtcNow.AddDays(31), 22.0m, 0.0m, 3.85m, 4),
+            new("Swiss National Bank (SNB)", "CHF", 1.00m, DateTime.UtcNow.AddDays(42), 55.0m, 0.0m, 0.75m, 7)
+        };
+    }
+
+    public IReadOnlyList<SpeechScheduleDto> GetSpeechSchedule()
+    {
+        return new List<SpeechScheduleDto>
+        {
+            new("Jerome Powell", "Federal Reserve", "Chair", "Monetary Policy & Economic Outlook", DateTime.UtcNow.AddDays(2).AddHours(4), ForexImpactLevel.High, "Economic Club of New York"),
+            new("Christine Lagarde", "ECB", "President", "European Financial Integration & Disinflation", DateTime.UtcNow.AddDays(3).AddHours(8), ForexImpactLevel.High, "European Banking Congress, Frankfurt"),
+            new("Andrew Bailey", "Bank of England", "Governor", "Inflation Report Review", DateTime.UtcNow.AddDays(5).AddHours(2), ForexImpactLevel.High, "House of Commons Treasury Committee"),
+            new("Kazuo Ueda", "Bank of Japan", "Governor", "Post-Monetary Policy Decision Briefing", DateTime.UtcNow.AddDays(9).AddHours(6), ForexImpactLevel.High, "BoJ Headquarters, Tokyo")
+        };
+    }
+
+    public IReadOnlyList<CountryMacroDashboardDto> GetCountryMacroDashboards()
+    {
+        return new List<CountryMacroDashboardDto>
+        {
+            new("United States", "USD", 2.4m, 2.8m, 4.1m, -70.4m, "Cautiously Dovish"),
+            new("Eurozone", "EUR", 1.7m, 0.9m, 6.4m, +14.8m, "Dovish Easing"),
+            new("United Kingdom", "GBP", 1.7m, 1.1m, 4.0m, -3.2m, "Gradual Easing"),
+            new("Japan", "JPY", 2.5m, 0.5m, 2.5m, -8.1m, "Hawkish Normalization"),
+            new("Switzerland", "CHF", 0.8m, 1.2m, 2.4m, +4.2m, "Accommodative"),
+            new("Australia", "AUD", 2.8m, 1.5m, 4.1m, +3.8m, "Hawkish Hold")
+        };
+    }
 }

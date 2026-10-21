@@ -19,6 +19,7 @@ using AzureTest.Application.Crypto.Queries.GetCryptoDerivativesHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoFuturesFunding;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketDataHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketOverview;
+using AzureTest.Application.Crypto.Queries.GetCryptoOnChainHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoOrderBook;
 using AzureTest.Application.Crypto.Queries.GetCryptoPortfolio;
 using AzureTest.Application.Crypto.Queries.GetCryptoRiskOverview;
@@ -105,6 +106,7 @@ public interface ICryptoQueryUnit
     IQueryHandler<GetCryptoSettingsQuery, Result<IReadOnlyList<CryptoApiSettingsDto>>> GetSettings { get; }
     IQueryHandler<GetCryptoMarketDataHubQuery, Result<CryptoMarketDataHubDto>> GetMarketDataHub { get; }
     IQueryHandler<GetCryptoDerivativesHubQuery, Result<CryptoDerivativesHubDto>> GetDerivativesHub { get; }
+    IQueryHandler<GetCryptoOnChainHubQuery, Result<CryptoOnChainHubDto>> GetOnChainHub { get; }
 }
 
 public sealed class CryptoQueryUnit : ICryptoQueryUnit
@@ -124,6 +126,7 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
     public IQueryHandler<GetCryptoSettingsQuery, Result<IReadOnlyList<CryptoApiSettingsDto>>> GetSettings { get; }
     public IQueryHandler<GetCryptoMarketDataHubQuery, Result<CryptoMarketDataHubDto>> GetMarketDataHub { get; }
     public IQueryHandler<GetCryptoDerivativesHubQuery, Result<CryptoDerivativesHubDto>> GetDerivativesHub { get; }
+    public IQueryHandler<GetCryptoOnChainHubQuery, Result<CryptoOnChainHubDto>> GetOnChainHub { get; }
 
     public CryptoQueryUnit(
         IQueryHandler<GetCryptoMarketOverviewQuery, Result<CryptoMarketOverviewDto>> getMarketOverview,
@@ -140,7 +143,8 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
         IQueryHandler<GetCryptoAlertsQuery, Result<IReadOnlyList<CryptoAlertDto>>> getAlerts,
         IQueryHandler<GetCryptoSettingsQuery, Result<IReadOnlyList<CryptoApiSettingsDto>>> getSettings,
         IQueryHandler<GetCryptoMarketDataHubQuery, Result<CryptoMarketDataHubDto>> getMarketDataHub,
-        IQueryHandler<GetCryptoDerivativesHubQuery, Result<CryptoDerivativesHubDto>> getDerivativesHub)
+        IQueryHandler<GetCryptoDerivativesHubQuery, Result<CryptoDerivativesHubDto>> getDerivativesHub,
+        IQueryHandler<GetCryptoOnChainHubQuery, Result<CryptoOnChainHubDto>> getOnChainHub)
     {
         GetMarketOverview = getMarketOverview;
         GetCandles = getCandles;
@@ -157,6 +161,7 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
         GetSettings = getSettings;
         GetMarketDataHub = getMarketDataHub;
         GetDerivativesHub = getDerivativesHub;
+        GetOnChainHub = getOnChainHub;
     }
 }
 

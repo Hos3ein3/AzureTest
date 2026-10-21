@@ -28,4 +28,27 @@ public interface IForexExecutionService
         decimal currentMarketPrice,
         ForexExitReason reason,
         CancellationToken cancellationToken = default);
+
+    Task<Result<decimal>> ExecutePartialCloseAsync(
+        ForexAccount account,
+        ForexTrade trade,
+        decimal lotsToClose,
+        decimal currentMarketPrice,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<bool>> MoveToBreakEvenAsync(
+        ForexAccount account,
+        ForexTrade trade,
+        decimal currentMarketPrice,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<int>> ExecuteKillSwitchAsync(
+        ForexAccount account,
+        string reason,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<Guid>> ProcessTradingViewWebhookAsync(
+        TradingViewWebhookPayloadDto payload,
+        ForexAccount account,
+        CancellationToken cancellationToken = default);
 }

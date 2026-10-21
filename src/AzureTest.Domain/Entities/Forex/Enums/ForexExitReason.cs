@@ -8,5 +8,7 @@ public enum ForexExitReason
     TrailingStop = 3,
     BreakEven = 4,
     Manual = 5,
-    MarginCall = 6
+    MarginCall = 6,
+    EmergencyStop = 7,
+    SignalExit = 8
 }
