@@ -55,16 +55,7 @@
     <partial name="_ValidationScriptsPartial" />
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const selectEl = document.getElementById('categorySelect');
-        let tsInstance = null;
-        
-        if (selectEl && typeof TomSelect !== 'undefined') {
-            tsInstance = new TomSelect(selectEl, {
-                create: false,
-                sortField: { field: "text", direction: "asc" }
-            });
-        }
-
+        // --- UiComponents Searchable Dropdown & Category Logic ---
         const toggleBtn = document.getElementById('toggleNewCategory');
         const newPanel  = document.getElementById('newCategoryPanel');
         const newInput  = document.getElementById('newCategoryInput');
@@ -75,24 +66,11 @@
                 const isVisible = newPanel.style.display !== 'none';
                 if (isVisible) {
                     newPanel.style.display = 'none';
-                    newInput.value = '';
-                    if (tsInstance) tsInstance.enable();
+                    if (newInput) newInput.value = '';
                 } else {
                     newPanel.style.display = 'block';
-                    if (tsInstance) {
-                        tsInstance.clear();
-                        tsInstance.disable();
-                    }
-                    newInput.focus();
-                }
-            });
-        }
-
-        if (tsInstance) {
-            tsInstance.on('change', function(value) {
-                if (value) {
-                    newPanel.style.display = 'none';
-                    newInput.value = '';
+                    selectCategoryOption('', '-- Search or select existing category --');
+                    if (newInput) newInput.focus();
                 }
             });
         }
@@ -102,25 +80,23 @@
             newInput.addEventListener('input', () => {
                 clearTimeout(debounceTimer);
                 const term = newInput.value.trim();
-                if (term.length < 1) { acList.style.display = 'none'; return; }
+                if (term.length < 1) { if (acList) acList.style.display = 'none'; return; }
 
                 debounceTimer = setTimeout(async () => {
                     const res  = await fetch(`/Expense/SearchExpenseCategories?term=${encodeURIComponent(term)}`);
                     const data = await res.json();
 
+                    if (!acList) return;
                     acList.innerHTML = '';
-                    if (data.length === 0) { acList.style.display = 'none'; return; }
+                    if (!data || data.length === 0) { acList.style.display = 'none'; return; }
 
                     data.forEach(c => {
                         const item = document.createElement('button');
                         item.type = 'button';
-                        item.className = 'w-full text-left px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 hover:text-brand-600 focus:outline-none transition-colors';
+                        item.className = 'w-full text-left px-4 py-2.5 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-brand-600 focus:outline-none transition-colors';
                         item.textContent = c.name;
                         item.addEventListener('click', () => {
-                            if (tsInstance) {
-                                tsInstance.enable();
-                                tsInstance.setValue(c.id);
-                            }
+                            selectCategoryOption(c.id, c.name);
                             newInput.value = '';
                             newPanel.style.display = 'none';
                             acList.style.display = 'none';
@@ -133,6 +109,12 @@
         }
 
         document.addEventListener('click', (e) => {
+            const btn = document.getElementById('categoryDropdownBtn');
+            const menu = document.getElementById('categoryDropdownMenu');
+            if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+
             if (acList && !acList.contains(e.target) && e.target !== newInput) {
                 acList.style.display = 'none';
             }
@@ -140,11 +122,62 @@
         
         if (newInput && newInput.value.trim().length > 0) {
             newPanel.style.display = 'block';
-            if (tsInstance) {
-                tsInstance.clear();
-                tsInstance.disable();
-            }
         }
     });
+
+    // Global Searchable Dropdown functions for UiComponents pattern
+    function toggleCategoryDropdownMenu() {
+        const menu = document.getElementById('categoryDropdownMenu');
+        menu?.classList.toggle('hidden');
+        if (menu && !menu.classList.contains('hidden')) {
+            const input = document.getElementById('categoryFilterInput');
+            if (input) {
+                input.value = '';
+                filterCategoryOptions('');
+                input.focus();
+            }
+        }
+    }
+
+    function filterCategoryOptions(term) {
+        const filter = (term || '').toLowerCase().trim();
+        const items = document.querySelectorAll('#categoryOptionsList .category-option');
+        items.forEach(item => {
+            const text = (item.textContent || '').toLowerCase();
+            item.style.display = text.includes(filter) ? 'flex' : 'none';
+        });
+    }
+
+    function selectCategoryOption(id, name) {
+        const hiddenInput = document.getElementById('categoryIdInput');
+        const label = document.getElementById('categorySelectedLabel');
+        const newPanel = document.getElementById('newCategoryPanel');
+        const newInput = document.getElementById('newCategoryInput');
+
+        if (hiddenInput) hiddenInput.value = id;
+        if (label) {
+            label.innerText = name;
+            if (id) {
+                label.className = 'text-slate-900 dark:text-white font-bold truncate';
+            } else {
+                label.className = 'text-slate-400 dark:text-slate-400 font-normal truncate';
+            }
+        }
+
+        if (id && newPanel) {
+            newPanel.style.display = 'none';
+            if (newInput) newInput.value = '';
+        }
+
+        // Update checkmark in list
+        const items = document.querySelectorAll('#categoryOptionsList .category-option');
+        items.forEach(item => {
+            const check = item.querySelector('.checkmark-icon');
+            if (check) check.remove();
+        });
+
+        const menu = document.getElementById('categoryDropdownMenu');
+        menu?.classList.add('hidden');
+    }
     </script>
 }

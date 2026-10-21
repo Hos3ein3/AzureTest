@@ -226,17 +226,7 @@
             }
         });
 
-        // --- TomSelect & Company Search logic ---
-        const selectEl = document.getElementById('companySelect');
-        let tsInstance = null;
-        
-        if (selectEl) {
-            tsInstance = new TomSelect(selectEl, {
-                create: false,
-                sortField: { field: "text", direction: "asc" }
-            });
-        }
-
+        // --- UiComponents Searchable Dropdown & Company Logic ---
         const toggleBtn = document.getElementById('toggleNewCompany');
         const newPanel  = document.getElementById('newCompanyPanel');
         const newInput  = document.getElementById('newCompanyInput');
@@ -247,24 +237,11 @@
                 const isVisible = newPanel.style.display !== 'none';
                 if (isVisible) {
                     newPanel.style.display = 'none';
-                    newInput.value = '';
-                    if (tsInstance) tsInstance.enable();
+                    if (newInput) newInput.value = '';
                 } else {
                     newPanel.style.display = 'block';
-                    if (tsInstance) {
-                        tsInstance.clear();
-                        tsInstance.disable();
-                    }
-                    newInput.focus();
-                }
-            });
-        }
-
-        if (tsInstance) {
-            tsInstance.on('change', function(value) {
-                if (value) {
-                    newPanel.style.display = 'none';
-                    newInput.value = '';
+                    selectCompanyOption('', '— Search or select existing company —');
+                    if (newInput) newInput.focus();
                 }
             });
         }
@@ -274,14 +251,15 @@
             newInput.addEventListener('input', () => {
                 clearTimeout(debounceTimer);
                 const term = newInput.value.trim();
-                if (term.length < 1) { acList.style.display = 'none'; return; }
+                if (term.length < 1) { if (acList) acList.style.display = 'none'; return; }
 
                 debounceTimer = setTimeout(async () => {
                     const res  = await fetch(`/Resume/SearchCompanies?term=${encodeURIComponent(term)}`);
                     const data = await res.json();
 
+                    if (!acList) return;
                     acList.innerHTML = '';
-                    if (data.length === 0) { acList.style.display = 'none'; return; }
+                    if (!data || data.length === 0) { acList.style.display = 'none'; return; }
 
                     data.forEach(c => {
                         const item = document.createElement('button');
@@ -289,26 +267,84 @@
                         item.className = 'w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 hover:text-brand-600 focus:outline-none focus:bg-slate-50';
                         item.textContent = c.name;
                         item.addEventListener('click', () => {
-                            if (tsInstance) {
-                                tsInstance.enable();
-                                tsInstance.setValue(c.id);
-                            }
+                            selectCompanyOption(c.id, c.name);
                             newInput.value = '';
                             newPanel.style.display = 'none';
                             acList.style.display = 'none';
                         });
                         acList.appendChild(item);
                     });
-                    acList.display = 'block';
+                    acList.style.display = 'block';
                 }, 300);
             });
         }
 
         document.addEventListener('click', (e) => {
+            const btn = document.getElementById('companyDropdownBtn');
+            const menu = document.getElementById('companyDropdownMenu');
+            if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+
             if (acList && !acList.contains(e.target) && e.target !== newInput) {
                 acList.style.display = 'none';
             }
         });
     });
+
+    // Global Searchable Dropdown functions for UiComponents pattern
+    function toggleCompanyDropdownMenu() {
+        const menu = document.getElementById('companyDropdownMenu');
+        menu?.classList.toggle('hidden');
+        if (menu && !menu.classList.contains('hidden')) {
+            const input = document.getElementById('companyFilterInput');
+            if (input) {
+                input.value = '';
+                filterCompanyOptions('');
+                input.focus();
+            }
+        }
+    }
+
+    function filterCompanyOptions(term) {
+        const filter = (term || '').toLowerCase().trim();
+        const items = document.querySelectorAll('#companyOptionsList .company-option');
+        items.forEach(item => {
+            const text = (item.textContent || '').toLowerCase();
+            item.style.display = text.includes(filter) ? 'flex' : 'none';
+        });
+    }
+
+    function selectCompanyOption(id, name) {
+        const hiddenInput = document.getElementById('companyIdInput');
+        const label = document.getElementById('companySelectedLabel');
+        const newPanel = document.getElementById('newCompanyPanel');
+        const newInput = document.getElementById('newCompanyInput');
+
+        if (hiddenInput) hiddenInput.value = id;
+        if (label) {
+            label.innerText = name;
+            if (id) {
+                label.className = 'text-slate-900 dark:text-white font-bold truncate';
+            } else {
+                label.className = 'text-slate-400 dark:text-slate-400 font-normal truncate';
+            }
+        }
+
+        if (id && newPanel) {
+            newPanel.style.display = 'none';
+            if (newInput) newInput.value = '';
+        }
+
+        // Update checkmark in list
+        const items = document.querySelectorAll('#companyOptionsList .company-option');
+        items.forEach(item => {
+            const check = item.querySelector('.checkmark-icon');
+            if (check) check.remove();
+        });
+
+        const menu = document.getElementById('companyDropdownMenu');
+        menu?.classList.add('hidden');
+    }
     </script>
 }

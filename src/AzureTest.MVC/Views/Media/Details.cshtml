@@ -56,6 +56,7 @@
     var initialSeasonNumber = userItem?.CurrentSeason > 0 && validSeasons.Any(s => s.SeasonNumber == userItem.CurrentSeason)
         ? userItem.CurrentSeason
         : (validSeasons.FirstOrDefault()?.SeasonNumber ?? 1);
+    var isCompleted = userItem != null && userItem.Status == WatchStatus.Completed;
 }
 
 <div class="space-y-8">
@@ -312,7 +313,7 @@
                     </span>
                     <div>
                         <h2 class="text-base font-bold text-slate-900 dark:text-white">Seasons & Episodes</h2>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Select a season to view all episodes and track your watching progress.</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Browse seasons, view episode thumbnails and details, and track your progress.</p>
                     </div>
                 </div>
 
@@ -326,53 +327,123 @@
                 </div>
             </div>
 
-            <!-- Season Selector Pill Tabs -->
-            <div class="flex flex-wrap items-center gap-2" id="seasonTabs">
+            <!-- Seasons Accordion (UiComponents Pattern) -->
+            <div class="space-y-3" id="seasonsAccordionContainer">
                 @foreach (var s in validSeasons)
                 {
-                    var isCurrentActiveSeason = s.SeasonNumber == initialSeasonNumber;
-                    var isSeasonWatched = userItem != null && (userItem.CurrentSeason > s.SeasonNumber || (userItem.CurrentSeason == s.SeasonNumber && userItem.CurrentEpisode >= s.EpisodeCount) || userItem.Status == WatchStatus.Completed);
+                    var isExpanded = s.SeasonNumber == initialSeasonNumber;
+                    var isSeasonWatched = isCompleted || (userItem != null && (userItem.CurrentSeason > s.SeasonNumber || (userItem.CurrentSeason == s.SeasonNumber && (s.EpisodeCount <= 0 || userItem.CurrentEpisode >= s.EpisodeCount))));
 
-                    <button type="button" onclick="selectSeason(@s.SeasonNumber)"
-                            id="seasonTab-@s.SeasonNumber"
-                            data-season="@s.SeasonNumber"
-                            data-episodes="@s.EpisodeCount"
-                            data-name="@s.Name"
-                            class="season-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 @(isCurrentActiveSeason ? "bg-slate-900 dark:bg-brand-600 text-white shadow-2xs" : "bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-650")">
-                        <span>@s.Name</span>
-                        <span class="px-2 py-0.5 rounded-lg text-3xs font-semibold @(isCurrentActiveSeason ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300")">
-                            @s.EpisodeCount Ep
-                        </span>
-                        @if (isSeasonWatched)
-                        {
-                            <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
-                        }
-                    </button>
+                    <div class="accordion-item rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden transition-all shadow-2xs" id="season-card-@s.SeasonNumber">
+                        <button type="button" onclick="toggleSeasonAccordion(@s.SeasonNumber, this)"
+                                class="w-full p-4 text-left flex items-center justify-between gap-3 bg-white dark:bg-slate-800 hover:bg-slate-50/80 dark:hover:bg-slate-750 transition-colors">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center text-xs font-bold shrink-0">
+                                    S@s.SeasonNumber
+                                </div>
+                                <div class="min-w-0">
+                                    <span class="text-xs font-bold text-slate-900 dark:text-white block truncate">@s.Name</span>
+                                    <span class="text-3xs text-slate-400 dark:text-slate-500 block truncate">
+                                        @s.EpisodeCount Episodes @(s.AirDate.HasValue ? $"• {s.AirDate.Value:yyyy}" : "")
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                @if (isSeasonWatched)
+                                {
+                                    <span class="px-2.5 py-1 rounded-full text-3xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1">
+                                        <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                                        <span>Watched</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <button type="button" onclick="markSeasonWatchedDirect(@s.SeasonNumber, @s.EpisodeCount, event)"
+                                            class="px-2.5 py-1 rounded-xl bg-purple-50 dark:bg-purple-900/40 hover:bg-purple-600 hover:text-white text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-3xs font-semibold transition-colors flex items-center gap-1">
+                                        <i class="fa-solid fa-check text-2xs"></i>
+                                        <span>Mark Watched</span>
+                                    </button>
+                                }
+                                <i class="fa-solid fa-chevron-down text-2xs text-slate-400 transform transition-transform duration-300 accordion-chevron @(isExpanded ? "rotate-180" : "")"></i>
+                            </div>
+                        </button>
+                        <div id="season-acc-@s.SeasonNumber" class="accordion-content @(isExpanded ? "" : "hidden") px-4 pb-4 pt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed border-t border-slate-100 dark:border-slate-700">
+                            @if (s.Episodes != null && s.Episodes.Any())
+                            {
+                                <div class="space-y-2.5 pt-2">
+                                    @foreach (var ep in s.Episodes)
+                                    {
+                                        var isEpWatched = isCompleted || (userItem != null && (userItem.CurrentSeason > s.SeasonNumber || (userItem.CurrentSeason == s.SeasonNumber && userItem.CurrentEpisode >= ep.EpisodeNumber)));
+                                        var stillUrl = !string.IsNullOrWhiteSpace(ep.StillPath)
+                                            ? $"https://image.tmdb.org/t/p/w300{ep.StillPath}"
+                                            : "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=300&q=80";
+
+                                        <div class="p-3.5 rounded-2xl border @(isEpWatched ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50" : "bg-slate-50 dark:bg-slate-750 border-slate-200 dark:border-slate-700") flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
+                                            <div class="flex items-start gap-3.5 flex-1 min-w-0">
+                                                <div class="w-20 sm:w-28 aspect-video rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 shrink-0 relative">
+                                                    <img src="@stillUrl" alt="@ep.Name" class="w-full h-full object-cover" loading="lazy" />
+                                                    <span class="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-slate-900/80 text-white font-mono text-3xs font-bold">
+                                                        E@(ep.EpisodeNumber)
+                                                    </span>
+                                                </div>
+                                                <div class="flex-1 min-w-0 space-y-1">
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                                            @(ep.EpisodeNumber). @(string.IsNullOrWhiteSpace(ep.Name) ? $"Episode {ep.EpisodeNumber}" : ep.Name)
+                                                        </h4>
+                                                        @if (ep.VoteAverage.HasValue && ep.VoteAverage.Value > 0)
+                                                        {
+                                                            <span class="px-1.5 py-0.5 rounded text-3xs font-bold bg-amber-500/15 text-amber-500 flex items-center gap-1">
+                                                                <i class="fa-solid fa-star text-3xs"></i> @ep.VoteAverage.Value.ToString("0.0")
+                                                            </span>
+                                                        }
+                                                        @if (ep.AirDate.HasValue)
+                                                        {
+                                                            <span class="text-3xs text-slate-400 dark:text-slate-500">
+                                                                @ep.AirDate.Value.ToString("MMM dd, yyyy")
+                                                            </span>
+                                                        }
+                                                    </div>
+                                                    <p class="text-3xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                                                        @(string.IsNullOrWhiteSpace(ep.Overview) ? "No synopsis provided." : ep.Overview)
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div class="shrink-0 flex items-center gap-2 justify-end">
+                                                @if (isEpWatched)
+                                                {
+                                                    <span class="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5">
+                                                        <i class="fa-solid fa-check text-2xs"></i>
+                                                        <span>Watched</span>
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" onclick="markSingleEpisodeWatched(@s.SeasonNumber, @ep.EpisodeNumber)"
+                                                            class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-700 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 text-xs font-semibold transition-all shadow-2xs flex items-center gap-1.5">
+                                                        <i class="fa-solid fa-check text-2xs"></i>
+                                                        <span>Mark Watched</span>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div id="season-episodes-container-@s.SeasonNumber" data-loaded="false" class="py-4">
+                                    <div class="flex items-center justify-center py-6 text-slate-400">
+                                        <button type="button" onclick="loadSeasonEpisodesDynamic(@s.SeasonNumber)" class="px-4 py-2 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-900/40 dark:text-brand-300 text-xs font-bold hover:bg-brand-100 dark:hover:bg-brand-900/60 transition-colors">
+                                            Load Episodes
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
                 }
-            </div>
-
-            <!-- Active Season Details Banner -->
-            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-750 border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="space-y-1">
-                    <h3 id="activeSeasonTitle" class="text-sm font-bold text-slate-900 dark:text-white">Season 1</h3>
-                    <p id="activeSeasonSubtitle" class="text-xs text-slate-500 dark:text-slate-400">Episodes list</p>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <button type="button" id="markSeasonWatchedBtn" onclick="markCurrentSeasonWatched()"
-                            class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
-                        <i class="fa-solid fa-check text-2xs"></i>
-                        <span id="markSeasonWatchedBtnText">Mark Season Watched</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Episodes Grid Container -->
-            <div id="episodesContainer" class="space-y-3">
-                <div class="flex items-center justify-center py-12 text-slate-400">
-                    <i class="fa-solid fa-circle-notch fa-spin text-2xl mr-3 text-brand-600"></i>
-                    <span class="text-xs font-semibold">Loading episodes...</span>
-                </div>
             </div>
         </div>
     }
@@ -769,66 +840,68 @@
     let activeSeasonNumber = @initialSeasonNumber;
     const episodesCache = {};
 
-    function selectSeason(seasonNumber) {
-        activeSeasonNumber = seasonNumber;
-        document.querySelectorAll('.season-tab-btn').forEach(btn => {
-            const sn = parseInt(btn.dataset.season);
-            if (sn === seasonNumber) {
-                btn.className = 'season-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 bg-slate-900 dark:bg-brand-600 text-white shadow-2xs';
-            } else {
-                btn.className = 'season-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-650';
+    function toggleSeasonAccordion(seasonNumber, btn) {
+        const content = document.getElementById(`season-acc-${seasonNumber}`);
+        if (!content) return;
+
+        const chevron = btn.querySelector('.accordion-chevron');
+        const isHidden = content.classList.contains('hidden');
+        content.classList.toggle('hidden');
+        if (chevron) {
+            chevron.classList.toggle('rotate-180', isHidden);
+        }
+
+        if (isHidden) {
+            const dynamicContainer = document.getElementById(`season-episodes-container-${seasonNumber}`);
+            if (dynamicContainer && dynamicContainer.dataset.loaded === 'false') {
+                loadSeasonEpisodesDynamic(seasonNumber);
             }
-        });
-
-        const activeTab = document.getElementById(`seasonTab-${seasonNumber}`);
-        const seasonName = activeTab ? activeTab.dataset.name : `Season ${seasonNumber}`;
-        const epCount = activeTab ? activeTab.dataset.episodes : '';
-        document.getElementById('activeSeasonTitle').innerText = seasonName;
-        document.getElementById('activeSeasonSubtitle').innerText = `${epCount} episodes in this season`;
-        document.getElementById('markSeasonWatchedBtnText').innerText = `Mark ${seasonName} Watched`;
-
-        loadSeasonEpisodes(seasonNumber);
+        }
     }
 
-    function loadSeasonEpisodes(seasonNumber) {
-        const container = document.getElementById('episodesContainer');
+    function loadSeasonEpisodesDynamic(seasonNumber) {
+        const container = document.getElementById(`season-episodes-container-${seasonNumber}`);
         if (!container) return;
 
         if (episodesCache[seasonNumber]) {
-            renderEpisodes(episodesCache[seasonNumber], seasonNumber);
+            renderDynamicEpisodes(episodesCache[seasonNumber], seasonNumber, container);
             return;
         }
 
         container.innerHTML = `
-            <div class="flex items-center justify-center py-12 text-slate-400">
-                <i class="fa-solid fa-circle-notch fa-spin text-2xl mr-3 text-brand-600"></i>
+            <div class="flex items-center justify-center py-6 text-slate-400">
+                <i class="fa-solid fa-circle-notch fa-spin text-xl mr-2 text-brand-600"></i>
                 <span class="text-xs font-semibold">Loading Season ${seasonNumber} episodes...</span>
             </div>
         `;
 
         fetch(`/Media/SeasonEpisodes?id=${mediaId}&seasonNumber=${seasonNumber}`)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error('Status: ' + res.status);
+                return res.json();
+            })
             .then(data => {
                 episodesCache[seasonNumber] = data || [];
-                renderEpisodes(episodesCache[seasonNumber], seasonNumber);
+                renderDynamicEpisodes(episodesCache[seasonNumber], seasonNumber, container);
             })
             .catch(err => {
+                console.error(err);
                 container.innerHTML = `
-                    <div class="p-6 text-center text-rose-500 text-xs">
-                        Failed to load episodes. <button onclick="loadSeasonEpisodes(${seasonNumber})" class="underline font-bold ml-1">Retry</button>
+                    <div class="p-4 text-center text-rose-500 text-xs">
+                        Failed to load episodes. <button onclick="loadSeasonEpisodesDynamic(${seasonNumber})" class="underline font-bold ml-1">Retry</button>
                     </div>
                 `;
             });
     }
 
-    function renderEpisodes(episodes, seasonNumber) {
-        const container = document.getElementById('episodesContainer');
+    function renderDynamicEpisodes(episodes, seasonNumber, container) {
+        container.dataset.loaded = 'true';
         if (!episodes || episodes.length === 0) {
-            container.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No episode information found for this season.</div>`;
+            container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs">No episode information found for this season.</div>`;
             return;
         }
 
-        let html = '<div class="space-y-2.5">';
+        let html = '<div class="space-y-2.5 pt-2">';
         episodes.forEach(ep => {
             const isWatched = isCompleted || (userCurrentSeason > seasonNumber) || (userCurrentSeason === seasonNumber && userCurrentEpisode >= ep.episodeNumber);
             const stillUrl = ep.stillPath
@@ -840,8 +913,8 @@
             html += `
                 <div class="p-3.5 rounded-2xl border ${isWatched ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/50' : 'bg-slate-50 dark:bg-slate-750 border-slate-200 dark:border-slate-700'} flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
                     <div class="flex items-start gap-3.5 flex-1 min-w-0">
-                        <div class="w-20 sm:w-28 aspect-video rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 flex-shrink-0 relative">
-                            <img src="${stillUrl}" alt="${ep.name}" class="w-full h-full object-cover" loading="lazy" />
+                        <div class="w-20 sm:w-28 aspect-video rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 shrink-0 relative">
+                            <img src="${stillUrl}" alt="${ep.name || ''}" class="w-full h-full object-cover" loading="lazy" />
                             <span class="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-slate-900/80 text-white font-mono text-3xs font-bold">
                                 E${ep.episodeNumber}
                             </span>
@@ -851,8 +924,8 @@
                                 <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate">
                                     ${ep.episodeNumber}. ${ep.name || `Episode ${ep.episodeNumber}`}
                                 </h4>
-                                ${ep.voteAverage ? `<span class="px-1.5 py-0.5 rounded text-3xs font-bold bg-amber-500/15 text-amber-500 flex items-center gap-1"><i class="fa-solid fa-star text-3xs"></i> ${ep.voteAverage.toFixed(1)}</span>` : ''}
-                                ${airDateStr ? `<span class="text-3xs text-slate-400">${airDateStr}</span>` : ''}
+                                ${ep.voteAverage ? `<span class="px-1.5 py-0.5 rounded text-3xs font-bold bg-amber-500/15 text-amber-500 flex items-center gap-1"><i class="fa-solid fa-star text-3xs"></i> ${Number(ep.voteAverage).toFixed(1)}</span>` : ''}
+                                ${airDateStr ? `<span class="text-3xs text-slate-400 dark:text-slate-500">${airDateStr}</span>` : ''}
                             </div>
                             <p class="text-3xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
                                 ${ep.overview || 'No synopsis provided.'}
@@ -860,7 +933,7 @@
                         </div>
                     </div>
 
-                    <div class="flex-shrink-0 flex items-center gap-2 justify-end">
+                    <div class="shrink-0 flex items-center gap-2 justify-end">
                         ${isWatched
                             ? `<span class="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5">
                                  <i class="fa-solid fa-check text-2xs"></i> Watched
@@ -887,7 +960,8 @@
         formData.append('CurrentSeason', season);
         formData.append('CurrentEpisode', episode);
         formData.append('Status', '@WatchStatus.Watching');
-        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        if (token) formData.append('__RequestVerificationToken', token);
 
         fetch('/Media/Add', {
             method: 'POST',
@@ -897,9 +971,6 @@
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                userCurrentSeason = season;
-                userCurrentEpisode = episode;
-                renderEpisodes(episodesCache[season], season);
                 window.location.reload();
             } else {
                 alert(data.message || 'Failed to update progress.');
@@ -908,21 +979,23 @@
         .catch(() => window.location.reload());
     }
 
-    function markCurrentSeasonWatched() {
-        const activeTab = document.getElementById(`seasonTab-${activeSeasonNumber}`);
-        const totalEpInSeason = activeTab ? parseInt(activeTab.dataset.episodes) : 1;
+    function markSeasonWatchedDirect(seasonNumber, totalEpisodesInSeason, evt) {
+        if (evt) {
+            evt.stopPropagation();
+        }
         const totalSeasons = @validSeasons.Count;
-        const isLastSeason = activeSeasonNumber >= totalSeasons;
+        const isLastSeason = seasonNumber >= totalSeasons;
 
         const formData = new FormData();
         formData.append('TmdbId', mediaId);
         formData.append('Type', mediaType);
         formData.append('Title', mediaTitle);
         formData.append('PosterPath', mediaPoster);
-        formData.append('CurrentSeason', activeSeasonNumber);
-        formData.append('CurrentEpisode', totalEpInSeason);
+        formData.append('CurrentSeason', seasonNumber);
+        formData.append('CurrentEpisode', totalEpisodesInSeason);
         formData.append('Status', isLastSeason ? '@WatchStatus.Completed' : '@WatchStatus.Watching');
-        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        if (token) formData.append('__RequestVerificationToken', token);
 
         fetch('/Media/Add', {
             method: 'POST',
@@ -937,7 +1010,7 @@
     }
 
     function openWatchedModal(tmdbId, title, type, totalSeasons, totalEpisodes) {
-        setWatchedDatePreset(3); // Default to 3 years ago preset as requested by user
+        setWatchedDatePreset(3);
         document.getElementById('watchedModal').classList.remove('hidden');
     }
 
@@ -985,10 +1058,10 @@
         if (modal) modal.classList.add('hidden');
     }
 
-    // Auto load initial season on DOM ready
     document.addEventListener("DOMContentLoaded", function() {
-        if (@validSeasons.Count > 0) {
-            selectSeason(@initialSeasonNumber);
+        const initialContainer = document.getElementById(`season-episodes-container-${activeSeasonNumber}`);
+        if (initialContainer && initialContainer.dataset.loaded === 'false') {
+            loadSeasonEpisodesDynamic(activeSeasonNumber);
         }
     });
 </script>

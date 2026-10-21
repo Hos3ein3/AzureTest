@@ -52,7 +52,8 @@ public record TvSeasonSummaryDto(
     int EpisodeCount,
     DateTime? AirDate,
     string? PosterPath,
-    string? Overview
+    string? Overview,
+    List<TvEpisodeSummaryDto>? Episodes = null
 );
 
 public record TvEpisodeSummaryDto(

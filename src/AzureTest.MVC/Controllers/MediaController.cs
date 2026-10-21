@@ -159,6 +159,8 @@ public class MediaController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
+    [Route("Media/SeasonEpisodes")]
     [DisplayName("Season Episodes")]
     [Description("Fetch all episodes of a TV show or anime season.")]
     public async Task<IActionResult> SeasonEpisodes(int id, int seasonNumber, CancellationToken ct)

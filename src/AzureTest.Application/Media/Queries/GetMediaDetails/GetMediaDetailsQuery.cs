@@ -121,6 +121,27 @@ public sealed class GetMediaDetailsQueryHandler : IQueryHandler<GetMediaDetailsQ
             userItem = allWatchList.FirstOrDefault(w => w.TmdbId == request.TmdbId);
         }
 
+        // Preload season episodes in parallel for immediate server-side rendering
+        if (details.Seasons.Count > 0)
+        {
+            var validSeasons = details.Seasons.Where(s => s.SeasonNumber > 0).Take(12).ToList();
+            var episodeTasks = validSeasons.Select(async s => new
+            {
+                s.SeasonNumber,
+                Episodes = await _tmdbService.GetTvSeasonEpisodesAsync(details.Id, s.SeasonNumber, ct)
+            });
+
+            var episodeResults = await Task.WhenAll(episodeTasks);
+            var episodeMap = episodeResults.ToDictionary(r => r.SeasonNumber, r => r.Episodes);
+
+            var updatedSeasons = details.Seasons.Select(s =>
+                episodeMap.TryGetValue(s.SeasonNumber, out var eps) && eps != null && eps.Count > 0
+                    ? s with { Episodes = System.Linq.Enumerable.ToList(eps) }
+                    : s).ToList();
+
+            details = details with { Seasons = updatedSeasons };
+        }
+
         WatchItemDto? userDto = userItem != null ? GetWatchListQuery.Mapping.ToDto(userItem) : null;
 
         var result = details with { UserWatchItem = userDto };
