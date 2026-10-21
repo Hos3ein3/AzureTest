@@ -21,25 +21,20 @@ public class AzureTestDbContext : IdentityDbContext<ApplicationUser, Application
     private readonly DomainEventsInterceptor? _domainEventsInterceptor;
     private readonly ITenantProvider? _tenantProvider;
 
+    // public AzureTestDbContext(
+    //     DbContextOptions<AzureTestDbContext> options,
+    //     DomainEventsInterceptor? domainEventsInterceptor = null,
+    //     ITenantProvider? tenantProvider = null) : base(options)
+    // {
+    //     _domainEventsInterceptor = domainEventsInterceptor;
+    //     _tenantProvider = tenantProvider;
+    // }
+
     public AzureTestDbContext(
         DbContextOptions<AzureTestDbContext> options,
-        DomainEventsInterceptor? domainEventsInterceptor = null,
         ITenantProvider? tenantProvider = null) : base(options)
     {
-        _domainEventsInterceptor = domainEventsInterceptor;
         _tenantProvider = tenantProvider;
-    }
-
-    public AzureTestDbContext(
-        DbContextOptions<AzureTestDbContext> options,
-        ITenantProvider? tenantProvider) : base(options)
-    {
-        _tenantProvider = tenantProvider;
-    }
-
-    public AzureTestDbContext(
-        DbContextOptions<AzureTestDbContext> options) : base(options)
-    {
     }
 
     protected AzureTestDbContext()

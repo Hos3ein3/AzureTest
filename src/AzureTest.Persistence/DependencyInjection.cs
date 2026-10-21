@@ -78,6 +78,16 @@ public static class DependencyInjection
         services.AddScoped<AzureTest.Application.Interfaces.Data.Crypto.ICryptoJournalEntryRepository, Repositories.Crypto.CryptoJournalEntryRepository>();
         services.AddScoped<AzureTest.Application.Interfaces.Data.Crypto.ICryptoApiSettingRepository, Repositories.Crypto.CryptoApiSettingRepository>();
 
+        // ── Forex Repositories ────────────────────────────────────────────────
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Forex.IForexAccountRepository, Repositories.Forex.ForexAccountRepository>();
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Forex.IForexOrderRepository, Repositories.Forex.ForexOrderRepository>();
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Forex.IForexTradeRepository, Repositories.Forex.ForexTradeRepository>();
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Forex.IForexStrategyRepository, Repositories.Forex.ForexStrategyRepository>();
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Forex.IForexBacktestRepository, Repositories.Forex.ForexBacktestRepository>();
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Forex.IForexEconomicAlertRepository, Repositories.Forex.ForexEconomicAlertRepository>();
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Forex.IForexJournalEntryRepository, Repositories.Forex.ForexJournalEntryRepository>();
+        services.AddScoped<AzureTest.Application.Interfaces.Data.Forex.IForexApiSettingRepository, Repositories.Forex.ForexApiSettingRepository>();
+
         // ── Factories ─────────────────────────────────────────────────────────
         services.AddScoped<IDatabaseFactory, DatabaseFactory>();
         services.AddScoped<IRepositoryFactory, RepositoryFactory>();
