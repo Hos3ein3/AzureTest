@@ -166,7 +166,20 @@ public sealed class ForexMarketDataService : IForexMarketDataService
         }
 
         var sessions = GetMarketSessions();
-        return new MarketOverviewDto(quotes, sessions, metalsAndIndices);
+        var contextMarkets = GetContextMarkets();
+        var sessionSpreads = GetSessionSpreads();
+        var brokerSpreads = GetBrokerComparisons();
+        var hourlyVolatility = GetHourlyVolatilityHeatmap();
+
+        return new MarketOverviewDto(
+            quotes,
+            sessions,
+            metalsAndIndices,
+            contextMarkets,
+            sessionSpreads,
+            brokerSpreads,
+            hourlyVolatility
+        );
     }
 
     public async Task<ForexQuoteDto> GetQuoteAsync(string symbol, CancellationToken cancellationToken = default)
@@ -368,5 +381,92 @@ public sealed class ForexMarketDataService : IForexMarketDataService
             if (open > current) return open - current;
             return (TimeSpan.FromHours(24) - current) + open;
         }
+    }
+
+    public IReadOnlyList<ContextMarketQuoteDto> GetContextMarkets()
+    {
+        return new List<ContextMarketQuoteDto>
+        {
+            new("US10Y", "US 10-Year Treasury Yield", "Bond Yield", 4.382m, -0.45m, "%"),
+            new("DE10Y", "German 10-Year Bund Yield", "Bond Yield", 2.314m, +0.22m, "%"),
+            new("GB10Y", "UK 10-Year Gilt Yield", "Bond Yield", 4.120m, +0.10m, "%"),
+            new("DXY", "US Dollar Index", "Currency Index", 104.28m, +0.18m, "Pts"),
+            new("XAU/USD", "Gold Spot / US Dollar", "Metal", 2736.50m, +0.64m, "USD/oz"),
+            new("XAG/USD", "Silver Spot / US Dollar", "Metal", 33.85m, +1.12m, "USD/oz"),
+            new("BRENT", "Brent Crude Oil", "Energy", 74.25m, -0.85m, "USD/bbl"),
+            new("WTI", "WTI Crude Oil", "Energy", 70.15m, -0.92m, "USD/bbl"),
+            new("SPX", "S&P 500 Index", "Index", 5864.67m, +0.35m, "Pts"),
+            new("DAX", "German DAX 40", "Index", 19520.10m, +0.28m, "Pts")
+        };
+    }
+
+    public IReadOnlyList<SessionSpreadLiquidityDto> GetSessionSpreads()
+    {
+        return new List<SessionSpreadLiquidityDto>
+        {
+            new("Sydney Session (Pacific)", 30, 1.8m, 2.4m, 1.9m),
+            new("Tokyo Session (Asian)", 60, 1.4m, 1.8m, 0.9m),
+            new("London Session (European)", 90, 0.8m, 0.9m, 0.8m),
+            new("London / New York Overlap", 100, 0.6m, 0.7m, 0.7m),
+            new("New York Session (American)", 85, 0.9m, 1.1m, 0.8m)
+        };
+    }
+
+    public IReadOnlyList<BrokerSpreadComparisonDto> GetBrokerComparisons(string? symbol = null)
+    {
+        return new List<BrokerSpreadComparisonDto>
+        {
+            new("Pepperstone (Razor)", "FCA / CySEC / AFM-passported", 0.15m, 7.00m, 18),
+            new("IC Markets (Raw Spread)", "ASIC / CySEC / SCB", 0.12m, 7.00m, 22),
+            new("Interactive Brokers (ECN)", "AFM (Netherlands) / CBI", 0.10m, 4.00m, 25),
+            new("Saxo Bank (VIP Tier)", "DNB / AFM (Netherlands)", 0.50m, 0.00m, 38),
+            new("OANDA (Core Pricing)", "AFM / FCA / NFA", 0.80m, 0.00m, 32)
+        };
+    }
+
+    public IReadOnlyList<HourlyVolatilityDto> GetHourlyVolatilityHeatmap(string? symbol = null)
+    {
+        var list = new List<HourlyVolatilityDto>();
+        for (int h = 0; h < 24; h++)
+        {
+            string session;
+            decimal pips;
+            string level;
+
+            if (h >= 0 && h < 7)
+            {
+                session = "Sydney / Tokyo";
+                pips = 12m + (h * 2.2m);
+                level = pips > 20m ? "Moderate" : "Low";
+            }
+            else if (h >= 7 && h < 12)
+            {
+                session = "London Morning";
+                pips = 45m + ((h - 7) * 4.5m);
+                level = "High";
+            }
+            else if (h >= 12 && h < 16)
+            {
+                session = "London / NY Overlap";
+                pips = 75m + ((h - 12) * 6m);
+                level = "Peak Volatility";
+            }
+            else if (h >= 16 && h < 21)
+            {
+                session = "New York Afternoon";
+                pips = 38m - ((h - 16) * 4m);
+                level = "Moderate";
+            }
+            else
+            {
+                session = "Pacific Roll (Post-NY)";
+                pips = 10m + ((23 - h) * 1.5m);
+                level = "Low";
+            }
+
+            list.Add(new HourlyVolatilityDto(h, Math.Round(pips, 1), session, level));
+        }
+
+        return list;
     }
 }
