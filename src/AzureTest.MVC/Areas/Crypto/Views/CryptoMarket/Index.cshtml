@@ -19,6 +19,9 @@
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+            <a asp-action="OrderFlow" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors">
+                <i class="fa-solid fa-water"></i> Order Flow &amp; CVD
+            </a>
             <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors">
                 <i class="fa-solid fa-bolt"></i> Trading Terminal
             </a>
@@ -175,6 +178,9 @@
                                     <div class="flex items-center justify-center gap-1.5">
                                         <a asp-action="Chart" asp-route-symbol="@(coin.Symbol.EndsWith("USDT") ? coin.Symbol : coin.Symbol + "USDT")" title="View Candlestick Chart" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                                             <i class="fa-solid fa-chart-simple"></i>
+                                        </a>
+                                        <a asp-action="OrderFlow" asp-route-symbol="@(coin.Symbol.EndsWith("USDT") ? coin.Symbol : coin.Symbol + "USDT")" title="Order Flow, Footprint & CVD" class="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                            <i class="fa-solid fa-water"></i>
                                         </a>
                                         <a asp-action="OrderBook" asp-route-symbol="@(coin.Symbol.EndsWith("USDT") ? coin.Symbol : coin.Symbol + "USDT")" title="View Order Book Ladder" class="p-1.5 rounded-lg text-slate-400 hover:text-purple-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                                             <i class="fa-solid fa-layer-group"></i>

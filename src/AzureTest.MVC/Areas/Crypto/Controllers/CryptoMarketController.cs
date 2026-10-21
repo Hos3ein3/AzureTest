@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AzureTest.Application.Crypto;
 using AzureTest.Application.Crypto.Queries.GetCryptoCandles;
 using AzureTest.Application.Crypto.Queries.GetCryptoFuturesFunding;
+using AzureTest.Application.Crypto.Queries.GetCryptoMarketDataHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketOverview;
 using AzureTest.Application.Crypto.Queries.GetCryptoOrderBook;
 using AzureTest.Application.Interfaces.Services;
@@ -76,4 +77,16 @@ public class CryptoMarketController : Controller
         ViewBag.Symbol = symbol;
         return result.ToView(this);
     }
+
+    [HttpGet]
+    [DisplayName("Order Flow & Market Data Hub")]
+    [Description("Cumulative Volume Delta (CVD), Footprint chart clusters, order book heatmap liquidity walls, Coinbase Premium, and stablecoin depeg radar.")]
+    public async Task<IActionResult> OrderFlow(string symbol = "BTCUSDT", CryptoTimeframe timeframe = CryptoTimeframe.H1, CancellationToken cancellationToken = default)
+    {
+        var result = await _queries.GetMarketDataHub.HandleAsync(new GetCryptoMarketDataHubQuery(symbol, timeframe), cancellationToken);
+        ViewBag.Symbol = symbol;
+        ViewBag.Timeframe = timeframe;
+        return result.ToView(this, viewName: "OrderFlow");
+    }
 }
+

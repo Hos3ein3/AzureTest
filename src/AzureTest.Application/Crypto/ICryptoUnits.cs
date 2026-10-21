@@ -16,6 +16,7 @@ using AzureTest.Application.Crypto.Queries.GetCryptoAlerts;
 using AzureTest.Application.Crypto.Queries.GetCryptoAnalysis;
 using AzureTest.Application.Crypto.Queries.GetCryptoCandles;
 using AzureTest.Application.Crypto.Queries.GetCryptoFuturesFunding;
+using AzureTest.Application.Crypto.Queries.GetCryptoMarketDataHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketOverview;
 using AzureTest.Application.Crypto.Queries.GetCryptoOrderBook;
 using AzureTest.Application.Crypto.Queries.GetCryptoPortfolio;
@@ -101,6 +102,7 @@ public interface ICryptoQueryUnit
     IQueryHandler<GetCryptoTaxReportQuery, Result<CryptoTaxReportDto>> GetTaxReport { get; }
     IQueryHandler<GetCryptoAlertsQuery, Result<IReadOnlyList<CryptoAlertDto>>> GetAlerts { get; }
     IQueryHandler<GetCryptoSettingsQuery, Result<IReadOnlyList<CryptoApiSettingsDto>>> GetSettings { get; }
+    IQueryHandler<GetCryptoMarketDataHubQuery, Result<CryptoMarketDataHubDto>> GetMarketDataHub { get; }
 }
 
 public sealed class CryptoQueryUnit : ICryptoQueryUnit
@@ -118,6 +120,7 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
     public IQueryHandler<GetCryptoTaxReportQuery, Result<CryptoTaxReportDto>> GetTaxReport { get; }
     public IQueryHandler<GetCryptoAlertsQuery, Result<IReadOnlyList<CryptoAlertDto>>> GetAlerts { get; }
     public IQueryHandler<GetCryptoSettingsQuery, Result<IReadOnlyList<CryptoApiSettingsDto>>> GetSettings { get; }
+    public IQueryHandler<GetCryptoMarketDataHubQuery, Result<CryptoMarketDataHubDto>> GetMarketDataHub { get; }
 
     public CryptoQueryUnit(
         IQueryHandler<GetCryptoMarketOverviewQuery, Result<CryptoMarketOverviewDto>> getMarketOverview,
@@ -132,7 +135,8 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
         IQueryHandler<GetCryptoPortfolioQuery, Result<(CryptoAccountDto Account, IReadOnlyList<CryptoPositionDto> OpenPositions, IReadOnlyList<CryptoPositionDto> ClosedTrades, IReadOnlyList<CryptoJournalEntryDto> JournalEntries)>> getPortfolio,
         IQueryHandler<GetCryptoTaxReportQuery, Result<CryptoTaxReportDto>> getTaxReport,
         IQueryHandler<GetCryptoAlertsQuery, Result<IReadOnlyList<CryptoAlertDto>>> getAlerts,
-        IQueryHandler<GetCryptoSettingsQuery, Result<IReadOnlyList<CryptoApiSettingsDto>>> getSettings)
+        IQueryHandler<GetCryptoSettingsQuery, Result<IReadOnlyList<CryptoApiSettingsDto>>> getSettings,
+        IQueryHandler<GetCryptoMarketDataHubQuery, Result<CryptoMarketDataHubDto>> getMarketDataHub)
     {
         GetMarketOverview = getMarketOverview;
         GetCandles = getCandles;
@@ -147,5 +151,6 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
         GetTaxReport = getTaxReport;
         GetAlerts = getAlerts;
         GetSettings = getSettings;
+        GetMarketDataHub = getMarketDataHub;
     }
 }

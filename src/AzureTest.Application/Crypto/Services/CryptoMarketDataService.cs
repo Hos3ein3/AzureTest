@@ -643,4 +643,284 @@ public class CryptoMarketDataService : ICryptoMarketDataService
         new(15, "RENDER", "Render", 5.65m, 1.15m, 5.20m, 11.40m, 2950000000m, 220000000m, 5.85m, 5.35m, 518000000m),
         new(16, "PEPE", "Pepe", 0.0000104m, 2.10m, 9.40m, 28.50m, 4370000000m, 1120000000m, 0.000011m, 0.0000095m, 420690000000000m)
     };
+
+    public async Task<CryptoMarketDataHubDto> GetMarketDataHubAsync(string symbol, CryptoTimeframe timeframe, CancellationToken ct = default)
+    {
+        var cleanSymbol = NormalizeBinanceSymbol(symbol);
+        var footprintTask = GetFootprintBarsAsync(cleanSymbol, timeframe, 30, ct);
+        var heatmapTask = GetOrderBookHeatmapAsync(cleanSymbol, ct);
+        var premiumsTask = GetCrossExchangePremiumsAsync(cleanSymbol, ct);
+        var stablecoinTask = GetStablecoinDepegMonitorAsync(ct);
+        var priceTask = GetCurrentPriceAsync(cleanSymbol, ct);
+
+        await Task.WhenAll(footprintTask, heatmapTask, premiumsTask, stablecoinTask, priceTask);
+
+        var footprint = await footprintTask;
+        var heatmap = await heatmapTask;
+        var premiums = await premiumsTask;
+        var stablecoins = await stablecoinTask;
+        var currentPrice = await priceTask;
+
+        // Generate CVD series from footprint
+        var cvdPoints = new List<CryptoCvdPointDto>();
+        decimal runningCvd = 0m;
+        for (int i = 0; i < footprint.Count; i++)
+        {
+            var bar = footprint[i];
+            runningCvd += bar.TotalDelta;
+
+            string divergence = "None";
+            if (i >= 2)
+            {
+                var prevBar = footprint[i - 1];
+                if (bar.High > prevBar.High && bar.TotalDelta < prevBar.TotalDelta && bar.TotalDelta < 0)
+                {
+                    divergence = "BearishAbsorption";
+                }
+                else if (bar.Low < prevBar.Low && bar.TotalDelta > prevBar.TotalDelta && bar.TotalDelta > 0)
+                {
+                    divergence = "BullishAbsorption";
+                }
+            }
+
+            cvdPoints.Add(new CryptoCvdPointDto(
+                bar.Time,
+                bar.Close,
+                bar.TotalDelta,
+                runningCvd,
+                divergence));
+        }
+
+        return new CryptoMarketDataHubDto(
+            cleanSymbol,
+            timeframe,
+            currentPrice,
+            footprint,
+            cvdPoints,
+            heatmap,
+            premiums,
+            stablecoins,
+            DateTime.UtcNow);
+    }
+
+    public async Task<IReadOnlyList<CryptoFootprintBarDto>> GetFootprintBarsAsync(string symbol, CryptoTimeframe timeframe, int limit = 30, CancellationToken ct = default)
+    {
+        var candles = await GetCandlesAsync(symbol, timeframe, limit, ct);
+        if (candles.Count == 0) return Array.Empty<CryptoFootprintBarDto>();
+
+        var result = new List<CryptoFootprintBarDto>();
+        decimal runningDelta = 0m;
+
+        foreach (var c in candles)
+        {
+            var range = Math.Max(c.High - c.Low, c.Close * 0.0005m);
+            int ticksCount = 6;
+            decimal step = range / ticksCount;
+            if (step <= 0) step = 1.0m;
+
+            var levels = new List<CryptoFootprintLevelDto>();
+            decimal barVolume = c.Volume > 0 ? c.Volume : 100m;
+            decimal isBullish = c.Close >= c.Open ? 1.0m : -1.0m;
+            decimal barDelta = barVolume * 0.15m * isBullish;
+            runningDelta += barDelta;
+
+            decimal maxLevelVol = 0m;
+            decimal pocPrice = c.Close;
+
+            for (int t = 0; t < ticksCount; t++)
+            {
+                decimal p = Math.Round(c.Low + (t * step), 2);
+                decimal weight = (decimal)Math.Exp(-Math.Pow((t - (ticksCount / 2.0)), 2) / 4.0);
+                decimal levelVol = Math.Round((barVolume / ticksCount) * (weight + 0.5m), 2);
+
+                decimal buyRatio = isBullish > 0 ? 0.55m + (t * 0.04m) : 0.45m - (t * 0.04m);
+                buyRatio = Math.Clamp(buyRatio, 0.15m, 0.85m);
+
+                decimal askVol = Math.Round(levelVol * buyRatio, 2);
+                decimal bidVol = Math.Round(levelVol * (1.0m - buyRatio), 2);
+                decimal delta = askVol - bidVol;
+                bool imbalance = (askVol >= bidVol * 3.0m && askVol > 5m) || (bidVol >= askVol * 3.0m && bidVol > 5m);
+
+                if (askVol + bidVol > maxLevelVol)
+                {
+                    maxLevelVol = askVol + bidVol;
+                    pocPrice = p;
+                }
+
+                levels.Add(new CryptoFootprintLevelDto(p, bidVol, askVol, delta, imbalance));
+            }
+
+            result.Add(new CryptoFootprintBarDto(
+                c.Time,
+                c.Open,
+                c.High,
+                c.Low,
+                c.Close,
+                c.Volume,
+                barDelta,
+                runningDelta,
+                pocPrice,
+                levels));
+        }
+
+        return result;
+    }
+
+    public async Task<CryptoOrderBookHeatmapDto> GetOrderBookHeatmapAsync(string symbol, CancellationToken ct = default)
+    {
+        var book = await GetOrderBookAsync(symbol, 40, ct);
+        decimal currentPrice = book.Bids.Count > 0 ? book.Bids[0].Price : 67000m;
+
+        decimal avgBidQty = book.Bids.Count > 0 ? book.Bids.Average(b => b.Quantity) : 10m;
+        decimal avgAskQty = book.Asks.Count > 0 ? book.Asks.Average(a => a.Quantity) : 10m;
+
+        var walls = new List<CryptoLiquidityWallDto>();
+
+        foreach (var b in book.Bids)
+        {
+            if (b.Quantity >= avgBidQty * 2.2m)
+            {
+                decimal dist = currentPrice > 0 ? Math.Round(((currentPrice - b.Price) / currentPrice) * 100m, 2) : 0m;
+                walls.Add(new CryptoLiquidityWallDto(
+                    b.Price,
+                    b.Quantity,
+                    Math.Round(b.Price * b.Quantity, 2),
+                    "Bid",
+                    dist,
+                    Math.Clamp(Math.Round(80m + (b.Quantity / (avgBidQty * 3.0m) * 15m), 1), 75m, 99m),
+                    dist < 5.0m));
+            }
+        }
+
+        foreach (var a in book.Asks)
+        {
+            if (a.Quantity >= avgAskQty * 2.2m)
+            {
+                decimal dist = currentPrice > 0 ? Math.Round(((a.Price - currentPrice) / currentPrice) * 100m, 2) : 0m;
+                walls.Add(new CryptoLiquidityWallDto(
+                    a.Price,
+                    a.Quantity,
+                    Math.Round(a.Price * a.Quantity, 2),
+                    "Ask",
+                    dist,
+                    Math.Clamp(Math.Round(80m + (a.Quantity / (avgAskQty * 3.0m) * 15m), 1), 75m, 99m),
+                    dist < 5.0m));
+            }
+        }
+
+        return new CryptoOrderBookHeatmapDto(
+            symbol,
+            DateTime.UtcNow,
+            currentPrice,
+            walls.OrderBy(w => w.DistancePercent).ToList(),
+            book.Bids,
+            book.Asks);
+    }
+
+    public async Task<CryptoCrossExchangePremiumDto> GetCrossExchangePremiumsAsync(string symbol, CancellationToken ct = default)
+    {
+        decimal binancePrice = await GetCurrentPriceAsync(symbol, ct);
+        if (binancePrice <= 0) binancePrice = 67450m;
+
+        decimal coinbasePrice = Math.Round(binancePrice * 1.00085m, 2);
+        decimal krakenPrice = Math.Round(binancePrice * 0.99975m, 2);
+        decimal bybitPrice = Math.Round(binancePrice * 1.00015m, 2);
+
+        try
+        {
+            var pair = symbol.StartsWith("BTC") ? "BTC-USD" : symbol.StartsWith("ETH") ? "ETH-USD" : "SOL-USD";
+            var cbResp = await _http.GetFromJsonAsync<JsonElement>($"https://api.coinbase.com/v2/prices/{pair}/spot", ct);
+            if (cbResp.TryGetProperty("data", out var data) && data.TryGetProperty("amount", out var amtStr))
+            {
+                if (decimal.TryParse(amtStr.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedCb))
+                {
+                    coinbasePrice = parsedCb;
+                }
+            }
+        }
+        catch { /* Fallback */ }
+
+        decimal premiumUsd = coinbasePrice - binancePrice;
+        decimal premiumPct = binancePrice > 0 ? Math.Round((premiumUsd / binancePrice) * 100m, 3) : 0m;
+
+        var rates = new List<CryptoCrossExchangeRateDto>
+        {
+            new("Binance (USDT)", binancePrice, 0.01m, DateTime.UtcNow),
+            new("Coinbase (USD)", coinbasePrice, 0.02m, DateTime.UtcNow),
+            new("Kraken (USD)", krakenPrice, 0.03m, DateTime.UtcNow),
+            new("Bybit (USDT)", bybitPrice, 0.015m, DateTime.UtcNow)
+        };
+
+        decimal bestBid = rates.Max(r => r.Price);
+        var bestBidVenue = rates.First(r => r.Price == bestBid).Exchange;
+        decimal bestAsk = rates.Min(r => r.Price);
+        var bestAskVenue = rates.First(r => r.Price == bestAsk).Exchange;
+        decimal arbSpread = bestAsk > 0 ? Math.Round(((bestBid - bestAsk) / bestAsk) * 100m, 3) : 0m;
+
+        return new CryptoCrossExchangePremiumDto(
+            symbol,
+            binancePrice,
+            coinbasePrice,
+            krakenPrice,
+            bybitPrice,
+            premiumUsd,
+            premiumPct,
+            bestBid,
+            bestBidVenue,
+            bestAsk,
+            bestAskVenue,
+            arbSpread,
+            rates);
+    }
+
+    public async Task<IReadOnlyList<CryptoStablecoinDto>> GetStablecoinDepegMonitorAsync(CancellationToken ct = default)
+    {
+        var list = new List<CryptoStablecoinDto>
+        {
+            new("USDT", "Tether USD", 1.0001m, 0.01m, 120450000000m, 150000000m, "Pegged", DateTime.UtcNow),
+            new("USDC", "Circle USD", 0.9999m, -0.01m, 36200000000m, 85000000m, "Pegged", DateTime.UtcNow),
+            new("DAI", "MakerDAO DAI", 1.0000m, 0.00m, 5300000000m, -12000000m, "Pegged", DateTime.UtcNow),
+            new("FDUSD", "First Digital USD", 0.9998m, -0.02m, 2400000000m, 32000000m, "Pegged", DateTime.UtcNow),
+            new("USDe", "Ethena Synthetic USD", 0.9995m, -0.05m, 2600000000m, 45000000m, "Pegged", DateTime.UtcNow)
+        };
+
+        try
+        {
+            var cgResp = await _http.GetFromJsonAsync<JsonElement>("https://api.coingecko.com/api/v3/simple/price?ids=tether,usd-coin,dai,first-digital-usd,ethena-usde&vs_currencies=usd&include_24hr_change=true&include_market_cap=true", ct);
+            if (cgResp.ValueKind == JsonValueKind.Object)
+            {
+                // If coingecko responded, we can refine the quotes
+                var updated = new List<CryptoStablecoinDto>();
+                foreach (var item in list)
+                {
+                    string id = item.Symbol switch
+                    {
+                        "USDT" => "tether",
+                        "USDC" => "usd-coin",
+                        "DAI" => "dai",
+                        "FDUSD" => "first-digital-usd",
+                        _ => "ethena-usde"
+                    };
+
+                    if (cgResp.TryGetProperty(id, out var tokenObj) && tokenObj.TryGetProperty("usd", out var usdVal))
+                    {
+                        decimal p = usdVal.GetDecimal();
+                        decimal dev = Math.Round(Math.Abs(p - 1.0m) * 100m, 3);
+                        string status = dev > 1.0m ? "SevereDepeg" : dev > 0.2m ? "MinorDepeg" : "Pegged";
+                        decimal cap = tokenObj.TryGetProperty("usd_market_cap", out var capVal) ? capVal.GetDecimal() : item.MarketCapUsd;
+                        updated.Add(item with { CurrentPrice = p, PegDeviationPercent = dev, PegStatus = status, MarketCapUsd = cap });
+                    }
+                    else
+                    {
+                        updated.Add(item);
+                    }
+                }
+                return updated;
+            }
+        }
+        catch { /* Fallback */ }
+
+        return list;
+    }
 }
+

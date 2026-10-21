@@ -1,0 +1,439 @@
+@model CryptoMarketDataHubDto
+@using AzureTest.Domain.Entities.Crypto.Enums
+@{
+    var symbol = Model?.Symbol ?? "BTCUSDT";
+    var timeframe = Model?.Timeframe ?? CryptoTimeframe.H1;
+    ViewData["Title"] = $"{symbol} Order Flow & Advanced Market Data ({timeframe})";
+
+    var currentPrice = Model?.CurrentPrice ?? 67450m;
+    var premiums = Model?.Premiums;
+    var stablecoins = Model?.Stablecoins ?? Array.Empty<CryptoStablecoinDto>();
+    var footprint = Model?.FootprintBars ?? Array.Empty<CryptoFootprintBarDto>();
+    var cvd = Model?.CvdPoints ?? Array.Empty<CryptoCvdPointDto>();
+    var heatmap = Model?.Heatmap;
+}
+
+<div class="space-y-6">
+    <!-- Top Bar: Symbol, Live Price, Timeframes, and Navigation -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center gap-3">
+            <a asp-action="Index" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors" title="Back to Crypto Markets">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div class="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-lg font-bold">
+                <i class="fa-solid fa-water"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2.5">
+                    <h1 class="text-xl font-black text-slate-900 dark:text-white">@symbol Order Flow &amp; Market Data Hub</h1>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">@timeframe</span>
+                    <span class="text-sm font-mono font-bold text-slate-800 dark:text-slate-200">
+                        $@currentPrice.ToString("N2")
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-3xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                        INSTITUTIONAL L2
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Cumulative Volume Delta (CVD), Footprint clusters, Order Book Heatmap, Coinbase Premium &amp; Stablecoin Depeg Radar
+                </p>
+            </div>
+        </div>
+
+        <!-- Symbol Switcher Tabs -->
+        <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-2xs font-bold text-slate-400 uppercase tracking-wider mr-1">Coins:</span>
+            @foreach (var s in new[] { "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "DOGEUSDT", "XRPUSDT" })
+            {
+                <a asp-action="OrderFlow" asp-route-symbol="@s" asp-route-timeframe="@timeframe"
+                   class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors @(s == symbol ? "bg-amber-600 text-white shadow-xs" : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200")">
+                    @s.Replace("USDT", "")
+                </a>
+            }
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex items-center gap-2">
+            <a asp-action="Chart" asp-route-symbol="@symbol" asp-route-timeframe="@timeframe" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-chart-candlestick mr-1"></i> Pro Chart
+            </a>
+            <a asp-action="OrderBook" asp-route-symbol="@symbol" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-list-ol mr-1"></i> Depth
+            </a>
+            <a asp-action="Futures" asp-route-symbol="@symbol" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-gauge-high mr-1"></i> Futures
+            </a>
+            <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" asp-route-symbol="@symbol" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-bolt"></i> Trade
+            </a>
+        </div>
+    </div>
+
+    <!-- Metric Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Coinbase Premium -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Coinbase Premium Index</span>
+                <span class="p-2 rounded-xl bg-blue-500/10 text-blue-500 text-xs"><i class="fa-solid fa-scale-balanced"></i></span>
+            </div>
+            @{
+                var cbPremPct = premiums?.CoinbasePremiumPercent ?? 0m;
+                var cbPremUsd = premiums?.CoinbasePremiumUsd ?? 0m;
+                var isCbBullish = cbPremPct >= 0;
+            }
+            <div class="text-2xl font-black font-mono @(isCbBullish ? "text-emerald-500" : "text-rose-500")">
+                @(isCbBullish ? "+" : "")@cbPremPct.ToString("F3")%
+            </div>
+            <div class="text-2xs text-slate-400 flex items-center justify-between">
+                <span>Spread: $@cbPremUsd.ToString("N2")</span>
+                <span class="px-2 py-0.5 rounded-md font-bold @(isCbBullish ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300")">
+                    @(isCbBullish ? "US Spot Accumulation" : "US Spot Distribution")
+                </span>
+            </div>
+        </div>
+
+        <!-- Cross-Exchange Arbitrage Spread -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Max Cross-Venue Spread</span>
+                <span class="p-2 rounded-xl bg-purple-500/10 text-purple-500 text-xs"><i class="fa-solid fa-arrows-split-up-and-left"></i></span>
+            </div>
+            <div class="text-2xl font-black font-mono text-purple-600 dark:text-purple-400">
+                @((premiums?.MaxArbitragePercent ?? 0.05m).ToString("F3"))%
+            </div>
+            <div class="text-2xs text-slate-400 flex items-center justify-between">
+                <span>Buy @(premiums?.BestAskExchange ?? "Binance")</span>
+                <span>Sell @(premiums?.BestBidExchange ?? "Coinbase")</span>
+            </div>
+        </div>
+
+        <!-- Cumulative Volume Delta (CVD) Trend -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Net Cumulative Delta</span>
+                <span class="p-2 rounded-xl bg-amber-500/10 text-amber-500 text-xs"><i class="fa-solid fa-chart-line"></i></span>
+            </div>
+            @{
+                var latestCvd = cvd.LastOrDefault()?.CumulativeDelta ?? 0m;
+                var isCvdBullish = latestCvd >= 0;
+            }
+            <div class="text-2xl font-black font-mono @(isCvdBullish ? "text-emerald-500" : "text-rose-500")">
+                @(isCvdBullish ? "+" : "")@latestCvd.ToString("N1")
+            </div>
+            <div class="text-2xs text-slate-400">
+                Aggressive Taker Buy/Sell imbalance across @footprint.Count bars
+            </div>
+        </div>
+
+        <!-- Stablecoin Peg Health -->
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Stablecoin Depeg Radar</span>
+                <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 text-xs"><i class="fa-solid fa-shield-halved"></i></span>
+            </div>
+            @{
+                var depeggedCoins = stablecoins.Where(s => s.PegStatus != "Pegged").ToList();
+            }
+            <div class="text-2xl font-black font-mono @(depeggedCoins.Count == 0 ? "text-emerald-500" : "text-rose-500")">
+                @(depeggedCoins.Count == 0 ? "ALL PEGGED" : $"{depeggedCoins.Count} ALERT(S)")
+            </div>
+            <div class="text-2xs text-slate-400 flex items-center justify-between">
+                <span>Tracked: USDT, USDC, DAI, FDUSD, USDe</span>
+                <span class="px-2 py-0.5 rounded-md font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                    Safe Range
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 1: Footprint (Cluster) Chart & Diagonal Imbalances -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-4">
+            <div>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-cubes-stacked text-amber-500"></i> Footprint (Cluster) Order Flow Matrix
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Deconstructs every candle into executed volume at price. Highlights <strong>300% diagonal buyer/seller imbalances</strong> and <strong>Point of Control (POC)</strong> volume magnets.
+                </p>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Aggressive Buy Imbalance</span>
+                <span class="flex items-center gap-1.5 ml-2"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> Aggressive Sell Imbalance</span>
+                <span class="flex items-center gap-1.5 ml-2"><span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span> Point of Control (POC)</span>
+            </div>
+        </div>
+
+        <!-- Footprint Bars Horizontal Scroll Stream -->
+        <div class="overflow-x-auto pb-2">
+            <div class="flex gap-4 min-w-max">
+                @foreach (var bar in footprint.TakeLast(8))
+                {
+                    var isBullish = bar.Close >= bar.Open;
+                    <div class="w-56 p-3.5 rounded-2xl border @(isBullish ? "border-emerald-300 dark:border-emerald-800/60 bg-emerald-50/20" : "border-rose-300 dark:border-rose-800/60 bg-rose-50/20") space-y-2.5">
+                        <div class="flex items-center justify-between text-2xs font-mono">
+                            <span class="font-bold text-slate-700 dark:text-slate-300">@bar.Time.ToString("HH:mm")</span>
+                            <span class="font-bold @(isBullish ? "text-emerald-600" : "text-rose-600")">
+                                Delta: @(bar.TotalDelta >= 0 ? "+" : "")@bar.TotalDelta.ToString("N1")
+                            </span>
+                        </div>
+                        <div class="text-3xs text-slate-400 flex justify-between">
+                            <span>Vol: @bar.Volume.ToString("N0")</span>
+                            <span>POC: $@bar.PocPrice.ToString("N1")</span>
+                        </div>
+
+                        <!-- Price Levels Cluster Ladder -->
+                        <div class="space-y-1 font-mono text-3xs">
+                            <div class="grid grid-cols-3 text-center font-bold text-slate-400 border-b border-slate-200 dark:border-slate-700 pb-1">
+                                <span>Bid Vol</span>
+                                <span>Price</span>
+                                <span>Ask Vol</span>
+                            </div>
+                            @foreach (var lvl in bar.Levels.OrderByDescending(l => l.Price))
+                            {
+                                var isPoc = lvl.Price == bar.PocPrice;
+                                <div class="grid grid-cols-3 items-center py-0.5 px-1 rounded @(isPoc ? "bg-amber-100/70 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 font-bold" : "")">
+                                    <span class="text-left @(lvl.BidVolume > lvl.AskVolume * 2 ? "text-rose-600 font-bold" : "text-slate-500")">
+                                        @lvl.BidVolume.ToString("F1")
+                                    </span>
+                                    <span class="text-center font-semibold @(isPoc ? "text-amber-800 dark:text-amber-200" : "text-slate-700 dark:text-slate-300")">
+                                        $@lvl.Price.ToString("N0")
+                                    </span>
+                                    <span class="text-right @(lvl.AskVolume > lvl.BidVolume * 2 ? "text-emerald-600 font-bold" : "text-slate-500")">
+                                        @lvl.AskVolume.ToString("F1")
+                                        @if (lvl.HasImbalance)
+                                        {
+                                            <span class="ml-0.5 text-4xs px-1 py-0.2 rounded @(lvl.AskVolume > lvl.BidVolume ? "bg-emerald-500 text-white" : "bg-rose-500 text-white")">!</span>
+                                        }
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Cumulative Volume Delta (CVD) & Delta Divergence Tracker -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-4">
+            <div>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-wave-square text-indigo-500"></i> Cumulative Volume Delta (CVD) &amp; Absorption Radar
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Detects hidden institutional limit absorption when aggressive market buyers/sellers are absorbed by passive liquidity walls.
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                    <i class="fa-solid fa-magnet mr-1"></i> Absorption Divergence Filter Active
+                </span>
+            </div>
+        </div>
+
+        <!-- CVD Table and Divergence Signals -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+                <thead class="bg-slate-50 dark:bg-slate-900 text-slate-500 text-2xs uppercase">
+                    <tr>
+                        <th class="py-2.5 px-3">Time</th>
+                        <th class="py-2.5 px-3">Close Price</th>
+                        <th class="py-2.5 px-3">Bar Delta (Ask &minus; Bid)</th>
+                        <th class="py-2.5 px-3">Cumulative Delta (CVD)</th>
+                        <th class="py-2.5 px-3">Institutional Divergence Signal</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    @foreach (var pt in cvd.TakeLast(10))
+                    {
+                        var isDeltaPos = pt.VolumeDelta >= 0;
+                        <tr>
+                            <td class="py-2.5 px-3 text-slate-600 dark:text-slate-400">@pt.Time.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td class="py-2.5 px-3 font-bold text-slate-800 dark:text-slate-200">$@pt.Price.ToString("N2")</td>
+                            <td class="py-2.5 px-3 font-bold @(isDeltaPos ? "text-emerald-500" : "text-rose-500")">
+                                @(isDeltaPos ? "+" : "")@pt.VolumeDelta.ToString("N1")
+                            </td>
+                            <td class="py-2.5 px-3 font-bold @(pt.CumulativeDelta >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                @(pt.CumulativeDelta >= 0 ? "+" : "")@pt.CumulativeDelta.ToString("N1")
+                            </td>
+                            <td class="py-2.5 px-3">
+                                @if (pt.Divergence == "BullishAbsorption")
+                                {
+                                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 animate-pulse">
+                                        <i class="fa-solid fa-arrow-trend-up mr-1"></i> Bullish Absorption (Smart Money Buying Dip)
+                                    </span>
+                                }
+                                else if (pt.Divergence == "BearishAbsorption")
+                                {
+                                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 animate-pulse">
+                                        <i class="fa-solid fa-arrow-trend-down mr-1"></i> Bearish Absorption (Smart Money Selling Top)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-slate-400 text-3xs font-sans">In-Sync Delta</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section 3 & 4: Order Book Heatmap Liquidity Walls & Cross-Exchange Premiums -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Order Book Heatmap & Liquidity Walls -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-shield text-emerald-500"></i> Resting Liquidity Walls &amp; Spoof Radar
+                </h3>
+                <span class="text-xs text-slate-400">Order Book Heatmap</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Large resting limit orders that create psychological support or resistance barriers.
+            </p>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead class="bg-slate-50 dark:bg-slate-900 text-slate-500 text-2xs uppercase">
+                        <tr>
+                            <th class="py-2 px-2.5">Side</th>
+                            <th class="py-2 px-2.5">Price</th>
+                            <th class="py-2 px-2.5">Quantity</th>
+                            <th class="py-2 px-2.5">Total USD</th>
+                            <th class="py-2 px-2.5">Distance</th>
+                            <th class="py-2 px-2.5">Authenticity</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        @foreach (var wall in heatmap?.Walls ?? Array.Empty<CryptoLiquidityWallDto>())
+                        {
+                            var isBid = wall.Side == "Bid";
+                            <tr>
+                                <td class="py-2 px-2.5">
+                                    <span class="px-1.5 py-0.5 rounded text-3xs font-bold @(isBid ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700")">
+                                        @wall.Side.ToUpper() WALL
+                                    </span>
+                                </td>
+                                <td class="py-2 px-2.5 font-bold @(isBid ? "text-emerald-500" : "text-rose-500")">$@wall.Price.ToString("N2")</td>
+                                <td class="py-2 px-2.5 text-slate-700 dark:text-slate-300">@wall.Quantity.ToString("N2")</td>
+                                <td class="py-2 px-2.5 text-slate-500">$@wall.TotalUsd.ToString("N0")</td>
+                                <td class="py-2 px-2.5 text-slate-500">@wall.DistancePercent.ToString("F2")%</td>
+                                <td class="py-2 px-2.5">
+                                    @if (wall.IsAuthentic)
+                                    {
+                                        <span class="text-emerald-600 font-sans text-3xs font-bold"><i class="fa-solid fa-check mr-1"></i>Authentic</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-amber-500 font-sans text-3xs font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Spoof Risk</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Cross-Exchange Arbitrage & Premiums -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-split-up-and-left text-blue-500"></i> Cross-Exchange Price Comparison
+                </h3>
+                <span class="text-xs text-slate-400">Live Multi-Venue Feed</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Monitors price differences across centralized exchanges to reveal US institutional flow and spatial arbitrage.
+            </p>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead class="bg-slate-50 dark:bg-slate-900 text-slate-500 text-2xs uppercase">
+                        <tr>
+                            <th class="py-2 px-2.5">Exchange / Quote</th>
+                            <th class="py-2 px-2.5">Live Price</th>
+                            <th class="py-2 px-2.5">Spread vs Binance</th>
+                            <th class="py-2 px-2.5">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        @foreach (var rate in premiums?.Rates ?? Array.Empty<CryptoCrossExchangeRateDto>())
+                        {
+                            var diff = rate.Price - (premiums?.BinancePrice ?? rate.Price);
+                            var diffPct = (premiums?.BinancePrice ?? 1m) > 0 ? (diff / premiums!.BinancePrice) * 100m : 0m;
+                            <tr>
+                                <td class="py-2.5 px-2.5 font-bold text-slate-800 dark:text-slate-200">@rate.Exchange</td>
+                                <td class="py-2.5 px-2.5 font-bold font-mono">$@rate.Price.ToString("N2")</td>
+                                <td class="py-2.5 px-2.5 font-mono @(diff >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                    @(diff >= 0 ? "+" : "")$@diff.ToString("N2") (@(diff >= 0 ? "+" : "")@diffPct.ToString("F3")%)
+                                </td>
+                                <td class="py-2.5 px-2.5">
+                                    <span class="px-2 py-0.5 rounded text-3xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                        <i class="fa-solid fa-signal mr-1 text-emerald-500"></i>Active Feed
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-2xs text-blue-900 dark:text-blue-300">
+                <i class="fa-solid fa-circle-info mr-1 text-blue-600"></i>
+                <strong>Coinbase Premium Analysis:</strong> A positive Coinbase Premium indicates aggressive US institutional accumulation into spot exchange-traded funds. A negative premium indicates US institutional selling.
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 5: Stablecoin Supply & Depeg Radar -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3">
+            <div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-shield-heart text-emerald-500"></i> Stablecoin Supply &amp; Automated Depeg Alert Radar
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Real-time valuation of major USD stablecoins. Automated alert fires if peg deviation exceeds &plusmn;0.20%.
+                </p>
+            </div>
+            <span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                <i class="fa-solid fa-satellite-dish mr-1"></i> Live Peg Monitor
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            @foreach (var coin in stablecoins)
+            {
+                var isPegged = coin.PegStatus == "Pegged";
+                <div class="p-4 rounded-xl border @(isPegged ? "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800" : "border-rose-400 dark:border-rose-800 bg-rose-50/20") space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-sm text-slate-900 dark:text-white">@coin.Symbol</span>
+                        <span class="px-2 py-0.5 rounded text-3xs font-bold @(isPegged ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 animate-pulse")">
+                            @coin.PegStatus.ToUpper()
+                        </span>
+                    </div>
+                    <div class="text-xs text-slate-400">@coin.Name</div>
+                    <div class="text-lg font-bold font-mono @(isPegged ? "text-slate-900 dark:text-white" : "text-rose-500")">
+                        $@coin.CurrentPrice.ToString("F4")
+                    </div>
+                    <div class="text-2xs text-slate-500 dark:text-slate-400">
+                        Deviation: <strong class="@(coin.PegDeviationPercent > 0.2m ? "text-rose-500" : "text-slate-600 dark:text-slate-300")">@coin.PegDeviationPercent.ToString("F2")%</strong>
+                    </div>
+                    <div class="text-3xs text-slate-400 border-t border-slate-100 dark:border-slate-700 pt-1.5 flex justify-between">
+                        <span>Cap: $@((coin.MarketCapUsd / 1000000000m).ToString("N1"))B</span>
+                        <span class="@(coin.Supply24hChangeUsd >= 0 ? "text-emerald-600" : "text-rose-600")">
+                            @(coin.Supply24hChangeUsd >= 0 ? "+" : "")$@((coin.Supply24hChangeUsd / 1000000m).ToString("N0"))M
+                        </span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

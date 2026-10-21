@@ -81,7 +81,95 @@ public sealed record CryptoMarketOverviewDto(
     string SentimentLabel,
     DateTime LastUpdatedUtc);
 
+// ── Advanced Market Data & Order Flow DTOs ──────────────────────────────────
+
+public sealed record CryptoFootprintLevelDto(
+    decimal Price,
+    decimal BidVolume,
+    decimal AskVolume,
+    decimal Delta,
+    bool HasImbalance);
+
+public sealed record CryptoFootprintBarDto(
+    DateTime Time,
+    decimal Open,
+    decimal High,
+    decimal Low,
+    decimal Close,
+    decimal Volume,
+    decimal TotalDelta,
+    decimal CumulativeDelta,
+    decimal PocPrice,
+    IReadOnlyList<CryptoFootprintLevelDto> Levels);
+
+public sealed record CryptoCvdPointDto(
+    DateTime Time,
+    decimal Price,
+    decimal VolumeDelta,
+    decimal CumulativeDelta,
+    string Divergence);
+
+public sealed record CryptoLiquidityWallDto(
+    decimal Price,
+    decimal Quantity,
+    decimal TotalUsd,
+    string Side,
+    decimal DistancePercent,
+    decimal PersistencePercent,
+    bool IsAuthentic);
+
+public sealed record CryptoOrderBookHeatmapDto(
+    string Symbol,
+    DateTime Timestamp,
+    decimal CurrentPrice,
+    IReadOnlyList<CryptoLiquidityWallDto> Walls,
+    IReadOnlyList<CryptoOrderBookEntryDto> BidDistribution,
+    IReadOnlyList<CryptoOrderBookEntryDto> AskDistribution);
+
+public sealed record CryptoCrossExchangeRateDto(
+    string Exchange,
+    decimal Price,
+    decimal SpreadPercent,
+    DateTime LastUpdate);
+
+public sealed record CryptoCrossExchangePremiumDto(
+    string Symbol,
+    decimal BinancePrice,
+    decimal CoinbasePrice,
+    decimal KrakenPrice,
+    decimal BybitPrice,
+    decimal CoinbasePremiumUsd,
+    decimal CoinbasePremiumPercent,
+    decimal BestBid,
+    string BestBidExchange,
+    decimal BestAsk,
+    string BestAskExchange,
+    decimal MaxArbitragePercent,
+    IReadOnlyList<CryptoCrossExchangeRateDto> Rates);
+
+public sealed record CryptoStablecoinDto(
+    string Symbol,
+    string Name,
+    decimal CurrentPrice,
+    decimal PegDeviationPercent,
+    decimal MarketCapUsd,
+    decimal Supply24hChangeUsd,
+    string PegStatus,
+    DateTime LastUpdatedUtc);
+
+public sealed record CryptoMarketDataHubDto(
+    string Symbol,
+    CryptoTimeframe Timeframe,
+    decimal CurrentPrice,
+    IReadOnlyList<CryptoFootprintBarDto> FootprintBars,
+    IReadOnlyList<CryptoCvdPointDto> CvdPoints,
+    CryptoOrderBookHeatmapDto Heatmap,
+    CryptoCrossExchangePremiumDto Premiums,
+    IReadOnlyList<CryptoStablecoinDto> Stablecoins,
+    DateTime LastUpdatedUtc);
+
 // ── Analysis DTOs ───────────────────────────────────────────────────────────
+
 
 public sealed record CryptoTechnicalIndicatorsDto(
     string Symbol,

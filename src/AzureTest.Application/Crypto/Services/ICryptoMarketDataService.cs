@@ -16,4 +16,10 @@ public interface ICryptoMarketDataService
     Task<CryptoSentimentDto> GetSentimentAsync(CancellationToken ct = default);
     Task<IReadOnlyList<CryptoWhaleAlertDto>> GetWhaleAlertsAsync(CancellationToken ct = default);
     Task<decimal> GetCurrentPriceAsync(string symbol, CancellationToken ct = default);
+    Task<CryptoMarketDataHubDto> GetMarketDataHubAsync(string symbol, CryptoTimeframe timeframe, CancellationToken ct = default);
+    Task<IReadOnlyList<CryptoFootprintBarDto>> GetFootprintBarsAsync(string symbol, CryptoTimeframe timeframe, int limit = 30, CancellationToken ct = default);
+    Task<CryptoOrderBookHeatmapDto> GetOrderBookHeatmapAsync(string symbol, CancellationToken ct = default);
+    Task<CryptoCrossExchangePremiumDto> GetCrossExchangePremiumsAsync(string symbol, CancellationToken ct = default);
+    Task<IReadOnlyList<CryptoStablecoinDto>> GetStablecoinDepegMonitorAsync(CancellationToken ct = default);
 }
+
