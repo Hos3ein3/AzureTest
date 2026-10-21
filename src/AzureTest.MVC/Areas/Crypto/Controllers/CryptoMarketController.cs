@@ -4,11 +4,14 @@ using System.Threading.Tasks;
 using AzureTest.Application.Crypto;
 using AzureTest.Application.Crypto.Queries.GetCryptoCandles;
 using AzureTest.Application.Crypto.Queries.GetCryptoDerivativesHub;
+using AzureTest.Application.Crypto.Queries.GetCryptoDexScreener;
+using AzureTest.Application.Crypto.Queries.GetCryptoExchangeFlow;
 using AzureTest.Application.Crypto.Queries.GetCryptoFuturesFunding;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketDataHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketOverview;
 using AzureTest.Application.Crypto.Queries.GetCryptoOnChainHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoOrderBook;
+using AzureTest.Application.Crypto.Queries.GetCryptoTokenUnlocks;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Contracts.DTOs.Crypto;
 using AzureTest.Domain.Entities.Crypto.Enums;
@@ -99,6 +102,33 @@ public class CryptoMarketController : Controller
     {
         var result = await _queries.GetOnChainHub.HandleAsync(new GetCryptoOnChainHubQuery(), cancellationToken);
         return result.ToView(this, viewName: "OnChain");
+    }
+
+    [HttpGet]
+    [DisplayName("Exchange Net Flow Analysis")]
+    [Description("3.1 Exchange Net Flow Analysis: Inflows, outflows, net reserves across major CEXs, whale deposits, and miner flows.")]
+    public async Task<IActionResult> ExchangeFlow(CancellationToken cancellationToken = default)
+    {
+        var result = await _queries.GetExchangeFlow.HandleAsync(new GetCryptoExchangeFlowQuery(), cancellationToken);
+        return result.ToView(this, viewName: "ExchangeFlow");
+    }
+
+    [HttpGet]
+    [DisplayName("Token Unlocks & Dilution Pressure")]
+    [Description("3.2 Token Unlocks Calendar & Dilution Pressure: Cliff vs. linear vesting schedules, dilution shock ratings, and hedging strategies.")]
+    public async Task<IActionResult> TokenUnlocks(CancellationToken cancellationToken = default)
+    {
+        var result = await _queries.GetTokenUnlocks.HandleAsync(new GetCryptoTokenUnlocksQuery(), cancellationToken);
+        return result.ToView(this, viewName: "TokenUnlocks");
+    }
+
+    [HttpGet]
+    [DisplayName("DEX Liquidity & Rugpull Detector")]
+    [Description("3.3 DEX Liquidity & New Pool Rugpull: Automated smart contract audits, honeypot detection, LP lock verification, and capital efficiency.")]
+    public async Task<IActionResult> DexScreener(CancellationToken cancellationToken = default)
+    {
+        var result = await _queries.GetDexScreener.HandleAsync(new GetCryptoDexScreenerQuery(), cancellationToken);
+        return result.ToView(this, viewName: "DexScreener");
     }
 }
 

@@ -1,0 +1,256 @@
+@model CryptoDexScreenerHubDto
+@{
+    ViewData["Title"] = "3.3 DEX Liquidity & New Pool Rugpull Detector";
+    var pools = Model?.Pools ?? Array.Empty<CryptoNewDexPoolDto>();
+    var newLaunches = Model?.NewLaunchesRadar ?? Array.Empty<CryptoNewDexPoolDto>();
+}
+
+<div class="space-y-6">
+    <!-- Header with Sub-Feature Navigation Bar -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center gap-3">
+            <a asp-action="OnChain" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors" title="Back to On-Chain Hub">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div class="w-11 h-11 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center text-lg font-bold">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2.5">
+                    <h1 class="text-xl font-black text-slate-900 dark:text-white">DEX Liquidity &amp; New Pool Rugpull Detector</h1>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                        FEATURE 3.3
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-3xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                        HONEYPOT SHIELD
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Smart contract safety audits, honeypot tax detection, LP lock verification &amp; DEX capital efficiency across Uniswap, Raydium &amp; Aerodrome
+                </p>
+            </div>
+        </div>
+
+        <!-- Sub-Feature Switcher Tabs -->
+        <div class="flex flex-wrap items-center gap-2">
+            <a asp-action="OnChain" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-cubes-stacked mr-1"></i> Hub Overview
+            </a>
+            <a asp-action="ExchangeFlow" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-building-columns mr-1 text-emerald-500"></i> 3.1 Net Flows
+            </a>
+            <a asp-action="TokenUnlocks" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-calendar-xmark mr-1 text-rose-500"></i> 3.2 Token Unlocks
+            </a>
+            <a asp-action="DexScreener" class="px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-xs transition-colors">
+                <i class="fa-solid fa-shield-halved mr-1"></i> 3.3 DEX Rugpull
+            </a>
+            <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-bolt mr-1 text-amber-400"></i> Trade
+            </a>
+        </div>
+    </div>
+
+    <!-- 4 KPI Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 24h DEX Volume -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between text-2xs font-bold uppercase tracking-wider text-slate-400">
+                <span>DEX 24h Volume</span>
+                <i class="fa-solid fa-water text-indigo-500"></i>
+            </div>
+            <div class="text-xl font-black font-mono text-indigo-600 dark:text-indigo-400">
+                $@((Model?.TotalDexVolume24hUsd ?? 0m) / 1000000m).ToString("N0")M USD
+            </div>
+            <p class="text-3xs text-slate-400">Cross-chain DEX liquidity volume</p>
+        </div>
+
+        <!-- Pools Audited -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between text-2xs font-bold uppercase tracking-wider text-slate-400">
+                <span>Pools Audited</span>
+                <i class="fa-solid fa-magnifying-glass text-blue-500"></i>
+            </div>
+            <div class="text-xl font-black font-mono text-slate-800 dark:text-white">
+                @(Model?.TotalPoolsAudited ?? 0) Pools
+            </div>
+            <p class="text-3xs text-slate-400">Automated static bytecode analysis executed</p>
+        </div>
+
+        <!-- Honeypots Blocked -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between text-2xs font-bold uppercase tracking-wider text-slate-400">
+                <span>Honeypots Blocked</span>
+                <i class="fa-solid fa-ban text-rose-500"></i>
+            </div>
+            <div class="text-xl font-black font-mono text-rose-600">
+                @(Model?.HoneypotsBlockedCount ?? 0) Scams Flagged
+            </div>
+            <p class="text-3xs text-slate-400">Malicious tokens with 99% sell tax or unverified LP</p>
+        </div>
+
+        <!-- Audit Engine Status -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between text-2xs font-bold uppercase tracking-wider text-slate-400">
+                <span>Rugpull Radar Engine</span>
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+            </div>
+            <div class="text-xl font-black font-mono text-emerald-500">
+                100% OPERATIONAL
+            </div>
+            <p class="text-3xs text-slate-400">Solana Raydium, Uniswap v3 &amp; Aerodrome Base</p>
+        </div>
+    </div>
+
+    <!-- Section A: New Pool Launch Radar & Live Rugpull Honeypot Audits -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-radar text-rose-500"></i> New Pool Launch Radar &amp; Real-Time Rugpull Honeypot Audits
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Instant security analysis for newly launched pools (&lt; 6 hours old). Flags hidden taxes, unlocked LP, and serial rugpull deployers.
+                </p>
+            </div>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300">
+                <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                HONEYPOT AUDIT ACTIVE
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @foreach (var launch in newLaunches)
+            {
+                var audit = launch.Audit;
+                var isSafe = audit.SafetyScore >= 90;
+                var isHoneypot = audit.Verdict.Contains("HONEYPOT") || audit.Verdict.Contains("DANGEROUS");
+                <div class="p-4 rounded-2xl border @(isHoneypot ? "border-rose-500/40 bg-rose-500/5" : "border-emerald-500/30 bg-emerald-500/5") space-y-3">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-1.5 py-0.5 rounded text-2xs font-bold bg-slate-200 dark:bg-slate-700 font-mono">@launch.Chain</span>
+                                <h3 class="font-black text-sm text-slate-800 dark:text-white">@launch.Pair</h3>
+                                <span class="text-3xs font-mono text-slate-400">(@launch.AgeMinutes mins ago)</span>
+                            </div>
+                            <div class="text-2xs text-slate-500 font-sans mt-0.5">
+                                @audit.TokenName • Venue: <strong class="text-slate-700 dark:text-slate-300">@launch.Dex</strong>
+                            </div>
+                        </div>
+
+                        <span class="px-2.5 py-1 rounded-full text-3xs font-bold font-sans @(isHoneypot ? "bg-rose-600 text-white animate-pulse" : "bg-emerald-600 text-white")">
+                            @audit.Verdict
+                        </span>
+                    </div>
+
+                    <!-- Audit Metrics Matrix -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-3xs font-mono pt-2 border-t border-slate-200 dark:border-slate-700">
+                        <div class="p-2 rounded-lg bg-white/60 dark:bg-slate-800/60">
+                            <span class="font-sans text-slate-400 block">Buy / Sell Tax</span>
+                            <span class="font-bold @(audit.SellTaxPercent > 10 ? "text-rose-600 font-black" : "text-emerald-600")">
+                                @audit.BuyTaxPercent.ToString("F0")% / @audit.SellTaxPercent.ToString("F0")%
+                            </span>
+                        </div>
+                        <div class="p-2 rounded-lg bg-white/60 dark:bg-slate-800/60">
+                            <span class="font-sans text-slate-400 block">Mint Function</span>
+                            <span class="font-bold @(audit.IsMintRevoked ? "text-emerald-600" : "text-rose-600")">
+                                @(audit.IsMintRevoked ? "REVOKED" : "DANGEROUS")
+                            </span>
+                        </div>
+                        <div class="p-2 rounded-lg bg-white/60 dark:bg-slate-800/60">
+                            <span class="font-sans text-slate-400 block">LP Status</span>
+                            <span class="font-bold @(audit.IsLiquidityLocked ? "text-emerald-600" : "text-rose-600")">
+                                @audit.LiquidityLockedPercent.ToString("F0")% (@audit.LockDurationText)
+                            </span>
+                        </div>
+                        <div class="p-2 rounded-lg bg-white/60 dark:bg-slate-800/60">
+                            <span class="font-sans text-slate-400 block">Safety Score</span>
+                            <span class="font-bold @(isSafe ? "text-emerald-600" : "text-rose-600 font-black")">
+                                @audit.SafetyScore.ToString("F0")/100
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-3xs font-mono text-slate-400 pt-1">
+                        <span>Deployer Past Rugpulls: <strong class="@(audit.DeployerPastRugpullsCount > 0 ? "text-rose-600 font-bold" : "text-slate-600 dark:text-slate-300")">@audit.DeployerPastRugpullsCount</strong></span>
+                        <span>Contract: <code class="text-slate-600 dark:text-slate-300 select-all">@audit.ContractAddress</code></span>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Section B: Verified High-Liquidity DEX Pools Screener -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-split-up-and-left text-indigo-500"></i> Verified Blue-Chip DEX Pools Screener
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Capital efficiency (Vol/TVL ratio), unique buyer vs. seller distribution &amp; automated contract audits
+                </p>
+            </div>
+            <span class="px-2.5 py-1 rounded text-2xs font-mono font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+                CAPITAL EFFICIENCY RADAR
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+                <thead class="text-2xs text-slate-400 uppercase font-sans border-b border-slate-100 dark:border-slate-700">
+                    <tr>
+                        <th class="py-3 px-3">Pair &amp; Chain</th>
+                        <th class="py-3 px-3">DEX Venue</th>
+                        <th class="py-3 px-3 text-right">Price (USD)</th>
+                        <th class="py-3 px-3 text-right">Liquidity (TVL)</th>
+                        <th class="py-3 px-3 text-right">24h Volume</th>
+                        <th class="py-3 px-3 text-right">Vol / TVL</th>
+                        <th class="py-3 px-3 text-right">Unique Buyers / Sellers</th>
+                        <th class="py-3 px-3 text-right">Safety Audit</th>
+                        <th class="py-3 px-3 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @foreach (var p in pools)
+                    {
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-750 transition-colors">
+                            <td class="py-3 px-3 font-sans font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 font-mono text-2xs">@p.Chain</span>
+                                @p.Pair
+                            </td>
+                            <td class="py-3 px-3 font-sans text-slate-600 dark:text-slate-300">
+                                @p.Dex
+                            </td>
+                            <td class="py-3 px-3 text-right font-bold text-slate-800 dark:text-white">
+                                $@(p.PriceUsd < 0.01m ? p.PriceUsd.ToString("0.00000000") : p.PriceUsd.ToString("N4"))
+                            </td>
+                            <td class="py-3 px-3 text-right font-bold text-slate-700 dark:text-slate-200">
+                                $@((p.CurrentLiquidityUsd / 1000000m).ToString("N1"))M
+                            </td>
+                            <td class="py-3 px-3 text-right font-bold text-indigo-600 dark:text-indigo-400">
+                                $@((p.Volume24hUsd / 1000000m).ToString("N1"))M
+                            </td>
+                            <td class="py-3 px-3 text-right font-bold text-slate-700 dark:text-slate-300">
+                                @p.VolumeToTvl.ToString("F2")x
+                            </td>
+                            <td class="py-3 px-3 text-right text-slate-600 dark:text-slate-300">
+                                @p.UniqueBuyers24h / @p.UniqueSellers24h (@p.BuySellRatio.ToString("F2") ratio)
+                            </td>
+                            <td class="py-3 px-3 text-right font-sans">
+                                <span class="px-2 py-0.5 rounded text-3xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                    <i class="fa-solid fa-shield-check mr-0.5"></i> @p.Audit.SafetyScore.ToString("F0")/100 SAFE
+                                </span>
+                            </td>
+                            <td class="py-3 px-3 text-right font-sans">
+                                <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" class="px-2.5 py-1 rounded-lg text-3xs font-bold bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 transition-colors">
+                                    Trade
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

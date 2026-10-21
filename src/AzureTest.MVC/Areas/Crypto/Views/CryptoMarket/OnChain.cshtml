@@ -42,17 +42,23 @@
 
         <!-- Quick Switcher Navigation Links -->
         <div class="flex flex-wrap items-center gap-2">
+            <a asp-action="ExchangeFlow" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-building-columns mr-1 text-emerald-500"></i> 3.1 Net Flows
+            </a>
+            <a asp-action="TokenUnlocks" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-calendar-xmark mr-1 text-rose-500"></i> 3.2 Token Unlocks
+            </a>
+            <a asp-action="DexScreener" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-shield-halved mr-1 text-indigo-500"></i> 3.3 DEX Rugpull
+            </a>
             <a asp-action="OrderFlow" asp-route-symbol="BTCUSDT" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
-                <i class="fa-solid fa-water mr-1 text-amber-500"></i> Order Flow (CVD)
+                <i class="fa-solid fa-water mr-1 text-amber-500"></i> Order Flow
             </a>
             <a asp-action="Futures" asp-route-symbol="BTCUSDT" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
-                <i class="fa-solid fa-gauge-high mr-1 text-purple-500"></i> Derivatives &amp; Options
-            </a>
-            <a asp-action="Chart" asp-route-symbol="BTCUSDT" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
-                <i class="fa-solid fa-chart-candlestick mr-1 text-blue-500"></i> Advanced Chart
+                <i class="fa-solid fa-gauge-high mr-1 text-purple-500"></i> Derivatives
             </a>
             <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5">
-                <i class="fa-solid fa-bolt"></i> Trading Terminal
+                <i class="fa-solid fa-bolt"></i> Trade
             </a>
         </div>
     </div>

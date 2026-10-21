@@ -16,11 +16,14 @@ using AzureTest.Application.Crypto.Queries.GetCryptoAlerts;
 using AzureTest.Application.Crypto.Queries.GetCryptoAnalysis;
 using AzureTest.Application.Crypto.Queries.GetCryptoCandles;
 using AzureTest.Application.Crypto.Queries.GetCryptoDerivativesHub;
+using AzureTest.Application.Crypto.Queries.GetCryptoDexScreener;
+using AzureTest.Application.Crypto.Queries.GetCryptoExchangeFlow;
 using AzureTest.Application.Crypto.Queries.GetCryptoFuturesFunding;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketDataHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketOverview;
 using AzureTest.Application.Crypto.Queries.GetCryptoOnChainHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoOrderBook;
+using AzureTest.Application.Crypto.Queries.GetCryptoTokenUnlocks;
 using AzureTest.Application.Crypto.Queries.GetCryptoPortfolio;
 using AzureTest.Application.Crypto.Queries.GetCryptoRiskOverview;
 using AzureTest.Application.Crypto.Queries.GetCryptoScreener;
@@ -90,6 +93,9 @@ public static class CryptoServiceRegistration
         services.AddScoped<IQueryHandler<GetCryptoMarketDataHubQuery, Result<CryptoMarketDataHubDto>>, GetCryptoMarketDataHubQueryHandler>();
         services.AddScoped<IQueryHandler<GetCryptoDerivativesHubQuery, Result<CryptoDerivativesHubDto>>, GetCryptoDerivativesHubQueryHandler>();
         services.AddScoped<IQueryHandler<GetCryptoOnChainHubQuery, Result<CryptoOnChainHubDto>>, GetCryptoOnChainHubQueryHandler>();
+        services.AddScoped<IQueryHandler<GetCryptoExchangeFlowQuery, Result<CryptoExchangeFlowAnalysisHubDto>>, GetCryptoExchangeFlowQueryHandler>();
+        services.AddScoped<IQueryHandler<GetCryptoTokenUnlocksQuery, Result<CryptoTokenUnlocksHubDto>>, GetCryptoTokenUnlocksQueryHandler>();
+        services.AddScoped<IQueryHandler<GetCryptoDexScreenerQuery, Result<CryptoDexScreenerHubDto>>, GetCryptoDexScreenerQueryHandler>();
 
         // Query Validators
         services.AddScoped<IValidator<GetCryptoMarketOverviewQuery>, GetCryptoMarketOverviewQueryValidator>();
@@ -108,6 +114,9 @@ public static class CryptoServiceRegistration
         services.AddScoped<IValidator<GetCryptoMarketDataHubQuery>, GetCryptoMarketDataHubQueryValidator>();
         services.AddScoped<IValidator<GetCryptoDerivativesHubQuery>, GetCryptoDerivativesHubQueryValidator>();
         services.AddScoped<IValidator<GetCryptoOnChainHubQuery>, GetCryptoOnChainHubQueryValidator>();
+        services.AddScoped<IValidator<GetCryptoExchangeFlowQuery>, GetCryptoExchangeFlowQueryValidator>();
+        services.AddScoped<IValidator<GetCryptoTokenUnlocksQuery>, GetCryptoTokenUnlocksQueryValidator>();
+        services.AddScoped<IValidator<GetCryptoDexScreenerQuery>, GetCryptoDexScreenerQueryValidator>();
 
         // Units
         services.AddScoped<ICryptoCommandUnit, CryptoCommandUnit>();

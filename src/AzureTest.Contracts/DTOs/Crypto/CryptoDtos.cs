@@ -342,6 +342,134 @@ public sealed record CryptoOnChainHubDto(
     IReadOnlyList<CryptoSmartMoneyActivityDto> SmartMoneyActivityFeed,
     DateTime LastUpdatedUtc);
 
+// ── 3.1 Exchange Net Flow Analysis DTOs ──────────────────────────────────────
+
+public sealed record CryptoExchangeDetailFlowDto(
+    string ExchangeName,
+    decimal Inflow1hUsd,
+    decimal Outflow1hUsd,
+    decimal NetFlow1hUsd,
+    decimal Inflow24hUsd,
+    decimal Outflow24hUsd,
+    decimal NetFlow24hUsd,
+    decimal NetFlow7dUsd,
+    decimal NetFlow30dUsd,
+    decimal BtcReserve,
+    decimal EthReserve,
+    decimal StablecoinReserveUsd,
+    decimal ReserveChange24hPercent,
+    decimal MeanInflowVolumeBtc,
+    string FlowSignal,
+    string DominantDirection);
+
+public sealed record CryptoExchangeFlowTrendPointDto(
+    DateTime Time,
+    decimal NetFlowUsd,
+    decimal CumulativeFlowUsd,
+    decimal BtcPrice);
+
+public sealed record CryptoMinerToExchangeFlowDto(
+    string PoolName,
+    decimal Transferred24hBtc,
+    decimal TransferredUsd,
+    decimal MinerOutflowMultiple,
+    string CapitulationStatus);
+
+public sealed record CryptoExchangeFlowAnalysisHubDto(
+    IReadOnlyList<CryptoExchangeDetailFlowDto> Exchanges,
+    decimal TotalNetFlow1hUsd,
+    decimal TotalNetFlow24hUsd,
+    decimal TotalNetFlow7dUsd,
+    decimal TotalNetFlow30dUsd,
+    IReadOnlyList<CryptoExchangeFlowTrendPointDto> HistoricalTrend,
+    IReadOnlyList<CryptoMinerToExchangeFlowDto> MinerFlows,
+    decimal SpotVsDerivativesRatio,
+    string MacroFlowVerdict,
+    DateTime LastUpdatedUtc);
+
+// ── 3.2 Token Unlocks Calendar & Dilution Pressure DTOs ──────────────────────
+
+public sealed record CryptoUnlockAllocationShareDto(
+    string Category,
+    decimal TokenAmount,
+    decimal ValueUsd,
+    decimal Percentage);
+
+public sealed record CryptoTokenUnlockDetailDto(
+    string Symbol,
+    string ProjectName,
+    DateTime NextUnlockDateUtc,
+    int DaysUntilUnlock,
+    decimal UnlockTokens,
+    decimal UnlockValueUsd,
+    decimal CurrentPriceUsd,
+    decimal CirculatingSupply,
+    decimal TotalSupply,
+    decimal DilutionPercentageCirculating,
+    decimal DilutionPercentageTotalFdv,
+    string UnlockType,
+    IReadOnlyList<CryptoUnlockAllocationShareDto> AllocationBreakdown,
+    decimal Historical7dPostUnlockReturnPercent,
+    string HedgingRecommendation,
+    string DilutionShockRating);
+
+public sealed record CryptoTokenUnlocksHubDto(
+    IReadOnlyList<CryptoTokenUnlockDetailDto> Unlocks,
+    decimal TotalUpcoming30dUnlockValueUsd,
+    string HighestDilutionAssetSymbol,
+    int HighRiskUnlocksCount,
+    DateTime LastUpdatedUtc);
+
+// ── 3.3 DEX Liquidity & New Pool Rugpull DTOs ───────────────────────────────
+
+public sealed record CryptoRugpullAuditDto(
+    string TokenName,
+    string TokenSymbol,
+    string ContractAddress,
+    string Chain,
+    decimal SafetyScore,
+    string Verdict,
+    bool IsMintRevoked,
+    bool HasBlacklistFunction,
+    bool HasPausableTransfers,
+    decimal BuyTaxPercent,
+    decimal SellTaxPercent,
+    bool IsTaxModifiable,
+    bool IsLiquidityLocked,
+    decimal LiquidityLockedPercent,
+    string LockDurationText,
+    decimal Top10HoldersPercent,
+    int TotalHolders,
+    string DeployerWalletAddress,
+    int DeployerPreviousProjectsCount,
+    int DeployerPastRugpullsCount);
+
+public sealed record CryptoNewDexPoolDto(
+    string Pair,
+    string BaseToken,
+    string QuoteToken,
+    string Dex,
+    string Chain,
+    decimal PriceUsd,
+    decimal InitialLiquidityUsd,
+    decimal CurrentLiquidityUsd,
+    decimal Volume24hUsd,
+    decimal VolumeToTvl,
+    int UniqueBuyers24h,
+    int UniqueSellers24h,
+    decimal BuySellRatio,
+    DateTime CreatedAtUtc,
+    int AgeMinutes,
+    CryptoRugpullAuditDto Audit);
+
+public sealed record CryptoDexScreenerHubDto(
+    IReadOnlyList<CryptoNewDexPoolDto> Pools,
+    IReadOnlyList<CryptoNewDexPoolDto> NewLaunchesRadar,
+    int TotalPoolsAudited,
+    int HoneypotsBlockedCount,
+    decimal TotalDexVolume24hUsd,
+    DateTime LastUpdatedUtc);
+
 // ── Analysis DTOs ───────────────────────────────────────────────────────────
 
 

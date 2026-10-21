@@ -1151,6 +1151,196 @@ public class CryptoMarketDataService : ICryptoMarketDataService
 
         return Task.FromResult(hub);
     }
+
+    public Task<CryptoExchangeFlowAnalysisHubDto> GetExchangeFlowAnalysisAsync(CancellationToken ct = default)
+    {
+        var exchanges = new List<CryptoExchangeDetailFlowDto>
+        {
+            new("Binance", 48000000m, 62000000m, -14000000m, 1240000000m, 1580000000m, -340000000m, -1120000000m, -3450000000m, 582410m, 3950000m, 24500000000m, -0.82m, 2.45m, "Heavy Accumulation / Bullish", "Outflow Accumulation"),
+            new("Coinbase Prime", 35000000m, 48000000m, -13000000m, 890000000m, 1150000000m, -260000000m, -840000000m, -2100000000m, 345120m, 2810000m, 7200000000m, -1.15m, 14.80m, "Institutional Outflow / Custody", "Outflow Accumulation"),
+            new("OKX", 18000000m, 16000000m, +2000000m, 420000000m, 390000000m, +30000000m, +45000000m, -120000000m, 128450m, 1150000m, 5800000000m, +0.25m, 1.85m, "Neutral Range", "Futures Collateralization"),
+            new("Bybit", 24000000m, 22000000m, +2000000m, 510000000m, 485000000m, +25000000m, +80000000m, +190000000m, 64800m, 640000m, 4100000000m, +0.40m, 1.20m, "Perp Margin Deposit", "Futures Collateralization"),
+            new("Kraken", 9000000m, 14000000m, -5000000m, 210000000m, 310000000m, -100000000m, -320000000m, -680000000m, 89300m, 980000m, 1900000000m, -0.75m, 3.10m, "Moderate Outflow", "Outflow Accumulation"),
+            new("Bitfinex", 5000000m, 7000000m, -2000000m, 115000000m, 145000000m, -30000000m, -95000000m, -210000000m, 192000m, 820000m, 980000000m, -0.42m, 8.40m, "Whale Cold Custody", "Outflow Accumulation"),
+            new("Deribit", 8000000m, 6000000m, +2000000m, 180000000m, 160000000m, +20000000m, +60000000m, +140000000m, 42000m, 480000m, 850000000m, +0.65m, 4.20m, "Options Margin Collateral", "Futures Collateralization")
+        };
+
+        decimal net1h = exchanges.Sum(e => e.NetFlow1hUsd);
+        decimal net24h = exchanges.Sum(e => e.NetFlow24hUsd);
+        decimal net7d = exchanges.Sum(e => e.NetFlow7dUsd);
+        decimal net30d = exchanges.Sum(e => e.NetFlow30dUsd);
+
+        // Hourly trend over last 24h
+        var trend = new List<CryptoExchangeFlowTrendPointDto>();
+        decimal cum = 0m;
+        var now = DateTime.UtcNow;
+        var rng = new Random(42);
+        for (int h = 24; h >= 0; h--)
+        {
+            var t = now.AddHours(-h);
+            decimal hourlyFlow = (decimal)(rng.NextDouble() * 35000000 - 48000000); // mostly negative (outflows)
+            cum += hourlyFlow;
+            decimal price = 67450m + (24 - h) * 45m + (decimal)(rng.NextDouble() * 200 - 100);
+            trend.Add(new CryptoExchangeFlowTrendPointDto(t, hourlyFlow, cum, price));
+        }
+
+        // Miner-to-Exchange Flows
+        var miners = new List<CryptoMinerToExchangeFlowDto>
+        {
+            new("Foundry USA Pool", 145m, 9780250m, 0.85m, "Normal Operations"),
+            new("AntPool", 190m, 12815500m, 0.92m, "Normal Operations"),
+            new("F2Pool", 220m, 14839000m, 1.15m, "Light Distribution"),
+            new("ViaBTC", 85m, 5733250m, 0.78m, "Normal Operations"),
+            new("MaraPool (Marathon)", 40m, 2698000m, 0.60m, "Heavy HODL / Accumulation")
+        };
+
+        var hub = new CryptoExchangeFlowAnalysisHubDto(
+            exchanges,
+            net1h,
+            net24h,
+            net7d,
+            net30d,
+            trend,
+            miners,
+            SpotVsDerivativesRatio: 0.42m,
+            MacroFlowVerdict: "Institutional Supply Squeeze: Persistent multi-week spot CEX outflows driven by Coinbase Prime OTC desks and institutional ETF custody withdrawals indicate sustained structural accumulation.",
+            DateTime.UtcNow);
+
+        return Task.FromResult(hub);
+    }
+
+    public Task<CryptoTokenUnlocksHubDto> GetTokenUnlocksAsync(CancellationToken ct = default)
+    {
+        var unlocks = new List<CryptoTokenUnlockDetailDto>
+        {
+            new("TIA", "Celestia", DateTime.UtcNow.AddDays(9), 9, 175560000m, 948024000m, 5.40m, 220000000m, 1000000000m, 79.8m, 17.5m, "Cliff Unlock",
+                new List<CryptoUnlockAllocationShareDto>
+                {
+                    new("Seed & Series A Investors", 88000000m, 475200000m, 50.1m),
+                    new("Core Team & Contributors", 52000000m, 280800000m, 29.6m),
+                    new("Ecosystem & Foundation Reserve", 35560000m, 192024000m, 20.3m)
+                },
+                -14.5m, "Delta-Neutral Short Perp Hedge (Basis Lock)", "Extreme Dilution (>7%)"),
+
+            new("SUI", "Sui Network", DateTime.UtcNow.AddDays(12), 12, 64190000m, 136082800m, 2.12m, 2850000000m, 10000000000m, 2.2m, 0.64m, "Cliff + Linear",
+                new List<CryptoUnlockAllocationShareDto>
+                {
+                    new("Series A/B Early VCs", 39000000m, 82680000m, 60.8m),
+                    new("Community Reserve", 25190000m, 53402800m, 39.2m)
+                },
+                -4.2m, "Buy Out-of-Money Puts or Hold Spot", "Moderate Dilution (1-3%)"),
+
+            new("ARB", "Arbitrum", DateTime.UtcNow.AddDays(16), 16, 92650000m, 52810500m, 0.57m, 3600000000m, 10000000000m, 2.5m, 0.93m, "Linear Monthly Cliff",
+                new List<CryptoUnlockAllocationShareDto>
+                {
+                    new("Offchain Labs Team", 56000000m, 31920000m, 60.4m),
+                    new("Strategic Investors", 36650000m, 20890500m, 39.6m)
+                },
+                -3.8m, "Staggered Spot DCA / Minimal Action", "Moderate Dilution (1-3%)"),
+
+            new("OP", "Optimism", DateTime.UtcNow.AddDays(20), 20, 31340000m, 47636800m, 1.52m, 1250000000m, 4294000000m, 2.5m, 0.73m, "Monthly Vesting",
+                new List<CryptoUnlockAllocationShareDto>
+                {
+                    new("Core Contributors", 16500000m, 25080000m, 52.6m),
+                    new("Investors", 14840000m, 22556800m, 47.4m)
+                },
+                -3.1m, "Hedge via Synthetic Futures", "Moderate Dilution (1-3%)"),
+
+            new("AVAX", "Avalanche", DateTime.UtcNow.AddDays(24), 24, 1670000m, 47428000m, 28.40m, 406000000m, 720000000m, 0.4m, 0.23m, "Cliff Unlock",
+                new List<CryptoUnlockAllocationShareDto>
+                {
+                    new("Strategic Partners", 1120000m, 31808000m, 67.1m),
+                    new("Ava Labs Foundation", 550000m, 15620000m, 32.9m)
+                },
+                -0.9m, "Hold Spot / Negligible Impact", "Low Dilution (<1%)"),
+
+            new("STRK", "Starknet", DateTime.UtcNow.AddDays(28), 28, 64000000m, 24960000m, 0.39m, 1900000000m, 10000000000m, 3.4m, 0.64m, "Monthly Linear",
+                new List<CryptoUnlockAllocationShareDto>
+                {
+                    new("Early Backers", 38000000m, 14820000m, 59.4m),
+                    new("Core Developers", 26000000m, 10140000m, 40.6m)
+                },
+                -7.2m, "Short Perp Collar Strategy", "High Dilution (3-7%)"),
+
+            new("WLD", "Worldcoin", DateTime.UtcNow.AddDays(31), 31, 37200000m, 78120000m, 2.10m, 550000000m, 10000000000m, 6.8m, 0.37m, "Daily Vesting Acceleration",
+                new List<CryptoUnlockAllocationShareDto>
+                {
+                    new("TFH Investors", 22000000m, 46200000m, 59.1m),
+                    new("Community Operating Fund", 15200000m, 31920000m, 40.9m)
+                },
+                -8.6m, "Aggressive Spot Reduction", "High Dilution (3-7%)"),
+
+            new("APT", "Aptos", DateTime.UtcNow.AddDays(38), 38, 11310000m, 106314000m, 9.40m, 500000000m, 1100000000m, 2.3m, 1.03m, "Monthly Cliff",
+                new List<CryptoUnlockAllocationShareDto>
+                {
+                    new("Foundation & Community", 6100000m, 57340000m, 53.9m),
+                    new("Core Contributors", 5210000m, 48974000m, 46.1m)
+                },
+                -3.4m, "Neutral Perp Basis", "Moderate Dilution (1-3%)")
+        };
+
+        decimal total30d = unlocks.Where(u => u.DaysUntilUnlock <= 30).Sum(u => u.UnlockValueUsd);
+        int highRiskCount = unlocks.Count(u => u.DilutionShockRating.Contains("High") || u.DilutionShockRating.Contains("Extreme"));
+
+        var hub = new CryptoTokenUnlocksHubDto(
+            unlocks,
+            total30d,
+            HighestDilutionAssetSymbol: "TIA (79.8% Dilution)",
+            highRiskCount,
+            DateTime.UtcNow);
+
+        return Task.FromResult(hub);
+    }
+
+    public Task<CryptoDexScreenerHubDto> GetDexScreenerAsync(CancellationToken ct = default)
+    {
+        var pools = new List<CryptoNewDexPoolDto>
+        {
+            new("PEPE/WETH", "PEPE", "WETH", "Uniswap v3", "Ethereum", 0.00000985m, 12000000m, 42500000m, 148200000m, 3.48m, 4280, 3910, 1.09m, DateTime.UtcNow.AddDays(-540), 777600,
+                new CryptoRugpullAuditDto("Pepe", "PEPE", "0x6982508145454ce325ddbe47a25d4ec3d2311933", "Ethereum", 99.2m, "VERIFIED & SAFE", true, false, false, 0m, 0m, false, true, 100m, "Burned to 0x000...dead", 18.2m, 248900, "0xdead...0001", 1, 0)),
+
+            new("WIF/SOL", "WIF", "SOL", "Raydium", "Solana", 2.45m, 8500000m, 28400000m, 96500000m, 3.40m, 6820, 6140, 1.11m, DateTime.UtcNow.AddDays(-320), 460800,
+                new CryptoRugpullAuditDto("dogwifhat", "WIF", "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm", "Solana", 97.5m, "VERIFIED & SAFE", true, false, false, 0m, 0m, false, true, 100m, "Burned LP on Solana", 14.5m, 185400, "9xQe...4bTq", 1, 0)),
+
+            new("AERO/USDC", "AERO", "USDC", "Aerodrome", "Base", 1.28m, 18000000m, 85200000m, 62100000m, 0.73m, 2840, 2410, 1.18m, DateTime.UtcNow.AddDays(-280), 403200,
+                new CryptoRugpullAuditDto("Aerodrome Finance", "AERO", "0x940181a94A35A4569E4529A3CDfB74e48FD986ca", "Base", 98.4m, "VERIFIED & SAFE", true, false, false, 0m, 0m, false, true, 95m, "Locked via veAERO protocol", 12.0m, 98200, "0xBase...001", 2, 0)),
+
+            new("PENDLE/USDT", "PENDLE", "USDT", "Uniswap v3", "Arbitrum", 4.62m, 6400000m, 18400000m, 24800000m, 1.35m, 1420, 1280, 1.11m, DateTime.UtcNow.AddDays(-360), 518400,
+                new CryptoRugpullAuditDto("Pendle", "PENDLE", "0x0c880f67ed5009c07577ba9e68778d059f487d8c", "Arbitrum", 99.0m, "VERIFIED & SAFE", true, false, false, 0m, 0m, false, true, 100m, "Locked indefinitely", 9.8m, 42100, "0x7a2...11b", 1, 0)),
+
+            new("BRETT/WETH", "BRETT", "WETH", "Aerodrome", "Base", 0.088m, 4500000m, 14600000m, 38500000m, 2.63m, 3890, 3120, 1.25m, DateTime.UtcNow.AddDays(-190), 273600,
+                new CryptoRugpullAuditDto("Brett", "BRETT", "0x532f27101965dd16442e59d40670faf5ebb142e4", "Base", 96.8m, "VERIFIED & SAFE", true, false, false, 0m, 0m, false, true, 100m, "Burned to dead address", 15.4m, 114500, "0x4b...99a", 1, 0)),
+
+            new("RAY/SOL", "RAY", "SOL", "Raydium", "Solana", 2.88m, 14000000m, 45000000m, 82000000m, 1.82m, 5120, 4890, 1.05m, DateTime.UtcNow.AddDays(-600), 864000,
+                new CryptoRugpullAuditDto("Raydium", "RAY", "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R", "Solana", 98.1m, "VERIFIED & SAFE", true, false, false, 0m, 0m, false, true, 100m, "Burned LP", 8.5m, 134200, "RaydiumCore...01", 1, 0))
+        };
+
+        // Newly launched pools in the last 1-6 hours with live Rugpull / Honeypot Audit detection
+        var newLaunches = new List<CryptoNewDexPoolDto>
+        {
+            new("NEO-AI/WETH", "NEO-AI", "WETH", "Uniswap v3", "Ethereum", 0.00042m, 35000m, 84000m, 412000m, 4.90m, 620, 12, 51.6m, DateTime.UtcNow.AddMinutes(-45), 45,
+                new CryptoRugpullAuditDto("Neo Artificial Intelligence", "NEO-AI", "0x4f12...99bc", "Ethereum", 12.0m, "HONEYPOT / RUGPULL DETECTED", false, true, true, 2.0m, 99.0m, true, false, 0m, "Unlocked (0 Days)", 78.4m, 410, "0x882a...e71c", 4, 3)),
+
+            new("BASEPUMP/USDC", "BASEPUMP", "USDC", "Aerodrome", "Base", 0.0145m, 120000m, 195000m, 840000m, 4.31m, 1420, 1180, 1.20m, DateTime.UtcNow.AddMinutes(-115), 115,
+                new CryptoRugpullAuditDto("Base Pump Protocol", "BASEPUMP", "0x992c...11ab", "Base", 98.0m, "VERIFIED & SAFE", true, false, false, 0m, 0m, false, true, 100m, "Burned LP on Base", 9.2m, 2180, "0x11ab...ff32", 1, 0)),
+
+            new("SOLCAT/SOL", "SOLCAT", "SOL", "Raydium", "Solana", 0.0084m, 45000m, 62000m, 290000m, 4.67m, 890, 410, 2.17m, DateTime.UtcNow.AddMinutes(-180), 180,
+                new CryptoRugpullAuditDto("Solana Cat Token", "SOLCAT", "7xPw...99Qm", "Solana", 34.0m, "DANGEROUS / UNLOCKED LP", true, false, false, 0m, 0m, false, false, 12m, "Only 12% locked (88% in dev wallet)", 45.2m, 920, "2mNk...88Lx", 3, 2)),
+
+            new("QUANTUM/WETH", "QUANTUM", "WETH", "Uniswap v3", "Arbitrum", 0.0520m, 80000m, 142000m, 510000m, 3.59m, 940, 810, 1.16m, DateTime.UtcNow.AddMinutes(-270), 270,
+                new CryptoRugpullAuditDto("Quantum Arbitrum AI", "QUANTUM", "0x33b1...88ef", "Arbitrum", 95.5m, "VERIFIED & SAFE", true, false, false, 1.5m, 1.5m, false, true, 95m, "Locked 365 Days on UNCX", 11.4m, 1540, "0x77cd...33aa", 1, 0))
+        };
+
+        var hub = new CryptoDexScreenerHubDto(
+            pools,
+            newLaunches,
+            TotalPoolsAudited: 148,
+            HoneypotsBlockedCount: 32,
+            TotalDexVolume24hUsd: 428000000m,
+            DateTime.UtcNow);
+
+        return Task.FromResult(hub);
+    }
 }
 
 

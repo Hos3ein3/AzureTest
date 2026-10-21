@@ -16,11 +16,14 @@ using AzureTest.Application.Crypto.Queries.GetCryptoAlerts;
 using AzureTest.Application.Crypto.Queries.GetCryptoAnalysis;
 using AzureTest.Application.Crypto.Queries.GetCryptoCandles;
 using AzureTest.Application.Crypto.Queries.GetCryptoDerivativesHub;
+using AzureTest.Application.Crypto.Queries.GetCryptoDexScreener;
+using AzureTest.Application.Crypto.Queries.GetCryptoExchangeFlow;
 using AzureTest.Application.Crypto.Queries.GetCryptoFuturesFunding;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketDataHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketOverview;
 using AzureTest.Application.Crypto.Queries.GetCryptoOnChainHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoOrderBook;
+using AzureTest.Application.Crypto.Queries.GetCryptoTokenUnlocks;
 using AzureTest.Application.Crypto.Queries.GetCryptoPortfolio;
 using AzureTest.Application.Crypto.Queries.GetCryptoRiskOverview;
 using AzureTest.Application.Crypto.Queries.GetCryptoScreener;
@@ -107,6 +110,9 @@ public interface ICryptoQueryUnit
     IQueryHandler<GetCryptoMarketDataHubQuery, Result<CryptoMarketDataHubDto>> GetMarketDataHub { get; }
     IQueryHandler<GetCryptoDerivativesHubQuery, Result<CryptoDerivativesHubDto>> GetDerivativesHub { get; }
     IQueryHandler<GetCryptoOnChainHubQuery, Result<CryptoOnChainHubDto>> GetOnChainHub { get; }
+    IQueryHandler<GetCryptoExchangeFlowQuery, Result<CryptoExchangeFlowAnalysisHubDto>> GetExchangeFlow { get; }
+    IQueryHandler<GetCryptoTokenUnlocksQuery, Result<CryptoTokenUnlocksHubDto>> GetTokenUnlocks { get; }
+    IQueryHandler<GetCryptoDexScreenerQuery, Result<CryptoDexScreenerHubDto>> GetDexScreener { get; }
 }
 
 public sealed class CryptoQueryUnit : ICryptoQueryUnit
@@ -127,6 +133,9 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
     public IQueryHandler<GetCryptoMarketDataHubQuery, Result<CryptoMarketDataHubDto>> GetMarketDataHub { get; }
     public IQueryHandler<GetCryptoDerivativesHubQuery, Result<CryptoDerivativesHubDto>> GetDerivativesHub { get; }
     public IQueryHandler<GetCryptoOnChainHubQuery, Result<CryptoOnChainHubDto>> GetOnChainHub { get; }
+    public IQueryHandler<GetCryptoExchangeFlowQuery, Result<CryptoExchangeFlowAnalysisHubDto>> GetExchangeFlow { get; }
+    public IQueryHandler<GetCryptoTokenUnlocksQuery, Result<CryptoTokenUnlocksHubDto>> GetTokenUnlocks { get; }
+    public IQueryHandler<GetCryptoDexScreenerQuery, Result<CryptoDexScreenerHubDto>> GetDexScreener { get; }
 
     public CryptoQueryUnit(
         IQueryHandler<GetCryptoMarketOverviewQuery, Result<CryptoMarketOverviewDto>> getMarketOverview,
@@ -144,7 +153,10 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
         IQueryHandler<GetCryptoSettingsQuery, Result<IReadOnlyList<CryptoApiSettingsDto>>> getSettings,
         IQueryHandler<GetCryptoMarketDataHubQuery, Result<CryptoMarketDataHubDto>> getMarketDataHub,
         IQueryHandler<GetCryptoDerivativesHubQuery, Result<CryptoDerivativesHubDto>> getDerivativesHub,
-        IQueryHandler<GetCryptoOnChainHubQuery, Result<CryptoOnChainHubDto>> getOnChainHub)
+        IQueryHandler<GetCryptoOnChainHubQuery, Result<CryptoOnChainHubDto>> getOnChainHub,
+        IQueryHandler<GetCryptoExchangeFlowQuery, Result<CryptoExchangeFlowAnalysisHubDto>> getExchangeFlow,
+        IQueryHandler<GetCryptoTokenUnlocksQuery, Result<CryptoTokenUnlocksHubDto>> getTokenUnlocks,
+        IQueryHandler<GetCryptoDexScreenerQuery, Result<CryptoDexScreenerHubDto>> getDexScreener)
     {
         GetMarketOverview = getMarketOverview;
         GetCandles = getCandles;
@@ -162,6 +174,9 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
         GetMarketDataHub = getMarketDataHub;
         GetDerivativesHub = getDerivativesHub;
         GetOnChainHub = getOnChainHub;
+        GetExchangeFlow = getExchangeFlow;
+        GetTokenUnlocks = getTokenUnlocks;
+        GetDexScreener = getDexScreener;
     }
 }
 

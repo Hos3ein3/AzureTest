@@ -1,0 +1,197 @@
+@model CryptoTokenUnlocksHubDto
+@{
+    ViewData["Title"] = "3.2 Token Unlocks Calendar & Dilution Pressure";
+    var unlocks = Model?.Unlocks ?? Array.Empty<CryptoTokenUnlockDetailDto>();
+    var total30d = Model?.TotalUpcoming30dUnlockValueUsd ?? 0m;
+}
+
+<div class="space-y-6">
+    <!-- Header with Sub-Feature Navigation Bar -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center gap-3">
+            <a asp-action="OnChain" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors" title="Back to On-Chain Hub">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div class="w-11 h-11 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center text-lg font-bold">
+                <i class="fa-solid fa-calendar-xmark"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2.5">
+                    <h1 class="text-xl font-black text-slate-900 dark:text-white">Token Unlocks Calendar &amp; Dilution Pressure</h1>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                        FEATURE 3.2
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-3xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                        SUPPLY OVERHANG RADAR
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Cliff vs. linear vesting schedules, circulating supply dilution shock ratings &amp; institutional hedging strategies
+                </p>
+            </div>
+        </div>
+
+        <!-- Sub-Feature Switcher Tabs -->
+        <div class="flex flex-wrap items-center gap-2">
+            <a asp-action="OnChain" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-cubes-stacked mr-1"></i> Hub Overview
+            </a>
+            <a asp-action="ExchangeFlow" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-building-columns mr-1 text-emerald-500"></i> 3.1 Net Flows
+            </a>
+            <a asp-action="TokenUnlocks" class="px-3 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold shadow-xs transition-colors">
+                <i class="fa-solid fa-calendar-xmark mr-1"></i> 3.2 Token Unlocks
+            </a>
+            <a asp-action="DexScreener" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-shield-halved mr-1 text-indigo-500"></i> 3.3 DEX Rugpull
+            </a>
+            <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl text-xs font-bold transition-colors">
+                <i class="fa-solid fa-bolt mr-1 text-amber-400"></i> Trade
+            </a>
+        </div>
+    </div>
+
+    <!-- Educational Warning Banner -->
+    <div class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-start gap-3">
+        <i class="fa-solid fa-triangle-exclamation text-rose-600 text-base mt-0.5"></i>
+        <div class="text-xs text-rose-950 dark:text-rose-200 leading-relaxed">
+            <span class="font-bold">Dilution Risk Warning:</span> Major cliff unlocks release locked equity directly to early VC seed funds and team members who frequently hedge or dump spot positions on centralized exchanges. Tokens with <strong>&gt;3% dilution shock</strong> historically suffer severe price drawdowns 7–14 days surrounding the unlock event.
+        </div>
+    </div>
+
+    <!-- 4 KPI Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 30d Unlock Volume -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between text-2xs font-bold uppercase tracking-wider text-slate-400">
+                <span>Next 30d Unlock Value</span>
+                <i class="fa-solid fa-dollar-sign text-rose-500"></i>
+            </div>
+            <div class="text-xl font-black font-mono text-rose-600">
+                $@((total30d / 1000000000m).ToString("N2"))B USD
+            </div>
+            <p class="text-3xs text-slate-400">Aggregated supply unlocking into liquid circulation</p>
+        </div>
+
+        <!-- Highest Dilution -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between text-2xs font-bold uppercase tracking-wider text-slate-400">
+                <span>Peak Dilution Asset</span>
+                <i class="fa-solid fa-fire text-amber-500"></i>
+            </div>
+            <div class="text-xl font-black font-mono text-amber-600">
+                @(Model?.HighestDilutionAssetSymbol ?? "TIA")
+            </div>
+            <p class="text-3xs text-slate-400">Highest percentage addition to current circulating float</p>
+        </div>
+
+        <!-- High Risk Count -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between text-2xs font-bold uppercase tracking-wider text-slate-400">
+                <span>High-Dilution Events</span>
+                <i class="fa-solid fa-radiation text-rose-500"></i>
+            </div>
+            <div class="text-xl font-black font-mono text-slate-800 dark:text-white">
+                @(Model?.HighRiskUnlocksCount ?? 0) Cliff Events
+            </div>
+            <p class="text-3xs text-slate-400">Events with &gt;3% circulating supply dilution shock</p>
+        </div>
+
+        <!-- Avg Historical Reaction -->
+        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-2">
+            <div class="flex items-center justify-between text-2xs font-bold uppercase tracking-wider text-slate-400">
+                <span>Avg 7d Post-Unlock Return</span>
+                <i class="fa-solid fa-chart-line-down text-rose-500"></i>
+            </div>
+            <div class="text-xl font-black font-mono text-rose-500">
+                -6.2%
+            </div>
+            <p class="text-3xs text-slate-400">Empirical 7-day average drop across tracked cliff unlocks</p>
+        </div>
+    </div>
+
+    <!-- Comprehensive Token Unlocks Table -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-rose-500"></i> Token Unlocks Schedule &amp; Allocation Shock Breakdown
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Detailed token breakdown showing circulating dilution %, recipient allocations, and hedging recommendations
+                </p>
+            </div>
+            <span class="px-2.5 py-1 rounded text-2xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 font-mono">
+                SCHEDULE TRACKER
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+                <thead class="text-2xs text-slate-400 uppercase font-sans border-b border-slate-100 dark:border-slate-700">
+                    <tr>
+                        <th class="py-3 px-3">Token</th>
+                        <th class="py-3 px-3">Unlock Date</th>
+                        <th class="py-3 px-3 text-right">Unlock Amount</th>
+                        <th class="py-3 px-3 text-right">Value (USD)</th>
+                        <th class="py-3 px-3 text-right">Dilution %</th>
+                        <th class="py-3 px-3">Vesting Type</th>
+                        <th class="py-3 px-3">Primary Beneficiaries</th>
+                        <th class="py-3 px-3">Hedging Strategy</th>
+                        <th class="py-3 px-3 text-right">Dilution Shock</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @foreach (var u in unlocks)
+                    {
+                        var isExtreme = u.DilutionShockRating.Contains("Extreme");
+                        var isHigh = u.DilutionShockRating.Contains("High");
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-750 transition-colors">
+                            <td class="py-3.5 px-3 font-sans font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 font-mono text-2xs font-bold">@u.Symbol</span>
+                                <div>
+                                    <div class="font-bold">@u.ProjectName</div>
+                                    <div class="text-3xs text-slate-400 font-mono">$@u.CurrentPriceUsd.ToString("N2")</div>
+                                </div>
+                            </td>
+                            <td class="py-3.5 px-3 font-sans">
+                                <span class="px-2 py-0.5 rounded text-3xs font-bold @(u.DaysUntilUnlock <= 10 ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300")">
+                                    In @u.DaysUntilUnlock d (@u.NextUnlockDateUtc.ToString("dd MMM yyyy"))
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-3 text-right font-bold text-slate-700 dark:text-slate-200">
+                                @((u.UnlockTokens / 1000000m).ToString("N2"))M
+                            </td>
+                            <td class="py-3.5 px-3 text-right font-black @(isExtreme ? "text-rose-600 text-sm" : "text-slate-800 dark:text-white")">
+                                $@((u.UnlockValueUsd / 1000000m).ToString("N1"))M
+                            </td>
+                            <td class="py-3.5 px-3 text-right font-bold @(isExtreme ? "text-rose-600 font-black text-sm" : isHigh ? "text-amber-600" : "text-emerald-600")">
+                                +@u.DilutionPercentageCirculating.ToString("F1")%
+                            </td>
+                            <td class="py-3.5 px-3 font-sans text-slate-600 dark:text-slate-300">
+                                @u.UnlockType
+                            </td>
+                            <td class="py-3.5 px-3 font-sans text-2xs text-slate-500">
+                                @foreach (var alloc in u.AllocationBreakdown)
+                                {
+                                    <span class="inline-block px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded mr-1 mb-1 text-3xs">
+                                        @alloc.Category (@alloc.Percentage.ToString("F0")%)
+                                    </span>
+                                }
+                            </td>
+                            <td class="py-3.5 px-3 font-sans text-2xs font-semibold text-slate-700 dark:text-slate-300">
+                                <i class="fa-solid fa-shield text-brand-500 mr-1"></i>
+                                @u.HedgingRecommendation
+                            </td>
+                            <td class="py-3.5 px-3 text-right font-sans">
+                                <span class="px-2.5 py-1 rounded-full text-3xs font-bold @(isExtreme ? "bg-rose-600 text-white animate-pulse" : isHigh ? "bg-amber-500 text-white" : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300")">
+                                    @u.DilutionShockRating
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
