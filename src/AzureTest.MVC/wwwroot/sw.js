@@ -1,9 +1,10 @@
-const CACHE_NAME = 'trackerpro-cache-v2';
+const CACHE_NAME = 'trackerpro-cache-v3';
 const urlsToCache = [
   '/',
   '/css/site.css',
   '/css/style.css',
   '/js/site.js',
+  '/js/offline-sync.js',
   '/icon-192.png',
   '/icon-512.png',
   '/favicon.ico',
@@ -16,7 +17,6 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        // Use addAll but wrap in allSettled to prevent single missing resource from failing install
         return Promise.allSettled(urlsToCache.map(url => cache.add(url)));
       })
       .then(() => self.skipWaiting())
@@ -38,19 +38,18 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch event - network first, fallback to cache strategy
+// Fetch event - network first, fallback to cache
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-  
+
   event.respondWith(
     fetch(event.request)
       .then(response => {
         if (response && response.status === 200 && response.type === 'basic') {
           const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            });
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseToCache);
+          });
         }
         return response;
       })
@@ -58,4 +57,63 @@ self.addEventListener('fetch', event => {
         return caches.match(event.request);
       })
   );
+});
+
+// Web Push Notification Handler (zero external paid services needed)
+self.addEventListener('push', event => {
+  let data = {};
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data = { title: 'TrackerPro Update', body: event.data.text() };
+    }
+  } else {
+    data = { title: 'TrackerPro Update', body: 'You have new activity in your workspace.' };
+  }
+
+  const title = data.title || 'TrackerPro';
+  const options = {
+    body: data.body || 'You have new activity.',
+    icon: data.icon || '/icon-192.png',
+    badge: data.badge || '/icon-192.png',
+    data: { url: data.url || '/' },
+    vibrate: [100, 50, 100],
+    requireInteraction: false
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Notification Click Handler
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) ? event.notification.data.url : '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      for (const client of windowClients) {
+        if (client.url === targetUrl && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+
+// Background Sync Handler
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-offline-queue') {
+    // Notify window clients to trigger synchronization
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+        windowClients.forEach(client => {
+          client.postMessage({ type: 'TRIGGER_OFFLINE_SYNC' });
+        });
+      })
+    );
+  }
 });

@@ -401,6 +401,12 @@
                     <i class="fa-solid fa-chart-simple w-6 text-center text-lg transition-colors @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "Stats" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Watch Stats</span>
                 </a>
+
+                <a asp-area="" asp-controller="Media" asp-action="Recommendations" data-title="Smart Recommendations"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "Recommendations" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-wand-magic-sparkles w-6 text-center text-lg transition-colors @(currentController == "Media" && ViewContext.RouteData.Values["action"]?.ToString() == "Recommendations" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Recommendations</span>
+                </a>
             </li>
 
             <!-- System Section -->
@@ -577,7 +583,7 @@
 
         <!-- Main Floating Nav (8 Section Icons Only) -->
         <div id="floatingNavMain"
-             class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-2xl rounded-2xl px-2 py-2 flex items-center justify-between gap-1 transition-all duration-300 ease-in-out transform translate-y-0 opacity-100">
+             class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-2xl rounded-2xl px-2 py-2 flex items-center justify-between gap-1 transition-all duration-300 ease-in-out transform translate-y-0 opacity-100 overflow-x-auto overflow-y-hidden scrollbar-hide">
 
             <!-- 1. General -->
             <button type="button" onclick="openFloatingSection('general')"
@@ -638,7 +644,7 @@
 
         <!-- Sub Floating Nav (Comes up with new icons and back button) -->
         <div id="floatingNavSub"
-             class="hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-2xl rounded-2xl px-2 py-2 items-center gap-2 transition-all duration-300 ease-in-out transform translate-y-20 opacity-0 pointer-events-none">
+             class="hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 shadow-2xl rounded-2xl px-2 py-2 items-center gap-1.5 transition-all duration-300 ease-in-out transform translate-y-20 opacity-0 pointer-events-none overflow-y-hidden">
 
             <!-- Back Button to return to main floating nav -->
             <button type="button" onclick="closeFloatingSubNav()"
@@ -649,11 +655,16 @@
 
             <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 flex-shrink-0"></div>
 
+            <!-- Tiny red << scroll left indicator -->
+            <button type="button" id="floatingSubScrollLeftBtn" onclick="scrollActiveFloatingSub(-80)"
+                    class="hidden flex-shrink-0 text-red-500 hover:text-red-600 font-black text-2xs animate-pulse select-none px-1 py-1 focus:outline-none"
+                    title="Scroll left" aria-label="Scroll left">&lt;&lt;</button>
+
             <!-- Sub-Section Features Container -->
-            <div id="floatingNavSubItems" class="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-0.5 px-1 flex-1">
+            <div id="floatingNavSubItems" class="flex items-center gap-1.5 overflow-x-auto overflow-y-hidden scrollbar-hide py-0.5 px-0.5 flex-1 min-w-0">
 
                 <!-- Sub-Section: General -->
-                <div id="subSection_general" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                <div id="subSection_general" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide">
                     <a asp-controller="Home" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Home" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Dashboard">
                         <i class="fa-solid fa-gauge-high text-base"></i>
                     </a>
@@ -672,7 +683,7 @@
                 </div>
 
                 <!-- Sub-Section: Daily -->
-                <div id="subSection_daily" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                <div id="subSection_daily" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide">
                     <a asp-controller="Calendar" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Calendar" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Calendar">
                         <i class="fa-solid fa-calendar-days text-base"></i>
                     </a>
@@ -694,7 +705,7 @@
                 </div>
 
                 <!-- Sub-Section: Application -->
-                <div id="subSection_application" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                <div id="subSection_application" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide">
                     <a asp-controller="Resume" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Resume" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Resumes">
                         <i class="fa-solid fa-file-lines text-base"></i>
                     </a>
@@ -710,7 +721,7 @@
                 </div>
 
                 <!-- Sub-Section: Gym -->
-                <div id="subSection_gym" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                <div id="subSection_gym" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide">
                     <a asp-controller="Workout" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Workout" && currentAction != "Analytics" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Workout">
                         <i class="fa-solid fa-person-running text-base"></i>
                     </a>
@@ -726,7 +737,7 @@
                 </div>
 
                 <!-- Sub-Section: Food & Cooking -->
-                <div id="subSection_food" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                <div id="subSection_food" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide">
                     <a asp-controller="Food" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Food" && currentAction == "Index" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Daily Diary">
                         <i class="fa-solid fa-utensils text-base"></i>
                     </a>
@@ -754,7 +765,7 @@
                 </div>
 
                 <!-- Sub-Section: Financials -->
-                <div id="subSection_financials" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                <div id="subSection_financials" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide">
                     <a asp-controller="Expense" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Expense" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Expenses">
                         <i class="fa-solid fa-money-bill-wave text-base"></i>
                     </a>
@@ -773,12 +784,15 @@
                 </div>
 
                 <!-- Sub-Section: Entertainment & Media -->
-                <div id="subSection_media" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                <div id="subSection_media" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide">
                     <a asp-controller="Media" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Media" && currentAction == "Index" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Watchlist">
                         <i class="fa-solid fa-film text-base"></i>
                     </a>
                     <a asp-controller="Media" asp-action="Discover" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Media" && currentAction == "Discover" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Discover">
                         <i class="fa-solid fa-compass text-base"></i>
+                    </a>
+                    <a asp-controller="Media" asp-action="Recommendations" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Media" && currentAction == "Recommendations" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Smart Recommendations">
+                        <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
                     </a>
                     <a asp-controller="Media" asp-action="Search" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "Media" && currentAction == "Search" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Search TMDb">
                         <i class="fa-solid fa-magnifying-glass text-base"></i>
@@ -801,7 +815,7 @@
                 </div>
 
                 <!-- Sub-Section: System -->
-                <div id="subSection_system" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+                <div id="subSection_system" class="floating-sub-content hidden flex items-center gap-1.5 flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide">
                     @if (_CurrentUser.HasAccess("User/Index"))
                     {
                         <a asp-controller="User" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "User" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="User Management">
@@ -856,6 +870,11 @@
                 </div>
 
             </div>
+
+            <!-- Tiny red >> scroll right indicator -->
+            <button type="button" id="floatingSubScrollRightBtn" onclick="scrollActiveFloatingSub(80)"
+                    class="hidden flex-shrink-0 text-red-500 hover:text-red-600 font-black text-2xs animate-pulse select-none px-1 py-1 focus:outline-none"
+                    title="Scroll right" aria-label="Scroll right">&gt;&gt;</button>
         </div>
     </div>
 }
@@ -905,6 +924,25 @@
         mobileOverlay?.addEventListener("click", closeMobileSidebar);
 
         // Floating Bottom Navigation Interaction Logic
+        window.scrollActiveFloatingSub = function (delta) {
+            const activeSub = document.querySelector(".floating-sub-content:not(.hidden)");
+            if (activeSub) {
+                activeSub.scrollBy({ left: delta, behavior: "smooth" });
+                setTimeout(() => updateFloatingSubScrollIndicators(activeSub), 200);
+            }
+        };
+
+        function updateFloatingSubScrollIndicators(container) {
+            const leftBtn = document.getElementById("floatingSubScrollLeftBtn");
+            const rightBtn = document.getElementById("floatingSubScrollRightBtn");
+            if (!container || !leftBtn || !rightBtn) return;
+            const canLeft = container.scrollLeft > 4;
+            const canRight = (container.scrollWidth - container.clientWidth - container.scrollLeft) > 4;
+            leftBtn.classList.toggle("hidden", !canLeft);
+            rightBtn.classList.toggle("hidden", !canRight);
+        }
+        window.updateFloatingSubScrollIndicators = updateFloatingSubScrollIndicators;
+
         window.openFloatingSection = function (sectionKey) {
             const mainNav = document.getElementById("floatingNavMain");
             const subNav = document.getElementById("floatingNavSub");
@@ -926,6 +964,14 @@
                 requestAnimationFrame(() => {
                     subNav.classList.remove("translate-y-20", "opacity-0", "pointer-events-none");
                     subNav.classList.add("translate-y-0", "opacity-100", "pointer-events-auto");
+                    if (target) {
+                        target.scrollLeft = 0;
+                        updateFloatingSubScrollIndicators(target);
+                        if (!target.dataset.scrollBound) {
+                            target.addEventListener("scroll", () => updateFloatingSubScrollIndicators(target), { passive: true });
+                            target.dataset.scrollBound = "true";
+                        }
+                    }
                 });
             }, 120);
         };

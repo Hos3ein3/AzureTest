@@ -87,6 +87,16 @@ public class MediaController : Controller
     }
 
     [HttpGet]
+    [DisplayName("Smart TMDb Recommendations")]
+    [Description("Personalized movie, series, and anime recommendations based on rewatched favorites and followed talent.")]
+    public async Task<IActionResult> Recommendations(CancellationToken ct)
+    {
+        await PopulateUserWatchItemsAsync(ct);
+        var result = await _queries.GetSmartRecommendationsAsync(new AzureTest.Application.Media.Queries.GetSmartRecommendations.GetSmartRecommendationsQuery(_currentUser.Id), ct);
+        return result.ToView(this);
+    }
+
+    [HttpGet]
     [DisplayName("Search TMDb")]
     [Description("Search for movies, TV series, anime, and actors on TMDb.")]
     public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] string searchType = "all", CancellationToken ct = default)

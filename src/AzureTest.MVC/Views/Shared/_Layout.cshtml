@@ -56,12 +56,13 @@
     
     <!-- Favicon and PWA -->
     <link rel="icon" type="image/png" href="~/favicon.png">
-    <link rel="manifest" href="~/manifest.json">
+    <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#0d9488">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="TrackerPro">
-    <link rel="apple-touch-icon" href="~/icon-192.png">
+    <link rel="apple-touch-icon" href="/icon-192.png">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -123,9 +124,18 @@
 
         @if (enableFloatingNav)
         {
-            <!-- Mobile & Tablet Floating OmniBar Search Box -->
+            <!-- Mobile & Tablet Floating Top-Left Sandwich Menu Button (Stick to top-left, orange background only in impersonation) -->
+            <button type="button"
+                    id="floatingSidebarToggleBtn"
+                    onclick="window.openMobileSidebar ? window.openMobileSidebar() : document.getElementById('sidebar')?.classList.remove('-translate-x-full')"
+                    class="@floatingNavBreakpointClass fixed top-3 left-3 z-50 w-10 h-10 rounded-xl @(isImpersonating ? "bg-amber-500 hover:bg-amber-600 text-white border border-amber-600 shadow-lg shadow-amber-500/40 animate-pulse" : "bg-white/95 dark:bg-slate-800/95 backdrop-blur-md text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700 shadow-md hover:shadow-lg") flex items-center justify-center transition-all active:scale-95"
+                    title="@(isImpersonating ? "Impersonation Active - Open Menu" : "Open Menu")" aria-label="Menu">
+                <i class="fa-solid fa-bars text-lg"></i>
+            </button>
+
+            <!-- Mobile & Tablet Floating OmniBar Search Box (Floats between left burger and right controls) -->
             <div id="floatingOmnibarWrapper"
-                 class="@floatingNavBreakpointClass fixed top-3 left-3 right-[100px] sm:right-[116px] max-w-sm z-40 transition-all duration-300 ease-out select-none transform translate-y-0 opacity-100">
+                 class="@floatingNavBreakpointClass fixed top-3 left-16 right-[108px] sm:right-[124px] max-w-sm z-40 transition-all duration-300 ease-out select-none transform translate-y-0 opacity-100">
                 <button type="button"
                         onclick="toggleOmnibar()"
                         class="w-full h-10 px-3.5 rounded-xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-700 shadow-md hover:shadow-lg flex items-center gap-2 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all active:scale-[0.98] text-left"
@@ -136,8 +146,8 @@
                 </button>
             </div>
 
-            <!-- Mobile & Tablet Floating Top-Right Controls -->
-            <div class="@floatingNavBreakpointClass fixed top-3 right-3 z-50 items-center gap-2">
+            <!-- Mobile & Tablet Floating Top-Right Controls (Notification + 3-Dot Actions Menu) -->
+            <div class="@floatingNavBreakpointClass fixed top-3 right-3 z-50 flex items-center gap-2">
                 <!-- Floating Notification Dropdown Container -->
                 <div class="relative" id="floatingNotificationDropdownContainer">
                     <button type="button"
@@ -164,14 +174,64 @@
                     </div>
                 </div>
 
-                <!-- Floating Burger / Sandwich Button (Orange background only in impersonation) -->
-                <button type="button"
-                        id="floatingBurgerBtn"
-                        onclick="window.openMobileSidebar ? window.openMobileSidebar() : document.getElementById('sidebar')?.classList.remove('-translate-x-full')"
-                        class="w-10 h-10 rounded-xl @(isImpersonating ? "bg-amber-500 hover:bg-amber-600 text-white border border-amber-600 shadow-lg shadow-amber-500/40 animate-pulse" : "bg-white/95 dark:bg-slate-800/95 backdrop-blur-md text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700 shadow-md hover:shadow-lg") flex items-center justify-center transition-all active:scale-95"
-                        title="@(isImpersonating ? "Impersonation Active - Open Menu" : "Open Menu")" aria-label="Menu">
-                    <i class="fa-solid fa-bars text-lg"></i>
-                </button>
+                <!-- Floating 3-Dot Actions Menu Container -->
+                <div class="relative" id="mobileActionsDropdownContainer">
+                    <button type="button"
+                            id="mobileActionsBtn"
+                            onclick="toggleMobileActionsDropdown(event)"
+                            class="w-10 h-10 rounded-xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-md text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700 shadow-md hover:shadow-lg flex items-center justify-center transition-all active:scale-95"
+                            title="Actions & Settings" aria-label="Actions">
+                        <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
+                    </button>
+
+                    <!-- Floating 3-Dot Dropdown Menu -->
+                    <div id="mobileActionsDropdown" class="hidden absolute right-0 mt-2 w-56 max-w-[calc(100vw-24px)] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 py-2 divide-y divide-slate-100 dark:divide-slate-700/60 overflow-hidden text-sm">
+                        <div class="px-4 py-2 flex items-center gap-3">
+                            @if (!string.IsNullOrEmpty(_CurrentUser.ProfileImage))
+                            {
+                                <img src="@_CurrentUser.ProfileImage" class="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0" />
+                            }
+                            else
+                            {
+                                <i class="fa-solid fa-circle-user text-2xl text-slate-400 shrink-0"></i>
+                            }
+                            <div class="truncate">
+                                <p class="font-semibold text-slate-800 dark:text-slate-200 text-xs truncate">@(_CurrentUser?.FullName ?? "User")</p>
+                                <p class="text-[11px] text-slate-400 truncate">@(_CurrentUser?.Email ?? "")</p>
+                            </div>
+                        </div>
+                        <div class="py-1">
+                            <a asp-action="Index" asp-controller="Profile" class="flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60">
+                                <i class="fa-solid fa-user mr-3 w-4 text-center text-slate-400"></i> Profile
+                            </a>
+                            <button type="button" onclick="document.getElementById('settingGear')?.click(); closeMobileActionsDropdown();" class="w-full flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-left">
+                                <i class="fa-solid fa-gear mr-3 w-4 text-center text-slate-400"></i> Preferences & Theme
+                            </button>
+                            <button type="button" onclick="toggleGlobalDarkMode()" class="w-full flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-left">
+                                <i class="fa-solid @(isDarkMode ? "fa-sun" : "fa-moon") mr-3 w-4 text-center text-slate-400"></i> Toggle Dark/Light
+                            </button>
+                            <button type="button" onclick="triggerPwaInstall(); closeMobileActionsDropdown();" class="w-full flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-left">
+                                <i class="fa-solid fa-mobile-screen-button mr-3 w-4 text-center text-slate-400"></i> Install Mobile App
+                            </button>
+                            <a asp-action="Manage" asp-controller="Dashboard" class="flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60">
+                                <i class="fab fa-windows mr-3 w-4 text-center text-slate-400"></i> Dashboards
+                            </a>
+                            @if (_CurrentUser?.IsAdmin == true && _TenantProvider != null && _TenantProvider.IsMultiTenancyEnabled)
+                            {
+                                <a asp-action="Index" asp-controller="Tenant" class="flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60">
+                                    <i class="fa-solid fa-building-user mr-3 w-4 text-center text-indigo-500"></i> Tenants (@(_TenantProvider.IsAdminImpersonating ? "Impersonating" : "Manage"))
+                                </a>
+                            }
+                        </div>
+                        <div class="py-1">
+                            <form asp-controller="Auth" asp-action="Logout" method="post" class="w-full">
+                                <button type="submit" class="w-full flex items-center px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-left">
+                                    <i class="fa-solid fa-arrow-right-from-bracket mr-3 w-4 text-center text-red-500"></i> Logout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         }
 
@@ -659,7 +719,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').then(reg => {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(reg => {
                     console.log('ServiceWorker registration successful with scope: ', reg.scope);
                 }).catch(err => {
                     console.error('ServiceWorker registration failed: ', err);
@@ -692,6 +752,7 @@
             if (modal) modal.classList.add('hidden');
         };
     </script>
+    <script src="~/js/offline-sync.js" asp-append-version="true"></script>
 
     <!-- Modal: Install PWA Guide -->
     <div id="pwaInstallGuideModal" class="fixed inset-0 z-[120] hidden bg-slate-900/60 backdrop-blur-sm overflow-y-auto p-4 flex items-center justify-center min-h-screen" onclick="if (event.target === this) closePwaGuideModal()">
@@ -843,6 +904,18 @@
         }
         window.toggleFloatingNotificationDropdown = toggleFloatingNotificationDropdown;
 
+        // Toggle Floating 3-Dot Actions Dropdown
+        function toggleMobileActionsDropdown(e) {
+            if (e) e.stopPropagation();
+            const dd = document.getElementById('mobileActionsDropdown');
+            if (dd) dd.classList.toggle('hidden');
+        }
+        function closeMobileActionsDropdown() {
+            document.getElementById('mobileActionsDropdown')?.classList.add('hidden');
+        }
+        window.toggleMobileActionsDropdown = toggleMobileActionsDropdown;
+        window.closeMobileActionsDropdown = closeMobileActionsDropdown;
+
         // Hide dropdowns when clicking outside
         document.addEventListener('click', function(e) {
             const container = document.getElementById('notificationDropdownContainer');
@@ -855,7 +928,44 @@
             if (fContainer && fDropdown && !fContainer.contains(e.target)) {
                 fDropdown.classList.add('hidden');
             }
+
+            const mActionsContainer = document.getElementById('mobileActionsDropdownContainer');
+            const mActionsDropdown = document.getElementById('mobileActionsDropdown');
+            if (mActionsContainer && mActionsDropdown && !mActionsContainer.contains(e.target)) {
+                mActionsDropdown.classList.add('hidden');
+            }
         });
+
+        // Web Push / Local Notification Helper (zero external paid services)
+        window.requestNotificationPermission = async function() {
+            if (!('Notification' in window)) {
+                console.log('This browser does not support desktop notifications');
+                return false;
+            }
+            const permission = await Notification.requestPermission();
+            return permission === 'granted';
+        };
+
+        window.sendLocalNotification = async function(title, options) {
+            if (!('Notification' in window)) return;
+            if (Notification.permission === 'default') {
+                await Notification.requestPermission();
+            }
+            if (Notification.permission === 'granted') {
+                if ('serviceWorker' in navigator) {
+                    const reg = await navigator.serviceWorker.ready;
+                    if (reg && reg.showNotification) {
+                        reg.showNotification(title, {
+                            icon: '/icon-192.png',
+                            badge: '/icon-192.png',
+                            ...options
+                        });
+                        return;
+                    }
+                }
+                new Notification(title, { icon: '/icon-192.png', ...options });
+            }
+        };
 
         // Dark Mode Toggle
         function toggleGlobalDarkMode() {

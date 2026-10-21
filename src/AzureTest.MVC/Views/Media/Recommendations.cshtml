@@ -1,0 +1,221 @@
+@using AzureTest.Contracts.DTOs.Media
+@using AzureTest.Domain.Media.Enums
+@using AzureTest.MVC.Models
+@model MediaRecommendationsDto
+
+@{
+    ViewData["Title"] = "Smart Recommendations";
+
+    var headerModel = new PageHeaderModel(
+        Title: "Smart Recommendations",
+        Subtitle: "Personalized suggestions based on your repeat rewatches, favorite titles, and followed creators.",
+        Icon: "fa-solid fa-wand-magic-sparkles",
+        Badge: "Smart AI & TMDb",
+        ActionText: "Discover More",
+        ActionUrl: Url.Action("Discover", "Media"),
+        ActionIcon: "fa-solid fa-compass"
+    );
+
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new("Media", Url.Action("Index", "Media")),
+        new("Smart Recommendations", null, IsActive: true)
+    };
+
+    var hasRewatched = Model.BecauseYouRewatched != null && Model.BecauseYouRewatched.Any();
+    var hasFollowed = Model.StarringFollowedTalent != null && Model.StarringFollowedTalent.Any();
+    var hasSimilar = Model.SimilarToWatched != null && Model.SimilarToWatched.Any();
+    var hasTopPicks = Model.TopPicksForYou != null && Model.TopPicksForYou.Any();
+}
+
+<div class="space-y-8">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
+
+    <!-- Sub Navigation Pill Bar -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide text-xs font-semibold">
+        @if (hasTopPicks)
+        {
+            <a href="#top-picks" class="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors shadow-2xs whitespace-nowrap">
+                <i class="fa-solid fa-sparkles text-brand-500 mr-1.5"></i> Top Picks
+            </a>
+        }
+        @if (hasRewatched)
+        {
+            <a href="#rewatched" class="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors shadow-2xs whitespace-nowrap">
+                <i class="fa-solid fa-rotate-right text-purple-500 mr-1.5"></i> Because You Rewatched
+            </a>
+        }
+        @if (hasFollowed)
+        {
+            <a href="#followed" class="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors shadow-2xs whitespace-nowrap">
+                <i class="fa-solid fa-star text-amber-500 mr-1.5"></i> Followed Talent
+            </a>
+        }
+        @if (hasSimilar)
+        {
+            <a href="#similar" class="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors shadow-2xs whitespace-nowrap">
+                <i class="fa-solid fa-film text-blue-500 mr-1.5"></i> Similar to Watches
+            </a>
+        }
+    </div>
+
+    <!-- Section 1: Top Picks For You -->
+    @if (hasTopPicks)
+    {
+        <section id="top-picks" class="space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-300 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-sparkles"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 dark:text-white">Top Recommendations For You</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Curated specifically based on your unique viewing patterns.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                @foreach (var item in Model.TopPicksForYou)
+                {
+                    @await Html.PartialAsync("_DiscoverCard", item)
+                }
+            </div>
+        </section>
+    }
+
+    <!-- Section 2: Because You Rewatched (Repeat Views) -->
+    @if (hasRewatched)
+    {
+        <section id="rewatched" class="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 dark:text-white">Because You Rewatched</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Deep-cut suggestions drawn from titles you loved enough to view multiple times.</p>
+                    </div>
+                </div>
+            </div>
+
+            @foreach (var group in Model.BecauseYouRewatched)
+            {
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                @group.SourceBadge
+                            </span>
+                            <h3 class="text-sm font-bold text-slate-900 dark:text-white">@group.ReasonSubtitle</h3>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        @foreach (var item in group.Titles)
+                        {
+                            @await Html.PartialAsync("_DiscoverCard", item)
+                        }
+                    </div>
+                </div>
+            }
+        </section>
+    }
+
+    <!-- Section 3: Starring Followed Talent -->
+    @if (hasFollowed)
+    {
+        <section id="followed" class="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-star"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 dark:text-white">Starring Followed Talent</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Fresh and popular titles from actors and directors you follow.</p>
+                    </div>
+                </div>
+                <a asp-action="People" asp-controller="Media" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+                    Manage Talent <i class="fa-solid fa-arrow-right text-2xs"></i>
+                </a>
+            </div>
+
+            @foreach (var group in Model.StarringFollowedTalent)
+            {
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                @group.SourceBadge
+                            </span>
+                            <h3 class="text-sm font-bold text-slate-900 dark:text-white">@group.ReasonSubtitle</h3>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        @foreach (var item in group.Titles)
+                        {
+                            @await Html.PartialAsync("_DiscoverCard", item)
+                        }
+                    </div>
+                </div>
+            }
+        </section>
+    }
+
+    <!-- Section 4: Similar to Recent Watches -->
+    @if (hasSimilar)
+    {
+        <section id="similar" class="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-film"></i>
+                    </span>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900 dark:text-white">Similar to Your Watches</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Recommendations matching the tone, genres, and cast of your watches.</p>
+                    </div>
+                </div>
+            </div>
+
+            @foreach (var group in Model.SimilarToWatched)
+            {
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                @group.SourceBadge
+                            </span>
+                            <h3 class="text-sm font-bold text-slate-900 dark:text-white">@group.ReasonSubtitle</h3>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        @foreach (var item in group.Titles)
+                        {
+                            @await Html.PartialAsync("_DiscoverCard", item)
+                        }
+                    </div>
+                </div>
+            }
+        </section>
+    }
+
+    @if (!hasTopPicks && !hasRewatched && !hasFollowed && !hasSimilar)
+    {
+        var emptyModel = new EmptyStateModel(
+            Title: "No Recommendations Yet",
+            Description: "Start tracking movies, series, or following actors to unlock smart personalized recommendations.",
+            Icon: "fa-solid fa-wand-magic-sparkles",
+            ActionText: "Discover Titles",
+            ActionUrl: Url.Action("Discover", "Media")
+        );
+        <partial name="UiComponents/_EmptyState" model="emptyModel" />
+    }
+</div>
+
+<partial name="_QuickAddModal" />

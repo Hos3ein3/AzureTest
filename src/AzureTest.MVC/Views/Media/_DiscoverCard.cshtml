@@ -104,7 +104,7 @@
                 <span>Details</span>
             </a>
             <button type="button"
-                    onclick="openQuickAddModal('@item.Id', '@item.Type', '@Html.Raw(item.Title.Replace("'", "\\\'"))')"
+                    onclick="openQuickAddModal('@item.Id', '@item.Type', '@Html.Raw(item.Title.Replace("'", "\\\'"))', '@(item.PosterPath ?? "")')"
                     class="w-full py-2 rounded-xl @(userWatchItem != null ? "bg-slate-800 hover:bg-slate-700 text-white" : "bg-brand-600 hover:bg-brand-700 text-white") text-xs font-bold transition-colors shadow-sm flex items-center justify-center gap-1.5">
                 <i class="fa-solid @(userWatchItem != null ? "fa-pen-to-square" : "fa-plus") text-xs"></i>
                 <span>@(userWatchItem != null ? "Update" : "Add")</span>

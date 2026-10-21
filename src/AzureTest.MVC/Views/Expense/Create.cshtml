@@ -31,6 +31,60 @@
         </div>
 
         <div class="p-6 md:p-8">
+            <!-- Smart Receipt OCR Scanner Card -->
+            <div class="mb-6 bg-purple-50/50 dark:bg-slate-800/80 p-4 sm:p-5 rounded-2xl border border-dashed border-purple-200 dark:border-purple-800 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-camera"></i>
+                        </span>
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Receipt OCR Scanner</h3>
+                            <p class="text-2xs text-slate-500 dark:text-slate-400">Scan or upload a receipt to auto-fill Amount, Date, and Category.</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-lg text-3xs font-bold bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300">
+                        Smart OCR
+                    </span>
+                </div>
+
+                <!-- Dropzone / File Picker -->
+                <div id="receiptDropzone" class="relative group border-2 border-dashed border-purple-300 dark:border-purple-700/60 hover:border-purple-500 rounded-xl p-4 text-center transition-colors bg-white dark:bg-slate-750">
+                    <input type="file" id="receiptFileInput" accept="image/*" capture="environment" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                    
+                    <div id="receiptUploadPrompt" class="space-y-1 pointer-events-none">
+                        <i class="fa-solid fa-cloud-arrow-up text-xl text-purple-500 group-hover:scale-110 transition-transform"></i>
+                        <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">Tap to snap receipt photo or upload file</p>
+                        <p class="text-3xs text-slate-400">Client-side OCR • JPG, PNG, WEBP</p>
+                    </div>
+
+                    <!-- Processing State (Hidden initially) -->
+                    <div id="receiptScanningState" class="hidden space-y-2 pointer-events-none">
+                        <i class="fa-solid fa-circle-notch fa-spin text-xl text-purple-600"></i>
+                        <p id="receiptScanningText" class="text-xs font-semibold text-slate-700 dark:text-slate-200">Scanning receipt with OCR...</p>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 max-w-xs mx-auto overflow-hidden">
+                            <div id="receiptProgressBar" class="bg-purple-600 h-1.5 rounded-full transition-all duration-300" style="width: 15%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Scanned Preview State (Hidden initially) -->
+                    <div id="receiptPreviewState" class="hidden flex items-center justify-between gap-3 text-left">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <img id="receiptThumbnail" src="" alt="Receipt preview" class="w-10 h-10 object-cover rounded-lg border border-slate-200 shadow-2xs shrink-0" />
+                            <div class="min-w-0">
+                                <p class="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-check"></i> Scanned Successfully
+                                </p>
+                                <p id="receiptExtractedSummary" class="text-3xs text-slate-500 dark:text-slate-400 truncate">Fields populated below</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="resetReceiptScanner(event)" class="z-20 px-3 py-1 text-2xs font-bold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-200 transition-colors shrink-0">
+                            Re-scan
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <form asp-action="Create" method="post">
                 @Html.AntiForgeryToken()
                 <div asp-validation-summary="ModelOnly" class="p-3 mb-6 bg-rose-50 border border-rose-200/80 rounded-xl text-rose-700 text-xs"></div>
@@ -177,6 +231,203 @@
 
         const menu = document.getElementById('categoryDropdownMenu');
         menu?.classList.add('hidden');
+    }
+    </script>
+
+    <!-- Client-side Tesseract.js OCR Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script>
+    const receiptFileInput = document.getElementById('receiptFileInput');
+    const uploadPrompt = document.getElementById('receiptUploadPrompt');
+    const scanningState = document.getElementById('receiptScanningState');
+    const previewState = document.getElementById('receiptPreviewState');
+    const progressBar = document.getElementById('receiptProgressBar');
+    const scanningText = document.getElementById('receiptScanningText');
+    const receiptThumb = document.getElementById('receiptThumbnail');
+    const extractedSummary = document.getElementById('receiptExtractedSummary');
+
+    if (receiptFileInput) {
+        receiptFileInput.addEventListener('change', async function(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+
+            // Show preview thumbnail
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                if (receiptThumb) receiptThumb.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            // Switch to scanning state
+            if (uploadPrompt) uploadPrompt.classList.add('hidden');
+            if (previewState) previewState.classList.add('hidden');
+            if (scanningState) scanningState.classList.remove('hidden');
+            if (progressBar) progressBar.style.width = '20%';
+            if (scanningText) scanningText.innerText = 'Initializing OCR engine...';
+
+            try {
+                if (typeof Tesseract === 'undefined') {
+                    throw new Error('OCR library loading failed. Please check internet connection.');
+                }
+
+                const worker = await Tesseract.createWorker('eng', 1, {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            const pct = Math.round((m.progress || 0) * 80) + 20;
+                            if (progressBar) progressBar.style.width = pct + '%';
+                            if (scanningText) scanningText.innerText = `Recognizing receipt text (${pct}%)...`;
+                        }
+                    }
+                });
+
+                const ret = await worker.recognize(file);
+                await worker.terminate();
+
+                const text = ret.data.text || '';
+                parseAndApplyReceiptData(text);
+
+                if (scanningState) scanningState.classList.add('hidden');
+                if (previewState) previewState.classList.remove('hidden');
+            } catch (err) {
+                console.error('OCR Error:', err);
+                if (scanningState) scanningState.classList.add('hidden');
+                if (uploadPrompt) uploadPrompt.classList.remove('hidden');
+                alert('Receipt scan encountered an issue. You can enter details manually.');
+            }
+        });
+    }
+
+    function resetReceiptScanner(e) {
+        if (e) e.stopPropagation();
+        if (receiptFileInput) receiptFileInput.value = '';
+        if (previewState) previewState.classList.add('hidden');
+        if (scanningState) scanningState.classList.add('hidden');
+        if (uploadPrompt) uploadPrompt.classList.remove('hidden');
+    }
+
+    function parseAndApplyReceiptData(text) {
+        if (!text) return;
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        let extractedAmount = null;
+        let extractedDate = null;
+        let extractedVendor = '';
+        let matchedCategory = null;
+
+        // 1. Vendor Name from top lines (skipping purely numeric lines)
+        for (let i = 0; i < Math.min(lines.length, 4); i++) {
+            const clean = lines[i].replace(/[^a-zA-Z0-9\s&'-]/g, '').trim();
+            if (clean.length >= 3 && !/^\d+$/.test(clean) && !/receipt|tax|invoice|welcome/i.test(clean)) {
+                extractedVendor = clean;
+                break;
+            }
+        }
+
+        // 2. Amount Extraction (Look for TOTAL, AMOUNT, BALANCE, or highest decimal number)
+        const amountRegex = /(?:total|amount|balance|due|paid|charge|sum|net|sale)[\s:]*[$€£]?\s*(\d{1,5}[.,]\d{2})/i;
+        const fallbackAmountRegex = /(?:[$€£]\s*)(\d{1,5}[.,]\d{2})|\b(\d{1,5}[.,]\d{2})\b/g;
+
+        for (const line of lines) {
+            const m = line.match(amountRegex);
+            if (m && m[1]) {
+                const val = parseFloat(m[1].replace(',', '.'));
+                if (!isNaN(val) && val > 0) {
+                    extractedAmount = val;
+                    break;
+                }
+            }
+        }
+
+        if (!extractedAmount) {
+            // Find highest amount from all lines
+            let maxFound = 0;
+            let match;
+            while ((match = fallbackAmountRegex.exec(text)) !== null) {
+                const numStr = match[1] || match[2];
+                if (numStr) {
+                    const val = parseFloat(numStr.replace(',', '.'));
+                    if (!isNaN(val) && val > maxFound && val < 50000) {
+                        maxFound = val;
+                    }
+                }
+            }
+            if (maxFound > 0) extractedAmount = maxFound;
+        }
+
+        // 3. Date Extraction
+        const ymdMatch = text.match(/\b(20\d\d)[-/.](\d{1,2})[-/.](\d{1,2})\b/);
+        const mdyMatch = text.match(/\b(\d{1,2})[-/.](\d{1,2})[-/.](20\d\d)\b/);
+
+        if (ymdMatch) {
+            const y = ymdMatch[1];
+            const m = String(ymdMatch[2]).padStart(2, '0');
+            const d = String(ymdMatch[3]).padStart(2, '0');
+            extractedDate = `${y}-${m}-${d}`;
+        } else if (mdyMatch) {
+            const y = mdyMatch[3];
+            const p1 = parseInt(mdyMatch[1], 10);
+            const p2 = parseInt(mdyMatch[2], 10);
+            const m = p1 > 12 ? String(p2).padStart(2, '0') : String(p1).padStart(2, '0');
+            const d = p1 > 12 ? String(p1).padStart(2, '0') : String(p2).padStart(2, '0');
+            extractedDate = `${y}-${m}-${d}`;
+        }
+
+        // 4. Category Keyword Detection
+        const lowerText = text.toLowerCase();
+        const categoryOptions = document.querySelectorAll('#categoryOptionsList .category-option');
+        
+        const keywordsMap = [
+            { words: ['restaurant', 'cafe', 'coffee', 'starbucks', 'burger', 'pizza', 'diner', 'grill', 'bistro', 'food', 'mcdonald'], categoryKeywords: ['food', 'dining', 'restaurant'] },
+            { words: ['grocery', 'market', 'walmart', 'costco', 'kroger', 'aldi', 'target', 'supermarket'], categoryKeywords: ['groceries', 'food', 'shopping'] },
+            { words: ['gas', 'fuel', 'shell', 'chevron', 'exxon', 'bp', 'mobil', 'parking', 'uber', 'lyft'], categoryKeywords: ['transport', 'fuel', 'car', 'travel'] },
+            { words: ['pharmacy', 'cvs', 'walgreens', 'health', 'medical', 'clinic', 'hospital'], categoryKeywords: ['health', 'medical'] },
+            { words: ['hotel', 'motel', 'airbnb', 'flight', 'airline', 'booking'], categoryKeywords: ['travel', 'hotel'] },
+            { words: ['cinema', 'theater', 'movie', 'ticket', 'netflix', 'steam'], categoryKeywords: ['entertainment', 'media'] },
+            { words: ['apple', 'google', 'aws', 'microsoft', 'azure', 'domain', 'hosting'], categoryKeywords: ['software', 'subscription', 'technology'] }
+        ];
+
+        for (const rule of keywordsMap) {
+            if (rule.words.some(w => lowerText.includes(w))) {
+                for (const opt of categoryOptions) {
+                    const optText = (opt.textContent || '').toLowerCase();
+                    if (rule.categoryKeywords.some(ck => optText.includes(ck))) {
+                        opt.click();
+                        matchedCategory = opt.textContent.trim();
+                        break;
+                    }
+                }
+                if (matchedCategory) break;
+            }
+        }
+
+        // Populate Form Fields
+        const amountInput = document.querySelector('input[name="Amount"]');
+        const dateInput = document.querySelector('input[name="Date"]');
+        const descInput = document.querySelector('textarea[name="Description"]');
+
+        let summaryParts = [];
+        if (extractedAmount && amountInput) {
+            amountInput.value = extractedAmount.toFixed(2);
+            summaryParts.push(`Amount: $${extractedAmount.toFixed(2)}`);
+        }
+        if (extractedDate && dateInput) {
+            dateInput.value = extractedDate;
+            summaryParts.push(`Date: ${extractedDate}`);
+        }
+        if (extractedVendor && descInput) {
+            if (!descInput.value || descInput.value.trim() === '') {
+                descInput.value = `Receipt: ${extractedVendor}`;
+            }
+            summaryParts.push(`Vendor: ${extractedVendor}`);
+        }
+        if (matchedCategory) {
+            summaryParts.push(`Category: ${matchedCategory}`);
+        }
+
+        if (extractedSummary) {
+            extractedSummary.innerText = summaryParts.length > 0 
+                ? summaryParts.join(' • ') 
+                : 'Scanned receipt. Please review filled details.';
+        }
     }
     </script>
 }

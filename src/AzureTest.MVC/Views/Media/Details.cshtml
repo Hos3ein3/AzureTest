@@ -189,6 +189,22 @@
                                             Watched: @userItem.WatchedDate.Value.ToString("MMM yyyy")
                                         </span>
                                     }
+
+                                    @if (userItem.RewatchCount > 0)
+                                    {
+                                        <span class="text-xs text-purple-300 flex items-center gap-1 bg-purple-500/20 border border-purple-500/30 px-2.5 py-1 rounded-lg font-semibold">
+                                            <i class="fa-solid fa-rotate-right text-purple-400"></i>
+                                            Rewatched @(userItem.RewatchCount)x
+                                        </span>
+                                    }
+
+                                    @if (userItem.LastWatchedAt.HasValue && userItem.LastWatchedAt != userItem.WatchedDate)
+                                    {
+                                        <span class="text-xs text-slate-300 flex items-center gap-1">
+                                            <i class="fa-regular fa-clock text-slate-400"></i>
+                                            Last: @userItem.LastWatchedAt.Value.ToString("MMM dd, yyyy")
+                                        </span>
+                                    }
                                 </div>
 
                                 <div class="flex items-center gap-2">
@@ -198,6 +214,10 @@
                                             <i class="fa-solid fa-star text-amber-400 text-2xs"></i> My Score: @userItem.UserRating/10
                                         </span>
                                     }
+                                    <button type="button" onclick="openQuickAddModal('@Model.Id', '@Model.Type', '@Html.Raw(Model.Title.Replace("'", "\\\'"))', '@Model.PosterPath')" class="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-2xs" title="Add to Custom Playlist">
+                                        <i class="fa-solid fa-folder-plus text-2xs"></i>
+                                        <span>Add to Playlist</span>
+                                    </button>
                                     <button type="button" onclick="openRateModal()" class="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition-colors flex items-center gap-1.5">
                                         <i class="fa-solid fa-pen text-2xs"></i>
                                         <span>Rate & Date</span>
@@ -312,6 +332,13 @@
                                 <i class="fa-solid fa-check text-2xs"></i>
                                 <span>I Watched This (Add Date)</span>
                             </button>
+
+                            <!-- Add to Custom Playlist button -->
+                            <button type="button" onclick="openQuickAddModal('@Model.Id', '@Model.Type', '@Html.Raw(Model.Title.Replace("'", "\\\'"))', '@Model.PosterPath')"
+                                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5" title="Add to Custom Playlist">
+                                <i class="fa-solid fa-folder-plus text-2xs"></i>
+                                <span>Add to Playlist</span>
+                            </button>
                         </div>
                     }
                 </div>
@@ -389,6 +416,13 @@
                             class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
                         <i class="fa-solid fa-check text-2xs"></i>
                         <span id="markSeasonWatchedBtnText">Mark Season Watched</span>
+                    </button>
+
+                    <button type="button" id="rewatchSeasonBtn" onclick="openSeasonRewatchModal()"
+                            class="px-3.5 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/50 dark:hover:bg-purple-800 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5 hidden"
+                            title="Log a rewatch of this season">
+                        <i class="fa-solid fa-rotate-right text-2xs"></i>
+                        <span>Re-watch Season</span>
                     </button>
 
                     <button type="button" id="markSeasonUnwatchedBtn" onclick="markCurrentSeasonUnwatched()"
@@ -902,6 +936,10 @@
     const mediaType = @((int)Model.Type);
     const mediaTitle = "@Html.Raw(Model.Title.Replace("\"", "\\\""))";
     const mediaPoster = "@Html.Raw(Model.PosterPath ?? "")";
+    const userWatchItemId = "@(userItem?.Id.ToString() ?? "")";
+    const userRewatchCount = @(userItem?.RewatchCount ?? 0);
+    const userWatchedDate = "@(userItem?.WatchedDate?.ToString("MMM dd, yyyy") ?? "")";
+    const userLastWatchedDate = "@(userItem?.LastWatchedAt?.ToString("MMM dd, yyyy") ?? "")";
     let userCurrentSeason = @(userItem?.CurrentSeason ?? 0);
     let userCurrentEpisode = @(userItem?.CurrentEpisode ?? 0);
     let userWatchStatus = @(userItem != null ? (int)userItem.Status : -1);
@@ -928,7 +966,7 @@
         const isSeasonWatched = activeTab ? activeTab.dataset.watched === 'true' : false;
 
         document.getElementById('activeSeasonTitle').innerText = seasonName;
-        document.getElementById('activeSeasonSubtitle').innerText = `${epCount} episodes in this season`;
+        document.getElementById('activeSeasonSubtitle').innerText = `${epCount} episodes in this season${isSeasonWatched && userRewatchCount > 0 ? ` • Rewatches: ${userRewatchCount}x` : ''}`;
         
         const airDateEl = document.getElementById('activeSeasonAirDate');
         if (airDateEl) {
@@ -948,13 +986,16 @@
         const unwatchedBtn = document.getElementById('markSeasonUnwatchedBtn');
         const watchedBtn = document.getElementById('markSeasonWatchedBtn');
         const watchedBtnText = document.getElementById('markSeasonWatchedBtnText');
+        const rewatchSeasonBtn = document.getElementById('rewatchSeasonBtn');
 
         if (isSeasonWatched) {
             if (unwatchedBtn) unwatchedBtn.classList.remove('hidden');
+            if (rewatchSeasonBtn) rewatchSeasonBtn.classList.remove('hidden');
             if (watchedBtnText) watchedBtnText.innerText = `Season Watched`;
             if (watchedBtn) watchedBtn.className = 'px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5 opacity-80';
         } else {
             if (unwatchedBtn) unwatchedBtn.classList.add('hidden');
+            if (rewatchSeasonBtn) rewatchSeasonBtn.classList.add('hidden');
             if (watchedBtnText) watchedBtnText.innerText = `Mark ${seasonName} Watched`;
             if (watchedBtn) watchedBtn.className = 'px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5';
         }
@@ -1029,6 +1070,18 @@
                             <p class="text-3xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
                                 ${ep.overview || 'No synopsis provided. Click for details.'}
                             </p>
+                            ${isWatched ? `
+                                <div class="flex flex-wrap items-center gap-2 pt-1 text-3xs font-semibold">
+                                    <span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                        <i class="fa-solid fa-circle-check text-3xs"></i> Watched ${userWatchedDate ? 'on ' + userWatchedDate : ''}
+                                    </span>
+                                    ${userRewatchCount > 0 ? `
+                                        <span class="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-bold text-3xs flex items-center gap-1">
+                                            <i class="fa-solid fa-rotate-right text-3xs"></i> Rewatched ${userRewatchCount}x
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
 
@@ -1038,7 +1091,12 @@
                             <i class="fa-solid fa-circle-info text-sm"></i>
                         </button>
                         ${isWatched
-                            ? `<button type="button" onclick="markSingleEpisodeUnwatched(${seasonNumber}, ${ep.episodeNumber})"
+                            ? `<button type="button" onclick="openEpisodeRewatchModal(${seasonNumber}, ${ep.episodeNumber}, '${(ep.name || '').replace(/'/g, "\\'")}')"
+                                       class="px-2.5 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/50 dark:hover:bg-purple-800 text-purple-700 dark:text-purple-300 text-xs font-bold flex items-center gap-1 transition-colors shadow-2xs" title="Log a rewatch of this episode">
+                                   <i class="fa-solid fa-rotate-right text-2xs"></i>
+                                   <span>Re-watch</span>
+                               </button>
+                               <button type="button" onclick="markSingleEpisodeUnwatched(${seasonNumber}, ${ep.episodeNumber})"
                                        class="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-rose-100 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 text-xs font-bold flex items-center gap-1.5 transition-colors group" title="Click to undo / mark unwatched">
                                  <i class="fa-solid fa-check text-2xs group-hover:hidden"></i>
                                  <i class="fa-solid fa-rotate-left text-2xs hidden group-hover:inline"></i>
@@ -1091,8 +1149,23 @@
         const actionsEl = document.getElementById('epModalActions');
 
         if (isWatched) {
-            statusEl.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Watched</span>`;
+            statusEl.innerHTML = `
+                <div class="space-y-0.5 text-left">
+                    <span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold text-xs">
+                        <i class="fa-solid fa-circle-check"></i> Watched
+                    </span>
+                    <div class="text-3xs text-slate-400 space-y-0.5">
+                        ${userWatchedDate ? `<div><i class="fa-regular fa-calendar-check mr-1"></i>Watched: ${userWatchedDate}</div>` : ''}
+                        ${userRewatchCount > 0 ? `<div><i class="fa-solid fa-rotate-right mr-1 text-purple-400"></i>Rewatches: ${userRewatchCount}x</div>` : ''}
+                        ${userLastWatchedDate ? `<div><i class="fa-regular fa-clock mr-1"></i>Last viewed: ${userLastWatchedDate}</div>` : ''}
+                    </div>
+                </div>
+            `;
             actionsEl.innerHTML = `
+                <button type="button" onclick="closeEpisodeDetailsModal(); openEpisodeRewatchModal(${seasonNumber}, ${ep.episodeNumber}, '${(ep.name || '').replace(/'/g, "\\'")}');"
+                        class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-right text-2xs"></i> Re-watch
+                </button>
                 <button type="button" onclick="closeEpisodeDetailsModal(); markSingleEpisodeUnwatched(${seasonNumber}, ${ep.episodeNumber});"
                         class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 text-xs font-bold transition-colors flex items-center gap-1.5">
                     <i class="fa-solid fa-rotate-left text-2xs"></i> Mark Unwatched
@@ -1266,6 +1339,23 @@
 
     function closeRewatchModal() {
         document.getElementById('rewatchModal').classList.add('hidden');
+    }
+
+    function openSeasonRewatchModal() {
+        if (!userWatchItemId) {
+            openWatchedModal(mediaId, mediaTitle, mediaType, @(validSeasons.Count), @totalEpisodesCount);
+            return;
+        }
+        openRewatchModal(userWatchItemId, `${mediaTitle} - Season ${activeSeasonNumber}`, mediaType, userRewatchCount);
+    }
+
+    function openEpisodeRewatchModal(seasonNumber, episodeNumber, epTitle) {
+        if (!userWatchItemId) {
+            openWatchedModal(mediaId, mediaTitle, mediaType, @(validSeasons.Count), @totalEpisodesCount);
+            return;
+        }
+        const label = epTitle ? `S${seasonNumber}E${episodeNumber}: ${epTitle}` : `Season ${seasonNumber} Episode ${episodeNumber}`;
+        openRewatchModal(userWatchItemId, `${mediaTitle} (${label})`, mediaType, userRewatchCount);
     }
 
     function openWatchedModal(tmdbId, title, type, totalSeasons, totalEpisodes) {
