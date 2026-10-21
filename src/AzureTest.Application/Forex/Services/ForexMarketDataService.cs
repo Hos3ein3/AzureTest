@@ -66,7 +66,7 @@ public sealed class ForexMarketDataService : IForexMarketDataService
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(5));
 
-            var response = await _httpClient.GetAsync("https://api.frankfurter.app/latest?from=USD", cts.Token);
+            var response = await _httpClient.GetAsync("https://api.frankfurter.dev/v1/latest?base=USD", cts.Token);
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync(cts.Token);
