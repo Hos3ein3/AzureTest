@@ -29,8 +29,17 @@ public record WatchItemDto(
     List<string> Genres,
     string NextEpisodeLabel,
     int EstimatedWatchedMinutes,
-    int RewatchCount = 0
-);
+    int RewatchCount = 0,
+    Dictionary<string, int>? SeasonRewatches = null,
+    Dictionary<string, int>? EpisodeRewatches = null
+)
+{
+    public int GetSeasonRewatchCount(int season) =>
+        SeasonRewatches != null && SeasonRewatches.TryGetValue(season.ToString(), out var c) ? c : 0;
+
+    public int GetEpisodeRewatchCount(int season, int episode) =>
+        EpisodeRewatches != null && EpisodeRewatches.TryGetValue($"S{season}E{episode}", out var c) ? c : 0;
+}
 
 public record SaveWatchProgressDto(
     int Season,

@@ -276,6 +276,7 @@
                                             <form asp-action="UndoRewatch" asp-controller="Media" method="post" class="inline">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="watchItemId" value="@userItem.Id" />
+                                                <input type="hidden" name="scope" value="EntireTitle" />
                                                 <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
                                                 <button type="submit" class="px-2.5 py-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 shadow-2xs" title="Undo latest repeat viewing">
                                                     <i class="fa-solid fa-rotate-left text-2xs"></i>
@@ -390,6 +391,7 @@
                 {
                     var isCurrentActiveSeason = s.SeasonNumber == initialSeasonNumber;
                     var isSeasonWatched = userItem != null && (userItem.CurrentSeason > s.SeasonNumber || (userItem.CurrentSeason == s.SeasonNumber && userItem.CurrentEpisode >= s.EpisodeCount) || userItem.Status == WatchStatus.Completed);
+                    var seasonRewatchCount = userItem?.GetSeasonRewatchCount(s.SeasonNumber) ?? 0;
 
                     <button type="button" onclick="selectSeason(@s.SeasonNumber)"
                             id="seasonTab-@s.SeasonNumber"
@@ -399,11 +401,18 @@
                             data-overview="@(s.Overview ?? "")"
                             data-airdate="@(s.AirDate?.ToString("MMM yyyy") ?? "")"
                             data-watched="@(isSeasonWatched ? "true" : "false")"
+                            data-season-rewatches="@seasonRewatchCount"
                             class="season-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 @(isCurrentActiveSeason ? "bg-slate-900 dark:bg-brand-600 text-white shadow-2xs" : "bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-650")">
                         <span>@s.Name</span>
                         <span class="px-2 py-0.5 rounded-lg text-3xs font-semibold @(isCurrentActiveSeason ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300")">
                             @s.EpisodeCount Ep
                         </span>
+                        @if (seasonRewatchCount > 0)
+                        {
+                            <span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 text-3xs font-bold flex items-center gap-1" title="Rewatched @(seasonRewatchCount)x">
+                                <i class="fa-solid fa-rotate-right text-3xs"></i> @(seasonRewatchCount)x
+                            </span>
+                        }
                         @if (isSeasonWatched)
                         {
                             <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
@@ -437,8 +446,15 @@
                         <span>Re-watch Season</span>
                     </button>
 
+                    <button type="button" id="undoSeasonRewatchBtn" onclick="undoCurrentSeasonRewatch()"
+                            class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5 hidden"
+                            title="Undo repeat watch of this season">
+                        <i class="fa-solid fa-rotate-left text-2xs"></i>
+                        <span id="undoSeasonRewatchBtnText">Undo Re-watch Season</span>
+                    </button>
+
                     <button type="button" id="markSeasonUnwatchedBtn" onclick="markCurrentSeasonUnwatched()"
-                            class="px-3.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5 hidden">
+                            class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-650 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5 hidden">
                         <i class="fa-solid fa-rotate-left text-2xs"></i>
                         <span>Mark Season Unwatched</span>
                     </button>
@@ -977,6 +993,8 @@
     const isCompleted = userWatchStatus === @((int)WatchStatus.Completed);
     let activeSeasonNumber = @initialSeasonNumber;
     const episodesCache = {};
+    const userSeasonRewatches = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(userItem?.SeasonRewatches ?? new Dictionary<string, int>()));
+    const userEpisodeRewatches = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(userItem?.EpisodeRewatches ?? new Dictionary<string, int>()));
 
     function selectSeason(seasonNumber) {
         activeSeasonNumber = seasonNumber;
@@ -995,9 +1013,10 @@
         const overview = activeTab ? activeTab.dataset.overview : '';
         const airdate = activeTab ? activeTab.dataset.airdate : '';
         const isSeasonWatched = activeTab ? activeTab.dataset.watched === 'true' : false;
+        const seasonRewatchCount = userSeasonRewatches[seasonNumber.toString()] || 0;
 
         document.getElementById('activeSeasonTitle').innerText = seasonName;
-        document.getElementById('activeSeasonSubtitle').innerText = `${epCount} episodes in this season${isSeasonWatched && userRewatchCount > 0 ? ` • Rewatches: ${userRewatchCount}x` : ''}`;
+        document.getElementById('activeSeasonSubtitle').innerText = `${epCount} episodes in this season${seasonRewatchCount > 0 ? ` • Rewatches: ${seasonRewatchCount}x` : ''}`;
         
         const airDateEl = document.getElementById('activeSeasonAirDate');
         if (airDateEl) {
@@ -1018,6 +1037,7 @@
         const watchedBtn = document.getElementById('markSeasonWatchedBtn');
         const watchedBtnText = document.getElementById('markSeasonWatchedBtnText');
         const rewatchSeasonBtn = document.getElementById('rewatchSeasonBtn');
+        const undoSeasonRewatchBtn = document.getElementById('undoSeasonRewatchBtn');
 
         if (isSeasonWatched) {
             if (unwatchedBtn) unwatchedBtn.classList.remove('hidden');
@@ -1029,6 +1049,14 @@
             if (rewatchSeasonBtn) rewatchSeasonBtn.classList.add('hidden');
             if (watchedBtnText) watchedBtnText.innerText = `Mark ${seasonName} Watched`;
             if (watchedBtn) watchedBtn.className = 'px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5';
+        }
+
+        if (undoSeasonRewatchBtn) {
+            if (seasonRewatchCount > 0) {
+                undoSeasonRewatchBtn.classList.remove('hidden');
+            } else {
+                undoSeasonRewatchBtn.classList.add('hidden');
+            }
         }
 
         loadSeasonEpisodes(seasonNumber);
@@ -1075,6 +1103,8 @@
         let html = '<div class="space-y-2.5">';
         episodes.forEach(ep => {
             const isWatched = isCompleted || (userCurrentSeason > seasonNumber) || (userCurrentSeason === seasonNumber && userCurrentEpisode >= ep.episodeNumber);
+            const epKey = 'S' + seasonNumber + 'E' + ep.episodeNumber;
+            const epRewatchCount = userEpisodeRewatches[epKey] || 0;
             const stillUrl = ep.stillPath
                 ? `https://image.tmdb.org/t/p/w300${ep.stillPath}`
                 : 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=300&q=80';
@@ -1106,9 +1136,9 @@
                                     <span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                                         <i class="fa-solid fa-circle-check text-3xs"></i> Watched ${userWatchedDate ? 'on ' + userWatchedDate : ''}
                                     </span>
-                                    ${userRewatchCount > 0 ? `
-                                        <span class="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-bold text-3xs flex items-center gap-1">
-                                            <i class="fa-solid fa-rotate-right text-3xs"></i> Rewatched ${userRewatchCount}x
+                                    ${epRewatchCount > 0 ? `
+                                        <span class="px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-bold text-3xs flex items-center gap-1" title="Episode rewatched ${epRewatchCount} time(s)">
+                                            <i class="fa-solid fa-rotate-right text-3xs"></i> Rewatched ${epRewatchCount}x
                                         </span>
                                     ` : ''}
                                 </div>
@@ -1127,6 +1157,13 @@
                                    <i class="fa-solid fa-rotate-right text-2xs"></i>
                                    <span>Re-watch</span>
                                </button>
+                               ${epRewatchCount > 0 ? `
+                               <button type="button" onclick="undoEpisodeRewatch(${seasonNumber}, ${ep.episodeNumber})"
+                                       class="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-1 transition-colors shadow-2xs" title="Undo repeat watch of this episode">
+                                   <i class="fa-solid fa-rotate-left text-2xs"></i>
+                                   <span>Undo Rewatch</span>
+                               </button>
+                               ` : ''}
                                <button type="button" onclick="markSingleEpisodeUnwatched(${seasonNumber}, ${ep.episodeNumber})"
                                        class="px-3 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-rose-100 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 text-xs font-bold flex items-center gap-1.5 transition-colors group" title="Click to undo / mark unwatched">
                                  <i class="fa-solid fa-check text-2xs group-hover:hidden"></i>
@@ -1153,6 +1190,8 @@
         if (!ep) return;
 
         const isWatched = isCompleted || (userCurrentSeason > seasonNumber) || (userCurrentSeason === seasonNumber && userCurrentEpisode >= ep.episodeNumber);
+        const epKey = 'S' + seasonNumber + 'E' + episodeNumber;
+        const epRewatchCount = userEpisodeRewatches[epKey] || 0;
         const stillUrl = ep.stillPath
             ? `https://image.tmdb.org/t/p/w780${ep.stillPath}`
             : 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=780&q=80';
@@ -1187,7 +1226,7 @@
                     </span>
                     <div class="text-3xs text-slate-400 space-y-0.5">
                         ${userWatchedDate ? `<div><i class="fa-regular fa-calendar-check mr-1"></i>Watched: ${userWatchedDate}</div>` : ''}
-                        ${userRewatchCount > 0 ? `<div><i class="fa-solid fa-rotate-right mr-1 text-purple-400"></i>Rewatches: ${userRewatchCount}x</div>` : ''}
+                        ${epRewatchCount > 0 ? `<div><i class="fa-solid fa-rotate-right mr-1 text-purple-400"></i>Episode Rewatches: ${epRewatchCount}x</div>` : ''}
                         ${userLastWatchedDate ? `<div><i class="fa-regular fa-clock mr-1"></i>Last viewed: ${userLastWatchedDate}</div>` : ''}
                     </div>
                 </div>
@@ -1197,8 +1236,14 @@
                         class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5">
                     <i class="fa-solid fa-rotate-right text-2xs"></i> Re-watch
                 </button>
+                ${epRewatchCount > 0 ? `
+                <button type="button" onclick="closeEpisodeDetailsModal(); undoEpisodeRewatch(${seasonNumber}, ${ep.episodeNumber});"
+                        class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 text-xs font-bold transition-colors flex items-center gap-1.5" title="Undo repeat watch of this episode">
+                    <i class="fa-solid fa-rotate-left text-2xs"></i> Undo Re-watch
+                </button>
+                ` : ''}
                 <button type="button" onclick="closeEpisodeDetailsModal(); markSingleEpisodeUnwatched(${seasonNumber}, ${ep.episodeNumber});"
-                        class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 text-xs font-bold transition-colors flex items-center gap-1.5">
+                        class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 text-xs font-bold transition-colors flex items-center gap-1.5">
                     <i class="fa-solid fa-rotate-left text-2xs"></i> Mark Unwatched
                 </button>
             `;
@@ -1362,6 +1407,23 @@
         .catch(() => window.location.reload());
     }
 
+    function updateRewatchModalUndoButton(show, onClickAction) {
+        const undoSec = document.getElementById('undoRewatchSection');
+        if (!undoSec) return;
+        if (show) {
+            undoSec.innerHTML = `
+                <button type="button" onclick="${onClickAction}" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-300 text-xs font-bold transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-left text-2xs"></i>
+                    <span>Undo Re-watch</span>
+                </button>
+            `;
+            undoSec.classList.remove('hidden');
+        } else {
+            undoSec.innerHTML = '';
+            undoSec.classList.add('hidden');
+        }
+    }
+
     function openRewatchModal(watchItemId, title, type, rewatchCount) {
         document.getElementById('rewatchWatchItemId').value = watchItemId;
         document.getElementById('rewatchScope').value = 'EntireTitle';
@@ -1382,6 +1444,7 @@
         }
         
         document.getElementById('rewatchOptLog').checked = true;
+        updateRewatchModalUndoButton(userRewatchCount > 0, "undoTitleRewatch()");
         document.getElementById('rewatchModal').classList.remove('hidden');
     }
 
@@ -1410,6 +1473,8 @@
         document.getElementById('rewatchOptRestartDesc').innerText = `Set progress to Season ${activeSeasonNumber} Episode 1 and status to Watching without resetting earlier seasons.`;
         
         document.getElementById('rewatchOptLog').checked = true;
+        const seasonCount = userSeasonRewatches[activeSeasonNumber.toString()] || 0;
+        updateRewatchModalUndoButton(seasonCount > 0, `undoSeasonRewatch(${activeSeasonNumber})`);
         document.getElementById('rewatchModal').classList.remove('hidden');
     }
 
@@ -1436,14 +1501,58 @@
         document.getElementById('rewatchOptRestartDesc').innerText = `Set current progress to Season ${seasonNumber} Episode ${episodeNumber} and status to Watching.`;
         
         document.getElementById('rewatchOptLog').checked = true;
+        const epKey = 'S' + seasonNumber + 'E' + episodeNumber;
+        const epCount = userEpisodeRewatches[epKey] || 0;
+        updateRewatchModalUndoButton(epCount > 0, `undoEpisodeRewatch(${seasonNumber}, ${episodeNumber})`);
         document.getElementById('rewatchModal').classList.remove('hidden');
     }
 
+    function undoCurrentSeasonRewatch() {
+        undoSeasonRewatch(activeSeasonNumber);
+    }
+
+    function undoSeasonRewatch(seasonNumber) {
+        if (!userWatchItemId) return;
+        postUndoRewatch('Season', seasonNumber, null);
+    }
+
+    function undoEpisodeRewatch(seasonNumber, episodeNumber) {
+        if (!userWatchItemId) return;
+        postUndoRewatch('Episode', seasonNumber, episodeNumber);
+    }
+
+    function undoTitleRewatch() {
+        if (!userWatchItemId) return;
+        postUndoRewatch('EntireTitle', null, null);
+    }
+
+    function postUndoRewatch(scope, season, episode) {
+        const formData = new FormData();
+        formData.append('watchItemId', userWatchItemId);
+        formData.append('scope', scope);
+        if (season !== null && season !== undefined) formData.append('targetSeason', season);
+        if (episode !== null && episode !== undefined) formData.append('targetEpisode', episode);
+        formData.append('returnUrl', window.location.pathname + window.location.search);
+        formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+
+        fetch('/Media/UndoRewatch', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to undo rewatch.');
+            }
+        })
+        .catch(() => window.location.reload());
+    }
+
     function submitUndoRewatch() {
-        const form = document.getElementById('directUndoRewatchForm');
-        if (form) {
-            form.submit();
-        }
+        undoTitleRewatch();
     }
 
     function openWatchedModal(tmdbId, title, type, totalSeasons, totalEpisodes) {

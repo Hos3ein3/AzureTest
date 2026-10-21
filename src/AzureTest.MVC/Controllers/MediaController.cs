@@ -487,11 +487,17 @@ public class MediaController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [DisplayName("Undo Rewatch")]
-    [Description("Undo the latest rewatch log for a title.")]
-    public async Task<IActionResult> UndoRewatch(Guid watchItemId, string? returnUrl = null, CancellationToken ct = default)
+    [Description("Undo the latest rewatch log for a title, season, or episode.")]
+    public async Task<IActionResult> UndoRewatch(
+        Guid watchItemId,
+        RewatchTargetScope scope = RewatchTargetScope.EntireTitle,
+        int? targetSeason = null,
+        int? targetEpisode = null,
+        string? returnUrl = null,
+        CancellationToken ct = default)
     {
         var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
-        var cmd = new RewatchItemCommand(_currentUser.Id, watchItemId, IsUndo: true);
+        var cmd = new RewatchItemCommand(_currentUser.Id, watchItemId, Scope: scope, TargetSeason: targetSeason, TargetEpisode: targetEpisode, IsUndo: true);
         var validation = await _validator.ValidateAsync(cmd, ct);
         if (validation.IsFailure)
         {
@@ -504,8 +510,13 @@ public class MediaController : Controller
         var result = await _commands.RewatchItemAsync(cmd, ct);
         if (result.IsSuccess)
         {
-            TempData["SuccessMessage"] = "Undid repeat viewing.";
-            if (isAjax) return Json(new { success = true, message = "Undid repeat viewing." });
+            var msg = scope == RewatchTargetScope.Season
+                ? $"Undid Season {targetSeason} repeat viewing."
+                : scope == RewatchTargetScope.Episode
+                    ? $"Undid S{targetSeason}E{targetEpisode} repeat viewing."
+                    : "Undid repeat viewing.";
+            TempData["SuccessMessage"] = msg;
+            if (isAjax) return Json(new { success = true, message = msg });
         }
         else
         {

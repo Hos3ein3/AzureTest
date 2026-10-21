@@ -360,5 +360,173 @@ public class MediaTests
         Assert.Equal(0, seriesBreakdown.Count);
         Assert.Equal(0, seriesBreakdown.HoursWatched);
     }
+
+    [Fact]
+    public void WatchItemDocument_EpisodeRewatch_IsIsolated_FromSeasonAndTitle()
+    {
+        var item = WatchItemDocument.Create(
+            userId: Guid.NewGuid(),
+            tenantId: Guid.NewGuid(),
+            tmdbId: 1668, // Friends
+            type: MediaType.TvSeries,
+            title: "Friends",
+            status: WatchStatus.Completed,
+            currentSeason: 10,
+            currentEpisode: 17,
+            totalSeasons: 10,
+            totalEpisodes: 236
+        );
+
+        // Entire title and seasons start at 0
+        Assert.Equal(0, item.RewatchCount);
+        Assert.Equal(0, item.GetSeasonRewatchCount(1));
+        Assert.Equal(0, item.GetEpisodeRewatchCount(1, 1));
+
+        // Rewatch only S1E1
+        item.RewatchEpisode(1, 1);
+
+        // Only S1E1 count is incremented
+        Assert.Equal(1, item.GetEpisodeRewatchCount(1, 1));
+        Assert.Equal(0, item.GetEpisodeRewatchCount(1, 2));
+        Assert.Equal(0, item.GetSeasonRewatchCount(1));
+        Assert.Equal(0, item.RewatchCount);
+
+        // Rewatch S1E1 again
+        item.RewatchEpisode(1, 1);
+        Assert.Equal(2, item.GetEpisodeRewatchCount(1, 1));
+        Assert.Equal(0, item.RewatchCount);
+
+        // Undo episode rewatch
+        item.UndoEpisodeRewatch(1, 1);
+        Assert.Equal(1, item.GetEpisodeRewatchCount(1, 1));
+
+        item.UndoEpisodeRewatch(1, 1);
+        Assert.Equal(0, item.GetEpisodeRewatchCount(1, 1));
+        Assert.Equal(0, item.RewatchCount);
+    }
+
+    [Fact]
+    public void WatchItemDocument_SeasonRewatch_IsIsolated_FromTitleAndEpisodes()
+    {
+        var item = WatchItemDocument.Create(
+            userId: Guid.NewGuid(),
+            tenantId: Guid.NewGuid(),
+            tmdbId: 1668,
+            type: MediaType.TvSeries,
+            title: "Friends",
+            status: WatchStatus.Completed,
+            currentSeason: 10,
+            currentEpisode: 17,
+            totalSeasons: 10,
+            totalEpisodes: 236
+        );
+
+        // Rewatch Season 2 only
+        item.RewatchSeason(2);
+
+        Assert.Equal(1, item.GetSeasonRewatchCount(2));
+        Assert.Equal(0, item.GetSeasonRewatchCount(1));
+        Assert.Equal(0, item.RewatchCount);
+        Assert.Equal(0, item.GetEpisodeRewatchCount(2, 1));
+
+        // Undo Season 2 rewatch
+        item.UndoSeasonRewatch(2);
+        Assert.Equal(0, item.GetSeasonRewatchCount(2));
+        Assert.Equal(0, item.RewatchCount);
+    }
+
+    [Fact]
+    public void WatchItemDocument_EntireTitleRewatch_IsIsolated_FromSeasonsAndEpisodes()
+    {
+        var item = WatchItemDocument.Create(
+            userId: Guid.NewGuid(),
+            tenantId: Guid.NewGuid(),
+            tmdbId: 1668,
+            type: MediaType.TvSeries,
+            title: "Friends",
+            status: WatchStatus.Completed,
+            currentSeason: 10,
+            currentEpisode: 17,
+            totalSeasons: 10,
+            totalEpisodes: 236
+        );
+
+        // Rewatch entire series
+        item.IncrementRewatch();
+
+        Assert.Equal(1, item.RewatchCount);
+        Assert.Equal(0, item.GetSeasonRewatchCount(1));
+        Assert.Equal(0, item.GetEpisodeRewatchCount(1, 1));
+
+        item.UndoRewatch();
+        Assert.Equal(0, item.RewatchCount);
+    }
+
+    [Fact]
+    public async Task RewatchItemCommandHandler_Handles_ScopedRewatchAndUndo()
+    {
+        var userId = Guid.NewGuid();
+        var item = WatchItemDocument.Create(
+            userId: userId,
+            tenantId: Guid.NewGuid(),
+            tmdbId: 1668,
+            type: MediaType.TvSeries,
+            title: "Friends",
+            status: WatchStatus.Completed,
+            currentSeason: 10,
+            currentEpisode: 17,
+            totalSeasons: 10,
+            totalEpisodes: 236
+        );
+
+        var mockUow = new Mock<AzureTest.Application.Interfaces.Data.NoSql.INoSqlUnitOfWork>();
+        var mockRepo = new Mock<AzureTest.Application.Interfaces.Data.NoSql.IWatchItemRepository>();
+        mockRepo.Setup(r => r.GetByIdAsync(item.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(item);
+        mockRepo.Setup(r => r.UpdateAsync(item.Id, item, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        mockUow.Setup(u => u.WatchItems).Returns(mockRepo.Object);
+
+        var handler = new AzureTest.Application.Media.Commands.RewatchItem.RewatchItemCommandHandler(mockUow.Object);
+
+        // 1. Rewatch Episode 5 of Season 2
+        var epRewatchCmd = new AzureTest.Application.Media.Commands.RewatchItem.RewatchItemCommand(
+            UserId: userId,
+            WatchItemId: item.Id,
+            Scope: AzureTest.Application.Media.Commands.RewatchItem.RewatchTargetScope.Episode,
+            TargetSeason: 2,
+            TargetEpisode: 5);
+
+        var res1 = await handler.HandleAsync(epRewatchCmd);
+        Assert.True(res1.IsSuccess);
+        Assert.Equal(1, item.GetEpisodeRewatchCount(2, 5));
+        Assert.Equal(0, item.GetSeasonRewatchCount(2));
+        Assert.Equal(0, item.RewatchCount);
+
+        // 2. Undo Episode 5 rewatch
+        var epUndoCmd = epRewatchCmd with { IsUndo = true };
+        var res2 = await handler.HandleAsync(epUndoCmd);
+        Assert.True(res2.IsSuccess);
+        Assert.Equal(0, item.GetEpisodeRewatchCount(2, 5));
+        Assert.Equal(0, item.RewatchCount);
+
+        // 3. Rewatch Season 3
+        var seasonRewatchCmd = new AzureTest.Application.Media.Commands.RewatchItem.RewatchItemCommand(
+            UserId: userId,
+            WatchItemId: item.Id,
+            Scope: AzureTest.Application.Media.Commands.RewatchItem.RewatchTargetScope.Season,
+            TargetSeason: 3);
+
+        var res3 = await handler.HandleAsync(seasonRewatchCmd);
+        Assert.True(res3.IsSuccess);
+        Assert.Equal(1, item.GetSeasonRewatchCount(3));
+        Assert.Equal(0, item.RewatchCount);
+
+        // 4. Undo Season 3 rewatch
+        var seasonUndoCmd = seasonRewatchCmd with { IsUndo = true };
+        var res4 = await handler.HandleAsync(seasonUndoCmd);
+        Assert.True(res4.IsSuccess);
+        Assert.Equal(0, item.GetSeasonRewatchCount(3));
+    }
 }
 

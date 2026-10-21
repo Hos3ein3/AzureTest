@@ -42,7 +42,9 @@ public sealed record GetWatchListQuery(Guid UserId, WatchListFilter Filter) : IQ
                 item.Genres,
                 item.GetNextEpisodeLabel(),
                 item.GetEstimatedWatchedMinutes(),
-                item.RewatchCount
+                item.RewatchCount,
+                item.SeasonRewatches,
+                item.EpisodeRewatches
             );
     }
 }

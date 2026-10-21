@@ -42,6 +42,8 @@ public class WatchItemDocument : ITenantEntity
     public int TotalEpisodes { get; private set; }
     public int? RuntimeMinutes { get; private set; }
     public int RewatchCount { get; private set; } = 0;
+    public Dictionary<string, int> SeasonRewatches { get; private set; } = new();
+    public Dictionary<string, int> EpisodeRewatches { get; private set; } = new();
 
     public int? UserRating { get; private set; }
     public string? UserReview { get; private set; }
@@ -188,6 +190,10 @@ public class WatchItemDocument : ITenantEntity
 
     public void RewatchSeason(int seasonNumber, bool restartFromSeason = false)
     {
+        SeasonRewatches ??= new();
+        var key = seasonNumber.ToString();
+        SeasonRewatches[key] = SeasonRewatches.GetValueOrDefault(key, 0) + 1;
+
         UpdatedAt = DateTime.UtcNow;
         LastWatchedAt = DateTime.UtcNow;
 
@@ -197,14 +203,40 @@ public class WatchItemDocument : ITenantEntity
             CurrentEpisode = 1;
             Status = WatchStatus.Watching;
         }
-        else
+    }
+
+    public void UndoSeasonRewatch(int seasonNumber)
+    {
+        SeasonRewatches ??= new();
+        var key = seasonNumber.ToString();
+        if (SeasonRewatches.TryGetValue(key, out var count) && count > 0)
         {
-            RewatchCount++;
+            if (count <= 1)
+            {
+                SeasonRewatches.Remove(key);
+            }
+            else
+            {
+                SeasonRewatches[key] = count - 1;
+            }
         }
+
+        if (Status == WatchStatus.Watching && CurrentSeason == seasonNumber)
+        {
+            Status = WatchStatus.Completed;
+            CurrentSeason = TotalSeasons > 0 ? TotalSeasons : 1;
+            CurrentEpisode = TotalEpisodes > 0 ? TotalEpisodes : 1;
+        }
+
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void RewatchEpisode(int seasonNumber, int episodeNumber, bool restartFromEpisode = false)
     {
+        EpisodeRewatches ??= new();
+        var key = $"S{seasonNumber}E{episodeNumber}";
+        EpisodeRewatches[key] = EpisodeRewatches.GetValueOrDefault(key, 0) + 1;
+
         UpdatedAt = DateTime.UtcNow;
         LastWatchedAt = DateTime.UtcNow;
 
@@ -214,10 +246,42 @@ public class WatchItemDocument : ITenantEntity
             CurrentEpisode = episodeNumber;
             Status = WatchStatus.Watching;
         }
-        else
+    }
+
+    public void UndoEpisodeRewatch(int seasonNumber, int episodeNumber)
+    {
+        EpisodeRewatches ??= new();
+        var key = $"S{seasonNumber}E{episodeNumber}";
+        if (EpisodeRewatches.TryGetValue(key, out var count) && count > 0)
         {
-            RewatchCount++;
+            if (count <= 1)
+            {
+                EpisodeRewatches.Remove(key);
+            }
+            else
+            {
+                EpisodeRewatches[key] = count - 1;
+            }
         }
+
+        if (Status == WatchStatus.Watching && CurrentSeason == seasonNumber && CurrentEpisode == episodeNumber)
+        {
+            Status = WatchStatus.Completed;
+            CurrentSeason = TotalSeasons > 0 ? TotalSeasons : 1;
+            CurrentEpisode = TotalEpisodes > 0 ? TotalEpisodes : 1;
+        }
+
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public int GetSeasonRewatchCount(int seasonNumber)
+    {
+        return SeasonRewatches != null && SeasonRewatches.TryGetValue(seasonNumber.ToString(), out var count) ? count : 0;
+    }
+
+    public int GetEpisodeRewatchCount(int seasonNumber, int episodeNumber)
+    {
+        return EpisodeRewatches != null && EpisodeRewatches.TryGetValue($"S{seasonNumber}E{episodeNumber}", out var count) ? count : 0;
     }
 
     public void ChangeStatus(WatchStatus newStatus)

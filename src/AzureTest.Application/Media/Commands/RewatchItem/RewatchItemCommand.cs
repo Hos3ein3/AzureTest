@@ -56,7 +56,28 @@ public sealed class RewatchItemCommandHandler : ICommandHandler<RewatchItemComma
 
         if (cmd.IsUndo)
         {
-            item.UndoRewatch();
+            switch (cmd.Scope)
+            {
+                case RewatchTargetScope.Season:
+                    if (cmd.TargetSeason.HasValue && cmd.TargetSeason.Value > 0)
+                    {
+                        item.UndoSeasonRewatch(cmd.TargetSeason.Value);
+                    }
+                    break;
+
+                case RewatchTargetScope.Episode:
+                    if (cmd.TargetEpisode.HasValue && cmd.TargetEpisode.Value > 0)
+                    {
+                        var s = cmd.TargetSeason ?? 1;
+                        item.UndoEpisodeRewatch(s, cmd.TargetEpisode.Value);
+                    }
+                    break;
+
+                case RewatchTargetScope.EntireTitle:
+                default:
+                    item.UndoRewatch();
+                    break;
+            }
         }
         else
         {
