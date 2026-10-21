@@ -1,9 +1,21 @@
+@using System.Collections.Generic
+@using System.Linq
 @using AzureTest.Contracts.DTOs.Media
 @using AzureTest.Domain.Media.Enums
 @model TmdbSearchResultDto
 
 @{
     var item = Model;
+    var userWatchItems = ViewBag.UserWatchItems as Dictionary<(int TmdbId, MediaType Type), WatchItemDto>;
+
+    WatchItemDto? userWatchItem = null;
+    if (userWatchItems != null)
+    {
+        if (!userWatchItems.TryGetValue((item.Id, item.Type), out userWatchItem))
+        {
+            userWatchItem = userWatchItems.Values.FirstOrDefault(w => w.TmdbId == item.Id);
+        }
+    }
 
     string PosterUrl(string? path) => string.IsNullOrWhiteSpace(path)
         ? "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=400&q=80"
@@ -40,10 +52,40 @@
              loading="lazy" />
 
         <!-- Top Badges -->
-        <div class="absolute top-2 left-2 flex flex-col gap-1">
+        <div class="absolute top-2 left-2 flex flex-col gap-1 items-start">
             <span class="px-2 py-0.5 rounded-lg text-3xs font-bold uppercase tracking-wider backdrop-blur-xs @TypeBadgeClass(item.Type)">
                 @TypeName(item.Type)
             </span>
+
+            @if (userWatchItem != null)
+            {
+                switch (userWatchItem.Status)
+                {
+                    case WatchStatus.Completed:
+                        <span class="px-2 py-0.5 rounded-lg text-3xs font-bold backdrop-blur-xs bg-emerald-600/95 text-white shadow-2xs flex items-center gap-1">
+                            <i class="fa-solid fa-check text-3xs"></i> Finished
+                        </span>
+                        break;
+                    case WatchStatus.Watching:
+                        <span class="px-2 py-0.5 rounded-lg text-3xs font-bold backdrop-blur-xs bg-blue-600/95 text-white shadow-2xs flex items-center gap-1">
+                            <i class="fa-solid fa-play text-3xs"></i>
+                            @(userWatchItem.Type != MediaType.Movie && (userWatchItem.CurrentSeason > 0 || userWatchItem.CurrentEpisode > 0)
+                                ? $"S{userWatchItem.CurrentSeason}:E{userWatchItem.CurrentEpisode}"
+                                : "Watching")
+                        </span>
+                        break;
+                    case WatchStatus.PlanToWatch:
+                        <span class="px-2 py-0.5 rounded-lg text-3xs font-bold backdrop-blur-xs bg-amber-600/95 text-white shadow-2xs flex items-center gap-1">
+                            <i class="fa-solid fa-bookmark text-3xs"></i> Wishlist
+                        </span>
+                        break;
+                    case WatchStatus.Dropped:
+                        <span class="px-2 py-0.5 rounded-lg text-3xs font-bold backdrop-blur-xs bg-rose-600/95 text-white shadow-2xs flex items-center gap-1">
+                            <i class="fa-solid fa-circle-stop text-3xs"></i> Stopped
+                        </span>
+                        break;
+                }
+            }
         </div>
 
         @if (item.VoteAverage.HasValue && item.VoteAverage > 0)
@@ -63,9 +105,9 @@
             </a>
             <button type="button"
                     onclick="openQuickAddModal('@item.Id', '@item.Type', '@Html.Raw(item.Title.Replace("'", "\\\'"))')"
-                    class="w-full py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-colors shadow-sm flex items-center justify-center gap-1.5">
-                <i class="fa-solid fa-plus text-xs"></i>
-                <span>Add</span>
+                    class="w-full py-2 rounded-xl @(userWatchItem != null ? "bg-slate-800 hover:bg-slate-700 text-white" : "bg-brand-600 hover:bg-brand-700 text-white") text-xs font-bold transition-colors shadow-sm flex items-center justify-center gap-1.5">
+                <i class="fa-solid @(userWatchItem != null ? "fa-pen-to-square" : "fa-plus") text-xs"></i>
+                <span>@(userWatchItem != null ? "Update" : "Add")</span>
             </button>
         </div>
     </div>

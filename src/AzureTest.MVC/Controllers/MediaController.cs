@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -78,6 +80,7 @@ public class MediaController : Controller
     [Description("Explore trending, popular, top rated, upcoming titles and anime highlights.")]
     public async Task<IActionResult> Discover(CancellationToken ct)
     {
+        await PopulateUserWatchItemsAsync(ct);
         var result = await _queries.GetDiscoverMediaAsync(new GetDiscoverMediaQuery(_currentUser.Id), ct);
         return result.ToView(this);
     }
@@ -92,12 +95,25 @@ public class MediaController : Controller
 
         var followedResult = await _queries.GetFollowedPeopleAsync(new GetFollowedPeopleQuery(_currentUser.Id), ct);
         var followedPersonIds = followedResult.IsSuccess && followedResult.Value != null
-            ? new System.Collections.Generic.HashSet<int>(System.Linq.Enumerable.Select(followedResult.Value, f => f.TmdbPersonId))
-            : new System.Collections.Generic.HashSet<int>();
+            ? new HashSet<int>(followedResult.Value.Select(f => f.TmdbPersonId))
+            : new HashSet<int>();
         ViewBag.FollowedPersonIds = followedPersonIds;
+
+        await PopulateUserWatchItemsAsync(ct);
 
         var result = await _queries.SearchMediaAsync(new SearchMediaQuery(q ?? string.Empty, searchType), ct);
         return result.ToView(this);
+    }
+
+    private async Task PopulateUserWatchItemsAsync(CancellationToken ct)
+    {
+        var userWatchlistResult = await _queries.GetWatchListAsync(new GetWatchListQuery(_currentUser.Id, new WatchListFilter { PageSize = 1000 }), ct);
+        var userWatchItems = userWatchlistResult.IsSuccess && userWatchlistResult.Value?.Items != null
+            ? userWatchlistResult.Value.Items
+                .GroupBy(w => (w.TmdbId, w.Type))
+                .ToDictionary(g => g.Key, g => g.First())
+            : new Dictionary<(int TmdbId, MediaType Type), WatchItemDto>();
+        ViewBag.UserWatchItems = userWatchItems;
     }
 
     [HttpGet]
