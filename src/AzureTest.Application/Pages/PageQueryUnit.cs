@@ -80,6 +80,7 @@ public class GetAllPagesQueryHandler : IQueryHandler<GetAllPagesQuery, Result<Az
         Status = doc.Status,
         LikedBy = doc.LikedBy,
         DislikedBy = doc.DislikedBy,
+        ReadBy = doc.ReadBy ?? new(),
         CreatedAt = doc.CreatedAt,
         UpdatedAt = doc.UpdatedAt,
         Comments = doc.Comments.Select(c => new PageCommentDto
@@ -105,7 +106,7 @@ public class GetPageByIdQueryHandler : IQueryHandler<GetPageByIdQuery, Result<Pa
     {
         var doc = await _noSqlUnitOfWork.Pages.GetByIdAsync(query.Id);
         if (doc == null) return Result.Failure<PageDto>("Page not found.");
-        return Result.Success(new PageDto { Id = doc.Id, Title = doc.Title, Slug = doc.Slug, Content = doc.Content, ImagePath = doc.ImagePath, Status = doc.Status, LikedBy = doc.LikedBy, DislikedBy = doc.DislikedBy, CreatedAt = doc.CreatedAt, UpdatedAt = doc.UpdatedAt, Comments = doc.Comments.Select(c => new PageCommentDto { Id = c.Id, UserId = c.UserId, UserName = c.UserName, Content = c.Content, CreatedAt = c.CreatedAt, AdminReply = c.AdminReply, AdminReplyAt = c.AdminReplyAt }).ToList() }); // reuse mapper but wait, it's private. Let's redefine.
+        return Result.Success(new PageDto { Id = doc.Id, Title = doc.Title, Slug = doc.Slug, Content = doc.Content, ImagePath = doc.ImagePath, Status = doc.Status, LikedBy = doc.LikedBy, DislikedBy = doc.DislikedBy, ReadBy = doc.ReadBy ?? new(), CreatedAt = doc.CreatedAt, UpdatedAt = doc.UpdatedAt, Comments = doc.Comments.Select(c => new PageCommentDto { Id = c.Id, UserId = c.UserId, UserName = c.UserName, Content = c.Content, CreatedAt = c.CreatedAt, AdminReply = c.AdminReply, AdminReplyAt = c.AdminReplyAt }).ToList() });
     }
 }
 
@@ -131,6 +132,7 @@ public class GetPageBySlugQueryHandler : IQueryHandler<GetPageBySlugQuery, Resul
             Status = doc.Status,
             LikedBy = doc.LikedBy,
             DislikedBy = doc.DislikedBy,
+            ReadBy = doc.ReadBy ?? new(),
             CreatedAt = doc.CreatedAt,
             UpdatedAt = doc.UpdatedAt,
             Comments = doc.Comments.Select(c => new PageCommentDto

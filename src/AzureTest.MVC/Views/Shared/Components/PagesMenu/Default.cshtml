@@ -1,25 +1,49 @@
+@using AzureTest.Application.Interfaces.Services
+@inject ICurrentUser CurrentUser
 @model List<AzureTest.Contracts.DTOs.Pages.PageDto>
 
-<div x-data="{ expanded: false }" class="pages-menu-container">
-    <button @@click="expanded = !expanded" type="button" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-slate-600 hover:bg-slate-50 hover:text-slate-900 group" data-title="Published Pages">
-        <div class="flex items-center">
-            <i class="fa-solid fa-file-lines w-6 text-center text-lg text-slate-400 group-hover:text-brand-600 transition-colors"></i>
+@{
+    var userId = CurrentUser.Id;
+    var unreadCount = Model != null && userId != Guid.Empty
+        ? Model.Count(p => p.ReadBy == null || !p.ReadBy.Contains(userId))
+        : (Model?.Count ?? 0);
+}
+
+<div class="pages-menu-container">
+    <button type="button"
+            id="publishedPagesMenuBtn"
+            onclick="togglePublishedPagesMenu(this)"
+            class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white group"
+            data-title="Published Pages"
+            aria-expanded="false">
+        <div class="flex items-center min-w-0">
+            <i class="fa-solid fa-file-lines w-6 text-center text-lg text-slate-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors"></i>
             <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Published Pages</span>
+            @if (unreadCount > 0)
+            {
+                <span class="ml-2 px-1.5 py-0.5 text-2xs font-bold rounded-full bg-emerald-500 text-white shadow-xs">@unreadCount</span>
+            }
         </div>
-        <i class="fa-solid fa-chevron-down text-2xs text-slate-400 transition-transform duration-200" :class="{'rotate-180': expanded}"></i>
+        <i id="publishedPagesChevron" class="fa-solid fa-chevron-down text-2xs text-slate-400 transition-transform duration-200"></i>
     </button>
-    <div x-show="expanded" x-collapse style="display: none;" class="pages-dropdown-list">
-        <ul class="mt-1 space-y-1 pl-8 pr-2">
+    <div id="publishedPagesDropdown" class="pages-dropdown-list hidden">
+        <ul class="mt-1 space-y-1 pl-6 pr-2">
             @if(Model != null && Model.Any())
             {
                 foreach(var pageItem in Model)
                 {
+                    var isRead = userId != Guid.Empty && pageItem.ReadBy != null && pageItem.ReadBy.Contains(userId);
                     <li>
                         <a href="@Url.Action("Read", "Pages", new { slug = pageItem.Slug })"
                            data-title="@pageItem.Title"
-                           class="nav-item-link block px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors truncate"
+                           class="nav-item-link flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 transition-colors truncate"
                            title="@pageItem.Title">
-                            <i class="fa-regular fa-file-lines mr-1.5 text-2xs text-slate-400"></i>@pageItem.Title
+                            <i class="fa-regular fa-file-lines mr-1.5 text-2xs text-slate-400 shrink-0"></i>
+                            @if (!isRead)
+                            {
+                                <span class="px-1.5 py-0.5 text-3xs font-bold uppercase tracking-wider rounded bg-emerald-500 text-white mr-1.5 shrink-0 shadow-xs">New</span>
+                            }
+                            <span class="truncate">@pageItem.Title</span>
                         </a>
                     </li>
                 }
@@ -33,3 +57,33 @@
         </ul>
     </div>
 </div>
+
+<script>
+    function togglePublishedPagesMenu(btn) {
+        const dropdown = document.getElementById("publishedPagesDropdown");
+        const chevron = document.getElementById("publishedPagesChevron");
+        if (!dropdown) return;
+
+        const isHidden = dropdown.classList.contains("hidden");
+        if (isHidden) {
+            dropdown.classList.remove("hidden");
+            if (chevron) chevron.classList.add("rotate-180");
+            btn?.setAttribute("aria-expanded", "true");
+        } else {
+            dropdown.classList.add("hidden");
+            if (chevron) chevron.classList.remove("rotate-180");
+            btn?.setAttribute("aria-expanded", "false");
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        if (window.location.pathname.toLowerCase().startsWith("/page/")) {
+            const dropdown = document.getElementById("publishedPagesDropdown");
+            const chevron = document.getElementById("publishedPagesChevron");
+            const btn = document.getElementById("publishedPagesMenuBtn");
+            if (dropdown) dropdown.classList.remove("hidden");
+            if (chevron) chevron.classList.add("rotate-180");
+            if (btn) btn.setAttribute("aria-expanded", "true");
+        }
+    });
+</script>

@@ -14,6 +14,7 @@ public class PageDto
     public PageStatus Status { get; set; }
     public List<Guid> LikedBy { get; set; } = new();
     public List<Guid> DislikedBy { get; set; } = new();
+    public List<Guid> ReadBy { get; set; } = new();
     public List<PageCommentDto> Comments { get; set; } = new();
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

@@ -35,4 +35,30 @@ public class HomeDashboardViewModel
     
     public decimal TotalOutstandingDebt { get; set; }
     public decimal TotalExpensesThisMonth { get; set; }
+
+    // Pages Widget
+    public IReadOnlyList<AzureTest.Contracts.DTOs.Pages.PageDto> RecentPages { get; set; } = new List<AzureTest.Contracts.DTOs.Pages.PageDto>();
+    public int UnreadPagesCount { get; set; }
+
+    // Media Controller Analytics
+    public AzureTest.Contracts.DTOs.Media.MediaStatsDto? MediaStats { get; set; }
+    public Dictionary<string, int> MediaByStatus { get; set; } = new();
+    public Dictionary<string, int> MediaByType { get; set; } = new();
+    public int TotalMediaHours { get; set; }
+
+    // Health, Weight & BMI Analytics
+    public AzureTest.Contracts.DTOs.Gym.WorkoutAnalyticsDto? HealthStats { get; set; }
+    public double? CurrentWeightKg { get; set; }
+    public double? CurrentBmi { get; set; }
+    public string CurrentBmiCategory { get; set; } = "Not Recorded";
+    public Dictionary<string, double> WeightHistoryTrend { get; set; } = new();
+    public Dictionary<string, double> BodyComposition { get; set; } = new();
+
+    // Shopping List Analytics
+    public int ShoppingListTotalItems { get; set; }
+    public int ShoppingListToBuyItems { get; set; }
+    public int ShoppingListBoughtItems { get; set; }
+    public int ShoppingListInCartItems { get; set; }
+    public decimal ShoppingListEstimatedCost { get; set; }
+    public Dictionary<string, int> ShoppingListByCategory { get; set; } = new();
 }

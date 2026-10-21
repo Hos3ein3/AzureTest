@@ -158,3 +158,24 @@ public class AnswerCommentCommandHandler : ICommandHandler<AnswerCommentCommand,
         return Result.Success();
     }
 }
+
+public record MarkPageAsReadCommand(Guid PageId, Guid UserId) : ICommand<Result>;
+public class MarkPageAsReadCommandHandler : ICommandHandler<MarkPageAsReadCommand, Result>
+{
+    private readonly INoSqlUnitOfWork _noSql;
+    public MarkPageAsReadCommandHandler(INoSqlUnitOfWork noSql) => _noSql = noSql;
+
+    public async Task<Result> HandleAsync(MarkPageAsReadCommand cmd, CancellationToken ct = default)
+    {
+        if (cmd.UserId == Guid.Empty) return Result.Success();
+        var doc = await _noSql.Pages.GetByIdAsync(cmd.PageId);
+        if (doc == null) return Result.Failure("Not found");
+        doc.ReadBy ??= new List<Guid>();
+        if (!doc.ReadBy.Contains(cmd.UserId))
+        {
+            doc.ReadBy.Add(cmd.UserId);
+            await _noSql.Pages.UpdateAsync(doc.Id, doc);
+        }
+        return Result.Success();
+    }
+}

@@ -36,6 +36,10 @@ namespace AzureTest.MVC.Controllers;
     private readonly IHabitQueryUnit _habitQuery;
     private readonly IDebtQueryUnit _debtQuery;
     private readonly IExpenseQueryUnit _expenseQuery;
+    private readonly AzureTest.Application.Pages.GetAllPagesQueryHandler _pagesQuery;
+    private readonly AzureTest.Application.Media.IMediaQueryUnit _mediaQuery;
+    private readonly AzureTest.Application.Gym.GetWorkoutAnalyticsQueryHandler _workoutAnalyticsQuery;
+    private readonly AzureTest.Application.Food.IFoodQueryUnit _foodQuery;
     private readonly AzureTest.MVC.Services.IUserTracker _userTracker;
 
     public HomeController(
@@ -47,7 +51,11 @@ namespace AzureTest.MVC.Controllers;
         IHabitQueryUnit habitQuery,
         IDebtQueryUnit debtQuery,
         IExpenseQueryUnit expenseQuery,
-        AzureTest.MVC.Services.IUserTracker userTracker)
+        AzureTest.MVC.Services.IUserTracker userTracker,
+        AzureTest.Application.Pages.GetAllPagesQueryHandler pagesQuery,
+        AzureTest.Application.Media.IMediaQueryUnit mediaQuery,
+        AzureTest.Application.Gym.GetWorkoutAnalyticsQueryHandler workoutAnalyticsQuery,
+        AzureTest.Application.Food.IFoodQueryUnit foodQuery)
     {
         _queries = queries;
         _userManager = userManager;
@@ -58,6 +66,10 @@ namespace AzureTest.MVC.Controllers;
         _debtQuery = debtQuery;
         _expenseQuery = expenseQuery;
         _userTracker = userTracker;
+        _pagesQuery = pagesQuery;
+        _mediaQuery = mediaQuery;
+        _workoutAnalyticsQuery = workoutAnalyticsQuery;
+        _foodQuery = foodQuery;
     }
 
     [DisplayName("Index")]
@@ -222,6 +234,107 @@ namespace AzureTest.MVC.Controllers;
             // Analytics KPIs
             model.TotalOutstandingDebt = allDebts.Where(d => !d.IsDone).Sum(d => d.Amount);
             model.TotalExpensesThisMonth = model.MonthlyExpenses.GetValueOrDefault(now.ToString("MMM yyyy"), 0);
+        }
+
+        // Pages Widget Data
+        var pagesResult = await _pagesQuery.HandleAsync(new AzureTest.Application.Pages.GetAllPagesQuery(new AzureTest.Application.Pages.PageFilter { PageSize = -1 }), cancellationToken);
+        if (pagesResult.IsSuccess && pagesResult.Value.Items != null)
+        {
+            var publishedPages = pagesResult.Value.Items.Where(p => p.Status == AzureTest.Domain.Enums.PageStatus.Published).ToList();
+            model.RecentPages = publishedPages.OrderByDescending(p => p.CreatedAt).Take(6).ToList();
+            
+            var effectiveUserId = parsedUserId ?? (Guid.TryParse(currentUserIdStr, out var cid) ? cid : Guid.Empty);
+            if (effectiveUserId != Guid.Empty)
+            {
+                model.UnreadPagesCount = publishedPages.Count(p => p.ReadBy == null || !p.ReadBy.Contains(effectiveUserId));
+            }
+            else
+            {
+                model.UnreadPagesCount = publishedPages.Count;
+            }
+        }
+
+        var targetUserGuid = parsedUserId ?? (Guid.TryParse(currentUserIdStr, out var cguid) ? cguid : Guid.Empty);
+        if (targetUserGuid != Guid.Empty)
+        {
+            // Media Analytics
+            try
+            {
+                var mediaResult = await _mediaQuery.GetMediaStatsAsync(new AzureTest.Application.Media.Queries.GetMediaStats.GetMediaStatsQuery(targetUserGuid), cancellationToken);
+                if (mediaResult.IsSuccess && mediaResult.Value != null)
+                {
+                    var m = mediaResult.Value;
+                    model.MediaStats = m;
+                    model.TotalMediaHours = m.TotalEstimatedHoursWatched;
+                    model.MediaByType["Movies"] = m.TotalMoviesWatched;
+                    model.MediaByType["Series"] = m.TotalSeriesWatched;
+                    model.MediaByType["Anime"] = m.TotalAnimeWatched;
+
+                    if (m.StatusBreakdown != null)
+                    {
+                        foreach (var s in m.StatusBreakdown)
+                        {
+                            model.MediaByStatus[s.Status] = s.Count;
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            // Health, Weight & BMI Analytics
+            try
+            {
+                var workoutAnalyticsResult = await _workoutAnalyticsQuery.HandleAsync(new AzureTest.Application.Gym.GetWorkoutAnalyticsQuery(targetUserGuid), cancellationToken);
+                if (workoutAnalyticsResult.IsSuccess && workoutAnalyticsResult.Value != null)
+                {
+                    var h = workoutAnalyticsResult.Value;
+                    model.HealthStats = h;
+                    model.CurrentWeightKg = h.CurrentWeightKg;
+                    model.CurrentBmi = h.CurrentBmi;
+                    model.CurrentBmiCategory = h.CurrentBmiCategory ?? "Not Recorded";
+
+                    if (h.CurrentMusclePercent.HasValue && h.CurrentMusclePercent > 0)
+                        model.BodyComposition["Muscle"] = Math.Round(h.CurrentMusclePercent.Value, 1);
+                    if (h.CurrentBonePercent.HasValue && h.CurrentBonePercent > 0)
+                        model.BodyComposition["Bone"] = Math.Round(h.CurrentBonePercent.Value, 1);
+                    if (h.CurrentWeightKg.HasValue && h.CurrentWeightKg > 0)
+                        model.BodyComposition["Body Mass"] = Math.Round(h.CurrentWeightKg.Value, 1);
+
+                    if (h.WeightLogs != null && h.WeightLogs.Any())
+                    {
+                        foreach (var log in h.WeightLogs.OrderBy(l => l.Date).TakeLast(10))
+                        {
+                            var key = log.Date.ToString("MMM dd");
+                            model.WeightHistoryTrend[key] = Math.Round(log.WeightKg, 1);
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            // Shopping List Analytics
+            try
+            {
+                var shoppingResult = await _foodQuery.GetShoppingList.HandleAsync(new AzureTest.Application.Food.GetShoppingListQuery(new AzureTest.Contracts.DTOs.Food.ShoppingListFilter { UserId = targetUserGuid, IncludeShared = true }), cancellationToken);
+                if (shoppingResult.IsSuccess && shoppingResult.Value != null)
+                {
+                    var s = shoppingResult.Value;
+                    model.ShoppingListTotalItems = s.TotalItems;
+                    model.ShoppingListToBuyItems = s.ToBuyCount;
+                    model.ShoppingListBoughtItems = s.BoughtCount;
+                    model.ShoppingListInCartItems = s.InCartCount;
+                    model.ShoppingListEstimatedCost = s.EstimatedTotalCost;
+
+                    if (s.Sections != null)
+                    {
+                        foreach (var grp in s.Sections)
+                        {
+                            model.ShoppingListByCategory[grp.Key.ToString()] = grp.Value.Count;
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         if (data.IsAdmin)

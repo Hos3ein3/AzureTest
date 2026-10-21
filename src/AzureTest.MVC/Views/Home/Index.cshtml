@@ -113,6 +113,26 @@
         @await Html.PartialAsync("Widgets/_WidgetHabitAdherence", Model)
         @await Html.PartialAsync("Widgets/_WidgetMonthlyCashFlow", Model)
     </div>
+
+    <!-- Knowledge & Community Pages -->
+    <div class="grid grid-cols-1 gap-6">
+        @await Html.PartialAsync("Widgets/_WidgetPages", Model)
+    </div>
+
+    <!-- Media & Watchlist Telemetry -->
+    <div class="grid grid-cols-1 gap-6">
+        @await Html.PartialAsync("Widgets/_WidgetMediaAnalytics", Model)
+    </div>
+
+    <!-- Health, Weight & BMI Analytics -->
+    <div class="grid grid-cols-1 gap-6">
+        @await Html.PartialAsync("Widgets/_WidgetHealthAnalytics", Model)
+    </div>
+
+    <!-- Shopping List & Grocery Telemetry -->
+    <div class="grid grid-cols-1 gap-6">
+        @await Html.PartialAsync("Widgets/_WidgetShoppingAnalytics", Model)
+    </div>
 </div>
 
 @section Scripts {

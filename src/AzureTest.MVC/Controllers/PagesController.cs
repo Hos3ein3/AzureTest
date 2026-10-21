@@ -28,6 +28,7 @@ public class PagesController : Controller
     private readonly ToggleDislikeCommandHandler _toggleDislike;
     private readonly AddCommentCommandHandler _addComment;
     private readonly AnswerCommentCommandHandler _answerComment;
+    private readonly MarkPageAsReadCommandHandler _markPageAsRead;
     private readonly IBlobService _blobService;
     private readonly ICurrentUser  _currentUser;
 
@@ -35,12 +36,14 @@ public class PagesController : Controller
         GetAllPagesQueryHandler getAll, GetPageByIdQueryHandler getById, GetPageBySlugQueryHandler getBySlug,
         CreatePageCommandHandler create, UpdatePageCommandHandler update, DeletePageCommandHandler delete,
         ToggleLikeCommandHandler toggleLike, ToggleDislikeCommandHandler toggleDislike,
-        AddCommentCommandHandler addComment, AnswerCommentCommandHandler answerComment, IBlobService blobService, ICurrentUser currentUser)
+        AddCommentCommandHandler addComment, AnswerCommentCommandHandler answerComment,
+        MarkPageAsReadCommandHandler markPageAsRead, IBlobService blobService, ICurrentUser currentUser)
     {
         _getAll = getAll; _getById = getById; _getBySlug = getBySlug;
         _create = create; _update = update; _delete = delete;
         _toggleLike = toggleLike; _toggleDislike = toggleDislike;
         _addComment = addComment; _answerComment = answerComment;
+        _markPageAsRead = markPageAsRead;
         _blobService = blobService;
         _currentUser = currentUser;
     }
@@ -143,6 +146,17 @@ public class PagesController : Controller
     {
         var res = await _getBySlug.HandleAsync(new GetPageBySlugQuery(slug));
         if (res.IsFailure || res.Value == null || res.Value.Status != AzureTest.Domain.Enums.PageStatus.Published) return NotFound();
+
+        if (_currentUser.Id != Guid.Empty)
+        {
+            if (res.Value.ReadBy == null || !res.Value.ReadBy.Contains(_currentUser.Id))
+            {
+                await _markPageAsRead.HandleAsync(new MarkPageAsReadCommand(res.Value.Id, _currentUser.Id));
+                res.Value.ReadBy ??= new List<Guid>();
+                res.Value.ReadBy.Add(_currentUser.Id);
+            }
+        }
+
         return View(res.Value);
     }
 

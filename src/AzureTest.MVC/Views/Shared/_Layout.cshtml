@@ -155,6 +155,10 @@
                     </div>
                 </div>
                 
+                <button type="button" onclick="triggerPwaInstall()" class="text-slate-400 hover:text-brand-500 transition-colors" title="Install App on Phone">
+                    <i class="fa-solid fa-mobile-screen-button text-lg"></i>
+                </button>
+
                 <button onclick="toggleGlobalDarkMode()" class="text-slate-400 hover:text-brand-500 transition-colors" title="Toggle Dark Mode">
                     <i class="fa-solid @(isDarkMode ? "fa-sun" : "fa-moon") text-lg" id="darkModeIcon"></i>
                 </button>
@@ -568,8 +572,10 @@
 </script>
 
 
-    <!-- PWA Service WorkPaer Registration -->
+    <!-- PWA Service Worker Registration & Install Handling -->
     <script>
+        let deferredPwaPrompt = null;
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').then(reg => {
@@ -579,7 +585,88 @@
                 });
             });
         }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPwaPrompt = e;
+        });
+
+        window.triggerPwaInstall = function() {
+            if (deferredPwaPrompt) {
+                deferredPwaPrompt.prompt();
+                deferredPwaPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User installed TrackerPro');
+                    }
+                    deferredPwaPrompt = null;
+                });
+            } else {
+                const modal = document.getElementById('pwaInstallGuideModal');
+                if (modal) modal.classList.remove('hidden');
+            }
+        };
+
+        window.closePwaGuideModal = function() {
+            const modal = document.getElementById('pwaInstallGuideModal');
+            if (modal) modal.classList.add('hidden');
+        };
     </script>
+
+    <!-- Modal: Install PWA Guide -->
+    <div id="pwaInstallGuideModal" class="fixed inset-0 z-[120] hidden bg-slate-900/60 backdrop-blur-sm overflow-y-auto p-4 flex items-center justify-center min-h-screen" onclick="if (event.target === this) closePwaGuideModal()">
+        <div class="relative bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 my-auto text-left">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 dark:text-white text-base">Install TrackerPro App</h3>
+                        <p class="text-3xs text-slate-400">Add to your phone home screen</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closePwaGuideModal()" class="w-8 h-8 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <!-- iOS Instructions -->
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-750 border border-slate-200/80 dark:border-slate-700 space-y-2.5">
+                    <div class="flex items-center gap-2 font-bold text-xs text-slate-900 dark:text-white">
+                        <i class="fa-brands fa-apple text-base"></i>
+                        <span>iPhone &amp; iPad (Safari)</span>
+                    </div>
+                    <ol class="text-xs text-slate-600 dark:text-slate-300 space-y-2 list-decimal list-inside pl-1 leading-relaxed">
+                        <li>Open this website in <strong class="text-slate-800 dark:text-white">Safari</strong>.</li>
+                        <li>Tap the <strong class="text-slate-800 dark:text-white">Share</strong> button <i class="fa-solid fa-arrow-up-from-bracket text-brand-600 mx-1"></i> (bottom toolbar).</li>
+                        <li>Scroll down and tap <strong class="text-slate-800 dark:text-white">Add to Home Screen</strong> <i class="fa-regular fa-square-plus text-brand-600 mx-1"></i>.</li>
+                        <li>Tap <strong class="text-slate-800 dark:text-white">Add</strong> in the top right corner.</li>
+                    </ol>
+                </div>
+
+                <!-- Android Instructions -->
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-750 border border-slate-200/80 dark:border-slate-700 space-y-2.5">
+                    <div class="flex items-center gap-2 font-bold text-xs text-slate-900 dark:text-white">
+                        <i class="fa-brands fa-android text-base text-emerald-600"></i>
+                        <span>Android (Chrome)</span>
+                    </div>
+                    <ol class="text-xs text-slate-600 dark:text-slate-300 space-y-2 list-decimal list-inside pl-1 leading-relaxed">
+                        <li>Open this website in <strong class="text-slate-800 dark:text-white">Chrome</strong>.</li>
+                        <li>Tap the <strong class="text-slate-800 dark:text-white">Three dots</strong> menu <i class="fa-solid fa-ellipsis-vertical text-brand-600 mx-1"></i> (top right).</li>
+                        <li>Tap <strong class="text-slate-800 dark:text-white">Install app</strong> or <strong class="text-slate-800 dark:text-white">Add to Home screen</strong>.</li>
+                        <li>Confirm by tapping <strong class="text-slate-800 dark:text-white">Install</strong>.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="mt-5 pt-3 border-t border-slate-100 dark:border-slate-700 flex justify-end">
+                <button type="button" onclick="closePwaGuideModal()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs transition-colors shadow-2xs">
+                    Got it
+                </button>
+            </div>
+        </div>
+    </div>
 
     
     <!-- Omnibar Modal -->

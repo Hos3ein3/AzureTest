@@ -14,6 +14,7 @@ public class PageDocument
     public PageStatus Status { get; set; } = PageStatus.Pending;
     public List<Guid> LikedBy { get; set; } = new();
     public List<Guid> DislikedBy { get; set; } = new();
+    public List<Guid> ReadBy { get; set; } = new();
     public List<PageComment> Comments { get; set; } = new();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

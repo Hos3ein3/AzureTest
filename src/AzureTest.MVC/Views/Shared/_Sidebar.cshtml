@@ -433,6 +433,14 @@
                 }
             </li>
 
+            <!-- PWA Mobile App Install Action -->
+            <li class="pt-3 mt-3 border-t border-slate-100" id="sidebarInstallSection">
+                <button type="button" onclick="triggerPwaInstall()" class="w-full flex items-center px-3 py-2.5 rounded-xl transition-colors group text-brand-600 bg-brand-50 hover:bg-brand-100 text-left">
+                    <i class="fa-solid fa-mobile-screen-button w-6 text-center text-lg text-brand-600 shrink-0"></i>
+                    <span class="ml-2 font-bold text-xs sidebar-text whitespace-nowrap transition-all duration-300">Install Mobile App</span>
+                </button>
+            </li>
+
         </ul>
     </nav>
 </aside>
@@ -540,6 +548,7 @@
                     const dropdownParent = link.closest(".pages-dropdown-list");
                     if (dropdownParent && matches) {
                         dropdownParent.style.display = "";
+                        dropdownParent.classList.remove("hidden");
                     }
 
                     if (matches) {
