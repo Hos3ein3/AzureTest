@@ -1,6 +1,6 @@
-const CACHE_NAME = 'trackerpro-cache-v3';
+const CACHE_NAME = 'trackerpro-cache-v4';
 const urlsToCache = [
-  '/',
+  '/offline.html',
   '/css/site.css',
   '/css/style.css',
   '/js/site.js',
@@ -38,9 +38,29 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch event - network first, fallback to cache
+// Fetch event - network first with offline.html fallback for navigation
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response && response.status === 200) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(c => c.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cachedPage = await caches.match(event.request);
+          if (cachedPage) return cachedPage;
+          const fallback = await caches.match('/offline.html');
+          return fallback || new Response('Offline', { status: 200, headers: { 'Content-Type': 'text/html' } });
+        })
+    );
+    return;
+  }
 
   event.respondWith(
     fetch(event.request)

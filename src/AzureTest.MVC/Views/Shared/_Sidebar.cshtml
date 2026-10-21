@@ -577,6 +577,21 @@
 
 @if (enableFloatingNav)
 {
+    <style>
+        .floating-sub-content, #floatingNavSubItems, #floatingNavMain, #floatingNavSub {
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
+        }
+        .floating-sub-content::-webkit-scrollbar,
+        #floatingNavSubItems::-webkit-scrollbar,
+        #floatingNavMain::-webkit-scrollbar,
+        #floatingNavSub::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+    </style>
+
     <!-- Mobile & Tablet Floating Bottom Navigation -->
     <div id="floatingBottomNavWrapper"
          class="@floatingNavBreakpointClass fixed bottom-3 inset-x-0 mx-auto w-[94%] max-w-lg z-40 transition-all duration-300 ease-out select-none">
@@ -655,10 +670,10 @@
 
             <div class="h-6 w-px bg-slate-200 dark:bg-slate-700 flex-shrink-0"></div>
 
-            <!-- Tiny red << scroll left indicator -->
+            <!-- Tiny red scroll left indicator icon -->
             <button type="button" id="floatingSubScrollLeftBtn" onclick="scrollActiveFloatingSub(-80)"
-                    class="hidden flex-shrink-0 text-red-500 hover:text-red-600 font-black text-2xs animate-pulse select-none px-1 py-1 focus:outline-none"
-                    title="Scroll left" aria-label="Scroll left">&lt;&lt;</button>
+                    class="hidden flex-shrink-0 text-red-500 hover:text-red-600 font-bold text-xs animate-pulse select-none px-1.5 py-1 focus:outline-none"
+                    title="Scroll left" aria-label="Scroll left"><i class="fa-solid fa-angles-left"></i></button>
 
             <!-- Sub-Section Features Container -->
             <div id="floatingNavSubItems" class="flex items-center gap-1.5 overflow-x-auto overflow-y-hidden scrollbar-hide py-0.5 px-0.5 flex-1 min-w-0">
@@ -871,10 +886,10 @@
 
             </div>
 
-            <!-- Tiny red >> scroll right indicator -->
+            <!-- Tiny red scroll right indicator icon -->
             <button type="button" id="floatingSubScrollRightBtn" onclick="scrollActiveFloatingSub(80)"
-                    class="hidden flex-shrink-0 text-red-500 hover:text-red-600 font-black text-2xs animate-pulse select-none px-1 py-1 focus:outline-none"
-                    title="Scroll right" aria-label="Scroll right">&gt;&gt;</button>
+                    class="hidden flex-shrink-0 text-red-500 hover:text-red-600 font-bold text-xs animate-pulse select-none px-1.5 py-1 focus:outline-none"
+                    title="Scroll right" aria-label="Scroll right"><i class="fa-solid fa-angles-right"></i></button>
         </div>
     </div>
 }

@@ -169,6 +169,57 @@ public class WatchItemDocument : ITenantEntity
         }
     }
 
+    public void UndoRewatch()
+    {
+        if (RewatchCount > 0)
+        {
+            RewatchCount--;
+        }
+
+        if (Status == WatchStatus.Watching)
+        {
+            Status = WatchStatus.Completed;
+            CurrentSeason = TotalSeasons > 0 ? TotalSeasons : 1;
+            CurrentEpisode = TotalEpisodes > 0 ? TotalEpisodes : 1;
+        }
+
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void RewatchSeason(int seasonNumber, bool restartFromSeason = false)
+    {
+        UpdatedAt = DateTime.UtcNow;
+        LastWatchedAt = DateTime.UtcNow;
+
+        if (restartFromSeason && Type != MediaType.Movie)
+        {
+            CurrentSeason = seasonNumber;
+            CurrentEpisode = 1;
+            Status = WatchStatus.Watching;
+        }
+        else
+        {
+            RewatchCount++;
+        }
+    }
+
+    public void RewatchEpisode(int seasonNumber, int episodeNumber, bool restartFromEpisode = false)
+    {
+        UpdatedAt = DateTime.UtcNow;
+        LastWatchedAt = DateTime.UtcNow;
+
+        if (restartFromEpisode && Type != MediaType.Movie)
+        {
+            CurrentSeason = seasonNumber;
+            CurrentEpisode = episodeNumber;
+            Status = WatchStatus.Watching;
+        }
+        else
+        {
+            RewatchCount++;
+        }
+    }
+
     public void ChangeStatus(WatchStatus newStatus)
     {
         Status = newStatus;

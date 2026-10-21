@@ -1,6 +1,6 @@
 // TrackerPro Offline Enhancement & Background Sync
-// Handles offline logging and synchronization for Habits, Events, and Gym Training
-// EXPLICIT RESTRICTION: NEVER for weight logs or resumes per specification.
+// Handles offline logging, creation, edits, and background synchronization for Habits, Events, and Gym Training
+// EXPLICIT RESTRICTION: NEVER for weight logs/analytics or resumes per specification.
 
 (function () {
     const DB_NAME = 'TrackerProOfflineDB';
@@ -21,12 +21,27 @@
         });
     }
 
+    function isForbiddenOfflineUrl(url) {
+        if (!url) return true;
+        const lower = url.toLowerCase();
+        // Strictly forbidden per user instructions: weight analytics and resumes
+        return lower.includes('weight') || lower.includes('resume');
+    }
+
+    function isAllowedOfflineUrl(url) {
+        if (!url || isForbiddenOfflineUrl(url)) return false;
+        const lower = url.toLowerCase();
+        return lower.includes('/habit/') ||
+               lower.includes('/event/') ||
+               lower.includes('/gymadmin') ||
+               lower.includes('/gymcourses') ||
+               lower.includes('/workout/finishsession') ||
+               lower.includes('/workout/updateday') ||
+               lower.includes('/workout/register');
+    }
+
     async function enqueueOfflineItem(item) {
-        // Enforce exclusion rules: NOT for weight analytics or resumes
-        if (!item || !item.url) return;
-        const lowerUrl = item.url.toLowerCase();
-        if (lowerUrl.includes('weight') || lowerUrl.includes('resume')) {
-            console.warn('Offline queuing is strictly disabled for weight analytics and resumes.');
+        if (!item || !item.url || isForbiddenOfflineUrl(item.url)) {
             return;
         }
 
@@ -36,7 +51,7 @@
             const store = tx.objectStore(STORE_NAME);
             const req = store.add(item);
             req.onsuccess = () => {
-                showOfflineToast(`Offline: ${item.type || 'Action'} saved locally. Will sync when back online.`);
+                showOfflineToast(`Offline: ${item.type || 'Action'} saved locally. Will sync automatically when back online.`);
                 updateOfflineBadge();
                 resolve(req.result);
             };
@@ -86,94 +101,120 @@
         setTimeout(() => {
             toast.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
             toast.classList.add('translate-y-4', 'opacity-0', 'pointer-events-none');
-        }, 4000);
+        }, 4500);
     }
 
     async function updateOfflineBadge() {
-        const items = await getAllQueuedItems();
-        const count = items.length;
-        window.offlineQueueCount = count;
-        window.dispatchEvent(new CustomEvent('offlineQueueUpdated', { detail: { count } }));
+        try {
+            const items = await getAllQueuedItems();
+            const count = items.length;
+            window.offlineQueueCount = count;
+            window.dispatchEvent(new CustomEvent('offlineQueueUpdated', { detail: { count } }));
+        } catch {}
     }
 
+    // Background Sync execution
     async function syncOfflineQueue() {
         if (!navigator.onLine) return;
-        const items = await getAllQueuedItems();
-        if (items.length === 0) return;
+        let items = [];
+        try {
+            items = await getAllQueuedItems();
+        } catch {
+            return;
+        }
+
+        if (!items || items.length === 0) return;
 
         let syncedCount = 0;
+        const currentToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
         for (const item of items) {
             try {
-                let bodyData;
-                const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+                const headers = {
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
 
+                let bodyData;
                 if (item.contentType === 'application/json') {
                     headers['Content-Type'] = 'application/json';
-                    bodyData = JSON.stringify(item.payload);
+                    if (currentToken) {
+                        headers['RequestVerificationToken'] = currentToken;
+                    }
+                    bodyData = typeof item.payload === 'string' ? item.payload : JSON.stringify(item.payload);
                 } else if (item.formDataEntries) {
                     const fd = new FormData();
-                    item.formDataEntries.forEach(([k, v]) => fd.append(k, v));
+                    let tokenAdded = false;
+                    item.formDataEntries.forEach(([k, v]) => {
+                        if (k === '__RequestVerificationToken') {
+                            fd.append(k, currentToken || v);
+                            tokenAdded = true;
+                        } else {
+                            fd.append(k, v);
+                        }
+                    });
+                    if (!tokenAdded && currentToken) {
+                        fd.append('__RequestVerificationToken', currentToken);
+                    }
                     bodyData = fd;
                 }
 
                 const response = await fetch(item.url, {
                     method: item.method || 'POST',
                     headers: headers,
-                    body: bodyData
+                    body: bodyData,
+                    credentials: 'include'
                 });
 
-                if (response.ok) {
+                const isLoginRedirect = response.redirected && response.url && response.url.toLowerCase().includes('/auth/login');
+                const isSuccess = (response.ok || (response.status >= 200 && response.status < 400)) && !isLoginRedirect;
+
+                if (isSuccess) {
                     await deleteQueuedItem(item.id);
                     syncedCount++;
+                } else if (response.status === 400 && response.statusText === 'Bad Request' && !currentToken) {
+                    // Stale CSRF token without active page token; retain in queue for next sync
+                    console.warn('Pending sync deferred due to authentication state.');
                 }
             } catch (err) {
-                console.warn('Failed to sync item:', item, err);
+                console.warn('Failed to sync offline item:', item, err);
             }
         }
 
         if (syncedCount > 0) {
-            const msg = `Synced ${syncedCount} offline ${syncedCount === 1 ? 'entry' : 'entries'} successfully.`;
+            const msg = `Synced ${syncedCount} offline ${syncedCount === 1 ? 'item' : 'items'} successfully.`;
             showOfflineToast(msg, true);
-            if (window.sendLocalNotification) {
-                window.sendLocalNotification('Offline Sync Complete', { body: msg });
-            }
             updateOfflineBadge();
-            // Refresh current page if on habits or events list
+
             const currentPath = window.location.pathname.toLowerCase();
-            if (currentPath.includes('habit') || currentPath.includes('event') || currentPath.includes('gym')) {
-                setTimeout(() => window.location.reload(), 1500);
+            if (currentPath.includes('habit') || currentPath.includes('event') || currentPath.includes('gym') || currentPath.includes('workout')) {
+                setTimeout(() => window.location.reload(), 1200);
             }
         }
     }
 
-    // Intercept form submissions when offline for Habit, Event, and Gym Training
+    // Intercept form submissions when offline
     document.addEventListener('submit', function (e) {
         const form = e.target;
         if (!form || !form.action) return;
 
         const actionUrl = form.action.toLowerCase();
-
-        // Strictly verify allowed types: Habits, Events, and Gym Training
-        const isHabit = actionUrl.includes('/habit/log') || actionUrl.includes('/habit/create') || actionUrl.includes('/habit/undo');
-        const isEvent = actionUrl.includes('/event/create');
-        const isGym = (actionUrl.includes('/gymadmin/createtraining') || actionUrl.includes('/gymcourses')) && !actionUrl.includes('weight');
-
-        // Strictly reject forbidden types: weight analytics and resumes
-        const isForbidden = actionUrl.includes('weight') || actionUrl.includes('resume');
-
-        if (isForbidden || (!isHabit && !isEvent && !isGym)) {
+        if (!isAllowedOfflineUrl(actionUrl)) {
             return;
         }
 
         if (!navigator.onLine) {
             e.preventDefault();
+
             const formData = new FormData(form);
             const entries = [];
             for (let [k, v] of formData.entries()) {
                 entries.push([k, v]);
             }
 
-            const itemType = isHabit ? 'Habit Log' : isEvent ? 'Event' : 'Gym Training';
+            const isHabit = actionUrl.includes('/habit/');
+            const isEvent = actionUrl.includes('/event/');
+            const itemType = isHabit ? 'Habit Action' : isEvent ? 'Event Action' : 'Gym Workout';
+
             enqueueOfflineItem({
                 url: form.action,
                 method: form.method || 'POST',
@@ -182,23 +223,160 @@
                 timestamp: Date.now()
             });
 
-            if (form.closest('.modal')) {
-                form.closest('.modal').classList.add('hidden');
+            // Optimistic UI updates
+            if (actionUrl.includes('/habit/create')) {
+                const habitName = form.querySelector('[name="name"]')?.value || 'New Habit';
+                const habitDesc = form.querySelector('[name="description"]')?.value || '';
+                const habitType = form.querySelector('[name="type"]')?.value || 'Boolean';
+
+                const listContainer = document.getElementById('habitsListContainer');
+                if (listContainer) {
+                    const tempCard = document.createElement('div');
+                    tempCard.className = 'bg-white rounded-xl shadow-sm border border-brand-300 bg-brand-50/20 p-6 relative transition-all animate-pulse';
+                    tempCard.innerHTML = `
+                        <div class="flex justify-between items-start gap-4">
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-lg font-semibold text-slate-800">${escapeHtml(habitName)}</span>
+                                    <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium">${escapeHtml(habitType)}</span>
+                                    <span class="inline-flex items-center text-xs font-bold text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300">
+                                        <i class="fa-solid fa-cloud-arrow-up mr-1 text-amber-600"></i> Saved Offline (Pending Sync)
+                                    </span>
+                                </div>
+                                ${habitDesc ? `<p class="text-sm text-slate-500 mt-1">${escapeHtml(habitDesc)}</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    listContainer.prepend(tempCard);
+                }
+                form.reset();
+            } else if (actionUrl.includes('/habit/log')) {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.classList.add('bg-emerald-500', 'text-white');
+                    const textSpan = form.querySelector('span.text-sm');
+                    if (textSpan) {
+                        textSpan.textContent = 'Completed Today! (Saved Offline)';
+                    }
+                }
+            }
+
+            // Close any open modals
+            const modal = form.closest('[role="dialog"]') || form.closest('.fixed.inset-0');
+            if (modal && !modal.id?.includes('Layout')) {
+                modal.classList.add('hidden');
             }
         }
     });
 
-    // Listen for connection changes
+    // Helper to safely escape HTML strings for optimistic DOM insertion
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    // Intercept window.fetch for direct AJAX calls when offline (e.g. gym workout sessions and habits)
+    const originalFetch = window.fetch;
+    window.fetch = async function (resource, options = {}) {
+        const url = (typeof resource === 'string' ? resource : (resource?.url || '')).toLowerCase();
+        const method = (options.method || 'GET').toUpperCase();
+
+        if (method === 'GET' || !isAllowedOfflineUrl(url)) {
+            return originalFetch.apply(this, arguments);
+        }
+
+        // If currently offline, queue immediately
+        if (!navigator.onLine) {
+            return queueFetchRequest(resource, options);
+        }
+
+        try {
+            return await originalFetch.apply(this, arguments);
+        } catch (err) {
+            // If network request failed due to disconnection, queue it
+            if (!navigator.onLine || err.name === 'TypeError') {
+                return queueFetchRequest(resource, options);
+            }
+            throw err;
+        }
+    };
+
+    async function queueFetchRequest(resource, options) {
+        const url = typeof resource === 'string' ? resource : resource.url;
+        const method = options.method || 'POST';
+        let payload = null;
+        let contentType = 'application/json';
+        let formDataEntries = null;
+
+        if (options.body instanceof FormData) {
+            formDataEntries = Array.from(options.body.entries());
+            contentType = 'multipart/form-data';
+        } else if (typeof options.body === 'string') {
+            try {
+                payload = JSON.parse(options.body);
+            } catch {
+                payload = options.body;
+            }
+        }
+
+        await enqueueOfflineItem({
+            url: url,
+            method: method,
+            payload: payload,
+            formDataEntries: formDataEntries,
+            contentType: contentType,
+            type: url.includes('workout') || url.includes('gym') ? 'Gym Session' : 'Habit Operation',
+            timestamp: Date.now()
+        });
+
+        return new Response(JSON.stringify({ success: true, offline: true, message: 'Saved offline. Will sync when online.' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    // Connection state listeners
     window.addEventListener('online', () => {
         showOfflineToast('Connection restored. Syncing pending data...', true);
         syncOfflineQueue();
     });
 
     window.addEventListener('offline', () => {
-        showOfflineToast('You are currently offline. Changes will be saved locally.');
+        showOfflineToast('You are currently offline. Habits and gym workouts will be saved locally.');
     });
 
-    // Initial check on load
+    // PWA Install prompt capture
+    let deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        window.deferredInstallPrompt = e;
+        const installSection = document.getElementById('sidebarInstallSection');
+        if (installSection) installSection.style.display = 'block';
+    });
+
+    window.triggerPwaInstall = function () {
+        if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            deferredInstallPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted TrackerPro PWA installation.');
+                }
+                deferredInstallPrompt = null;
+                window.deferredInstallPrompt = null;
+            });
+        } else {
+            // Inform user about browser install options (e.g. Chrome menu > Install TrackerPro)
+            const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+            if (isIos) {
+                alert('To install TrackerPro on iOS: tap the Share button in Safari, then select "Add to Home Screen".');
+            } else {
+                alert('To install TrackerPro: tap the 3-dot menu in Chrome and select "Install TrackerPro" or "Add to Home Screen". Note: Chrome requires HTTPS or localhost for PWA installation.');
+            }
+        }
+    };
+
+    // On page ready
     window.addEventListener('load', () => {
         updateOfflineBadge();
         if (navigator.onLine) {
