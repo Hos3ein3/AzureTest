@@ -73,6 +73,9 @@
                 <span class="text-[10px] text-slate-400 uppercase font-semibold block">Margin Used</span>
                 <span class="text-sm font-bold font-mono text-purple-600">$@acc.MarginUsed.ToString("N2")</span>
             </div>
+            <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Arbitrage" class="px-3 py-3 bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500 hover:text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5" title="Arbitrage & Execution Scanner">
+                <i class="fa-solid fa-arrows-split-up-and-left"></i> Arbitrage
+            </a>
             <a asp-area="Crypto" asp-controller="CryptoRisk" asp-action="Index" class="px-3 py-3 bg-rose-500/10 text-rose-600 hover:bg-rose-500 hover:text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5" title="Risk Management & Emergency Controls">
                 <i class="fa-solid fa-shield-halved"></i> Risk
             </a>
@@ -82,14 +85,30 @@
     <!-- Main Trading Grid: Order Ticket (Left) & Order Book Depth / Public Trades (Right) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- Order Placement Ticket (5 cols) -->
-        <div class="lg:col-span-5 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-5">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
+        <div class="lg:col-span-5 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
                 <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                    <i class="fa-solid fa-ticket text-brand-500"></i> New Order Ticket
+                    <i class="fa-solid fa-ticket text-brand-500"></i> Execution Ticket
                 </h3>
                 <div class="text-xs font-mono font-bold text-slate-800 dark:text-white">
                     @symbol: <span class="text-brand-600">$@price.ToString("N2")</span>
                 </div>
+            </div>
+
+            <!-- Smart Ticket Mode Tabs -->
+            <div class="grid grid-cols-4 gap-1 p-1 bg-slate-100 dark:bg-slate-700/60 rounded-xl text-center">
+                <button type="button" onclick="switchTicketTab('tabStandard', this)" class="ticket-tab-btn px-2 py-1.5 rounded-lg text-2xs font-bold transition-all bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-2xs">
+                    Standard
+                </button>
+                <button type="button" onclick="switchTicketTab('tabTwap', this)" class="ticket-tab-btn px-2 py-1.5 rounded-lg text-2xs font-bold transition-all text-slate-600 dark:text-slate-300 hover:bg-white/50">
+                    TWAP
+                </button>
+                <button type="button" onclick="switchTicketTab('tabIceberg', this)" class="ticket-tab-btn px-2 py-1.5 rounded-lg text-2xs font-bold transition-all text-slate-600 dark:text-slate-300 hover:bg-white/50">
+                    Iceberg
+                </button>
+                <button type="button" onclick="switchTicketTab('tabTrailing', this)" class="ticket-tab-btn px-2 py-1.5 rounded-lg text-2xs font-bold transition-all text-slate-600 dark:text-slate-300 hover:bg-white/50">
+                    Trailing
+                </button>
             </div>
 
             <!-- Quick Symbol Buttons -->
@@ -102,87 +121,271 @@
                 }
             </div>
 
-            <!-- Order Submission Form -->
-            <form asp-action="PlaceOrder" method="post" class="space-y-4">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="accountId" value="@acc.Id" />
-                <input type="hidden" name="symbol" value="@symbol" />
-                <input type="hidden" name="tradingMode" value="@acc.TradingMode" />
+            <!-- 1. STANDARD ORDER FORM -->
+            <div id="tabStandard" class="ticket-panel space-y-4">
+                <form asp-action="PlaceOrder" method="post" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="accountId" value="@acc.Id" />
+                    <input type="hidden" name="symbol" value="@symbol" />
+                    <input type="hidden" name="tradingMode" value="@acc.TradingMode" />
 
-                <!-- Side Selector (Buy / Sell) -->
-                <div class="grid grid-cols-2 gap-2">
-                    <label class="cursor-pointer">
-                        <input type="radio" name="side" value="@CryptoOrderSide.Buy" checked class="peer sr-only" />
-                        <div class="py-2.5 rounded-xl border border-emerald-500/30 text-center text-xs font-bold peer-checked:bg-emerald-600 peer-checked:text-white text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all">
-                            BUY / LONG
-                        </div>
-                    </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" name="side" value="@CryptoOrderSide.Sell" class="peer sr-only" />
-                        <div class="py-2.5 rounded-xl border border-rose-500/30 text-center text-xs font-bold peer-checked:bg-rose-600 peer-checked:text-white text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all">
-                            SELL / SHORT
-                        </div>
-                    </label>
-                </div>
+                    <!-- Side Selector (Buy / Sell) -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="side" value="@CryptoOrderSide.Buy" checked class="peer sr-only" />
+                            <div class="py-2.5 rounded-xl border border-emerald-500/30 text-center text-xs font-bold peer-checked:bg-emerald-600 peer-checked:text-white text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all">
+                                BUY / LONG
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="side" value="@CryptoOrderSide.Sell" class="peer sr-only" />
+                            <div class="py-2.5 rounded-xl border border-rose-500/30 text-center text-xs font-bold peer-checked:bg-rose-600 peer-checked:text-white text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all">
+                                SELL / SHORT
+                            </div>
+                        </label>
+                    </div>
 
-                <!-- Order Type (Market, Limit, StopLoss, TakeProfit, StopLimit) -->
-                <div>
-                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Order Type</label>
-                    <select name="orderType" id="orderTypeSelect" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2">
-                        <option value="@CryptoOrderType.Market">Market (Instant Fill)</option>
-                        <option value="@CryptoOrderType.Limit">Limit (Book Maker)</option>
-                        <option value="@CryptoOrderType.StopLoss">Stop Loss Order</option>
-                        <option value="@CryptoOrderType.TakeProfit">Take Profit Order</option>
-                        <option value="@CryptoOrderType.StopLimit">Stop Limit</option>
-                    </select>
-                </div>
-
-                <!-- Quantity & Price -->
-                <div class="grid grid-cols-2 gap-3">
+                    <!-- Order Type -->
                     <div>
-                        <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Quantity (Coins)</label>
-                        <input type="number" step="0.0001" name="quantity" value="0.05" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
+                        <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Order Type</label>
+                        <select name="orderType" id="orderTypeSelect" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2">
+                            <option value="@CryptoOrderType.Market">Market (Instant Fill)</option>
+                            <option value="@CryptoOrderType.Limit">Limit (Book Maker)</option>
+                            <option value="@CryptoOrderType.StopLoss">Stop Loss Order</option>
+                            <option value="@CryptoOrderType.TakeProfit">Take Profit Order</option>
+                            <option value="@CryptoOrderType.StopLimit">Stop Limit</option>
+                        </select>
                     </div>
-                    <div>
-                        <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Limit Price ($)</label>
-                        <input type="number" step="0.01" name="requestedPrice" value="@price" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
-                    </div>
-                </div>
 
-                <!-- Leverage Selector (1x - 20x) -->
-                <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="text-2xs font-bold text-slate-500 uppercase tracking-wider">Leverage</label>
-                        <span id="leverageLabel" class="text-xs font-mono font-bold text-purple-600">1x (Spot / No Leverage)</span>
-                    </div>
-                    <input type="range" name="leverage" min="1" max="20" value="1" id="leverageRange" class="w-full accent-purple-600 cursor-pointer" oninput="document.getElementById('leverageLabel').innerText = this.value + 'x' + (this.value > 5 ? ' (HIGH RISK)' : '')" />
-                    <span class="text-[10px] text-slate-400 block mt-0.5">Dutch AFM &amp; ESMA recommend retail leverage &le; 2x for crypto derivatives.</span>
-                </div>
-
-                <!-- Risk Management: Stop Loss & Take Profit -->
-                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700 space-y-3">
-                    <span class="text-2xs font-bold uppercase tracking-wider text-slate-500 block">Automated Risk Protection</span>
+                    <!-- Quantity & Price -->
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-[10px] font-bold text-rose-500 mb-1">Stop Loss ($)</label>
-                            <input type="number" step="0.01" name="stopLoss" placeholder="e.g. @((price * 0.98m).ToString("0.00"))" class="w-full text-xs font-mono rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-white px-2.5 py-1.5" />
+                            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Quantity</label>
+                            <input type="number" step="0.0001" name="quantity" value="0.05" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold text-emerald-500 mb-1">Take Profit ($)</label>
-                            <input type="number" step="0.01" name="takeProfit" placeholder="e.g. @((price * 1.04m).ToString("0.00"))" class="w-full text-xs font-mono rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-white px-2.5 py-1.5" />
+                            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Limit Price ($)</label>
+                            <input type="number" step="0.01" name="requestedPrice" value="@price" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-purple-500 mb-1">Trailing Stop Distance ($)</label>
-                        <input type="number" step="0.01" name="trailingStopDistance" placeholder="e.g. 500.00" class="w-full text-xs font-mono rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-white px-2.5 py-1.5" />
-                    </div>
-                </div>
 
-                <!-- Submit Button -->
-                <button type="submit" class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-paper-plane"></i> Submit Order (Idempotency Safe)
-                </button>
-            </form>
+                    <!-- Leverage Selector -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-2xs font-bold text-slate-500 uppercase tracking-wider">Leverage</label>
+                            <span id="leverageLabel" class="text-xs font-mono font-bold text-purple-600">1x (Spot)</span>
+                        </div>
+                        <input type="range" name="leverage" min="1" max="20" value="1" id="leverageRange" class="w-full accent-purple-600 cursor-pointer" oninput="document.getElementById('leverageLabel').innerText = this.value + 'x' + (this.value > 5 ? ' (HIGH RISK)' : '')" />
+                    </div>
+
+                    <!-- Stops -->
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700 space-y-2">
+                        <span class="text-2xs font-bold uppercase tracking-wider text-slate-500 block">Automated Risk Stops</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-rose-500 mb-0.5">Stop Loss ($)</label>
+                                <input type="number" step="0.01" name="stopLoss" placeholder="@((price * 0.98m).ToString("0.00"))" class="w-full text-xs font-mono rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-white px-2.5 py-1.5" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-emerald-500 mb-0.5">Take Profit ($)</label>
+                                <input type="number" step="0.01" name="takeProfit" placeholder="@((price * 1.04m).ToString("0.00"))" class="w-full text-xs font-mono rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-white px-2.5 py-1.5" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i> Submit Standard Order
+                    </button>
+                </form>
+            </div>
+
+            <!-- 2. TWAP EXECUTION ENGINE FORM -->
+            <div id="tabTwap" class="ticket-panel space-y-4 hidden">
+                <form asp-action="PlaceSmartOrder" method="post" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="accountId" value="@acc.Id" />
+                    <input type="hidden" name="symbol" value="@symbol" />
+                    <input type="hidden" name="smartOrderType" value="@CryptoOrderType.Twap" />
+
+                    <div class="p-3 bg-purple-50 dark:bg-purple-950/30 rounded-xl border border-purple-200 dark:border-purple-900/40 text-2xs text-purple-900 dark:text-purple-200">
+                        <i class="fa-solid fa-clock mr-1 text-purple-600"></i>
+                        <span class="font-bold">TWAP Time-Slicing:</span> Slices parent volume into micro-tranches to achieve benchmark time-weighted average price and reduce adverse market impact.
+                    </div>
+
+                    <!-- Side Selector -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="side" value="@CryptoOrderSide.Buy" checked class="peer sr-only" />
+                            <div class="py-2 rounded-xl border border-emerald-500/30 text-center text-xs font-bold peer-checked:bg-emerald-600 peer-checked:text-white text-emerald-600 transition-all">
+                                BUY TWAP
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="side" value="@CryptoOrderSide.Sell" class="peer sr-only" />
+                            <div class="py-2 rounded-xl border border-rose-500/30 text-center text-xs font-bold peer-checked:bg-rose-600 peer-checked:text-white text-rose-600 transition-all">
+                                SELL TWAP
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Quantity</label>
+                            <input type="number" step="0.001" name="totalQuantity" value="1.00" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
+                        </div>
+                        <div>
+                            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Benchmark Price ($)</label>
+                            <input type="number" step="0.01" name="requestedPrice" value="@price" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Execution Window</label>
+                            <select name="durationMinutes" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2">
+                                <option value="15">15 Minutes</option>
+                                <option value="30" selected>30 Minutes</option>
+                                <option value="60">1 Hour</option>
+                                <option value="120">2 Hours</option>
+                                <option value="360">6 Hours</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tranche Interval</label>
+                            <select name="intervalMinutes" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2">
+                                <option value="1">Every 1 min</option>
+                                <option value="2">Every 2 mins</option>
+                                <option value="5" selected>Every 5 mins</option>
+                                <option value="10">Every 10 mins</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Launch TWAP Execution Plan
+                    </button>
+                </form>
+            </div>
+
+            <!-- 3. ICEBERG ORDER FORM -->
+            <div id="tabIceberg" class="ticket-panel space-y-4 hidden">
+                <form asp-action="PlaceSmartOrder" method="post" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="accountId" value="@acc.Id" />
+                    <input type="hidden" name="symbol" value="@symbol" />
+                    <input type="hidden" name="smartOrderType" value="@CryptoOrderType.Iceberg" />
+
+                    <div class="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-900/40 text-2xs text-blue-900 dark:text-blue-200">
+                        <i class="fa-solid fa-icicles mr-1 text-blue-600"></i>
+                        <span class="font-bold">Iceberg Reserve Engine:</span> Places a small visible tip on the order book while keeping the bulk reserve invisible, replenishing dynamically with randomized variance.
+                    </div>
+
+                    <!-- Side Selector -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="side" value="@CryptoOrderSide.Buy" checked class="peer sr-only" />
+                            <div class="py-2 rounded-xl border border-emerald-500/30 text-center text-xs font-bold peer-checked:bg-emerald-600 peer-checked:text-white text-emerald-600 transition-all">
+                                BUY ICEBERG
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="side" value="@CryptoOrderSide.Sell" class="peer sr-only" />
+                            <div class="py-2 rounded-xl border border-rose-500/30 text-center text-xs font-bold peer-checked:bg-rose-600 peer-checked:text-white text-rose-600 transition-all">
+                                SELL ICEBERG
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Hidden Size</label>
+                            <input type="number" step="0.01" name="totalQuantity" value="5.00" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
+                        </div>
+                        <div>
+                            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Visible Display Tip</label>
+                            <input type="number" step="0.01" name="visibleQuantity" value="1.00" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Limit Price ($)</label>
+                            <input type="number" step="0.01" name="requestedPrice" value="@price" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
+                        </div>
+                        <div>
+                            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Anti-Detection Jitter</label>
+                            <select name="variancePercent" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2">
+                                <option value="5">&plusmn;5% Size Variance</option>
+                                <option value="10" selected>&plusmn;10% Anti-Bot Jitter</option>
+                                <option value="15">&plusmn;15% Maximum Masking</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-water"></i> Deploy Iceberg Order
+                    </button>
+                </form>
+            </div>
+
+            <!-- 4. TRAILING STOP RATCHET FORM -->
+            <div id="tabTrailing" class="ticket-panel space-y-4 hidden">
+                <form asp-action="PlaceSmartOrder" method="post" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="accountId" value="@acc.Id" />
+                    <input type="hidden" name="symbol" value="@symbol" />
+                    <input type="hidden" name="smartOrderType" value="@CryptoOrderType.TrailingStop" />
+
+                    <div class="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-900/40 text-2xs text-amber-900 dark:text-amber-200">
+                        <i class="fa-solid fa-shield-halved mr-1 text-amber-600"></i>
+                        <span class="font-bold">Trailing Stop Ratchet:</span> Dynamically tracks market highs/lows, ratcheting stop price upward in profit and locking in gains with breakeven protection.
+                    </div>
+
+                    @if (Model.OpenPositions != null && Model.OpenPositions.Any())
+                    {
+                        <div>
+                            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Attach to Active Position</label>
+                            <select name="positionId" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2">
+                                @foreach (var p in Model.OpenPositions)
+                                {
+                                    <option value="@p.Id">@p.Symbol (@p.Side @p.Quantity.ToString("F4")) Entry: $@p.EntryPrice.ToString("N2")</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Quantity</label>
+                                <input type="number" step="0.001" name="totalQuantity" value="0.10" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
+                            </div>
+                            <div>
+                                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Trigger Price ($)</label>
+                                <input type="number" step="0.01" name="requestedPrice" value="@price" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
+                            </div>
+                        </div>
+                    }
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Trailing Distance ($)</label>
+                            <input type="number" step="10" name="trailingDistanceUsd" value="500" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
+                        </div>
+                        <div>
+                            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Ratchet Frequency</label>
+                            <div class="text-xs font-mono font-bold text-emerald-600 py-2">
+                                Real-time Tick Level
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-lock"></i> Activate Trailing Stop Ratchet
+                    </button>
+                </form>
+            </div>
+        </div>
         </div>
 
         <!-- Right Side: Order Book Depth & Public Trades (7 cols) -->
@@ -430,4 +633,241 @@
             </table>
         </div>
     </div>
+
+    <!-- Active Smart Execution Algorithms & Trailing Stops Monitor -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xs font-bold">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">
+                        Active Smart Algorithms &amp; Trailing Stops
+                    </h3>
+                    <span class="text-2xs text-slate-400">Institutional TWAP Slicing, Iceberg Reserves &amp; Dynamic Ratchets</span>
+                </div>
+            </div>
+            <a asp-action="Arbitrage" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-2xs font-bold transition-colors flex items-center gap-1">
+                <i class="fa-solid fa-arrows-split-up-and-left"></i> Arbitrage Scanner
+            </a>
+        </div>
+
+        <div class="p-4 space-y-6">
+            <!-- TWAP Monitor -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock text-purple-500"></i> TWAP Time-Slicing Engines (@(Model.ActiveTwapOrders?.Count ?? 0))
+                    </span>
+                    <span class="text-2xs text-slate-400">Benchmark Slippage Mitigation</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs font-mono">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[10px] font-bold uppercase">
+                                <th class="py-2.5 px-3">Symbol</th>
+                                <th class="py-2.5 px-3">Side</th>
+                                <th class="py-2.5 px-3 text-right">Total Size</th>
+                                <th class="py-2.5 px-3 text-right">Tranches</th>
+                                <th class="py-2.5 px-3 text-right">Avg Fill Price</th>
+                                <th class="py-2.5 px-3 text-right">Single Block Price</th>
+                                <th class="py-2.5 px-3 text-right">Slippage Savings</th>
+                                <th class="py-2.5 px-3 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
+                            @if (Model.ActiveTwapOrders != null && Model.ActiveTwapOrders.Any())
+                            {
+                                foreach (var twap in Model.ActiveTwapOrders)
+                                {
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50">
+                                        <td class="py-2 px-3 font-bold text-slate-800 dark:text-white font-sans">@twap.Symbol</td>
+                                        <td class="py-2 px-3 font-sans">
+                                            <span class="px-2 py-0.5 rounded-md text-2xs font-bold @(twap.Side == CryptoOrderSide.Buy ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")">
+                                                @twap.Side TWAP
+                                            </span>
+                                        </td>
+                                        <td class="py-2 px-3 text-right text-slate-700 dark:text-slate-300">
+                                            @twap.ExecutedQuantity.ToString("F4") / @twap.TotalQuantity.ToString("F4")
+                                        </td>
+                                        <td class="py-2 px-3 text-right text-slate-500 font-sans text-2xs">
+                                            @twap.ExecutedIntervals of @twap.TotalIntervals (every @(twap.IntervalDurationMinutes)m)
+                                        </td>
+                                        <td class="py-2 px-3 text-right font-bold text-slate-800 dark:text-white">$@twap.AverageExecutionPrice.ToString("N2")</td>
+                                        <td class="py-2 px-3 text-right text-slate-400 line-through">$@twap.BenchmarkSingleOrderPrice.ToString("N2")</td>
+                                        <td class="py-2 px-3 text-right font-bold text-emerald-600">
+                                            +$@twap.SlippageSavingsUsd.ToString("N2") (+@twap.SlippageSavingsPercent.ToString("F2")%)
+                                        </td>
+                                        <td class="py-2 px-3 text-center font-sans">
+                                            <span class="px-2 py-0.5 rounded-full text-2xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                                                @twap.Status
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="8" class="py-3 text-center text-slate-400 font-sans text-2xs">
+                                        No TWAP orders currently active. Use the TWAP tab on the ticket to launch one.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Iceberg Orders Monitor -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-water text-blue-500"></i> Iceberg Reserve Orders (@(Model.ActiveIcebergOrders?.Count ?? 0))
+                    </span>
+                    <span class="text-2xs text-slate-400">Hidden Liquidity &amp; Jitter Masking</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs font-mono">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[10px] font-bold uppercase">
+                                <th class="py-2.5 px-3">Symbol</th>
+                                <th class="py-2.5 px-3">Side</th>
+                                <th class="py-2.5 px-3 text-right">Total Size</th>
+                                <th class="py-2.5 px-3 text-right">Visible Tip</th>
+                                <th class="py-2.5 px-3 text-right">Hidden Pool</th>
+                                <th class="py-2.5 px-3 text-right">Limit Price</th>
+                                <th class="py-2.5 px-3 text-right">Book Impact Saved</th>
+                                <th class="py-2.5 px-3 text-center">Anti-Bot Jitter</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
+                            @if (Model.ActiveIcebergOrders != null && Model.ActiveIcebergOrders.Any())
+                            {
+                                foreach (var ice in Model.ActiveIcebergOrders)
+                                {
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50">
+                                        <td class="py-2 px-3 font-bold text-slate-800 dark:text-white font-sans">@ice.Symbol</td>
+                                        <td class="py-2 px-3 font-sans">
+                                            <span class="px-2 py-0.5 rounded-md text-2xs font-bold @(ice.Side == CryptoOrderSide.Buy ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")">
+                                                @ice.Side ICEBERG
+                                            </span>
+                                        </td>
+                                        <td class="py-2 px-3 text-right text-slate-700 dark:text-slate-300">@ice.TotalQuantity.ToString("F4")</td>
+                                        <td class="py-2 px-3 text-right font-bold text-blue-600">@ice.VisibleQuantity.ToString("F4")</td>
+                                        <td class="py-2 px-3 text-right text-slate-400">@ice.HiddenQuantityRemaining.ToString("F4")</td>
+                                        <td class="py-2 px-3 text-right font-bold text-slate-800 dark:text-white">$@ice.LimitPrice.ToString("N2")</td>
+                                        <td class="py-2 px-3 text-right font-bold text-emerald-600">
+                                            -@ice.BookImpactReductionPercent.ToString("F1")%
+                                        </td>
+                                        <td class="py-2 px-3 text-center font-sans">
+                                            <span class="px-2 py-0.5 rounded-full text-2xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                                &plusmn;@ice.VariancePercent% Jitter
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="8" class="py-3 text-center text-slate-400 font-sans text-2xs">
+                                        No Iceberg orders active. Use the Iceberg tab on the ticket to place hidden reserves.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Trailing Stop Dynamic Ratchets -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-lock text-amber-500"></i> Trailing Stop Ratchets &amp; Breakeven Shields (@(Model.TrailingStops?.Count ?? 0))
+                    </span>
+                    <span class="text-2xs text-slate-400">Dynamic High-Water Ratcheting</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs font-mono">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[10px] font-bold uppercase">
+                                <th class="py-2.5 px-3">Symbol</th>
+                                <th class="py-2.5 px-3">Side</th>
+                                <th class="py-2.5 px-3 text-right">Entry Price</th>
+                                <th class="py-2.5 px-3 text-right">High-Water Mark</th>
+                                <th class="py-2.5 px-3 text-right">Active Stop Price</th>
+                                <th class="py-2.5 px-3 text-right">Trail Distance</th>
+                                <th class="py-2.5 px-3 text-center">Breakeven Lock</th>
+                                <th class="py-2.5 px-3 text-right">Secured Profit</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
+                            @if (Model.TrailingStops != null && Model.TrailingStops.Any())
+                            {
+                                foreach (var tr in Model.TrailingStops)
+                                {
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50">
+                                        <td class="py-2 px-3 font-bold text-slate-800 dark:text-white font-sans">@tr.Symbol</td>
+                                        <td class="py-2 px-3 font-sans">
+                                            <span class="px-2 py-0.5 rounded-md text-2xs font-bold @(tr.Side == CryptoPositionSide.Long ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")">
+                                                @tr.Side
+                                            </span>
+                                        </td>
+                                        <td class="py-2 px-3 text-right text-slate-700 dark:text-slate-300">$@tr.EntryPrice.ToString("N2")</td>
+                                        <td class="py-2 px-3 text-right font-bold text-purple-600">$@tr.HighWaterMarkPrice.ToString("N2")</td>
+                                        <td class="py-2 px-3 text-right font-bold text-amber-500">$@tr.ActiveStopPrice.ToString("N2")</td>
+                                        <td class="py-2 px-3 text-right text-slate-400">-$@tr.TrailDistanceUsd.ToString("N2")</td>
+                                        <td class="py-2 px-3 text-center font-sans">
+                                            @if (tr.IsBreakevenLocked)
+                                            {
+                                                <span class="px-2 py-0.5 rounded-full text-2xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                                    <i class="fa-solid fa-lock text-[9px] mr-1"></i> LOCKED
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="px-2 py-0.5 rounded-full text-2xs font-bold bg-slate-100 text-slate-600">
+                                                    Tracking
+                                                </span>
+                                            }
+                                        </td>
+                                        <td class="py-2 px-3 text-right font-bold @(tr.LockedProfitUsd > 0 ? "text-emerald-600" : "text-slate-400")">
+                                            @(tr.LockedProfitUsd > 0 ? $"+${tr.LockedProfitUsd:N2} (+{tr.LockedProfitPercent:F2}%)" : "--")
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="8" class="py-3 text-center text-slate-400 font-sans text-2xs">
+                                        No active trailing stops. Select the Trailing tab on the ticket to lock in profits.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+<script>
+    function switchTicketTab(tabId, btn) {
+        document.querySelectorAll('.ticket-panel').forEach(p => p.classList.add('hidden'));
+        document.querySelectorAll('.ticket-tab-btn').forEach(b => {
+            b.classList.remove('bg-white', 'dark:bg-slate-800', 'text-slate-800', 'dark:text-white', 'shadow-2xs');
+            b.classList.add('text-slate-600', 'dark:text-slate-300');
+        });
+
+        document.getElementById(tabId).classList.remove('hidden');
+        btn.classList.add('bg-white', 'dark:bg-slate-800', 'text-slate-800', 'dark:text-white', 'shadow-2xs');
+        btn.classList.remove('text-slate-600', 'dark:text-slate-300');
+    }
+</script>
+}

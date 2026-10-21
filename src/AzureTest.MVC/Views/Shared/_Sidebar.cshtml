@@ -447,9 +447,15 @@
                 </a>
 
                 <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" data-title="Trading Terminal"
-                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoTrade" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
-                    <i class="fa-solid fa-bolt w-6 text-center text-lg transition-colors @(currentController == "CryptoTrade" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoTrade" && currentAction == "Index" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-bolt w-6 text-center text-lg transition-colors @(currentController == "CryptoTrade" && currentAction == "Index" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
                     <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Trading Console</span>
+                </a>
+
+                <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Arbitrage" data-title="Arbitrage & Bots"
+                   class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @(currentController == "CryptoTrade" && currentAction == "Arbitrage" ? "bg-brand-50 text-brand-600 font-semibold" : "text-slate-600 hover:bg-slate-50")">
+                    <i class="fa-solid fa-arrows-split-up-and-left w-6 text-center text-lg transition-colors @(currentController == "CryptoTrade" && currentAction == "Arbitrage" ? "text-brand-600" : "text-slate-400 group-hover:text-brand-500")"></i>
+                    <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Arbitrage &amp; Bots</span>
                 </a>
 
                 <a asp-area="Crypto" asp-controller="CryptoRisk" asp-action="Index" data-title="Risk & Kill Switch"
@@ -995,8 +1001,11 @@
                     <a asp-area="Crypto" asp-controller="CryptoStrategy" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoStrategy" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Strategy Lab">
                         <i class="fa-solid fa-flask text-base"></i>
                     </a>
-                    <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoTrade" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Trading Terminal">
+                    <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoTrade" && currentAction == "Index" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Trading Terminal">
                         <i class="fa-solid fa-bolt text-base"></i>
+                    </a>
+                    <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Arbitrage" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoTrade" && currentAction == "Arbitrage" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Arbitrage & Bots">
+                        <i class="fa-solid fa-arrows-split-up-and-left text-base"></i>
                     </a>
                     <a asp-area="Crypto" asp-controller="CryptoRisk" asp-action="Index" class="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center @(currentController == "CryptoRisk" ? "bg-brand-500 text-white shadow-xs" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800") transition-all" title="Risk & Kill Switch">
                         <i class="fa-solid fa-shield-halved text-base"></i>

@@ -6,6 +6,7 @@ using AzureTest.Application.Crypto.Commands.CloseCryptoPosition;
 using AzureTest.Application.Crypto.Commands.CreateCryptoAlert;
 using AzureTest.Application.Crypto.Commands.DeleteCryptoAlert;
 using AzureTest.Application.Crypto.Commands.PlaceCryptoOrder;
+using AzureTest.Application.Crypto.Commands.PlaceCryptoSmartOrder;
 using AzureTest.Application.Crypto.Commands.ResetCryptoAccount;
 using AzureTest.Application.Crypto.Commands.RunCryptoBacktest;
 using AzureTest.Application.Crypto.Commands.SaveCryptoJournal;
@@ -14,6 +15,7 @@ using AzureTest.Application.Crypto.Commands.UpdateCryptoSettings;
 using AzureTest.Application.Crypto.Commands.UpdateCryptoStops;
 using AzureTest.Application.Crypto.Queries.GetCryptoAlerts;
 using AzureTest.Application.Crypto.Queries.GetCryptoAnalysis;
+using AzureTest.Application.Crypto.Queries.GetCryptoArbitrageHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoCandles;
 using AzureTest.Application.Crypto.Queries.GetCryptoDerivativesHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoDexScreener;
@@ -25,6 +27,7 @@ using AzureTest.Application.Crypto.Queries.GetCryptoMarketRegime;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketStructure;
 using AzureTest.Application.Crypto.Queries.GetCryptoOnChainHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoOrderBook;
+using AzureTest.Application.Crypto.Queries.GetCryptoSmartOrders;
 using AzureTest.Application.Crypto.Queries.GetCryptoTokenUnlocks;
 using AzureTest.Application.Crypto.Queries.GetCryptoPortfolio;
 using AzureTest.Application.Crypto.Queries.GetCryptoRiskOverview;
@@ -52,6 +55,7 @@ public interface ICryptoCommandUnit
     ICommandHandler<DeleteCryptoAlertCommand, Result> DeleteAlert { get; }
     ICommandHandler<SaveCryptoJournalCommand, Result<Guid>> SaveJournal { get; }
     ICommandHandler<UpdateCryptoSettingsCommand, Result> UpdateSettings { get; }
+    ICommandHandler<PlaceCryptoSmartOrderCommand, Result<Guid>> PlaceSmartOrder { get; }
 }
 
 public sealed class CryptoCommandUnit : ICryptoCommandUnit
@@ -67,6 +71,7 @@ public sealed class CryptoCommandUnit : ICryptoCommandUnit
     public ICommandHandler<DeleteCryptoAlertCommand, Result> DeleteAlert { get; }
     public ICommandHandler<SaveCryptoJournalCommand, Result<Guid>> SaveJournal { get; }
     public ICommandHandler<UpdateCryptoSettingsCommand, Result> UpdateSettings { get; }
+    public ICommandHandler<PlaceCryptoSmartOrderCommand, Result<Guid>> PlaceSmartOrder { get; }
 
     public CryptoCommandUnit(
         ICommandHandler<PlaceCryptoOrderCommand, Result<Guid>> placeOrder,
@@ -79,7 +84,8 @@ public sealed class CryptoCommandUnit : ICryptoCommandUnit
         ICommandHandler<CreateCryptoAlertCommand, Result<Guid>> createAlert,
         ICommandHandler<DeleteCryptoAlertCommand, Result> deleteAlert,
         ICommandHandler<SaveCryptoJournalCommand, Result<Guid>> saveJournal,
-        ICommandHandler<UpdateCryptoSettingsCommand, Result> updateSettings)
+        ICommandHandler<UpdateCryptoSettingsCommand, Result> updateSettings,
+        ICommandHandler<PlaceCryptoSmartOrderCommand, Result<Guid>> placeSmartOrder)
     {
         PlaceOrder = placeOrder;
         CancelOrder = cancelOrder;
@@ -92,6 +98,7 @@ public sealed class CryptoCommandUnit : ICryptoCommandUnit
         DeleteAlert = deleteAlert;
         SaveJournal = saveJournal;
         UpdateSettings = updateSettings;
+        PlaceSmartOrder = placeSmartOrder;
     }
 }
 
@@ -119,6 +126,8 @@ public interface ICryptoQueryUnit
     IQueryHandler<GetCryptoMarketStructureQuery, Result<CryptoMarketStructureDto>> GetMarketStructure { get; }
     IQueryHandler<GetCryptoVolumeProfileQuery, Result<CryptoVolumeProfileHubDto>> GetVolumeProfile { get; }
     IQueryHandler<GetCryptoMarketRegimeQuery, Result<CryptoMarketRegimeDto>> GetMarketRegime { get; }
+    IQueryHandler<GetCryptoArbitrageHubQuery, Result<CryptoArbitrageHubDto>> GetArbitrageHub { get; }
+    IQueryHandler<GetCryptoSmartOrdersQuery, Result<(IReadOnlyList<CryptoTwapOrderDto> TwapOrders, IReadOnlyList<CryptoIcebergOrderDto> IcebergOrders)>> GetSmartOrders { get; }
 }
 
 public sealed class CryptoQueryUnit : ICryptoQueryUnit
@@ -145,6 +154,8 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
     public IQueryHandler<GetCryptoMarketStructureQuery, Result<CryptoMarketStructureDto>> GetMarketStructure { get; }
     public IQueryHandler<GetCryptoVolumeProfileQuery, Result<CryptoVolumeProfileHubDto>> GetVolumeProfile { get; }
     public IQueryHandler<GetCryptoMarketRegimeQuery, Result<CryptoMarketRegimeDto>> GetMarketRegime { get; }
+    public IQueryHandler<GetCryptoArbitrageHubQuery, Result<CryptoArbitrageHubDto>> GetArbitrageHub { get; }
+    public IQueryHandler<GetCryptoSmartOrdersQuery, Result<(IReadOnlyList<CryptoTwapOrderDto> TwapOrders, IReadOnlyList<CryptoIcebergOrderDto> IcebergOrders)>> GetSmartOrders { get; }
 
     public CryptoQueryUnit(
         IQueryHandler<GetCryptoMarketOverviewQuery, Result<CryptoMarketOverviewDto>> getMarketOverview,
@@ -168,7 +179,9 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
         IQueryHandler<GetCryptoDexScreenerQuery, Result<CryptoDexScreenerHubDto>> getDexScreener,
         IQueryHandler<GetCryptoMarketStructureQuery, Result<CryptoMarketStructureDto>> getMarketStructure,
         IQueryHandler<GetCryptoVolumeProfileQuery, Result<CryptoVolumeProfileHubDto>> getVolumeProfile,
-        IQueryHandler<GetCryptoMarketRegimeQuery, Result<CryptoMarketRegimeDto>> getMarketRegime)
+        IQueryHandler<GetCryptoMarketRegimeQuery, Result<CryptoMarketRegimeDto>> getMarketRegime,
+        IQueryHandler<GetCryptoArbitrageHubQuery, Result<CryptoArbitrageHubDto>> getArbitrageHub,
+        IQueryHandler<GetCryptoSmartOrdersQuery, Result<(IReadOnlyList<CryptoTwapOrderDto> TwapOrders, IReadOnlyList<CryptoIcebergOrderDto> IcebergOrders)>> getSmartOrders)
     {
         GetMarketOverview = getMarketOverview;
         GetCandles = getCandles;
@@ -192,6 +205,8 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
         GetMarketStructure = getMarketStructure;
         GetVolumeProfile = getVolumeProfile;
         GetMarketRegime = getMarketRegime;
+        GetArbitrageHub = getArbitrageHub;
+        GetSmartOrders = getSmartOrders;
     }
 }
 

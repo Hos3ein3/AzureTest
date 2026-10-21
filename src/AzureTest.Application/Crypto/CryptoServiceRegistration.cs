@@ -6,6 +6,7 @@ using AzureTest.Application.Crypto.Commands.CloseCryptoPosition;
 using AzureTest.Application.Crypto.Commands.CreateCryptoAlert;
 using AzureTest.Application.Crypto.Commands.DeleteCryptoAlert;
 using AzureTest.Application.Crypto.Commands.PlaceCryptoOrder;
+using AzureTest.Application.Crypto.Commands.PlaceCryptoSmartOrder;
 using AzureTest.Application.Crypto.Commands.ResetCryptoAccount;
 using AzureTest.Application.Crypto.Commands.RunCryptoBacktest;
 using AzureTest.Application.Crypto.Commands.SaveCryptoJournal;
@@ -14,6 +15,7 @@ using AzureTest.Application.Crypto.Commands.UpdateCryptoSettings;
 using AzureTest.Application.Crypto.Commands.UpdateCryptoStops;
 using AzureTest.Application.Crypto.Queries.GetCryptoAlerts;
 using AzureTest.Application.Crypto.Queries.GetCryptoAnalysis;
+using AzureTest.Application.Crypto.Queries.GetCryptoArbitrageHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoCandles;
 using AzureTest.Application.Crypto.Queries.GetCryptoDerivativesHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoDexScreener;
@@ -25,6 +27,7 @@ using AzureTest.Application.Crypto.Queries.GetCryptoMarketRegime;
 using AzureTest.Application.Crypto.Queries.GetCryptoMarketStructure;
 using AzureTest.Application.Crypto.Queries.GetCryptoOnChainHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoOrderBook;
+using AzureTest.Application.Crypto.Queries.GetCryptoSmartOrders;
 using AzureTest.Application.Crypto.Queries.GetCryptoTokenUnlocks;
 using AzureTest.Application.Crypto.Queries.GetCryptoPortfolio;
 using AzureTest.Application.Crypto.Queries.GetCryptoRiskOverview;
@@ -52,9 +55,12 @@ public static class CryptoServiceRegistration
         services.AddScoped<ICryptoStrategyService, CryptoStrategyService>();
         services.AddScoped<ICryptoRiskService, CryptoRiskService>();
         services.AddScoped<ICryptoExecutionService, CryptoExecutionService>();
+        services.AddScoped<ICryptoSmartExecutionService, CryptoSmartExecutionService>();
+        services.AddScoped<ICryptoArbitrageService, CryptoArbitrageService>();
 
         // Command Handlers
         services.AddScoped<ICommandHandler<PlaceCryptoOrderCommand, Result<Guid>>, PlaceCryptoOrderCommandHandler>();
+        services.AddScoped<ICommandHandler<PlaceCryptoSmartOrderCommand, Result<Guid>>, PlaceCryptoSmartOrderCommandHandler>();
         services.AddScoped<ICommandHandler<CancelCryptoOrderCommand, Result>, CancelCryptoOrderCommandHandler>();
         services.AddScoped<ICommandHandler<CloseCryptoPositionCommand, Result<decimal>>, CloseCryptoPositionCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateCryptoStopsCommand, Result>, UpdateCryptoStopsCommandHandler>();
@@ -68,6 +74,7 @@ public static class CryptoServiceRegistration
 
         // Command Validators
         services.AddScoped<IValidator<PlaceCryptoOrderCommand>, PlaceCryptoOrderCommandValidator>();
+        services.AddScoped<IValidator<PlaceCryptoSmartOrderCommand>, PlaceCryptoSmartOrderCommandValidator>();
         services.AddScoped<IValidator<CancelCryptoOrderCommand>, CancelCryptoOrderCommandValidator>();
         services.AddScoped<IValidator<CloseCryptoPositionCommand>, CloseCryptoPositionCommandValidator>();
         services.AddScoped<IValidator<UpdateCryptoStopsCommand>, UpdateCryptoStopsCommandValidator>();
@@ -102,6 +109,8 @@ public static class CryptoServiceRegistration
         services.AddScoped<IQueryHandler<GetCryptoMarketStructureQuery, Result<CryptoMarketStructureDto>>, GetCryptoMarketStructureQueryHandler>();
         services.AddScoped<IQueryHandler<GetCryptoVolumeProfileQuery, Result<CryptoVolumeProfileHubDto>>, GetCryptoVolumeProfileQueryHandler>();
         services.AddScoped<IQueryHandler<GetCryptoMarketRegimeQuery, Result<CryptoMarketRegimeDto>>, GetCryptoMarketRegimeQueryHandler>();
+        services.AddScoped<IQueryHandler<GetCryptoArbitrageHubQuery, Result<CryptoArbitrageHubDto>>, GetCryptoArbitrageHubQueryHandler>();
+        services.AddScoped<IQueryHandler<GetCryptoSmartOrdersQuery, Result<(IReadOnlyList<CryptoTwapOrderDto> TwapOrders, IReadOnlyList<CryptoIcebergOrderDto> IcebergOrders)>>, GetCryptoSmartOrdersQueryHandler>();
 
         // Query Validators
         services.AddScoped<IValidator<GetCryptoMarketOverviewQuery>, GetCryptoMarketOverviewQueryValidator>();
@@ -126,6 +135,8 @@ public static class CryptoServiceRegistration
         services.AddScoped<IValidator<GetCryptoMarketStructureQuery>, GetCryptoMarketStructureQueryValidator>();
         services.AddScoped<IValidator<GetCryptoVolumeProfileQuery>, GetCryptoVolumeProfileQueryValidator>();
         services.AddScoped<IValidator<GetCryptoMarketRegimeQuery>, GetCryptoMarketRegimeQueryValidator>();
+        services.AddScoped<IValidator<GetCryptoArbitrageHubQuery>, GetCryptoArbitrageHubQueryValidator>();
+        services.AddScoped<IValidator<GetCryptoSmartOrdersQuery>, GetCryptoSmartOrdersQueryValidator>();
 
         // Units
         services.AddScoped<ICryptoCommandUnit, CryptoCommandUnit>();

@@ -6,5 +6,7 @@ public enum CryptoExchange
     Kraken = 2,
     Bybit = 3,
     CoinGecko = 4,
-    CoinLore = 5
+    CoinLore = 5,
+    Coinbase = 6,
+    Okx = 7
 }

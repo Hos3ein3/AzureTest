@@ -26,11 +26,16 @@ public sealed class GetCryptoTradeTerminalQueryHandler : IQueryHandler<GetCrypto
 {
     private readonly IUnitOfWork _uow;
     private readonly ICryptoMarketDataService _marketData;
+    private readonly ICryptoSmartExecutionService _smartExecution;
 
-    public GetCryptoTradeTerminalQueryHandler(IUnitOfWork uow, ICryptoMarketDataService marketData)
+    public GetCryptoTradeTerminalQueryHandler(
+        IUnitOfWork uow, 
+        ICryptoMarketDataService marketData,
+        ICryptoSmartExecutionService smartExecution)
     {
         _uow = uow;
         _marketData = marketData;
+        _smartExecution = smartExecution;
     }
 
     public async Task<Result<TradeTerminalDashboardDto>> HandleAsync(GetCryptoTradeTerminalQuery query, CancellationToken ct)
@@ -137,6 +142,20 @@ public sealed class GetCryptoTradeTerminalQueryHandler : IQueryHandler<GetCrypto
             account.IsKillSwitchActive,
             account.KillSwitchReason);
 
+        // 6. Fetch active smart execution algorithms & trailing stop monitors
+        var twapRes = await _smartExecution.GetActiveTwapOrdersAsync(account.Id, ct);
+        var icebergRes = await _smartExecution.GetActiveIcebergOrdersAsync(account.Id, ct);
+        var trailingList = new System.Collections.Generic.List<CryptoTrailingStopOrderDto>();
+
+        foreach (var pos in positions.Where(p => p.TrailingStopDistance.HasValue && p.TrailingStopDistance > 0))
+        {
+            var trailRes = await _smartExecution.EvaluateTrailingStopAsync(pos.Id, pos.CurrentPrice, pos.TrailingStopDistance, ct);
+            if (trailRes.IsSuccess && trailRes.Value != null)
+            {
+                trailingList.Add(trailRes.Value);
+            }
+        }
+
         var terminalDto = new TradeTerminalDashboardDto(
             Account: accountDto,
             OpenPositions: positionDtos,
@@ -146,7 +165,10 @@ public sealed class GetCryptoTradeTerminalQueryHandler : IQueryHandler<GetCrypto
             CurrentPrice: currentPrice,
             Depth: depth,
             RecentTrades: trades,
-            FuturesData: futuresData);
+            FuturesData: futuresData,
+            ActiveTwapOrders: twapRes.Value ?? System.Array.Empty<CryptoTwapOrderDto>(),
+            ActiveIcebergOrders: icebergRes.Value ?? System.Array.Empty<CryptoIcebergOrderDto>(),
+            TrailingStops: trailingList);
 
         return Result<TradeTerminalDashboardDto>.Success(terminalDto);
     }

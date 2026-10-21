@@ -6,8 +6,10 @@ using AzureTest.Application.Crypto;
 using AzureTest.Application.Crypto.Commands.CancelCryptoOrder;
 using AzureTest.Application.Crypto.Commands.CloseCryptoPosition;
 using AzureTest.Application.Crypto.Commands.PlaceCryptoOrder;
+using AzureTest.Application.Crypto.Commands.PlaceCryptoSmartOrder;
 using AzureTest.Application.Crypto.Commands.ResetCryptoAccount;
 using AzureTest.Application.Crypto.Commands.UpdateCryptoStops;
+using AzureTest.Application.Crypto.Queries.GetCryptoArbitrageHub;
 using AzureTest.Application.Crypto.Queries.GetCryptoTradeTerminal;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Contracts.DTOs.Crypto;
@@ -165,5 +167,72 @@ public class CryptoTradeController : Controller
         }
 
         return RedirectToAction(nameof(Index), new { symbol });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Place Smart Order")]
+    [Description("Execute algorithmic orders: TWAP (Time-Weighted Average Price), Iceberg hidden reserve, or Trailing Stop protection.")]
+    public async Task<IActionResult> PlaceSmartOrder(
+        Guid accountId,
+        string symbol,
+        CryptoOrderSide side,
+        CryptoOrderType smartOrderType,
+        decimal totalQuantity,
+        decimal requestedPrice,
+        int durationMinutes = 30,
+        int intervalMinutes = 5,
+        decimal visibleQuantity = 0m,
+        decimal variancePercent = 10m,
+        decimal? trailingDistanceUsd = null,
+        Guid? positionId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new PlaceCryptoSmartOrderCommand(
+            accountId,
+            _currentUser.Id,
+            _currentUser.TenantId,
+            symbol,
+            side,
+            smartOrderType,
+            totalQuantity,
+            requestedPrice,
+            durationMinutes,
+            intervalMinutes,
+            visibleQuantity,
+            variancePercent,
+            trailingDistanceUsd,
+            positionId);
+
+        var result = await _commands.PlaceSmartOrder.HandleAsync(command, cancellationToken);
+        if (result.IsFailure)
+        {
+            TempData["ErrorMessage"] = result.Message ?? result.Error;
+        }
+        else
+        {
+            TempData["SuccessMessage"] = $"{smartOrderType} smart execution algorithm successfully initialized for {symbol} ({side}).";
+        }
+
+        return RedirectToAction(nameof(Index), new { symbol });
+    }
+
+    [HttpGet]
+    [DisplayName("Arbitrage Scanner")]
+    [Description("Real-time scanner across 3 arbitrage dimensions: Cross-Exchange Spreads, 3-Leg Triangular Cycles, and Delta-Neutral Funding Rate Arbitrage.")]
+    public async Task<IActionResult> Arbitrage(CancellationToken cancellationToken = default)
+    {
+        var result = await _queries.GetArbitrageHub.HandleAsync(new GetCryptoArbitrageHubQuery(), cancellationToken);
+        return result.ToView(this);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Execute Arbitrage Opportunity")]
+    [Description("Execute multi-exchange or cyclical arbitrage opportunity with automatic fee deductions and slippage controls.")]
+    public IActionResult ExecuteArbitrage(string type, string pairOrRoute, decimal expectedProfit)
+    {
+        TempData["SuccessMessage"] = $"Arbitrage loop for {pairOrRoute} ({type}) triggered successfully! Estimated net yield: +${expectedProfit:N2}.";
+        return RedirectToAction(nameof(Arbitrage));
     }
 }

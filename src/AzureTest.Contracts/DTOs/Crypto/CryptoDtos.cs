@@ -907,7 +907,10 @@ public sealed record TradeTerminalDashboardDto(
     decimal CurrentPrice,
     CryptoOrderBookDto Depth,
     IReadOnlyList<CryptoRecentTradeDto> RecentTrades,
-    CryptoFuturesFundingDto? FuturesData);
+    CryptoFuturesFundingDto? FuturesData,
+    IReadOnlyList<CryptoTwapOrderDto>? ActiveTwapOrders = null,
+    IReadOnlyList<CryptoIcebergOrderDto>? ActiveIcebergOrders = null,
+    IReadOnlyList<CryptoTrailingStopOrderDto>? TrailingStops = null);
 
 // ── Risk & Position Sizing DTOs ────────────────────────────────────────────
 
@@ -992,3 +995,139 @@ public sealed record CryptoTaxSummaryDto(
     int CompletedTradesCount,
     decimal Jan1stReferenceBalance,
     string TaxJurisdiction);
+
+// ── Feature 6: Smart Execution Algorithms & Arbitrage DTOs ──────────────────
+
+public sealed record CryptoSmartOrderSliceDto(
+    int TrancheNumber,
+    DateTime ScheduledTimeUtc,
+    decimal Quantity,
+    decimal TargetPrice,
+    decimal? FilledPrice,
+    decimal FilledQuantity,
+    string Status, // "Pending", "Filled", "Skipped", "Cancelled"
+    decimal SlippageBps);
+
+public sealed record CryptoTwapOrderDto(
+    Guid Id,
+    Guid AccountId,
+    string Symbol,
+    CryptoOrderSide Side,
+    decimal TotalQuantity,
+    decimal ExecutedQuantity,
+    decimal RemainingQuantity,
+    int TotalIntervals,
+    int ExecutedIntervals,
+    int IntervalDurationMinutes,
+    decimal TargetPrice,
+    decimal AverageExecutionPrice,
+    decimal BenchmarkSingleOrderPrice,
+    decimal SlippageSavingsUsd,
+    decimal SlippageSavingsPercent,
+    string Status, // "Active", "Completed", "Paused", "Cancelled"
+    DateTime StartedAtUtc,
+    DateTime EstimatedCompletionUtc,
+    IReadOnlyList<CryptoSmartOrderSliceDto> Tranches);
+
+public sealed record CryptoIcebergOrderDto(
+    Guid Id,
+    Guid AccountId,
+    string Symbol,
+    CryptoOrderSide Side,
+    decimal TotalQuantity,
+    decimal VisibleQuantity,
+    decimal HiddenQuantityRemaining,
+    decimal FilledQuantity,
+    decimal LimitPrice,
+    decimal VariancePercent, // Jitter e.g. 10% to prevent L2 bot detection
+    int ReplenishCount,
+    decimal AverageFillPrice,
+    decimal BookImpactReductionPercent,
+    string Status, // "Active", "Filled", "Cancelled"
+    DateTime CreatedAtUtc,
+    IReadOnlyList<CryptoSmartOrderSliceDto> DisplayedTranches);
+
+public sealed record CryptoTrailingStopOrderDto(
+    Guid PositionId,
+    string Symbol,
+    CryptoPositionSide Side,
+    decimal EntryPrice,
+    decimal CurrentPrice,
+    decimal TrailDistanceUsd,
+    decimal TrailDistanceAtrMultiple,
+    decimal HighWaterMarkPrice, // Highest price since entry for long, lowest for short
+    decimal ActiveStopPrice,
+    decimal BreakevenPrice,
+    bool IsBreakevenLocked,
+    decimal LockedProfitUsd,
+    decimal LockedProfitPercent,
+    string TrailStatus, // "Tracking", "RatchetUpdated", "Triggered", "Inactive"
+    DateTime LastRatchetUpdateUtc);
+
+public sealed record CryptoCrossExchangeArbitrageOpportunityDto(
+    string Pair,
+    CryptoExchange BuyExchange,
+    decimal BuyPrice,
+    decimal BuyFeePercent,
+    CryptoExchange SellExchange,
+    decimal SellPrice,
+    decimal SellFeePercent,
+    decimal GrossSpreadUsd,
+    decimal GrossSpreadPercent,
+    decimal NetSpreadPercent,
+    decimal NetProfitUsdFor10k,
+    decimal EstimatedTransferFeeUsd,
+    decimal AnnualizedAprPercent,
+    string ExecutionViability, // "High Yield", "VIP Tier Only", "Sub-Threshold"
+    DateTime DetectedAtUtc);
+
+public sealed record CryptoTriangularLegDto(
+    int LegIndex,
+    string StepDescription, // e.g. "Buy BTC with 10,000 USDT", "Trade BTC to ETH", "Sell ETH to USDT"
+    string Pair,
+    string Action, // "BUY" or "SELL"
+    decimal Rate,
+    decimal InputAmount,
+    decimal OutputAmount,
+    decimal FeeUsd);
+
+public sealed record CryptoTriangularArbitrageDto(
+    string Id,
+    string RouteName, // e.g. "USDT -> BTC -> ETH -> USDT"
+    CryptoExchange Exchange,
+    decimal InitialCapitalUsd,
+    decimal FinalCapitalUsd,
+    decimal GrossProfitUsd,
+    decimal TotalFeeUsd,
+    decimal NetProfitUsd,
+    decimal NetYieldPercent,
+    int LatencySensitivityMs,
+    string Status, // "Profitable", "Marginal", "Unprofitable"
+    IReadOnlyList<CryptoTriangularLegDto> Legs,
+    DateTime ScannedAtUtc);
+
+public sealed record CryptoFundingArbitrageDto(
+    string Symbol,
+    decimal SpotPrice,
+    decimal PerpPrice,
+    decimal BasisSpreadUsd,
+    decimal BasisSpreadPercent,
+    decimal CurrentFundingRate8hPercent,
+    decimal NextFundingRate8hPercent,
+    decimal AnnualizedFundingApyPercent,
+    decimal DeltaNeutralBeta, // 0.00
+    decimal CapitalRequirementFor10kUsd,
+    decimal EstimatedMonthlyYieldUsd,
+    decimal LiquidationBufferPercent,
+    string StrategySuitability, // "Optimal Delta-Neutral", "Moderate Yield", "Low Basis"
+    DateTime UpdatedAtUtc);
+
+public sealed record CryptoArbitrageHubDto(
+    int TotalActiveOpportunities,
+    decimal HighestNetSpreadPercent,
+    decimal HighestFundingApyPercent,
+    IReadOnlyList<CryptoCrossExchangeArbitrageOpportunityDto> CrossExchangeOpportunities,
+    IReadOnlyList<CryptoTriangularArbitrageDto> TriangularOpportunities,
+    IReadOnlyList<CryptoFundingArbitrageDto> FundingRateOpportunities,
+    DateTime LastScanTimeUtc);
+

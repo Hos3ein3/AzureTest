@@ -6,5 +6,8 @@ public enum CryptoOrderType
     Limit = 2,
     StopLoss = 3,
     TakeProfit = 4,
-    StopLimit = 5
+    StopLimit = 5,
+    Twap = 6,
+    Iceberg = 7,
+    TrailingStop = 8
 }

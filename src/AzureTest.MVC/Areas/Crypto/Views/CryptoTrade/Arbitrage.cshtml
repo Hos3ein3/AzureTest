@@ -1,0 +1,366 @@
+@model CryptoArbitrageHubDto
+@{
+    ViewData["Title"] = "Crypto Arbitrage & Execution Scanner";
+}
+
+<div class="space-y-6">
+    <!-- Feedback Alerts -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
+                <span>@TempData["SuccessMessage"]</span>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-emerald-600">&times;</button>
+        </div>
+    }
+
+    <!-- Header & Radar Ribbon -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl font-bold">
+                <i class="fa-solid fa-arrows-split-up-and-left"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Crypto Arbitrage &amp; Execution Scanner</h1>
+                    <span class="px-2.5 py-0.5 rounded-full text-2xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                        <i class="fa-solid fa-satellite-dish text-[9px] animate-pulse mr-1"></i> REAL-TIME RADAR
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    High-frequency spatial cross-exchange spreads, 3-leg triangular cycles, and delta-neutral cash &amp; carry funding yields
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <a asp-action="Index" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-bolt"></i> Trading Terminal
+            </a>
+            <button onclick="window.location.reload()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate"></i> Refresh Quotes
+            </button>
+        </div>
+    </div>
+
+    <!-- Top KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between text-slate-400 text-2xs font-bold uppercase mb-1">
+                <span>Active Opportunities</span>
+                <i class="fa-solid fa-bullseye text-purple-500"></i>
+            </div>
+            <div class="text-2xl font-bold font-mono text-slate-800 dark:text-white">
+                @Model.TotalActiveOpportunities
+            </div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Across 5 tier-1 exchanges
+            </div>
+        </div>
+
+        <div class="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between text-slate-400 text-2xs font-bold uppercase mb-1">
+                <span>Top Spatial Net Spread</span>
+                <i class="fa-solid fa-chart-line text-emerald-500"></i>
+            </div>
+            <div class="text-2xl font-bold font-mono text-emerald-600">
+                +@Model.HighestNetSpreadPercent.ToString("F3")%
+            </div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Net after 2-leg taker fees &amp; gas
+            </div>
+        </div>
+
+        <div class="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between text-slate-400 text-2xs font-bold uppercase mb-1">
+                <span>Top Funding APY</span>
+                <i class="fa-solid fa-coins text-amber-500"></i>
+            </div>
+            <div class="text-2xl font-bold font-mono text-amber-500">
+                +@Model.HighestFundingApyPercent.ToString("F1")%
+            </div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Delta-neutral cash &amp; carry
+            </div>
+        </div>
+
+        <div class="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+            <div class="flex items-center justify-between text-slate-400 text-2xs font-bold uppercase mb-1">
+                <span>Directional Risk</span>
+                <i class="fa-solid fa-shield-halved text-blue-500"></i>
+            </div>
+            <div class="text-2xl font-bold font-mono text-blue-600">
+                &Delta; = 0.00
+            </div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Pure market-neutral beta
+            </div>
+        </div>
+    </div>
+
+    <!-- Arbitrage Navigation Tabs -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs p-2">
+        <div class="flex flex-wrap items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-2">
+            <button type="button" onclick="switchArbTab('crossExchangeTab', this)" class="arb-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all bg-purple-600 text-white shadow-xs">
+                <i class="fa-solid fa-network-wired mr-1.5"></i> 1. Cross-Exchange Spreads (@Model.CrossExchangeOpportunities.Count)
+            </button>
+            <button type="button" onclick="switchArbTab('triangularTab', this)" class="arb-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200">
+                <i class="fa-solid fa-triangle text-amber-500 mr-1.5"></i> 2. Triangular Loops (@Model.TriangularOpportunities.Count)
+            </button>
+            <button type="button" onclick="switchArbTab('fundingTab', this)" class="arb-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200">
+                <i class="fa-solid fa-scale-balanced text-emerald-500 mr-1.5"></i> 3. Funding Rate Cash &amp; Carry (@Model.FundingRateOpportunities.Count)
+            </button>
+        </div>
+
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <!-- TAB 1: CROSS-EXCHANGE ARBITRAGE (Spatial Price Disparities)  -->
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <div id="crossExchangeTab" class="arb-panel p-4 space-y-4">
+            <div class="p-3 bg-purple-50 dark:bg-purple-950/30 rounded-xl border border-purple-200 dark:border-purple-900/50 text-xs text-purple-900 dark:text-purple-200 flex items-start gap-2.5">
+                <i class="fa-solid fa-circle-info text-purple-600 mt-0.5"></i>
+                <div>
+                    <span class="font-bold">Spatial Arbitrage Mechanics:</span>
+                    Scans live order books across Binance, Coinbase, Kraken, OKX, and Bybit. Net spread calculates true bottom-line profitability after dual-leg taker commissions (0.05% - 0.15%) and network gas fees.
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-bold uppercase">
+                            <th class="py-3 px-4">Pair</th>
+                            <th class="py-3 px-4">Buy Leg (Exchange / Price)</th>
+                            <th class="py-3 px-4">Sell Leg (Exchange / Price)</th>
+                            <th class="py-3 px-4 text-right">Gross Spread</th>
+                            <th class="py-3 px-4 text-right">Net Spread %</th>
+                            <th class="py-3 px-4 text-right">Net Profit ($10k)</th>
+                            <th class="py-3 px-4 text-right">Annualized APR</th>
+                            <th class="py-3 px-4 text-center">Viability</th>
+                            <th class="py-3 px-4 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 font-mono">
+                        @foreach (var opp in Model.CrossExchangeOpportunities)
+                        {
+                            var profitable = opp.NetSpreadPercent > 0;
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors">
+                                <td class="py-3 px-4 font-bold font-sans text-slate-800 dark:text-white">
+                                    @opp.Pair
+                                </td>
+                                <td class="py-3 px-4 font-sans">
+                                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 mr-1.5">
+                                        @opp.BuyExchange
+                                    </span>
+                                    <span class="font-mono font-bold text-slate-800 dark:text-white">$@opp.BuyPrice.ToString("N2")</span>
+                                    <span class="text-3xs text-slate-400 block font-mono">Fee: @opp.BuyFeePercent%</span>
+                                </td>
+                                <td class="py-3 px-4 font-sans">
+                                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 mr-1.5">
+                                        @opp.SellExchange
+                                    </span>
+                                    <span class="font-mono font-bold text-slate-800 dark:text-white">$@opp.SellPrice.ToString("N2")</span>
+                                    <span class="text-3xs text-slate-400 block font-mono">Fee: @opp.SellFeePercent%</span>
+                                </td>
+                                <td class="py-3 px-4 text-right">
+                                    <span class="font-bold text-slate-700 dark:text-slate-300">+$@opp.GrossSpreadUsd.ToString("N2")</span>
+                                    <span class="text-2xs text-slate-400 block">+@opp.GrossSpreadPercent.ToString("F3")%</span>
+                                </td>
+                                <td class="py-3 px-4 text-right font-bold @(profitable ? "text-emerald-600" : "text-slate-400")">
+                                    @(profitable ? "+" : "")@opp.NetSpreadPercent.ToString("F3")%
+                                </td>
+                                <td class="py-3 px-4 text-right font-bold @(opp.NetProfitUsdFor10k > 0 ? "text-emerald-600" : "text-rose-600")">
+                                    @(opp.NetProfitUsdFor10k > 0 ? "+" : "")$@opp.NetProfitUsdFor10k.ToString("N2")
+                                </td>
+                                <td class="py-3 px-4 text-right font-bold text-purple-600 font-mono">
+                                    @opp.AnnualizedAprPercent.ToString("F1")%
+                                </td>
+                                <td class="py-3 px-4 text-center font-sans">
+                                    <span class="px-2.5 py-0.5 rounded-full text-2xs font-bold @(opp.ExecutionViability == "High Yield" ? "bg-emerald-100 text-emerald-700" : (opp.ExecutionViability == "VIP Tier Only" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"))">
+                                        @opp.ExecutionViability
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-center font-sans">
+                                    <form asp-action="ExecuteArbitrage" method="post" class="inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="type" value="Cross-Exchange" />
+                                        <input type="hidden" name="pairOrRoute" value="@opp.Pair (@opp.BuyExchange -> @opp.SellExchange)" />
+                                        <input type="hidden" name="expectedProfit" value="@opp.NetProfitUsdFor10k" />
+                                        <button type="submit" class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-2xs font-bold transition-colors">
+                                            Simulate Loop
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <!-- TAB 2: TRIANGULAR ARBITRAGE (Intra-Exchange Cyclic Loops)   -->
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <div id="triangularTab" class="arb-panel p-4 space-y-4 hidden">
+            <div class="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-900/50 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5">
+                <i class="fa-solid fa-triangle text-amber-600 mt-0.5"></i>
+                <div>
+                    <span class="font-bold">Intra-Exchange Cyclic Arbitrage:</span>
+                    Executes instantaneous 3-step currency conversion loops (e.g. USDT &rarr; BTC &rarr; ETH &rarr; USDT) entirely inside one exchange order book. Zero network transfer delays or blockchain gas fees!
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                @foreach (var tri in Model.TriangularOpportunities)
+                {
+                    <div class="p-5 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-800 dark:text-white">@tri.RouteName</h3>
+                                <span class="text-2xs text-slate-400 font-mono">Exchange: @tri.Exchange | Latency Budget: @tri.LatencySensitivityMs ms</span>
+                            </div>
+                            <span class="px-2.5 py-0.5 rounded-full text-2xs font-bold @(tri.Status == "Profitable" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700")">
+                                @tri.Status
+                            </span>
+                        </div>
+
+                        <!-- 3-Leg Journey -->
+                        <div class="space-y-2 border-l-2 border-amber-500 pl-3">
+                            @foreach (var leg in tri.Legs)
+                            {
+                                <div class="text-xs">
+                                    <span class="font-bold text-amber-600 block text-2xs">Leg @leg.LegIndex (@leg.Action @leg.Pair)</span>
+                                    <span class="text-slate-700 dark:text-slate-300 font-mono">@leg.StepDescription</span>
+                                    <span class="text-3xs text-slate-400 block font-mono">Fee: $@leg.FeeUsd.ToString("N2")</span>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Capital Outcome -->
+                        <div class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1 text-xs">
+                            <div class="flex justify-between text-slate-500">
+                                <span>Initial Capital</span>
+                                <span class="font-mono font-bold">$@tri.InitialCapitalUsd.ToString("N2")</span>
+                            </div>
+                            <div class="flex justify-between text-slate-500">
+                                <span>Total 3-Leg Fees</span>
+                                <span class="font-mono text-rose-500">-$@tri.TotalFeeUsd.ToString("N2")</span>
+                            </div>
+                            <div class="flex justify-between font-bold pt-1 border-t border-slate-100 dark:border-slate-700">
+                                <span class="text-slate-800 dark:text-white">Net Return</span>
+                                <span class="font-mono @(tri.NetProfitUsd > 0 ? "text-emerald-600" : "text-rose-600")">
+                                    @(tri.NetProfitUsd > 0 ? "+" : "")$@tri.NetProfitUsd.ToString("N2") (@tri.NetYieldPercent.ToString("F3")%)
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Execution Form -->
+                        <form asp-action="ExecuteArbitrage" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="type" value="Triangular Cycle" />
+                            <input type="hidden" name="pairOrRoute" value="@tri.RouteName" />
+                            <input type="hidden" name="expectedProfit" value="@tri.NetProfitUsd" />
+                            <button type="submit" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-play"></i> Trigger Triangular Cycle
+                            </button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <!-- TAB 3: FUNDING RATE / CASH & CARRY BASIS ARBITRAGE          -->
+        <!-- ─────────────────────────────────────────────────────────── -->
+        <div id="fundingTab" class="arb-panel p-4 space-y-4 hidden">
+            <div class="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-900/50 text-xs text-emerald-900 dark:text-emerald-200 flex items-start gap-2.5">
+                <i class="fa-solid fa-coins text-emerald-600 mt-0.5"></i>
+                <div>
+                    <span class="font-bold">Delta-Neutral Cash &amp; Carry Mechanics:</span>
+                    Pair Spot Long + Perpetual Futures Short (hedged 1:1, &Delta; = 0.00). Regardless of whether Bitcoin surges to $150,000 or drops to $20,000, price movements cancel out completely, while collecting positive 8-hour funding payouts from leveraged perpetual longs!
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-bold uppercase">
+                            <th class="py-3 px-4">Symbol</th>
+                            <th class="py-3 px-4 text-right">Spot Price</th>
+                            <th class="py-3 px-4 text-right">Perp Price</th>
+                            <th class="py-3 px-4 text-right">Basis Spread</th>
+                            <th class="py-3 px-4 text-right">8h Funding Rate</th>
+                            <th class="py-3 px-4 text-right">Annualized APY</th>
+                            <th class="py-3 px-4 text-right">Est. Monthly ($10k)</th>
+                            <th class="py-3 px-4 text-center">Liq. Buffer</th>
+                            <th class="py-3 px-4 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 font-mono">
+                        @foreach (var f in Model.FundingRateOpportunities)
+                        {
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors">
+                                <td class="py-3 px-4 font-bold font-sans text-slate-800 dark:text-white">
+                                    @f.Symbol
+                                    <span class="block text-3xs text-emerald-600 font-sans">&Delta; = 0.00 Beta</span>
+                                </td>
+                                <td class="py-3 px-4 text-right text-slate-700 dark:text-slate-300">
+                                    $@f.SpotPrice.ToString(f.SpotPrice < 1m ? "F4" : "N2")
+                                </td>
+                                <td class="py-3 px-4 text-right text-slate-700 dark:text-slate-300">
+                                    $@f.PerpPrice.ToString(f.PerpPrice < 1m ? "F4" : "N2")
+                                </td>
+                                <td class="py-3 px-4 text-right font-bold text-purple-600">
+                                    +$@f.BasisSpreadUsd.ToString(f.SpotPrice < 1m ? "F4" : "N2") (+@f.BasisSpreadPercent.ToString("F3")%)
+                                </td>
+                                <td class="py-3 px-4 text-right font-bold text-emerald-600">
+                                    +@f.CurrentFundingRate8hPercent.ToString("F3")%
+                                    <span class="block text-3xs text-slate-400 font-mono">Next: +@f.NextFundingRate8hPercent.ToString("F3")%</span>
+                                </td>
+                                <td class="py-3 px-4 text-right font-bold text-emerald-600 text-sm">
+                                    +@f.AnnualizedFundingApyPercent.ToString("F1")%
+                                </td>
+                                <td class="py-3 px-4 text-right font-bold text-slate-800 dark:text-white">
+                                    +$@f.EstimatedMonthlyYieldUsd.ToString("N2")/mo
+                                </td>
+                                <td class="py-3 px-4 text-center font-sans">
+                                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                        @f.LiquidationBufferPercent% Buffer
+                                    </span>
+                                </td>
+                                <td class="py-3 px-4 text-center font-sans">
+                                    <form asp-action="ExecuteArbitrage" method="post" class="inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="type" value="Funding Cash & Carry" />
+                                        <input type="hidden" name="pairOrRoute" value="@f.Symbol (Spot Long + Perp Short)" />
+                                        <input type="hidden" name="expectedProfit" value="@f.EstimatedMonthlyYieldUsd" />
+                                        <button type="submit" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-2xs font-bold transition-colors">
+                                            Open Basis Trade
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function switchArbTab(tabId, btn) {
+        document.querySelectorAll('.arb-panel').forEach(p => p.classList.add('hidden'));
+        document.querySelectorAll('.arb-tab-btn').forEach(b => {
+            b.classList.remove('bg-purple-600', 'text-white', 'shadow-xs');
+            b.classList.add('bg-slate-100', 'dark:bg-slate-700', 'text-slate-600', 'dark:text-slate-300');
+        });
+
+        document.getElementById(tabId).classList.remove('hidden');
+        btn.classList.add('bg-purple-600', 'text-white', 'shadow-xs');
+        btn.classList.remove('bg-slate-100', 'dark:bg-slate-700', 'text-slate-600', 'dark:text-slate-300');
+    }
+</script>
+}
