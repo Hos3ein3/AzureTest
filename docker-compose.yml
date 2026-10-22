@@ -217,7 +217,7 @@ services:
     depends_on: 
       - web
     networks:
-      - app-azuretest-network ]
+      - app-azuretest-network
 
 networks:
   app-azuretest-network:
