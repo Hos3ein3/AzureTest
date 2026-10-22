@@ -6,13 +6,14 @@ using AzureTest.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+
 using System.ComponentModel;
 using System.Security.Claims;
 
 using Microsoft.Extensions.Options;
+
 using AzureTest.Application.IdentitySettings;
 using AzureTest.Domain.Documents;
-
 using AzureTest.Application.Users.Commands.LoginUser;
 using AzureTest.Application.Users.Commands.RegisterUser;
 using AzureTest.Application.Users.Commands.LogoutUser;
@@ -27,7 +28,7 @@ namespace AzureTest.MVC.Controllers;
 [AllowAnonymous]
 [DisplayName("Auth")]
 [Description("Manage and control Auth operations.")]
-    public class AuthController : Controller
+public class AuthController : Controller
 {
     private readonly IUserCommandUnit _commands;
     private readonly SignInManager<ApplicationUser> _signInManager;
@@ -74,9 +75,9 @@ namespace AzureTest.MVC.Controllers;
     [DisplayName("Login")]
     [Description("Execute Login operation for Auth.")]
     public async Task<IActionResult> Login(
-        string email, 
-        string password, 
-        [FromForm(Name = "remember-me")] bool rememberMe = true, 
+        string email,
+        string password,
+        [FromForm(Name = "remember-me")] bool rememberMe = true,
         string? returnUrl = null,
         CancellationToken cancellationToken = default)
     {
@@ -87,9 +88,9 @@ namespace AzureTest.MVC.Controllers;
             {
                 var cookieOptions = new CookieOptions
                 {
-                    HttpOnly = true, 
-                    Secure = Request.IsHttps, 
-                    SameSite = SameSiteMode.Lax, 
+                    HttpOnly = true,
+                    Secure = Request.IsHttps,
+                    SameSite = SameSiteMode.Lax,
                     Expires = rememberMe ? DateTime.UtcNow.AddDays(14) : null
                 };
                 Response.Cookies.Append("jwt", result.Value.Token!, cookieOptions);
@@ -109,7 +110,7 @@ namespace AzureTest.MVC.Controllers;
                     await _signInManager.SignInAsync(user, authProperties);
                 }
             }
-            
+
             var userObj = await _userManager.FindByEmailAsync(email);
             if (userObj != null)
             {
@@ -120,25 +121,33 @@ namespace AzureTest.MVC.Controllers;
                     var rolePerms = await _unitOfWork.RolePermissions.GetPermissionsByRoleAsync(role);
                     foreach (var rp in rolePerms)
                     {
-                        var areaPrefix = !string.IsNullOrWhiteSpace(rp.Permission.AreaName) ? $"{rp.Permission.AreaName}/" : "";
+                        var areaPrefix = !string.IsNullOrWhiteSpace(rp.Permission.AreaName)
+                            ? $"{rp.Permission.AreaName}/"
+                            : "";
                         permissions.Add($"{areaPrefix}{rp.Permission.ControllerName}/{rp.Permission.ActionName}");
                         // Also keep short key for compatibility
                         permissions.Add($"{rp.Permission.ControllerName}/{rp.Permission.ActionName}");
                     }
                 }
-                
+
                 var sessionDto = new UserSessionCacheDto
                 {
-                    Id = userObj.Id, Email = userObj.Email, PhoneNumber = userObj.PhoneNumber,
-                    ProfileImage = userObj.ProfileImage, FirstName = userObj.FirstName,
-                    LastName = userObj.LastName, FullName = userObj.FullName,
+                    Id = userObj.Id,
+                    Email = userObj.Email,
+                    PhoneNumber = userObj.PhoneNumber,
+                    ProfileImage = userObj.ProfileImage,
+                    FirstName = userObj.FirstName,
+                    LastName = userObj.LastName,
+                    FullName = userObj.FullName,
                     Roles = System.Linq.Enumerable.ToList(roles),
                     Permissions = System.Linq.Enumerable.ToList(System.Linq.Enumerable.Distinct(permissions))
                 };
                 await _redisService.SetAsync($"User_Info_{userObj.Id}", sessionDto, TimeSpan.FromDays(7));
             }
 
-            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl) && !returnUrl.StartsWith("/Auth", StringComparison.OrdinalIgnoreCase) && !returnUrl.StartsWith("/Error", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl) &&
+                !returnUrl.StartsWith("/Auth", StringComparison.OrdinalIgnoreCase) &&
+                !returnUrl.StartsWith("/Error", StringComparison.OrdinalIgnoreCase))
             {
                 return LocalRedirect(returnUrl);
             }
@@ -147,10 +156,12 @@ namespace AzureTest.MVC.Controllers;
             var redirectUrl = settingRes.IsSuccess ? settingRes.Value.RedirectAfterLogin : "/Home/Index";
             return LocalRedirect(redirectUrl ?? "/Home/Index");
         }
+
         if (result.IsSuccess && result.Value.Errors != null)
         {
             foreach (var error in result.Value.Errors) ModelState.AddModelError(string.Empty, error);
         }
+
         ViewData["ReturnUrl"] = returnUrl;
         return View();
     }
@@ -167,7 +178,8 @@ namespace AzureTest.MVC.Controllers;
     [ValidateAntiForgeryToken]
     [DisplayName("Register")]
     [Description("Execute Register operation for Auth.")]
-    public async Task<IActionResult> Register(string name, string email, string password, string confirmPassword, CancellationToken cancellationToken)
+    public async Task<IActionResult> Register(string name, string email, string password, string confirmPassword,
+        CancellationToken cancellationToken)
     {
         if (password != confirmPassword)
         {
@@ -179,7 +191,8 @@ namespace AzureTest.MVC.Controllers;
         var firstName = nameParts.Length > 0 ? nameParts[0] : string.Empty;
         var lastName = nameParts.Length > 1 ? nameParts[1] : string.Empty;
 
-        var result = await _commands.Register.HandleAsync(new RegisterUserCommand(email, password, firstName, lastName), cancellationToken);
+        var result = await _commands.Register.HandleAsync(new RegisterUserCommand(email, password, firstName, lastName),
+            cancellationToken);
         if (result.IsSuccess)
         {
             var settingRes = await _getIdentitySettingQuery.HandleAsync(new GetIdentitySettingQuery());
@@ -213,6 +226,7 @@ namespace AzureTest.MVC.Controllers;
         {
             ModelState.AddModelError(string.Empty, result.Error);
         }
+
         return View();
     }
 
@@ -231,25 +245,19 @@ namespace AzureTest.MVC.Controllers;
     [Description("Execute Logout operation for Auth.")]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
-        
-        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value 
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
                      ?? User.FindFirst("sub")?.Value;
         if (!string.IsNullOrEmpty(userId))
         {
             await _redisService.RemoveAsync($"User_Info_{userId}");
         }
-        
+
         await _commands.Logout.HandleAsync(new LogoutUserCommand(), cancellationToken);
 
-        
+
         if (_featureOptions.UseJWT)
         {
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict
-            };
+            var cookieOptions = new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict };
             Response.Cookies.Delete("jwt", cookieOptions);
             Response.Cookies.Delete("refreshToken", cookieOptions);
         }
@@ -257,7 +265,7 @@ namespace AzureTest.MVC.Controllers;
         {
             await _signInManager.SignOutAsync();
         }
-        
+
         return RedirectToAction(nameof(Login));
     }
 
@@ -275,31 +283,29 @@ namespace AzureTest.MVC.Controllers;
             return Unauthorized();
         }
 
-        var result = await _commands.RefreshToken.HandleAsync(new RefreshTokenCommand(jwt, refreshToken), cancellationToken);
+        var result =
+            await _commands.RefreshToken.HandleAsync(new RefreshTokenCommand(jwt, refreshToken), cancellationToken);
 
         if (result.IsSuccess && result.Value.Success)
         {
             var cookieOptions = new CookieOptions
             {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Expires = DateTime.UtcNow.AddDays(1)
+                HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict, Expires = DateTime.UtcNow.AddDays(1)
             };
-            
+
             Response.Cookies.Append("jwt", result.Value.Token!, cookieOptions);
-            
+
             if (!string.IsNullOrEmpty(result.Value.RefreshToken))
             {
                 Response.Cookies.Append("refreshToken", result.Value.RefreshToken, cookieOptions);
             }
-            
+
             return Ok();
         }
 
         return Unauthorized();
     }
-    
+
     [HttpPost, ValidateAntiForgeryToken]
     [DisplayName("Google Sign In")]
     [Description("Sign in with Google. Account must already exist.")]
@@ -324,87 +330,59 @@ namespace AzureTest.MVC.Controllers;
         var properties = _signInManager.ConfigureExternalAuthenticationProperties("Google", redirectUrl);
         return Challenge(properties, "Google");
     }
+
     [HttpGet]
 [DisplayName("Google Callback")]
 [Description("Handle the return from Google.")]
 public async Task<IActionResult> GoogleCallback(
     GoogleAuthMode mode, string? returnUrl = null, string? remoteError = null)
 {
-    var failAction = mode == GoogleAuthMode.RegisterOnly ? nameof(Register) : nameof(Login);
+    var defaultAction = mode == GoogleAuthMode.RegisterOnly ? nameof(Register) : nameof(Login);
 
-    IActionResult Fail(string message)
+    IActionResult Fail(string message, string? action = null)
     {
         TempData["Error"] = message;
-        return RedirectToAction(failAction, new { returnUrl });
+        return RedirectToAction(action ?? defaultAction, new { returnUrl });
     }
 
     if (!string.IsNullOrEmpty(remoteError))
-    {
-        ModelState.AddModelError(string.Empty, $"Google error: {remoteError}");
-        return RedirectToAction(nameof(Register));
-    }
-        
+        return Fail($"Google error: {remoteError}");
 
     var info = await _signInManager.GetExternalLoginInfoAsync();
     if (info == null)
-    {ModelState.AddModelError(string.Empty, "Could not read Google login information.");
-        return RedirectToAction(nameof(Register));}
-        
-    var linkedUser = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+        return Fail("Could not read Google login information.");
 
-    // Case 1: this Google account is already linked to a user
+    // Case 1: this Google account is already linked
+    var linkedUser = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
     if (linkedUser != null)
     {
         if (mode == GoogleAuthMode.RegisterOnly)
-        {
-            ModelState.AddModelError(string.Empty, "This Google account is already registered. Please sign in.");
-            return RedirectToAction(nameof(Login));
-        }
-            
+            return Fail("This Google account is already registered. Please sign in.", nameof(Login));
 
         var result = await _signInManager.ExternalLoginSignInAsync(
             info.LoginProvider, info.ProviderKey, isPersistent: true, bypassTwoFactor: true);
 
         if (result.IsLockedOut) return RedirectToAction(nameof(AccessDenied));
-        if (!result.Succeeded)
-        {
-            ModelState.AddModelError(string.Empty, "Sign in with Google failed.");
-            return RedirectToAction(nameof(Login));
-        }
-           
+        if (!result.Succeeded) return Fail("Sign in with Google failed.", nameof(Login));
 
         await CacheUserSessionAsync(linkedUser);
         return await RedirectAfterLoginAsync(returnUrl);
     }
 
-    // Case 2: not linked yet
-    if (mode == GoogleAuthMode.SignInOnly)
-    {
-        ModelState.AddModelError(string.Empty, "No account is linked to this Google account. Please register first.");
-        return RedirectToAction(nameof(Register));
-    }
-
+    // Case 2: not linked yet, so look at the email
     var email = info.Principal.FindFirstValue(ClaimTypes.Email);
     if (string.IsNullOrWhiteSpace(email))
-    {
-        ModelState.AddModelError(string.Empty, "Google did not return an email address.");
-        return RedirectToAction(nameof(Register));
-    }
-       
+        return Fail("Google did not return an email address.");
 
     var user = await _userManager.FindByEmailAsync(email);
 
-    if (user != null)
-    {
-        // A local account with this email exists but is not linked to Google
-        if (mode == GoogleAuthMode.RegisterOnly)
-        {
-            ModelState.AddModelError(string.Empty, "This email is already registered. Please sign in.");
-            return RedirectToAction(nameof(Login));
-        }
-        // SignInOrRegister: link Google to the existing account
-    }
-    else
+    if (user == null && mode == GoogleAuthMode.SignInOnly)
+        return Fail("No account exists for this email. Please register first.", nameof(Register));
+
+    if (user != null && mode == GoogleAuthMode.RegisterOnly)
+        return Fail("This email is already registered. Please sign in.", nameof(Login));
+
+    if (user == null)
     {
         user = new ApplicationUser
         {
@@ -425,6 +403,14 @@ public async Task<IActionResult> GoogleCallback(
             if (!await _userManager.IsInRoleAsync(user, role))
                 await _userManager.AddToRoleAsync(user, role);
     }
+    else if (!user.EmailConfirmed)
+    {
+        // Safety: someone could have pre-registered this email with a password they know.
+        // Google proves that the real owner is here now, so remove the old password.
+        await _userManager.RemovePasswordAsync(user);
+        user.EmailConfirmed = true;
+        await _userManager.UpdateAsync(user);
+    }
 
     var addLogin = await _userManager.AddLoginAsync(user, info);
     if (!addLogin.Succeeded)
@@ -434,13 +420,13 @@ public async Task<IActionResult> GoogleCallback(
     await CacheUserSessionAsync(user);
     return await RedirectAfterLoginAsync(returnUrl);
 }
-    
     public enum GoogleAuthMode
     {
         SignInOnly,
         RegisterOnly,
         SignInOrRegister
     }
+
     private async Task CacheUserSessionAsync(ApplicationUser userObj)
     {
         var roles = await _userManager.GetRolesAsync(userObj);
@@ -458,9 +444,13 @@ public async Task<IActionResult> GoogleCallback(
 
         var sessionDto = new UserSessionCacheDto
         {
-            Id = userObj.Id, Email = userObj.Email, PhoneNumber = userObj.PhoneNumber,
-            ProfileImage = userObj.ProfileImage, FirstName = userObj.FirstName,
-            LastName = userObj.LastName, FullName = userObj.FullName,
+            Id = userObj.Id,
+            Email = userObj.Email,
+            PhoneNumber = userObj.PhoneNumber,
+            ProfileImage = userObj.ProfileImage,
+            FirstName = userObj.FirstName,
+            LastName = userObj.LastName,
+            FullName = userObj.FullName,
             Roles = roles.ToList(),
             Permissions = permissions.Distinct().ToList()
         };
@@ -471,7 +461,8 @@ public async Task<IActionResult> GoogleCallback(
     {
         if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
                                                   && !returnUrl.StartsWith("/Auth", StringComparison.OrdinalIgnoreCase)
-                                                  && !returnUrl.StartsWith("/Error", StringComparison.OrdinalIgnoreCase))
+                                                  && !returnUrl.StartsWith("/Error",
+                                                      StringComparison.OrdinalIgnoreCase))
             return LocalRedirect(returnUrl);
 
         var settingRes = await _getIdentitySettingQuery.HandleAsync(new GetIdentitySettingQuery());
