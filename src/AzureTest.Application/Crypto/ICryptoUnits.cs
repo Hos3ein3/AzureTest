@@ -113,7 +113,7 @@ public interface ICryptoQueryUnit
     IQueryHandler<GetCryptoStrategiesQuery, Result<(IReadOnlyList<CryptoStrategyDto> Strategies, IReadOnlyList<BacktestResultDto> RecentBacktests)>> GetStrategies { get; }
     IQueryHandler<GetCryptoTradeTerminalQuery, Result<TradeTerminalDashboardDto>> GetTradeTerminal { get; }
     IQueryHandler<GetCryptoRiskOverviewQuery, Result<CryptoRiskOverviewDto>> GetRiskOverview { get; }
-    IQueryHandler<GetCryptoPortfolioQuery, Result<(CryptoAccountDto Account, IReadOnlyList<CryptoPositionDto> OpenPositions, IReadOnlyList<CryptoPositionDto> ClosedTrades, IReadOnlyList<CryptoJournalEntryDto> JournalEntries)>> GetPortfolio { get; }
+    IQueryHandler<GetCryptoPortfolioQuery, Result<(CryptoAccountDto Account, IReadOnlyList<CryptoPositionDto> OpenPositions, IReadOnlyList<CryptoPositionDto> ClosedTrades, IReadOnlyList<CryptoJournalEntryDto> JournalEntries, CryptoPerformanceAnalyticsDto Analytics)>> GetPortfolio { get; }
     IQueryHandler<GetCryptoTaxReportQuery, Result<CryptoTaxReportDto>> GetTaxReport { get; }
     IQueryHandler<GetCryptoAlertsQuery, Result<IReadOnlyList<CryptoAlertDto>>> GetAlerts { get; }
     IQueryHandler<GetCryptoSettingsQuery, Result<IReadOnlyList<CryptoApiSettingsDto>>> GetSettings { get; }
@@ -141,7 +141,7 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
     public IQueryHandler<GetCryptoStrategiesQuery, Result<(IReadOnlyList<CryptoStrategyDto> Strategies, IReadOnlyList<BacktestResultDto> RecentBacktests)>> GetStrategies { get; }
     public IQueryHandler<GetCryptoTradeTerminalQuery, Result<TradeTerminalDashboardDto>> GetTradeTerminal { get; }
     public IQueryHandler<GetCryptoRiskOverviewQuery, Result<CryptoRiskOverviewDto>> GetRiskOverview { get; }
-    public IQueryHandler<GetCryptoPortfolioQuery, Result<(CryptoAccountDto Account, IReadOnlyList<CryptoPositionDto> OpenPositions, IReadOnlyList<CryptoPositionDto> ClosedTrades, IReadOnlyList<CryptoJournalEntryDto> JournalEntries)>> GetPortfolio { get; }
+    public IQueryHandler<GetCryptoPortfolioQuery, Result<(CryptoAccountDto Account, IReadOnlyList<CryptoPositionDto> OpenPositions, IReadOnlyList<CryptoPositionDto> ClosedTrades, IReadOnlyList<CryptoJournalEntryDto> JournalEntries, CryptoPerformanceAnalyticsDto Analytics)>> GetPortfolio { get; }
     public IQueryHandler<GetCryptoTaxReportQuery, Result<CryptoTaxReportDto>> GetTaxReport { get; }
     public IQueryHandler<GetCryptoAlertsQuery, Result<IReadOnlyList<CryptoAlertDto>>> GetAlerts { get; }
     public IQueryHandler<GetCryptoSettingsQuery, Result<IReadOnlyList<CryptoApiSettingsDto>>> GetSettings { get; }
@@ -167,7 +167,7 @@ public sealed class CryptoQueryUnit : ICryptoQueryUnit
         IQueryHandler<GetCryptoStrategiesQuery, Result<(IReadOnlyList<CryptoStrategyDto> Strategies, IReadOnlyList<BacktestResultDto> RecentBacktests)>> getStrategies,
         IQueryHandler<GetCryptoTradeTerminalQuery, Result<TradeTerminalDashboardDto>> getTradeTerminal,
         IQueryHandler<GetCryptoRiskOverviewQuery, Result<CryptoRiskOverviewDto>> getRiskOverview,
-        IQueryHandler<GetCryptoPortfolioQuery, Result<(CryptoAccountDto Account, IReadOnlyList<CryptoPositionDto> OpenPositions, IReadOnlyList<CryptoPositionDto> ClosedTrades, IReadOnlyList<CryptoJournalEntryDto> JournalEntries)>> getPortfolio,
+        IQueryHandler<GetCryptoPortfolioQuery, Result<(CryptoAccountDto Account, IReadOnlyList<CryptoPositionDto> OpenPositions, IReadOnlyList<CryptoPositionDto> ClosedTrades, IReadOnlyList<CryptoJournalEntryDto> JournalEntries, CryptoPerformanceAnalyticsDto Analytics)>> getPortfolio,
         IQueryHandler<GetCryptoTaxReportQuery, Result<CryptoTaxReportDto>> getTaxReport,
         IQueryHandler<GetCryptoAlertsQuery, Result<IReadOnlyList<CryptoAlertDto>>> getAlerts,
         IQueryHandler<GetCryptoSettingsQuery, Result<IReadOnlyList<CryptoApiSettingsDto>>> getSettings,

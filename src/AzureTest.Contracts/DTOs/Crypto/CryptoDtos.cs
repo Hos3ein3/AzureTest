@@ -1049,7 +1049,47 @@ public sealed record CryptoTaxReportDto(
     decimal TotalVolumeEur,
     decimal EstimatedBox3ValuationJan1stEur,
     string DutchTaxBox3Guidance,
-    IReadOnlyList<CryptoTaxItemDto> Items);
+    IReadOnlyList<CryptoTaxItemDto> Items,
+    decimal TaxFreeAllowanceEur = 57000.00m,
+    decimal TaxableBox3WealthEur = 0m,
+    decimal DeemedYieldPercent = 6.04m,
+    decimal Box3TaxRatePercent = 36.0m,
+    decimal EstimatedBox3TaxPayableEur = 0m);
+
+public sealed record CryptoRMultipleBucketDto(
+    string BucketName,
+    int Count,
+    decimal Percentage);
+
+public sealed record CryptoAssetAllocationDto(
+    string Asset,
+    decimal ValueUsd,
+    decimal AllocationPercent,
+    string ColorHex);
+
+public sealed record CryptoMonthlyPerformanceDto(
+    string MonthName,
+    decimal ReturnPercent,
+    decimal PnlUsd);
+
+public sealed record CryptoPerformanceAnalyticsDto(
+    decimal TotalNetProfitUsd,
+    decimal ProfitFactor,
+    decimal WinRatePercent,
+    int TotalTrades,
+    int WinningTrades,
+    int LosingTrades,
+    decimal ExpectancyUsd,
+    decimal SharpeRatio,
+    decimal SortinoRatio,
+    decimal MaxDrawdownPercent,
+    decimal RecoveryFactor,
+    decimal AverageWinUsd,
+    decimal AverageLossUsd,
+    decimal WinLossRatio,
+    IReadOnlyList<CryptoRMultipleBucketDto> RMultipleDistribution,
+    IReadOnlyList<CryptoAssetAllocationDto> AssetAllocations,
+    IReadOnlyList<CryptoMonthlyPerformanceDto> MonthlyReturns);
 
 public sealed record CryptoTaxSummaryDto(
     decimal TotalRealizedGainLoss,

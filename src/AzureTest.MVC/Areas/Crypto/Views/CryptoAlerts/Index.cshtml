@@ -1,26 +1,26 @@
 @model IReadOnlyList<CryptoAlertDto>
 @{
-    ViewData["Title"] = "Crypto Automated Alerts";
+    ViewData["Title"] = "Real-Time Multi-Channel Alerts & Notifications";
 }
 
 <div class="space-y-6">
     <!-- Feedback Alerts -->
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200">
+        <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200 shadow-xs">
             <div class="flex items-center gap-2">
                 <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
-                <span>@TempData["SuccessMessage"]</span>
+                <span class="font-medium">@TempData["SuccessMessage"]</span>
             </div>
             <button type="button" onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-emerald-600">&times;</button>
         </div>
     }
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-center justify-between text-xs text-rose-800 dark:text-rose-200">
+        <div class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-center justify-between text-xs text-rose-800 dark:text-rose-200 shadow-xs">
             <div class="flex items-center gap-2">
                 <i class="fa-solid fa-circle-exclamation text-rose-500 text-sm"></i>
-                <span>@TempData["ErrorMessage"]</span>
+                <span class="font-medium">@TempData["ErrorMessage"]</span>
             </div>
             <button type="button" onclick="this.parentElement.remove()" class="text-rose-400 hover:text-rose-600">&times;</button>
         </div>
@@ -30,22 +30,29 @@
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
         <div>
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-xl font-bold">
+                <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl font-bold">
                     <i class="fa-solid fa-bell"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Price &amp; Signal Alerts</h1>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Automated notifications for price thresholds, RSI overextensions, and MACD crossovers</p>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-bold text-slate-800 dark:text-white">Real-Time Multi-Channel Alerts</h1>
+                        <span class="px-2.5 py-0.5 rounded-full text-2xs font-bold uppercase tracking-wider bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                            Feature 9.1
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Price breaches &bull; Funding rate spikes &bull; Whale transfers &bull; Liquidation proximity &bull; Telegram, Email &amp; Webhook
+                    </p>
                 </div>
             </div>
         </div>
 
         <div class="flex items-center gap-2">
-            <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="Index" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors">
-                <i class="fa-solid fa-chart-line"></i> Markets
+            <a asp-area="Crypto" asp-controller="CryptoMarket" asp-action="Index" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-chart-line"></i> Market Feeds
             </a>
-            <a asp-area="Crypto" asp-controller="CryptoTrade" asp-action="Index" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors">
-                <i class="fa-solid fa-bolt"></i> Trading Terminal
+            <a asp-area="Crypto" asp-controller="CryptoSettings" asp-action="Index" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-key"></i> API Cipher Security
             </a>
         </div>
     </div>
@@ -53,7 +60,7 @@
     <!-- Create Alert Card -->
     <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
         <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
-            <i class="fa-solid fa-plus-circle text-amber-500"></i> Setup New Automated Alert
+            <i class="fa-solid fa-plus-circle text-amber-500"></i> Configure Real-Time Notification Rule
         </h3>
 
         <form asp-action="Create" method="post" class="space-y-4">
@@ -61,70 +68,75 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Coin / Pair</label>
-                    <input type="text" name="symbol" value="BTCUSDT" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
+                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Asset Pair</label>
+                    <input type="text" name="symbol" value="BTCUSDT" class="w-full text-xs font-mono font-bold rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2 uppercase" required />
                 </div>
 
                 <div>
-                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Trigger Condition</label>
+                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Trigger Event</label>
                     <select name="alertType" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2">
                         <option value="@CryptoAlertType.PriceAbove">Price Crosses Above (&gt;=)</option>
                         <option value="@CryptoAlertType.PriceBelow">Price Crosses Below (&lt;=)</option>
+                        <option value="@CryptoAlertType.FundingRateSpike">Funding Rate Spike (&gt;= 0.05%/8h)</option>
+                        <option value="@CryptoAlertType.LiquidationNear">Liquidation Cluster Proximity (&lt;= 2 ATR)</option>
+                        <option value="@CryptoAlertType.WhaleAlert">Whale Transfer (&gt;= 1,000 BTC)</option>
+                        <option value="@CryptoAlertType.DepegWarning">Stablecoin Depeg Warning (&gt;= 0.5%)</option>
                         <option value="@CryptoAlertType.RsiOverbought">RSI Overbought (&gt;= 70)</option>
                         <option value="@CryptoAlertType.RsiOversold">RSI Oversold (&lt;= 30)</option>
                         <option value="@CryptoAlertType.MacdCross">MACD Bullish Cross</option>
-                        <option value="@CryptoAlertType.WhaleAlert">Whale On-Chain Movement</option>
                     </select>
                 </div>
 
                 <div>
-                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Target Value ($ / Level)</label>
-                    <input type="number" step="0.01" name="targetValue" value="70000" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
+                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Target Threshold ($ / Level)</label>
+                    <input type="number" step="0.0001" name="targetValue" value="70000" class="w-full text-xs font-mono rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" required />
                 </div>
 
                 <div>
                     <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Delivery Channel</label>
                     <select name="channel" class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2">
-                        <option value="InApp">In-App Notification</option>
-                        <option value="Telegram">Telegram Bot</option>
-                        <option value="Email">Email Digest</option>
+                        <option value="InApp">In-App Live Toast</option>
+                        <option value="Telegram">Telegram Bot (&#64;AntigravityCryptoBot)</option>
+                        <option value="Email">Email Priority Dispatch</option>
+                        <option value="Webhook">Discord / Slack Webhook</option>
                     </select>
                 </div>
             </div>
 
             <div>
-                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Custom Note / Alert Message</label>
-                <input type="text" name="message" placeholder="e.g. BTC reached psychological resistance $70k. Check EMA alignment for short setup." class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" />
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">Custom Message / Execution Guidance</label>
+                <input type="text" name="message" placeholder="e.g. BTC approaching key liquidity sweep level at $70,000. Prepare to scale short if CVD delta diverges." class="w-full text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-white px-3 py-2" />
             </div>
 
             <div class="flex justify-end pt-2">
-                <button type="submit" class="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors">
-                    Create Alert
+                <button type="submit" class="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> CREATE REAL-TIME ALERT
                 </button>
             </div>
         </form>
     </div>
 
-    <!-- Active Alerts Table -->
+    <!-- Active & Triggered Alerts Table -->
     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
         <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
                 <i class="fa-solid fa-list-check text-amber-500"></i> Active &amp; Triggered Alerts (@(Model?.Count ?? 0))
             </h3>
-            <span class="text-2xs text-slate-400">Continuous 24/7 Monitoring</span>
+            <span class="text-2xs text-slate-400">Continuous 24/7 Engine Heartbeat</span>
         </div>
+
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs">
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-bold uppercase">
                         <th class="py-3 px-4">Created On</th>
-                        <th class="py-3 px-4">Symbol</th>
+                        <th class="py-3 px-4">Asset</th>
                         <th class="py-3 px-4">Trigger Condition</th>
                         <th class="py-3 px-4 text-right">Target Value</th>
                         <th class="py-3 px-4">Channel</th>
-                        <th class="py-3 px-4">Custom Note</th>
+                        <th class="py-3 px-4">Note</th>
                         <th class="py-3 px-4 text-center">Status</th>
-                        <th class="py-3 px-4 text-center">Action</th>
+                        <th class="py-3 px-4 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 font-mono">
@@ -133,29 +145,45 @@
                         foreach (var alert in Model)
                         {
                             <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors">
-                                <td class="py-3 px-4 text-slate-500 font-sans">@alert.CreatedOn.ToString("MM-dd HH:mm")</td>
+                                <td class="py-3 px-4 text-slate-500 font-sans text-2xs">@alert.CreatedOn.ToString("MM-dd HH:mm")</td>
                                 <td class="py-3 px-4 font-bold text-slate-800 dark:text-white font-sans">@alert.Symbol</td>
-                                <td class="py-3 px-4 font-sans text-slate-700 dark:text-slate-300">@alert.AlertType</td>
+                                <td class="py-3 px-4 font-sans text-slate-700 dark:text-slate-300">
+                                    <span class="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 dark:bg-slate-700">
+                                        @alert.AlertType
+                                    </span>
+                                </td>
                                 <td class="py-3 px-4 text-right font-bold text-slate-800 dark:text-white">$@alert.TargetValue.ToString("N2")</td>
                                 <td class="py-3 px-4 font-sans">
-                                    <span class="px-2 py-0.5 rounded-md text-2xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                                        @alert.Channel
+                                    <span class="px-2 py-0.5 rounded-md text-2xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                                        <i class="fa-solid fa-satellite-dish mr-1"></i> @alert.Channel
                                     </span>
                                 </td>
                                 <td class="py-3 px-4 font-sans text-2xs text-slate-500 max-w-xs truncate">@(alert.Message ?? "--")</td>
                                 <td class="py-3 px-4 text-center font-sans">
-                                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold @(alert.IsTriggered ? "bg-rose-100 text-rose-600" : "bg-emerald-100 text-emerald-600")">
-                                        @(alert.IsTriggered ? $"Triggered ({alert.TriggeredAtUtc:HH:mm})" : "Monitoring Active")
+                                    <span class="px-2.5 py-1 rounded-full text-2xs font-bold @(alert.IsTriggered ? "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300")">
+                                        @(alert.IsTriggered ? $"Triggered ({alert.TriggeredAtUtc:HH:mm})" : "Active (Monitoring)")
                                     </span>
                                 </td>
-                                <td class="py-3 px-4 text-center font-sans">
-                                    <form asp-action="Delete" method="post" class="inline">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="alertId" value="@alert.Id" />
-                                        <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 transition-colors" title="Delete Alert">
-                                            <i class="fa-solid fa-trash-can"></i>
-                                        </button>
-                                    </form>
+                                <td class="py-3 px-4 text-right font-sans">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <!-- Test Dispatch Simulation Button -->
+                                        <form asp-action="SendTestAlert" method="post" class="inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="alertId" value="@alert.Id" />
+                                            <button type="submit" class="px-2 py-1 text-2xs font-bold rounded bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition-colors" title="Send Test Dispatch">
+                                                <i class="fa-solid fa-paper-plane mr-1"></i> Test
+                                            </button>
+                                        </form>
+
+                                        <!-- Delete Alert Button -->
+                                        <form asp-action="Delete" method="post" class="inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="alertId" value="@alert.Id" />
+                                            <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 transition-colors" title="Delete Alert">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -164,7 +192,7 @@
                     {
                         <tr>
                             <td colspan="8" class="py-6 text-center text-slate-400 font-sans">
-                                No active alerts configured. Use the form above to add a price or indicator alert.
+                                No active alerts configured. Use the form above to configure a price, funding rate, or whale alert.
                             </td>
                         </tr>
                     }

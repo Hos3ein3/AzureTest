@@ -35,7 +35,7 @@ public sealed class GetCryptoSettingsQueryHandler : IQueryHandler<GetCryptoSetti
         var settings = (await _uow.CryptoApiSettings.FindAsync(s => s.UserId == query.UserId)).ToList();
 
         // Ensure default exchanges exist in the returned list
-        var defaultExchanges = new[] { CryptoExchange.Binance, CryptoExchange.Kraken, CryptoExchange.Bybit, CryptoExchange.CoinGecko };
+        var defaultExchanges = new[] { CryptoExchange.Binance, CryptoExchange.Kraken, CryptoExchange.Bybit, CryptoExchange.Coinbase, CryptoExchange.Okx, CryptoExchange.CoinGecko };
         var dtos = new List<CryptoApiSettingsDto>();
 
         foreach (var ex in defaultExchanges)

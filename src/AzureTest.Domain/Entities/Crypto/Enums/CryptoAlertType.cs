@@ -7,5 +7,8 @@ public enum CryptoAlertType
     RsiOverbought = 3,
     RsiOversold = 4,
     MacdCross = 5,
-    WhaleAlert = 6
+    WhaleAlert = 6,
+    FundingRateSpike = 7,
+    LiquidationNear = 8,
+    DepegWarning = 9
 }

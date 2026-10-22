@@ -108,11 +108,11 @@ public sealed class CryptoApiSetting : AggregateRoot, IAudit, ISoftDelete, ITena
         ConnectionStatusMessage = "Keys updated. Verification needed.";
     }
 
-    public void MarkConnectionSuccess()
+    public void MarkConnectionSuccess(string? message = null)
     {
         IsConnected = true;
         LastTestedAtUtc = DateTime.UtcNow;
-        ConnectionStatusMessage = "Successfully connected (Read & Trade verified. Withdrawal blocked).";
+        ConnectionStatusMessage = message ?? "Successfully connected (Read & Trade verified. Withdrawal blocked).";
     }
 
     public void MarkConnectionFailure(string error)

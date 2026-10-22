@@ -57,6 +57,7 @@ public static class CryptoServiceRegistration
         services.AddScoped<ICryptoExecutionService, CryptoExecutionService>();
         services.AddScoped<ICryptoSmartExecutionService, CryptoSmartExecutionService>();
         services.AddScoped<ICryptoArbitrageService, CryptoArbitrageService>();
+        services.AddSingleton<ICryptoEncryptionService, CryptoEncryptionService>();
 
         // Command Handlers
         services.AddScoped<ICommandHandler<PlaceCryptoOrderCommand, Result<Guid>>, PlaceCryptoOrderCommandHandler>();
@@ -96,7 +97,7 @@ public static class CryptoServiceRegistration
         services.AddScoped<IQueryHandler<GetCryptoStrategiesQuery, Result<(IReadOnlyList<CryptoStrategyDto> Strategies, IReadOnlyList<BacktestResultDto> RecentBacktests)>>, GetCryptoStrategiesQueryHandler>();
         services.AddScoped<IQueryHandler<GetCryptoTradeTerminalQuery, Result<TradeTerminalDashboardDto>>, GetCryptoTradeTerminalQueryHandler>();
         services.AddScoped<IQueryHandler<GetCryptoRiskOverviewQuery, Result<CryptoRiskOverviewDto>>, GetCryptoRiskOverviewQueryHandler>();
-        services.AddScoped<IQueryHandler<GetCryptoPortfolioQuery, Result<(CryptoAccountDto Account, IReadOnlyList<CryptoPositionDto> OpenPositions, IReadOnlyList<CryptoPositionDto> ClosedTrades, IReadOnlyList<CryptoJournalEntryDto> JournalEntries)>>, GetCryptoPortfolioQueryHandler>();
+        services.AddScoped<IQueryHandler<GetCryptoPortfolioQuery, Result<(CryptoAccountDto Account, IReadOnlyList<CryptoPositionDto> OpenPositions, IReadOnlyList<CryptoPositionDto> ClosedTrades, IReadOnlyList<CryptoJournalEntryDto> JournalEntries, CryptoPerformanceAnalyticsDto Analytics)>>, GetCryptoPortfolioQueryHandler>();
         services.AddScoped<IQueryHandler<GetCryptoTaxReportQuery, Result<CryptoTaxReportDto>>, GetCryptoTaxReportQueryHandler>();
         services.AddScoped<IQueryHandler<GetCryptoAlertsQuery, Result<IReadOnlyList<CryptoAlertDto>>>, GetCryptoAlertsQueryHandler>();
         services.AddScoped<IQueryHandler<GetCryptoSettingsQuery, Result<IReadOnlyList<CryptoApiSettingsDto>>>, GetCryptoSettingsQueryHandler>();

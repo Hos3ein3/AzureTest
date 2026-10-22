@@ -1,68 +1,87 @@
-@model (CryptoAccountDto Account, IReadOnlyList<CryptoPositionDto> OpenPositions, IReadOnlyList<CryptoPositionDto> ClosedTrades, IReadOnlyList<CryptoJournalEntryDto> JournalEntries)
+@model (CryptoAccountDto Account, IReadOnlyList<CryptoPositionDto> OpenPositions, IReadOnlyList<CryptoPositionDto> ClosedTrades, IReadOnlyList<CryptoJournalEntryDto> JournalEntries, CryptoPerformanceAnalyticsDto Analytics)
 @{
-    ViewData["Title"] = "Crypto Portfolio & Balances";
+    ViewData["Title"] = "Institutional Crypto Portfolio & Performance Analytics";
     var acc = Model.Account;
     var realizedPnl = Model.ClosedTrades != null ? Model.ClosedTrades.Sum(t => t.RealizedPnl) : 0m;
     var unrealizedPnl = Model.OpenPositions != null ? Model.OpenPositions.Sum(p => p.UnrealizedPnl) : 0m;
     var totalPnl = realizedPnl + unrealizedPnl;
     var isProfitable = totalPnl >= 0;
+    var analytics = Model.Analytics;
 }
 
 <div class="space-y-6">
     <!-- Feedback Alerts -->
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200">
+        <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-200 shadow-xs">
             <div class="flex items-center gap-2">
                 <i class="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
-                <span>@TempData["SuccessMessage"]</span>
+                <span class="font-medium">@TempData["SuccessMessage"]</span>
             </div>
             <button type="button" onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-emerald-600">&times;</button>
         </div>
     }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-center justify-between text-xs text-rose-800 dark:text-rose-200 shadow-xs">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-exclamation text-rose-500 text-sm"></i>
+                <span class="font-medium">@TempData["ErrorMessage"]</span>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-rose-400 hover:text-rose-600">&times;</button>
+        </div>
+    }
 
     <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
         <div>
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center text-xl font-bold">
-                    <i class="fa-solid fa-pie-chart"></i>
+                <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-chart-pie"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Portfolio Analytics &amp; Balances</h1>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Net Asset Value (NAV), open exposure, realized P&amp;L, and trade performance</p>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-bold text-slate-800 dark:text-white">Institutional Portfolio &amp; Performance Analytics</h1>
+                        <span class="px-2.5 py-0.5 rounded-full text-2xs font-bold uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                            Feature 8.1
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Mathematical Expectancy &bull; R-Multiple Distribution &bull; Sharpe &amp; Sortino Ratios &bull; Multi-Asset Allocation
+                    </p>
                 </div>
             </div>
         </div>
 
-        <div class="flex items-center gap-2">
-            <a asp-action="Journal" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors">
-                <i class="fa-solid fa-book-journal-whills"></i> Trade Journal
+        <div class="flex flex-wrap items-center gap-2">
+            <a asp-action="Journal" class="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-200 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-book-journal-whills"></i> Trade Journal (@(Model.JournalEntries?.Count ?? 0))
             </a>
-            <a asp-action="TaxReport" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition-colors">
+            <a asp-action="TaxReport" class="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 text-blue-700 dark:text-blue-200 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5">
                 <i class="fa-solid fa-file-invoice-dollar"></i> Dutch Box 3 Tax
             </a>
-            <!-- Reset Account Modal Button -->
-            <button type="button" onclick="document.getElementById('resetPaperBalanceModal').classList.remove('hidden')" class="px-4 py-2 bg-rose-500/10 text-rose-600 hover:bg-rose-500 hover:text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5">
-                <i class="fa-solid fa-rotate-left"></i> Reset Paper Balance
+            <button type="button" onclick="document.getElementById('resetPaperBalanceModal').classList.remove('hidden')" class="px-3.5 py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-300 hover:bg-rose-100 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-left"></i> Reset
             </button>
         </div>
     </div>
 
-    <!-- Portfolio Metric Cards -->
+    <!-- Executive KPI Summary Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Net Asset Value -->
         <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-medium text-slate-500">Net Asset Value (NAV)</span>
                 <span class="p-2 rounded-xl bg-purple-500/10 text-purple-500 text-xs"><i class="fa-solid fa-wallet"></i></span>
             </div>
             <div class="mt-2 text-2xl font-bold font-mono text-slate-800 dark:text-white">$@acc.Equity.ToString("N2")</div>
-            <div class="mt-1 text-2xs text-slate-400">Cash Balance: $@acc.CashBalance.ToString("N2")</div>
+            <div class="mt-1 text-2xs text-slate-400">Cash: $@acc.CashBalance.ToString("N2") | Margin: $@acc.MarginUsed.ToString("N2")</div>
         </div>
 
+        <!-- Total Net P&L -->
         <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-medium text-slate-500">Total Net P&L</span>
+                <span class="text-xs font-medium text-slate-500">Cumulative Net P&amp;L</span>
                 <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 text-xs"><i class="fa-solid fa-chart-line"></i></span>
             </div>
             <div class="mt-2 text-2xl font-bold font-mono @(isProfitable ? "text-emerald-500" : "text-rose-500")">
@@ -71,116 +90,272 @@
             <div class="mt-1 text-2xs text-slate-400">Realized: $@realizedPnl.ToString("N2") | Unrealized: $@unrealizedPnl.ToString("N2")</div>
         </div>
 
+        <!-- Profit Factor & Win Rate -->
         <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-medium text-slate-500">Margin Utilization</span>
-                <span class="p-2 rounded-xl bg-amber-500/10 text-amber-500 text-xs"><i class="fa-solid fa-scale-balanced"></i></span>
+                <span class="text-xs font-medium text-slate-500">Profit Factor &amp; Win Rate</span>
+                <span class="p-2 rounded-xl bg-blue-500/10 text-blue-500 text-xs"><i class="fa-solid fa-trophy"></i></span>
             </div>
-            <div class="mt-2 text-2xl font-bold font-mono text-slate-800 dark:text-white">$@acc.MarginUsed.ToString("N2")</div>
-            <div class="mt-1 text-2xs text-slate-400">Free Buffer: $@acc.FreeMargin.ToString("N2")</div>
+            <div class="mt-2 text-2xl font-bold font-mono text-slate-800 dark:text-white">
+                @analytics.ProfitFactor.ToString("F2") <span class="text-xs font-normal text-slate-400">(@analytics.WinRatePercent.ToString("F1")% Win)</span>
+            </div>
+            <div class="mt-1 text-2xs text-slate-400">Win/Loss Ratio: @analytics.WinLossRatio.ToString("F2")</div>
         </div>
 
+        <!-- Mathematical Expectancy -->
         <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-medium text-slate-500">Completed Trades</span>
-                <span class="p-2 rounded-xl bg-blue-500/10 text-blue-500 text-xs"><i class="fa-solid fa-check-double"></i></span>
+                <span class="text-xs font-medium text-slate-500">Expectancy Per Trade</span>
+                <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 text-xs"><i class="fa-solid fa-calculator"></i></span>
             </div>
-            <div class="mt-2 text-2xl font-bold font-mono text-slate-800 dark:text-white">@(Model.ClosedTrades?.Count ?? 0)</div>
-            <div class="mt-1 text-2xs text-slate-400">Active Open Positions: @(Model.OpenPositions?.Count ?? 0)</div>
+            <div class="mt-2 text-2xl font-bold font-mono text-emerald-500">
+                +$@analytics.ExpectancyUsd.ToString("N2")
+            </div>
+            <div class="mt-1 text-2xs text-slate-400">Avg Win: $@analytics.AverageWinUsd.ToString("N0") | Avg Loss: $@analytics.AverageLossUsd.ToString("N0")</div>
         </div>
     </div>
 
-    <!-- Closed Trade History Table -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
-        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-            <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <i class="fa-solid fa-receipt text-purple-500"></i> Closed Trades &amp; Execution Log
+    <!-- 8.1 Performance Analytics Suite -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Risk-Adjusted Return Ratios -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+            <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
+                <i class="fa-solid fa-award text-purple-500"></i> Risk-Adjusted Ratios
             </h3>
-            <span class="text-2xs text-slate-400">All Paper &amp; Live Fills</span>
+
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-slate-500">Sharpe Ratio (Annualized)</span>
+                    <span class="text-sm font-bold font-mono text-emerald-500">@analytics.SharpeRatio.ToString("F2")</span>
+                </div>
+                <div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    <div class="h-full bg-emerald-500 rounded-full" style="width: @Math.Min(100m, analytics.SharpeRatio * 35)%"></div>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                    <span class="text-xs text-slate-500">Sortino Ratio (Downside Shield)</span>
+                    <span class="text-sm font-bold font-mono text-purple-500">@analytics.SortinoRatio.ToString("F2")</span>
+                </div>
+                <div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    <div class="h-full bg-purple-500 rounded-full" style="width: @Math.Min(100m, analytics.SortinoRatio * 30)%"></div>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                    <span class="text-xs text-slate-500">Max Drawdown (Peak-to-Trough)</span>
+                    <span class="text-sm font-bold font-mono text-rose-500">-@analytics.MaxDrawdownPercent.ToString("F1")%</span>
+                </div>
+                <div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    <div class="h-full bg-rose-500 rounded-full" style="width: @(analytics.MaxDrawdownPercent * 4)%"></div>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                    <span class="text-xs text-slate-500">Recovery Factor (Gain / MDD)</span>
+                    <span class="text-sm font-bold font-mono text-blue-500">@analytics.RecoveryFactor.ToString("F2")x</span>
+                </div>
+            </div>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-xs">
-                <thead>
-                    <tr class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 text-[11px] font-bold uppercase">
-                        <th class="py-3 px-4">Opened On</th>
-                        <th class="py-3 px-4">Closed On</th>
-                        <th class="py-3 px-4">Symbol</th>
-                        <th class="py-3 px-4 text-center">Side</th>
-                        <th class="py-3 px-4 text-right">Size</th>
-                        <th class="py-3 px-4 text-right">Entry Price</th>
-                        <th class="py-3 px-4 text-right">Exit Price</th>
-                        <th class="py-3 px-4 text-right">Realized P&L</th>
-                        <th class="py-3 px-4 text-center">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 font-mono">
-                    @if (Model.ClosedTrades != null && Model.ClosedTrades.Any())
-                    {
-                        foreach (var tr in Model.ClosedTrades)
+
+        <!-- R-Multiple Distribution Histogram -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+            <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-chart-column text-emerald-500"></i> R-Multiple Distribution</span>
+                <span class="text-2xs font-mono text-slate-400">@analytics.TotalTrades Total Trades</span>
+            </h3>
+
+            <div class="space-y-2.5">
+                @foreach (var bucket in analytics.RMultipleDistribution)
+                {
+                    var isLoss = bucket.BucketName.Contains("-");
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between text-2xs font-mono">
+                            <span class="text-slate-600 dark:text-slate-300 font-bold">@bucket.BucketName</span>
+                            <span class="@(isLoss ? "text-rose-500" : "text-emerald-500")">
+                                @bucket.Count trades (@bucket.Percentage.ToString("F1")%)
+                            </span>
+                        </div>
+                        <div class="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full @(isLoss ? "bg-rose-500" : "bg-emerald-500")" style="width: @bucket.Percentage%"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Multi-Asset Allocation Breakdown -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">
+            <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
+                <i class="fa-solid fa-coins text-brand-500"></i> Asset Allocation Breakdown
+            </h3>
+
+            <!-- Combined Allocation Strip -->
+            <div class="w-full h-3 rounded-full flex overflow-hidden">
+                @foreach (var asset in analytics.AssetAllocations)
+                {
+                    <div style="width: @asset.AllocationPercent%; background-color: @asset.ColorHex;" title="@asset.Asset: @asset.AllocationPercent%"></div>
+                }
+            </div>
+
+            <div class="space-y-2 pt-1">
+                @foreach (var asset in analytics.AssetAllocations)
+                {
+                    <div class="flex items-center justify-between text-2xs">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full" style="background-color: @asset.ColorHex"></span>
+                            <span class="font-medium text-slate-700 dark:text-slate-200">@asset.Asset</span>
+                        </div>
+                        <div class="font-mono text-slate-500">
+                            $@asset.ValueUsd.ToString("N0") <span class="font-bold text-slate-800 dark:text-white">(@asset.AllocationPercent%)</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Open Leveraged Positions Table -->
+    @if (Model.OpenPositions != null && Model.OpenPositions.Count > 0)
+    {
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-blue-500"></i> Active Open Positions
+                </h3>
+                <span class="px-2 py-0.5 rounded-full text-2xs font-mono font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                    @Model.OpenPositions.Count Open
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left">
+                    <thead class="text-2xs uppercase tracking-wider text-slate-400 bg-slate-50 dark:bg-slate-700/50">
+                        <tr>
+                            <th class="py-3 px-4">Symbol / Side</th>
+                            <th class="py-3 px-3">Size</th>
+                            <th class="py-3 px-3">Entry Price</th>
+                            <th class="py-3 px-3">Mark Price</th>
+                            <th class="py-3 px-3">Initial Margin</th>
+                            <th class="py-3 px-3">Liquidation</th>
+                            <th class="py-3 px-4 text-right">Unrealized P&amp;L</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                        @foreach (var pos in Model.OpenPositions)
                         {
-                            var pnl = tr.RealizedPnl;
-                            var win = pnl >= 0;
-                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-750/50 transition-colors">
-                                <td class="py-2.5 px-4 text-slate-500 font-sans">@tr.OpenedAtUtc.ToString("yyyy-MM-dd HH:mm")</td>
-                                <td class="py-2.5 px-4 text-slate-500 font-sans">@(tr.ClosedAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "--")</td>
-                                <td class="py-2.5 px-4 font-bold text-slate-800 dark:text-white font-sans">@tr.Symbol</td>
-                                <td class="py-2.5 px-4 text-center font-sans">
-                                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold @(tr.Side == CryptoPositionSide.Long ? "bg-emerald-100 text-emerald-600" : "bg-rose-100 text-rose-600")">
-                                        @tr.Side
+                            var posPnlPositive = pos.UnrealizedPnl >= 0;
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                                <td class="py-3 px-4 font-mono font-bold text-slate-800 dark:text-white">
+                                    @pos.Symbol
+                                    <span class="ml-1 text-2xs px-1.5 py-0.5 rounded @(pos.Side == CryptoPositionSide.Long ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50" : "bg-rose-50 text-rose-600 dark:bg-rose-950/50")">
+                                        @pos.Side @(pos.Leverage)x
                                     </span>
                                 </td>
-                                <td class="py-2.5 px-4 text-right text-slate-700 dark:text-slate-300">@tr.Quantity.ToString("F4")</td>
-                                <td class="py-2.5 px-4 text-right text-slate-700 dark:text-slate-300">$@tr.EntryPrice.ToString("N2")</td>
-                                <td class="py-2.5 px-4 text-right font-bold text-slate-800 dark:text-white">
-                                    @(tr.ClosePrice.HasValue ? $"${tr.ClosePrice.Value:N2}" : "--")
-                                </td>
-                                <td class="py-2.5 px-4 text-right font-bold @(win ? "text-emerald-600" : "text-rose-600")">
-                                    @(win ? "+" : "")$@pnl.ToString("N2")
-                                </td>
-                                <td class="py-2.5 px-4 text-center font-sans">
-                                    <span class="px-2 py-0.5 rounded-md text-2xs font-bold bg-slate-100 text-slate-600">
-                                        @tr.Status
-                                    </span>
+                                <td class="py-3 px-3 font-mono">@pos.Quantity.ToString("F4")</td>
+                                <td class="py-3 px-3 font-mono">$@pos.EntryPrice.ToString("N2")</td>
+                                <td class="py-3 px-3 font-mono font-bold text-slate-800 dark:text-white">$@pos.CurrentPrice.ToString("N2")</td>
+                                <td class="py-3 px-3 font-mono">$@pos.InitialMargin.ToString("N2")</td>
+                                <td class="py-3 px-3 font-mono text-rose-500 font-bold">$@pos.LiquidationPrice.ToString("N2")</td>
+                                <td class="py-3 px-4 font-mono text-right font-bold @(posPnlPositive ? "text-emerald-500" : "text-rose-500")">
+                                    @(posPnlPositive ? "+" : "")$@pos.UnrealizedPnl.ToString("N2") (@(pos.PnlPercent.ToString("F1"))%)
                                 </td>
                             </tr>
                         }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <!-- Closed Trade Execution Log -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
+        <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-receipt text-purple-500"></i> Closed Trades &amp; Realized P&amp;L Log
+            </h3>
+            <span class="text-2xs text-slate-400">Total @(Model.ClosedTrades?.Count ?? 0) Executed Trades</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left">
+                <thead class="text-2xs uppercase tracking-wider text-slate-400 bg-slate-50 dark:bg-slate-700/50">
+                    <tr>
+                        <th class="py-3 px-4">Closed Time (UTC)</th>
+                        <th class="py-3 px-3">Symbol</th>
+                        <th class="py-3 px-3">Side</th>
+                        <th class="py-3 px-3">Quantity</th>
+                        <th class="py-3 px-3">Entry Price</th>
+                        <th class="py-3 px-3">Close Price</th>
+                        <th class="py-3 px-4 text-right">Realized P&amp;L</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @if (Model.ClosedTrades == null || Model.ClosedTrades.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-slate-400 text-xs">
+                                No closed trades recorded yet. Fills and closed orders will appear here automatically.
+                            </td>
+                        </tr>
                     }
                     else
                     {
-                        <tr>
-                            <td colspan="9" class="py-6 text-center text-slate-400 font-sans">
-                                No closed trades recorded yet. Start trading in the Trading Terminal.
-                            </td>
-                        </tr>
+                        @foreach (var trade in Model.ClosedTrades)
+                        {
+                            var tradeProfit = trade.RealizedPnl >= 0;
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                                <td class="py-3 px-4 text-2xs text-slate-400 font-mono">
+                                    @(trade.ClosedAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "-")
+                                </td>
+                                <td class="py-3 px-3 font-mono font-bold text-slate-800 dark:text-white">@trade.Symbol</td>
+                                <td class="py-3 px-3">
+                                    <span class="text-2xs font-bold px-1.5 py-0.5 rounded @(trade.Side == CryptoPositionSide.Long ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50" : "bg-rose-50 text-rose-600 dark:bg-rose-950/50")">
+                                        @trade.Side @(trade.Leverage)x
+                                    </span>
+                                </td>
+                                <td class="py-3 px-3 font-mono">@trade.Quantity.ToString("F4")</td>
+                                <td class="py-3 px-3 font-mono">$@trade.EntryPrice.ToString("N2")</td>
+                                <td class="py-3 px-3 font-mono">$@(trade.ClosePrice?.ToString("N2") ?? "-")</td>
+                                <td class="py-3 px-4 font-mono text-right font-bold @(tradeProfit ? "text-emerald-500" : "text-rose-500")">
+                                    @(tradeProfit ? "+" : "")$@trade.RealizedPnl.ToString("N2") (@trade.PnlPercent.ToString("F1")%)
+                                </td>
+                            </tr>
+                        }
                     }
                 </tbody>
             </table>
         </div>
     </div>
+</div>
 
-    <!-- Reset Paper Balance Confirmation Modal -->
-    <div id="resetPaperBalanceModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-700 shadow-xl space-y-4">
-            <div class="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-xl">
-                <i class="fa-solid fa-triangle-exclamation"></i>
+<!-- Modal: Reset Paper Balance -->
+<div id="resetPaperBalanceModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 max-w-md w-full p-6 shadow-xl space-y-4">
+        <div class="flex items-center gap-3 text-rose-600">
+            <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-rotate-left"></i>
             </div>
-            <div class="text-center space-y-1">
-                <h3 class="text-base font-bold text-slate-800 dark:text-white">Reset Paper Trading Balance</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                    Are you sure you want to reset your paper trading balance back to the initial <strong>$10,000</strong> capital? All current paper statistics will be reset.
-                </p>
+            <div>
+                <h3 class="text-base font-bold text-slate-800 dark:text-white">Reset Paper Capital</h3>
+                <p class="text-2xs text-slate-400">Restore paper balance to $10,000 USDT clean slate</p>
             </div>
-            <form asp-action="ResetAccount" method="post" class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="accountId" value="@acc.Id" />
-                <input type="hidden" name="initialBalance" value="10000" />
-                <button type="button" onclick="document.getElementById('resetPaperBalanceModal').classList.add('hidden')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors">
+        </div>
+
+        <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            This will reset your paper trading cash balance and equity to $10,000 USDT. Your past trade journal reflections will be retained for audit and study.
+        </p>
+
+        <form asp-action="ResetAccount" method="post" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="accountId" value="@acc.Id" />
+            <input type="hidden" name="initialBalance" value="10000" />
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onclick="document.getElementById('resetPaperBalanceModal').classList.add('hidden')" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold hover:bg-slate-200">
                     Cancel
                 </button>
-                <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors">
-                    Yes, Reset Balance
+                <button type="submit" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors">
+                    CONFIRM RESET
                 </button>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
 </div>
