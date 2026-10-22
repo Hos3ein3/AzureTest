@@ -5,6 +5,8 @@
 
 # dotenv files
 .env
+docs/client_secret_863071211898-hf7id5gmlcu6v8e81mp8arm95qus2l9j.apps.googleusercontent.com.json
+docs/local.secrets.json
 
 # User-specific files
 *.rsuser

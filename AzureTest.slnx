@@ -1,4 +1,5 @@
-<Solution>
+﻿<Solution><PropertyGroup>  <UserSecretsId>9933e7c0-d337-41b6-9dde-921c96280509</UserSecretsId>
+  </PropertyGroup>
   <Folder Name="/Solution Items/">
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />

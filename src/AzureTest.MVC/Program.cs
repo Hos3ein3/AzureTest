@@ -13,6 +13,7 @@ using AzureTest.Persistence.Context;
 
 using Hangfire;
 
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
@@ -57,6 +58,7 @@ builder.Services.AddIdentity<AzureTest.Domain.Entities.Identity.ApplicationUser,
     .AddEntityFrameworkStores<AzureTest.Persistence.Context.AzureTestDbContext>()
     .AddClaimsPrincipalFactory<AzureTest.Infrastructure.Services.CustomUserClaimsPrincipalFactory>()
     .AddDefaultTokenProviders();
+
 
 if (infraOptions.UseJWT)
 {
@@ -118,6 +120,25 @@ else
         options.SlidingExpiration = true;
     });
 }
+
+if (infraOptions.UseGoogleAuthenticationOpenIDConnect)
+{
+    builder.Services.AddAuthentication().AddGoogleOpenIdConnect(googleOptions =>
+    {
+        googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+        googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+    });
+}
+
+if (infraOptions.UseGoogleOAuthAuthentication)
+{
+    builder.Services.AddAuthentication().AddGoogle(googleOptions =>
+    {
+        googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+        googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+    });
+}
+
 
 // Feature Management
 builder.Services.AddFeatureManagement();
@@ -190,6 +211,12 @@ builder.Services.AddProblemDetails();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<AzureTest.MVC.Services.IUserTracker, AzureTest.MVC.Services.UserTracker>();
 
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    o.KnownNetworks.Clear();
+    o.KnownProxies.Clear();
+});
 // --- HTML, CSS, JS Minification (Only enabled in Production) ---
 if (builder.Environment.IsProduction())
 {
@@ -359,7 +386,10 @@ if (app.Environment.IsProduction())
 }
 
 app.UseStaticFiles();
+
+app.UseForwardedHeaders(); // before UseAuthentication
 app.UseRouting();
+
 
 app.UseAuthentication();
 app.UseAuthorization();

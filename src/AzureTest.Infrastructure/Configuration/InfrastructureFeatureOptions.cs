@@ -26,6 +26,8 @@ public class InfrastructureFeatureOptions
     public bool EnableBlobStorage { get; set; } = false;
     public bool EnableAzureMonitorOpenTelemetry { get; set; } = true;
     public bool UseJWT { get; set; } = false;
+    public bool UseGoogleAuthenticationOpenIDConnect { get; set; }
+    public bool UseGoogleOAuthAuthentication { get; set; }
     public bool UseSeq { get; set; } = false;
 
     // Multi-Tenancy & Impersonation Features

@@ -12,7 +12,8 @@ services:
       - "8088:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
+      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
     depends_on:
       - postgres
       - mongo
@@ -206,6 +207,17 @@ services:
       - grafanadata:/var/lib/grafana
     networks:
       - app-azuretest-network
+  
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    depends_on: 
+      - web
+    networks:
+      - app-azuretest-network ]
 
 networks:
   app-azuretest-network:

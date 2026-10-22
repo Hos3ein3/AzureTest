@@ -97,6 +97,10 @@ jobs:
             ./ "$DEPLOY_DIR"/
 
       - name: Build and Start Containers via Docker Compose
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
         run: |
           cd "$DEPLOY_DIR"
 

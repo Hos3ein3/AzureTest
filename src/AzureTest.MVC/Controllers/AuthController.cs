@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel;
+using System.Security.Claims;
+
 using Microsoft.Extensions.Options;
 using AzureTest.Application.IdentitySettings;
 using AzureTest.Domain.Documents;
@@ -296,5 +298,184 @@ namespace AzureTest.MVC.Controllers;
         }
 
         return Unauthorized();
+    }
+    
+    [HttpPost, ValidateAntiForgeryToken]
+    [DisplayName("Google Sign In")]
+    [Description("Sign in with Google. Account must already exist.")]
+    public IActionResult SignInByGoogle(string? returnUrl = null)
+        => StartGoogle(GoogleAuthMode.SignInOnly, returnUrl);
+
+    [HttpPost, ValidateAntiForgeryToken]
+    [DisplayName("Google Register")]
+    [Description("Register with Google. Account must not exist.")]
+    public IActionResult RegisterByGoogle(string? returnUrl = null)
+        => StartGoogle(GoogleAuthMode.RegisterOnly, returnUrl);
+
+    [HttpPost, ValidateAntiForgeryToken]
+    [DisplayName("Google Register And Sign In")]
+    [Description("Sign in with Google, or register if the account is new.")]
+    public IActionResult RegisterAndSignInByGoogle(string? returnUrl = null)
+        => StartGoogle(GoogleAuthMode.SignInOrRegister, returnUrl);
+
+    private IActionResult StartGoogle(GoogleAuthMode mode, string? returnUrl)
+    {
+        var redirectUrl = Url.Action(nameof(GoogleCallback), "Auth", new { mode, returnUrl });
+        var properties = _signInManager.ConfigureExternalAuthenticationProperties("Google", redirectUrl);
+        return Challenge(properties, "Google");
+    }
+    [HttpGet]
+[DisplayName("Google Callback")]
+[Description("Handle the return from Google.")]
+public async Task<IActionResult> GoogleCallback(
+    GoogleAuthMode mode, string? returnUrl = null, string? remoteError = null)
+{
+    var failAction = mode == GoogleAuthMode.RegisterOnly ? nameof(Register) : nameof(Login);
+
+    IActionResult Fail(string message)
+    {
+        TempData["Error"] = message;
+        return RedirectToAction(failAction, new { returnUrl });
+    }
+
+    if (!string.IsNullOrEmpty(remoteError))
+    {
+        ModelState.AddModelError(string.Empty, $"Google error: {remoteError}");
+        return RedirectToAction(nameof(Register));
+    }
+        
+
+    var info = await _signInManager.GetExternalLoginInfoAsync();
+    if (info == null)
+    {ModelState.AddModelError(string.Empty, "Could not read Google login information.");
+        return RedirectToAction(nameof(Register));}
+        
+    var linkedUser = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+
+    // Case 1: this Google account is already linked to a user
+    if (linkedUser != null)
+    {
+        if (mode == GoogleAuthMode.RegisterOnly)
+        {
+            ModelState.AddModelError(string.Empty, "This Google account is already registered. Please sign in.");
+            return RedirectToAction(nameof(Login));
+        }
+            
+
+        var result = await _signInManager.ExternalLoginSignInAsync(
+            info.LoginProvider, info.ProviderKey, isPersistent: true, bypassTwoFactor: true);
+
+        if (result.IsLockedOut) return RedirectToAction(nameof(AccessDenied));
+        if (!result.Succeeded)
+        {
+            ModelState.AddModelError(string.Empty, "Sign in with Google failed.");
+            return RedirectToAction(nameof(Login));
+        }
+           
+
+        await CacheUserSessionAsync(linkedUser);
+        return await RedirectAfterLoginAsync(returnUrl);
+    }
+
+    // Case 2: not linked yet
+    if (mode == GoogleAuthMode.SignInOnly)
+    {
+        ModelState.AddModelError(string.Empty, "No account is linked to this Google account. Please register first.");
+        return RedirectToAction(nameof(Register));
+    }
+
+    var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+    if (string.IsNullOrWhiteSpace(email))
+    {
+        ModelState.AddModelError(string.Empty, "Google did not return an email address.");
+        return RedirectToAction(nameof(Register));
+    }
+       
+
+    var user = await _userManager.FindByEmailAsync(email);
+
+    if (user != null)
+    {
+        // A local account with this email exists but is not linked to Google
+        if (mode == GoogleAuthMode.RegisterOnly)
+        {
+            ModelState.AddModelError(string.Empty, "This email is already registered. Please sign in.");
+            return RedirectToAction(nameof(Login));
+        }
+        // SignInOrRegister: link Google to the existing account
+    }
+    else
+    {
+        user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            EmailConfirmed = true,
+            FirstName = info.Principal.FindFirstValue(ClaimTypes.GivenName) ?? string.Empty,
+            LastName = info.Principal.FindFirstValue(ClaimTypes.Surname) ?? string.Empty
+        };
+
+        var create = await _userManager.CreateAsync(user);
+        if (!create.Succeeded)
+            return Fail(string.Join(" ", create.Errors.Select(e => e.Description)));
+
+        var settingRes = await _getIdentitySettingQuery.HandleAsync(new GetIdentitySettingQuery());
+        var setting = settingRes.IsSuccess ? settingRes.Value : new IdentitySetting();
+        foreach (var role in setting.RolesForRegister ?? Enumerable.Empty<string>())
+            if (!await _userManager.IsInRoleAsync(user, role))
+                await _userManager.AddToRoleAsync(user, role);
+    }
+
+    var addLogin = await _userManager.AddLoginAsync(user, info);
+    if (!addLogin.Succeeded)
+        return Fail(string.Join(" ", addLogin.Errors.Select(e => e.Description)));
+
+    await _signInManager.SignInAsync(user, isPersistent: true, info.LoginProvider);
+    await CacheUserSessionAsync(user);
+    return await RedirectAfterLoginAsync(returnUrl);
+}
+    
+    public enum GoogleAuthMode
+    {
+        SignInOnly,
+        RegisterOnly,
+        SignInOrRegister
+    }
+    private async Task CacheUserSessionAsync(ApplicationUser userObj)
+    {
+        var roles = await _userManager.GetRolesAsync(userObj);
+        var permissions = new List<string>();
+        foreach (var role in roles)
+        {
+            var rolePerms = await _unitOfWork.RolePermissions.GetPermissionsByRoleAsync(role);
+            foreach (var rp in rolePerms)
+            {
+                var areaPrefix = !string.IsNullOrWhiteSpace(rp.Permission.AreaName) ? $"{rp.Permission.AreaName}/" : "";
+                permissions.Add($"{areaPrefix}{rp.Permission.ControllerName}/{rp.Permission.ActionName}");
+                permissions.Add($"{rp.Permission.ControllerName}/{rp.Permission.ActionName}");
+            }
+        }
+
+        var sessionDto = new UserSessionCacheDto
+        {
+            Id = userObj.Id, Email = userObj.Email, PhoneNumber = userObj.PhoneNumber,
+            ProfileImage = userObj.ProfileImage, FirstName = userObj.FirstName,
+            LastName = userObj.LastName, FullName = userObj.FullName,
+            Roles = roles.ToList(),
+            Permissions = permissions.Distinct().ToList()
+        };
+        await _redisService.SetAsync($"User_Info_{userObj.Id}", sessionDto, TimeSpan.FromDays(7));
+    }
+
+    private async Task<IActionResult> RedirectAfterLoginAsync(string? returnUrl)
+    {
+        if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
+                                                  && !returnUrl.StartsWith("/Auth", StringComparison.OrdinalIgnoreCase)
+                                                  && !returnUrl.StartsWith("/Error", StringComparison.OrdinalIgnoreCase))
+            return LocalRedirect(returnUrl);
+
+        var settingRes = await _getIdentitySettingQuery.HandleAsync(new GetIdentitySettingQuery());
+        var redirectUrl = settingRes.IsSuccess ? settingRes.Value.RedirectAfterLogin : "/Home/Index";
+        return LocalRedirect(redirectUrl ?? "/Home/Index");
     }
 }
