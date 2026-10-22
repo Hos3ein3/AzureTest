@@ -232,4 +232,51 @@ public sealed class CryptoPosition : AggregateRoot, IAudit, ISoftDelete, ITenant
         TakeProfit = takeProfit;
         TrailingStopDistance = trailingStopDistance;
     }
+
+    public void TopUpMargin(decimal addedMarginUsd)
+    {
+        if (Status != CryptoPositionStatus.Open || addedMarginUsd <= 0 || Quantity <= 0) return;
+
+        InitialMargin += addedMarginUsd;
+        decimal marginShiftPerUnit = addedMarginUsd / Quantity;
+        if (Side == CryptoPositionSide.Long)
+        {
+            LiquidationPrice = Math.Max(Rules.ZeroValue, LiquidationPrice - marginShiftPerUnit);
+        }
+        else
+        {
+            LiquidationPrice = LiquidationPrice + marginShiftPerUnit;
+        }
+    }
+
+    public decimal TrimPosition(decimal trimQuantity)
+    {
+        if (Status != CryptoPositionStatus.Open || trimQuantity <= 0) return 0m;
+
+        var actualTrim = Math.Min(Quantity, trimQuantity);
+        decimal portionPnl = (Side == CryptoPositionSide.Long ? (CurrentPrice - EntryPrice) : (EntryPrice - CurrentPrice)) * actualTrim;
+        RealizedPnl += portionPnl;
+
+        Quantity -= actualTrim;
+        if (Quantity <= 0.00000001m)
+        {
+            Quantity = 0m;
+            Close(CurrentPrice);
+        }
+        else
+        {
+            InitialMargin = (Quantity * EntryPrice) / Math.Max(1, Leverage);
+            CalculateLiquidationPrice();
+            if (Side == CryptoPositionSide.Long)
+            {
+                UnrealizedPnl = (CurrentPrice - EntryPrice) * Quantity;
+            }
+            else
+            {
+                UnrealizedPnl = (EntryPrice - CurrentPrice) * Quantity;
+            }
+        }
+
+        return actualTrim;
+    }
 }
