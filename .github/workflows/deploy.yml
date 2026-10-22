@@ -139,7 +139,11 @@ jobs:
           
       - name: Debug cloudflared
         if: always()
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
         run: |
           cd "$DEPLOY_DIR"
           docker compose ps
-          docker logs --tail 50 azuretest-cloudflared
+          docker compose logs --tail 50 cloudflared
