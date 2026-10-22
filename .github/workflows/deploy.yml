@@ -136,3 +136,10 @@ jobs:
           docker logs --tail 100 azuretest-web
           docker logs --tail 50 azuretest-seq || true
           exit 1
+          
+      - name: Debug cloudflared
+        if: always()
+        run: |
+          cd "$DEPLOY_DIR"
+          docker compose ps
+          docker logs --tail 50 azuretest-cloudflared
