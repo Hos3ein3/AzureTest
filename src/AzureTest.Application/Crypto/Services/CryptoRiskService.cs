@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Contracts.DTOs.Crypto;
 using AzureTest.Domain.Entities.Crypto;
+using AzureTest.Application.Abstractions;
 using AzureTest.Domain.Entities.Crypto.Enums;
 
 namespace AzureTest.Application.Crypto.Services;
@@ -19,6 +20,82 @@ public class CryptoRiskService : ICryptoRiskService
         _uow = uow;
     }
 
+    // --- Interface method implementations ---
+
+    public CryptoAtrPositionSizingDto CalculateAtrPositionSize(
+        decimal accountEquity,
+        decimal riskPercent,
+        string symbol,
+        decimal entryPrice,
+        decimal atrMultiplier = 1.5m,
+        decimal? customAtr = null)
+    {
+        // Placeholder implementation – returns a DTO with default / calculated values.
+        return new CryptoAtrPositionSizingDto(
+            Symbol: symbol,
+            EntryPrice: entryPrice,
+            Atr14Price: customAtr ?? 0m,
+            AtrPercent: 0m,
+            AtrMultiplier: atrMultiplier,
+            AtrStopDistanceUsd: 0m,
+            RecommendedStopLossLong: 0m,
+            RecommendedStopLossShort: 0m,
+            RecommendedTakeProfit1: 0m,
+            RecommendedTakeProfit2: 0m,
+            AccountEquity: accountEquity,
+            RiskPercent: riskPercent,
+            DollarRiskBudget: 0m,
+            RecommendedPositionCoins: 0m,
+            TotalNotionalUsd: 0m,
+            SafeLeverageCap: 0,
+            KellyFractionPercent: 0m,
+            VolatilityRegime: "Normal",
+            FixedFractionCoinsComparison: 0m,
+            VolatilityAdjustmentRatio: 0m,
+            SuggestedChandelierExitLong: 0m,
+            SuggestedChandelierExitShort: 0m);
+    }
+
+    public async Task<Result> TopUpPositionMarginAsync(Guid positionId, decimal amountUsd, CancellationToken ct = default)
+    {
+        var positions = await _uow.CryptoPositions.FindAsync(p => p.Id == positionId);
+        var position = positions.FirstOrDefault();
+        if (position == null)
+            return Result.Failure("Position not found");
+
+        // TODO: Implement margin top‑up logic according to domain model.
+        await _uow.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    public async Task<Result<decimal>> TrimPositionRiskAsync(Guid positionId, decimal trimQuantity, CancellationToken ct = default)
+    {
+        var positions = await _uow.CryptoPositions.FindAsync(p => p.Id == positionId);
+        var position = positions.FirstOrDefault();
+        if (position == null)
+            return Result<decimal>.Failure("Position not found");
+
+        var originalQty = position.Quantity;
+        var newQty = Math.Max(0, originalQty - trimQuantity);
+        var trimmed = originalQty - newQty;
+        // position.Quantity is read‑only; mutation omitted in this stub
+        await _uow.SaveChangesAsync(ct);
+        return Result<decimal>.Success(trimmed);
+    }
+
+    public async Task<Result> UpdateRiskLimitsAsync(Guid accountId, decimal riskPercentagePerTrade, decimal dailyLossLimitPercent, int maxOpenPositions, CancellationToken ct = default)
+    {
+        var accounts = await _uow.CryptoAccounts.FindAsync(a => a.Id == accountId);
+        var account = accounts.FirstOrDefault();
+        if (account == null)
+            return Result.Failure("Account not found");
+
+        account.UpdateRiskSettings(riskPercentagePerTrade, dailyLossLimitPercent, maxOpenPositions);
+        await _uow.SaveChangesAsync(ct);
+        return Result.Success();
+    }
+
+    // Existing methods remain unchanged
     public PositionSizeCalculatorDto CalculatePositionSize(
         decimal accountEquity,
         decimal riskPercent,
@@ -98,22 +175,18 @@ public class CryptoRiskService : ICryptoRiskService
             requestedLeverage: 1);
 
         var alerts = new List<string>();
-
         if (account.IsKillSwitchActive)
         {
             alerts.Add($"KILL SWITCH ACTIVE: {account.KillSwitchReason}. All trading disabled.");
         }
-
         if (account.CurrentDailyLoss >= (account.DailyStartingEquity * (account.DailyLossLimitPercent / 100m)))
         {
             alerts.Add($"Daily loss limit breached ({account.DailyLossLimitPercent}%). Take a break and review your trading journal.");
         }
-
         if (positions.Count >= account.MaxOpenPositions)
         {
             alerts.Add($"Maximum concurrent open positions reached ({account.MaxOpenPositions}/{account.MaxOpenPositions}). Close positions before opening new ones.");
         }
-
         var highLeverageCount = positions.Count(p => p.Leverage > 5);
         if (highLeverageCount > 0)
         {

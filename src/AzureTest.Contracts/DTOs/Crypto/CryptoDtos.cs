@@ -924,7 +924,62 @@ public sealed record PositionSizeCalculatorDto(
     decimal TotalPositionValue,
     int RecommendedLeverage,
     decimal LiquidationPrice,
-    decimal DistanceToLiquidationPercent);
+    decimal DistanceToLiquidationPercent,
+    decimal? Atr14 = null,
+    decimal? AtrMultiplier = null,
+    string? VolatilityRegime = null);
+
+public sealed record CryptoAtrPositionSizingDto(
+    string Symbol,
+    decimal EntryPrice,
+    decimal Atr14Price,
+    decimal AtrPercent,
+    decimal AtrMultiplier, // 1.0x, 1.5x, 2.0x, 3.0x
+    decimal AtrStopDistanceUsd,
+    decimal RecommendedStopLossLong,
+    decimal RecommendedStopLossShort,
+    decimal RecommendedTakeProfit1,
+    decimal RecommendedTakeProfit2,
+    decimal AccountEquity,
+    decimal RiskPercent,
+    decimal DollarRiskBudget,
+    decimal RecommendedPositionCoins,
+    decimal TotalNotionalUsd,
+    int SafeLeverageCap,
+    decimal KellyFractionPercent,
+    string VolatilityRegime, // "High Volatility", "Normal Volatility", "Low Volatility"
+    decimal FixedFractionCoinsComparison,
+    decimal VolatilityAdjustmentRatio,
+    decimal SuggestedChandelierExitLong,
+    decimal SuggestedChandelierExitShort);
+
+public sealed record CryptoLiquidationGuardPositionDto(
+    Guid PositionId,
+    string Symbol,
+    CryptoPositionSide Side,
+    decimal Quantity,
+    int Leverage,
+    decimal EntryPrice,
+    decimal CurrentPrice,
+    decimal LiquidationPrice,
+    decimal DistanceToLiquidationPercent,
+    decimal DistanceToLiquidationAtrWicks,
+    decimal InitialMargin,
+    decimal MaintenanceMargin,
+    decimal UnrealizedPnl,
+    decimal MarginRatioPercent,
+    string GuardStatus, // "Safe", "Caution", "High Risk / Margin Call", "Liquidation Imminent"
+    decimal RecommendedTopUpUsd,
+    decimal RecommendedTrimQuantity);
+
+public sealed record CryptoExchangeCounterpartyRiskDto(
+    CryptoExchange Exchange,
+    string Rating, // "AAA", "AA", "A+"
+    int SafetyScore, // 1-100
+    decimal ProofOfReservesRatioPercent,
+    string RegulatoryCompliance,
+    string OutageSafeguardStatus,
+    decimal DailyVolumeSharePercent);
 
 public sealed record CryptoRiskOverviewDto(
     CryptoAccountDto Account,
@@ -935,7 +990,14 @@ public sealed record CryptoRiskOverviewDto(
     bool KillSwitchActive,
     PositionSizeCalculatorDto PositionSizingGuide,
     IReadOnlyList<string> RiskAlerts,
-    string DutchAfmWarningNote);
+    string DutchAfmWarningNote,
+    CryptoAtrPositionSizingDto? AtrPositionSizing = null,
+    IReadOnlyList<CryptoLiquidationGuardPositionDto>? LiquidationGuards = null,
+    IReadOnlyList<CryptoExchangeCounterpartyRiskDto>? CounterpartyRiskScores = null,
+    decimal TotalMaintenanceMarginRequired = 0m,
+    decimal FreeLiquidationBufferUsd = 0m,
+    string AccountHealthGrade = "A (Institutional Grade)",
+    decimal MaxSafePortfolioLeverage = 3.0m);
 
 // ── Portfolio, Tax & Alerts DTOs ───────────────────────────────────────────
 
