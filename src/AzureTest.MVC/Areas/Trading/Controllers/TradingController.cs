@@ -83,6 +83,18 @@ public class TradingController : Controller
         if (quote == null)
             return NotFound(new { error = "Asset quote not found." });
 
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            try
+            {
+                await _commands.SyncPricesAsync(new AzureTest.Application.Trading.Commands.SyncTradingPrices.SyncTradingPricesCommand(), ct);
+            }
+            catch
+            {
+                // Background price sync best-effort during quote polling
+            }
+        }
+
         return Json(quote);
     }
 
@@ -192,6 +204,15 @@ public class TradingController : Controller
     public async Task<IActionResult> ClosePosition(Guid positionId, decimal? closePrice, string? symbol, string? sourcePage = "index", CancellationToken ct = default)
     {
         bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
+
+        if (Request.HasFormContentType && Request.Form.TryGetValue("closePrice", out var cpVal) && !string.IsNullOrWhiteSpace(cpVal))
+        {
+            var s = cpVal.ToString().Trim().Replace(',', '.');
+            if (decimal.TryParse(s, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedCp) && parsedCp > 0)
+            {
+                closePrice = parsedCp;
+            }
+        }
 
         var command = new CloseTradingPositionCommand(positionId, _currentUser.Id, _currentUser.TenantId, closePrice);
         var result = await _commands.ClosePositionAsync(command, ct);

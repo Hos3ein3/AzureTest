@@ -222,11 +222,11 @@ public sealed class PlaceTradingOrderCommandHandler : ICommandHandler<PlaceTradi
                         {
                             if (cmd.Side == TradingOrderSide.Buy && tpPrice <= referencePrice)
                             {
-                                return Result<Guid>.Failure($"Multi-level Take Profit price (${tpPrice:N2}) must be above entry price (${referencePrice:N2}) for Buy orders.");
+                                return Result<Guid>.Failure($"Multi-level Take Profit price (${tpPrice.ToString("#,##0.00######", System.Globalization.CultureInfo.InvariantCulture)}) must be above entry price (${referencePrice.ToString("#,##0.00######", System.Globalization.CultureInfo.InvariantCulture)}) for Buy orders.");
                             }
                             if (cmd.Side == TradingOrderSide.Sell && tpPrice >= referencePrice)
                             {
-                                return Result<Guid>.Failure($"Multi-level Take Profit price (${tpPrice:N2}) must be below entry price (${referencePrice:N2}) for Sell orders.");
+                                return Result<Guid>.Failure($"Multi-level Take Profit price (${tpPrice.ToString("#,##0.00######", System.Globalization.CultureInfo.InvariantCulture)}) must be below entry price (${referencePrice.ToString("#,##0.00######", System.Globalization.CultureInfo.InvariantCulture)}) for Sell orders.");
                             }
                         }
 

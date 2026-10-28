@@ -50,11 +50,8 @@ def get_version_suggestions(version_str: str):
 
 def bump_string(version_str: str) -> str:
     sugg = get_version_suggestions(version_str)
-    raw = version_str.strip()
-    parts = raw.lstrip("vV").split(".")
-    # If version already has 3 or more segments (e.g. 3.4.1), bump the patch (3.4.2)
-    # If 2 segments (e.g. 3.4), bump the minor (3.5)
-    return sugg["patch"] if len(parts) >= 3 else sugg["minor"]
+    # Default is always patching (e.g. 3.4 -> 3.4.1, 3.4.1 -> 3.4.2)
+    return sugg["patch"]
 
 def main():
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -71,8 +68,12 @@ def main():
     current_version = data.get("AppVersion", "V3.1")
     suggested_version = bump_string(current_version)
 
+    if "--current" in sys.argv or "-c" in sys.argv:
+        print(f"Current TrackerPro Version: {current_version}")
+        sys.exit(0)
+
     # Filter arguments
-    explicit_args = [a for a in sys.argv[1:] if a not in ("--auto", "-y", "-a")]
+    explicit_args = [a for a in sys.argv[1:] if a not in ("--auto", "-y", "-a", "--current", "-c") and not a.startswith("--")]
     is_auto = "--auto" in sys.argv or "-y" in sys.argv or "-a" in sys.argv or not sys.stdin.isatty()
 
     if explicit_args:
@@ -82,10 +83,11 @@ def main():
     else:
         # Interactive mode: show current version and ask for new version
         sugg = get_version_suggestions(current_version)
+        default_version = sugg["patch"]
         print(f"\nCurrent TrackerPro Version: {current_version}")
-        print(f"Suggestions: [Patch: {sugg['patch']} | Minor: {sugg['minor']} | Major: {sugg['major']}]")
+        print(f"Suggestions: [Patch (Default): {sugg['patch']} | Minor: {sugg['minor']} | Major: {sugg['major']}]")
         try:
-            prompt_text = f"Enter new version (Press Enter for '{suggested_version}', or type e.g. '{sugg['patch']}'): "
+            prompt_text = f"Enter new version (Press Enter for default '{default_version}', or type e.g. '{sugg['minor']}', '4.0'): "
             user_input = input(prompt_text).strip()
             if user_input.lower() in ("patch", "p"):
                 new_version = sugg["patch"]
@@ -96,7 +98,7 @@ def main():
             elif user_input:
                 new_version = user_input
             else:
-                new_version = suggested_version
+                new_version = default_version
         except (KeyboardInterrupt, EOFError):
             print("\n[TrackerPro] Version update aborted.")
             sys.exit(1)

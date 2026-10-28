@@ -571,40 +571,73 @@
                         <span class="term-exit-header">Target Profit &amp; Loss Protection</span>
                     </h4>
                     <!-- Quick R:R Pre-set Buttons -->
-                    <div class="flex items-center gap-1.5 text-3xs">
+                    <div class="flex items-center gap-1 flex-wrap text-3xs">
                         <span class="text-slate-400 font-bold uppercase mr-1">R:R:</span>
-                        <button type="button" onclick="setQuickRr(1.5)" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors">1:1.5</button>
-                        <button type="button" onclick="setQuickRr(2.0)" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors">1:2</button>
-                        <button type="button" onclick="setQuickRr(3.0)" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors">1:3</button>
+                        <button type="button" onclick="setQuickRr(0.5)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors">1:0.5</button>
+                        <button type="button" onclick="setQuickRr(1.0)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors">1:1</button>
+                        <button type="button" onclick="setQuickRr(1.5)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors">1:1.5</button>
+                        <button type="button" onclick="setQuickRr(2.0)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors">1:2</button>
+                        <button type="button" onclick="setQuickRr(2.5)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors">1:2.5</button>
+                        <button type="button" onclick="setQuickRr(3.0)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors">1:3</button>
+                        <button type="button" onclick="setQuickRr(4.0)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors">1:4</button>
+                        <button type="button" onclick="setQuickRr(5.0)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors">1:5</button>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Take Profit Box with iOS Switch -->
+                    <!-- Take Profit Box with iOS Switch & Multi-Level Support -->
                     <div class="p-4 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                                 <span class="term-tp-label">Profit Goal (Sell when up)</span>
                             </span>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="tpToggleSwitch" checked onchange="toggleTpEnabled(this.checked)" class="sr-only peer" />
-                                <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-500"></div>
-                            </label>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="addTpLevel()" id="btnAddTpLevel" class="text-3xs px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors font-bold inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-plus text-4xs"></i> Add Level
+                                </button>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="tpToggleSwitch" checked onchange="toggleTpEnabled(this.checked)" class="sr-only peer" />
+                                    <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-500"></div>
+                                </label>
+                            </div>
                         </div>
 
                         <div id="tpInputsContainer" class="space-y-2 transition-opacity">
-                            <div class="relative">
-                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-xs">$</span>
-                                <input type="text" inputmode="decimal" name="takeProfit" id="orderTakeProfitInput"
-                                       value="@FormatPriceInput(selected.Price * 1.05m)"
-                                       oninput="this.value = this.value.replace(',', '.'); calculateRiskRewardOutputs();"
-                                       class="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                            <!-- Multi-Level Rows Container -->
+                            <div id="tpLevelsContainer" class="space-y-2">
+                                <!-- Level 1 (Primary) -->
+                                <div class="tp-level-row flex items-center gap-2" data-index="1">
+                                    <span class="text-3xs font-black text-emerald-600 dark:text-emerald-400 px-1.5 py-1 rounded bg-emerald-500/10 shrink-0 tp-level-tag">TP 1</span>
+                                    <div class="relative flex-1">
+                                        <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-xs">$</span>
+                                        <input type="text" inputmode="decimal" name="takeProfit" id="orderTakeProfitInput"
+                                               value="@FormatPriceInput(selected.Price * 1.05m)"
+                                               placeholder="Target Price"
+                                               oninput="this.value = this.value.replace(',', '.'); onTpLevelChange();"
+                                               class="tp-level-price w-full pl-6 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                                    </div>
+                                    <div class="flex items-center gap-1 w-20 shrink-0">
+                                        <input type="number" min="1" max="100" value="100"
+                                               oninput="onTpLevelChange();"
+                                               class="tp-level-pct w-14 px-1.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs text-center focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                                        <span class="text-3xs font-extrabold text-slate-400">%</span>
+                                    </div>
+                                    <button type="button" onclick="removeTpLevel(this)" class="tp-level-remove hidden p-1.5 text-slate-400 hover:text-rose-500 rounded transition-colors shrink-0" title="Remove level">
+                                        <i class="fa-solid fa-xmark text-xs"></i>
+                                    </button>
+                                </div>
                             </div>
 
-                            <div class="flex justify-between items-center text-3xs font-bold text-slate-400">
-                                <span>Estimated Reward:</span>
-                                <span id="tpRewardSummary" class="text-emerald-600 font-mono font-black">+$0.00 (+5.00%)</span>
+                            <div class="flex justify-between items-center text-3xs font-bold text-slate-400 pt-1">
+                                <div class="flex items-center gap-1">
+                                    <span>Allocation:</span>
+                                    <span id="tpAllocationBadge" class="text-emerald-600 font-mono font-black">100%</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <span>Est. Reward:</span>
+                                    <span id="tpRewardSummary" class="text-emerald-600 font-mono font-black">+$0.00 (+5.00%)</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1399,6 +1432,132 @@
             toggleSlEnabled(true);
         }
 
+        onTpLevelChange();
+    }
+
+    function addTpLevel() {
+        const container = document.getElementById('tpLevelsContainer');
+        const rows = container.querySelectorAll('.tp-level-row');
+        if (rows.length >= 5) {
+            showToast('error', 'Maximum 5 Take Profit target levels allowed.');
+            return;
+        }
+
+        const newIndex = rows.length + 1;
+        const refPrice = getActiveReferencePrice();
+        const baseOffset = currentSide === 1 ? (1 + (0.02 * newIndex)) : (1 - (0.02 * newIndex));
+        const suggPrice = formatPriceInput(refPrice * baseOffset);
+
+        const newPct = Math.floor(100 / newIndex);
+        const remPct = 100 - (newPct * (newIndex - 1));
+
+        rows.forEach((r, idx) => {
+            const pctInput = r.querySelector('.tp-level-pct');
+            if (pctInput) pctInput.value = (idx === 0 ? remPct : newPct);
+        });
+
+        const newRow = document.createElement('div');
+        newRow.className = 'tp-level-row flex items-center gap-2';
+        newRow.setAttribute('data-index', newIndex);
+        newRow.innerHTML = `
+            <span class="text-3xs font-black text-emerald-600 dark:text-emerald-400 px-1.5 py-1 rounded bg-emerald-500/10 shrink-0 tp-level-tag">TP ${newIndex}</span>
+            <div class="relative flex-1">
+                <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-xs">$</span>
+                <input type="text" inputmode="decimal"
+                       value="${suggPrice}"
+                       placeholder="Target Price"
+                       oninput="this.value = this.value.replace(',', '.'); onTpLevelChange();"
+                       class="tp-level-price w-full pl-6 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+            </div>
+            <div class="flex items-center gap-1 w-20 shrink-0">
+                <input type="number" min="1" max="100" value="${newPct}"
+                       oninput="onTpLevelChange();"
+                       class="tp-level-pct w-14 px-1.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs text-center focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                <span class="text-3xs font-extrabold text-slate-400">%</span>
+            </div>
+            <button type="button" onclick="removeTpLevel(this)" class="tp-level-remove p-1.5 text-slate-400 hover:text-rose-500 rounded transition-colors shrink-0" title="Remove level">
+                <i class="fa-solid fa-xmark text-xs"></i>
+            </button>
+        `;
+        container.appendChild(newRow);
+
+        container.querySelectorAll('.tp-level-remove').forEach(btn => btn.classList.remove('hidden'));
+
+        if (!tpEnabled) {
+            document.getElementById('tpToggleSwitch').checked = true;
+            toggleTpEnabled(true);
+        }
+
+        onTpLevelChange();
+    }
+
+    function removeTpLevel(btn) {
+        const row = btn.closest('.tp-level-row');
+        const container = document.getElementById('tpLevelsContainer');
+        if (row && container) {
+            row.remove();
+            const remaining = container.querySelectorAll('.tp-level-row');
+            remaining.forEach((r, idx) => {
+                const tag = r.querySelector('.tp-level-tag');
+                if (tag) tag.textContent = `TP ${idx + 1}`;
+                r.setAttribute('data-index', idx + 1);
+            });
+
+            if (remaining.length <= 1) {
+                remaining.forEach(r => {
+                    const remBtn = r.querySelector('.tp-level-remove');
+                    if (remBtn) remBtn.classList.add('hidden');
+                    const pct = r.querySelector('.tp-level-pct');
+                    if (pct) pct.value = 100;
+                });
+            }
+
+            onTpLevelChange();
+        }
+    }
+
+    function onTpLevelChange() {
+        const container = document.getElementById('tpLevelsContainer');
+        const rows = container.querySelectorAll('.tp-level-row');
+        const refPrice = getActiveReferencePrice();
+        const units = currentCalculatedUnits;
+
+        let totalPct = 0;
+        const tpLevels = [];
+
+        rows.forEach((r, idx) => {
+            const priceInput = r.querySelector('.tp-level-price');
+            const pctInput = r.querySelector('.tp-level-pct');
+            const p = parseFloat((priceInput?.value || '').replace(',', '.')) || 0;
+            const pct = parseFloat(pctInput?.value) || 0;
+
+            totalPct += pct;
+            if (p > 0 && pct > 0) {
+                tpLevels.push({ price: p, percentage: pct });
+            }
+
+            if (idx === 0 && priceInput) {
+                document.getElementById('orderTakeProfitInput').value = priceInput.value;
+            }
+        });
+
+        const jsonInput = document.getElementById('formMultiTpJson');
+        if (jsonInput) {
+            jsonInput.value = rows.length > 1 && tpLevels.length > 0 ? JSON.stringify(tpLevels) : '';
+        }
+
+        const allocBadge = document.getElementById('tpAllocationBadge');
+        if (allocBadge) {
+            allocBadge.textContent = `${totalPct}%`;
+            if (totalPct === 100) {
+                allocBadge.className = 'text-emerald-600 font-mono font-black';
+            } else if (totalPct > 100) {
+                allocBadge.className = 'text-rose-500 font-mono font-black animate-pulse';
+            } else {
+                allocBadge.className = 'text-amber-500 font-mono font-black';
+            }
+        }
+
         calculateRiskRewardOutputs();
     }
 
@@ -1407,13 +1566,38 @@
         const units = currentCalculatedUnits;
 
         if (tpEnabled) {
-            const rawTp = (document.getElementById('orderTakeProfitInput').value || '').trim().replace(',', '.');
-            const tp = parseFloat(rawTp) || 0;
+            const container = document.getElementById('tpLevelsContainer');
+            const rows = container ? container.querySelectorAll('.tp-level-row') : [];
             const tpSummary = document.getElementById('tpRewardSummary');
-            if (tp > 0 && units > 0 && refPrice > 0) {
-                const rewardUsd = Math.abs(tp - refPrice) * units;
-                const rewardPct = ((Math.abs(tp - refPrice) / refPrice) * 100);
-                tpSummary.textContent = `+$${rewardUsd.toFixed(2)} (+${rewardPct.toFixed(2)}%)`;
+
+            if (tpSummary && units > 0 && refPrice > 0) {
+                let totalRewardUsd = 0;
+                let weightedPctSum = 0;
+
+                if (rows.length > 1) {
+                    rows.forEach(r => {
+                        const priceInput = r.querySelector('.tp-level-price');
+                        const pctInput = r.querySelector('.tp-level-pct');
+                        const p = parseFloat((priceInput?.value || '').replace(',', '.')) || 0;
+                        const pct = parseFloat(pctInput?.value) || 0;
+                        if (p > 0 && pct > 0) {
+                            const levelUnits = units * (pct / 100);
+                            const diff = Math.abs(p - refPrice);
+                            totalRewardUsd += diff * levelUnits;
+                            weightedPctSum += ((diff / refPrice) * 100) * (pct / 100);
+                        }
+                    });
+                } else {
+                    const rawTp = (document.getElementById('orderTakeProfitInput').value || '').trim().replace(',', '.');
+                    const tp = parseFloat(rawTp) || 0;
+                    if (tp > 0) {
+                        const diff = Math.abs(tp - refPrice);
+                        totalRewardUsd = diff * units;
+                        weightedPctSum = (diff / refPrice) * 100;
+                    }
+                }
+
+                tpSummary.textContent = `+$${totalRewardUsd.toFixed(2)} (+${weightedPctSum.toFixed(2)}%)`;
             }
         }
 

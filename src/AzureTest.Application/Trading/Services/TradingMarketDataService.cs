@@ -234,32 +234,62 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                 }
             });
 
-            // 3. For DEX tokens (from DexScreener), apply subtle live micro-jitter based on their DEX base price
-            var random = Random.Shared;
-            foreach (var d in DynamicCatalog.Values.Where(d => d.FeedSource == "dexscreener"))
-            {
-                if (LiveCache.TryGetValue(d.Symbol, out var current))
+            // 3. For DEX tokens (from DexScreener), query DexScreener live API for fresh real-world pricing
+            var dexTasks = DynamicCatalog.Values
+                .Where(d => d.FeedSource == "dexscreener")
+                .Select(async d =>
                 {
-                    var jitter = (decimal)((random.NextDouble() * 0.0006) - 0.0003);
-                    var newPrice = Math.Round(current.Price * (1m + jitter), d.PricePrecision());
-                    var newChange = newPrice - d.BasePrice;
-                    var newPct = d.BasePrice > 0 ? Math.Round((newChange / d.BasePrice) * 100m, 2) : 0m;
-                    var high = Math.Max(current.High, newPrice);
-                    var low = Math.Min(current.Low, newPrice);
+                    try
+                    {
+                        var cleanToken = d.Symbol.Replace("USDT", "").Replace("USD", "").Trim();
+                        var res = await _http.GetAsync($"https://api.dexscreener.com/latest/dex/search?q={cleanToken}", ct);
+                        if (res.IsSuccessStatusCode)
+                        {
+                            var json = await res.Content.ReadAsStringAsync(ct);
+                            using var doc = JsonDocument.Parse(json);
+                            if (doc.RootElement.TryGetProperty("pairs", out var pairs) && pairs.ValueKind == JsonValueKind.Array)
+                            {
+                                var bestPair = pairs.EnumerateArray().FirstOrDefault(p =>
+                                    p.TryGetProperty("baseToken", out var bt) &&
+                                    bt.TryGetProperty("symbol", out var sym) &&
+                                    sym.GetString()?.Equals(cleanToken, StringComparison.OrdinalIgnoreCase) == true &&
+                                    p.TryGetProperty("priceUsd", out var pu) &&
+                                    !string.IsNullOrWhiteSpace(pu.GetString()));
 
-                    LiveCache[d.Symbol] = new LiveQuoteState(
-                        newPrice,
-                        newChange,
-                        newPct,
-                        high,
-                        low,
-                        d.Volume,
-                        IsSimulated: false
-                    );
-                }
-            }
+                                if (bestPair.ValueKind != JsonValueKind.Undefined &&
+                                    decimal.TryParse(bestPair.GetProperty("priceUsd").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var newPrice) &&
+                                    newPrice > 0)
+                                {
+                                    decimal pct = 0m;
+                                    if (bestPair.TryGetProperty("priceChange", out var pc) && pc.TryGetProperty("h24", out var h24Prop) && h24Prop.ValueKind == JsonValueKind.Number)
+                                    {
+                                        pct = h24Prop.GetDecimal();
+                                    }
+
+                                    decimal vol = d.Volume;
+                                    if (bestPair.TryGetProperty("volume", out var volProp) && volProp.TryGetProperty("h24", out var v24) && v24.ValueKind == JsonValueKind.Number)
+                                    {
+                                        vol = v24.GetDecimal();
+                                    }
+
+                                    decimal high = Math.Max(newPrice, newPrice * 1.05m);
+                                    decimal low = Math.Min(newPrice, newPrice * 0.95m);
+                                    decimal change = newPrice * (pct / 100m);
+
+                                    LiveCache[d.Symbol] = new LiveQuoteState(newPrice, change, pct, high, low, vol, IsSimulated: false);
+                                    DynamicCatalog[d.Symbol] = d with { BasePrice = newPrice, ChangePercent = pct, High = high, Low = low, Volume = vol };
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "TradingMarketDataService: Failed to update DexScreener live quote for {Symbol}.", d.Symbol);
+                    }
+                });
 
             // 4. For Simulated assets (Stocks, Indices, Futures), apply continuous realistic micro-ticks (random walk +-0.03%)
+            var random = Random.Shared;
             foreach (var s in Catalog.Where(c => c.IsSimulated).Concat(DynamicCatalog.Values.Where(d => d.IsSimulated)))
             {
                 if (LiveCache.TryGetValue(s.Symbol, out var current))
@@ -283,7 +313,7 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                 }
             }
 
-            await Task.WhenAll(cryptoTasks.Concat(forexTasks));
+            await Task.WhenAll(cryptoTasks.Concat(forexTasks).Concat(dexTasks));
             _lastRefreshUtc = DateTime.UtcNow;
         }
         finally
