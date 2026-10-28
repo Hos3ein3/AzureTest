@@ -107,55 +107,69 @@
                 </div>
 
                 <!-- Watchlist Items List -->
-                <div id="watchlistContainer" class="space-y-2 max-h-[600px] overflow-y-auto scrollbar-thin pr-1">
+                <div id="watchlistContainer" class="space-y-2.5 max-h-[600px] overflow-y-auto scrollbar-thin pr-1">
                     @if (Model.Quotes.Any(q => q.IsWatchlisted))
                     {
                         @foreach (var item in Model.Quotes.Where(q => q.IsWatchlisted))
                         {
-                            <div class="wl-item p-3 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-brand-500/50 bg-slate-50/60 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 transition-all flex items-center justify-between group" data-category="@item.AssetClass">
-                                <a asp-action="Trade" asp-route-symbol="@item.Symbol" class="flex-1 min-w-0 flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center font-mono font-black text-2xs text-slate-700 dark:text-slate-200">
-                                        @item.Symbol.Substring(0, Math.Min(3, item.Symbol.Length))
-                                    </div>
-                                    <div class="min-w-0">
-                                        <div class="flex items-center gap-1.5 flex-wrap">
-                                            <span class="text-xs font-black text-slate-900 dark:text-white truncate">@item.Symbol</span>
-                                            <span class="text-3xs uppercase px-1.5 py-0.5 rounded font-extrabold @GetAssetBadgeClass(item.AssetClass)">@GetAssetDisplayName(item.AssetClass)</span>
-                                            @if (item.IsSimulated || IsSimulatedFeed(item.AssetClass))
-                                            {
-                                                <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Simulate</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Live API</span>
-                                            }
+                            <div class="wl-item group p-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900/90 hover:border-brand-500/60 hover:shadow-md transition-all space-y-2.5" data-category="@item.AssetClass">
+                                <!-- Row 1: Asset Header & Live Price -->
+                                <div class="flex items-center justify-between gap-3">
+                                    <a asp-action="Trade" asp-route-symbol="@item.Symbol" class="flex items-center gap-2.5 min-w-0 flex-1 group-hover:text-brand-500 transition-colors">
+                                        <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center font-mono font-black text-xs text-slate-800 dark:text-slate-200 shrink-0 shadow-2xs">
+                                            @item.Symbol.Substring(0, Math.Min(3, item.Symbol.Length))
                                         </div>
-                                        <p class="text-3xs text-slate-400 truncate">@item.AssetName</p>
-                                    </div>
-                                </a>
-
-                                <div class="text-right flex items-center gap-3 shrink-0">
-                                    <div>
-                                        <div class="text-xs font-black text-slate-900 dark:text-white">
-                                            $@item.Price.ToString("N2")
+                                        <div class="min-w-0">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate">@item.Symbol</span>
+                                                <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-extrabold @GetAssetBadgeClass(item.AssetClass)">@GetAssetDisplayName(item.AssetClass)</span>
+                                            </div>
+                                            <p class="text-3xs text-slate-400 dark:text-slate-500 truncate font-medium">@item.AssetName</p>
                                         </div>
-                                        <div class="text-3xs font-extrabold @(item.ChangePercent24h >= 0 ? "text-emerald-500" : "text-rose-500")">
-                                            @(item.ChangePercent24h >= 0 ? "+" : "")@item.ChangePercent24h.ToString("N2")%
-                                        </div>
-                                    </div>
-
-                                    <form asp-action="ToggleWatchlist" method="post" class="inline">
-                                        <input type="hidden" name="symbol" value="@item.Symbol" />
-                                        <input type="hidden" name="assetName" value="@item.AssetName" />
-                                        <input type="hidden" name="assetClass" value="@((int)item.AssetClass)" />
-                                        <button type="submit" class="w-7 h-7 rounded-lg text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center justify-center transition-colors" title="Remove from watchlist">
-                                            <i class="fa-solid fa-star text-xs"></i>
-                                        </button>
-                                    </form>
-
-                                    <a asp-action="Trade" asp-route-symbol="@item.Symbol" class="px-2.5 py-1.5 rounded-lg bg-brand-500 text-white font-bold text-3xs hover:bg-brand-600 transition-colors shadow-2xs">
-                                        Trade
                                     </a>
+
+                                    <!-- Right: Current Price & 24h Change -->
+                                    <div class="text-right shrink-0">
+                                        <div class="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white tracking-tight">
+                                            $@item.Price.ToString(item.Price < 0.01m ? "N6" : item.Price < 1m ? "N4" : "N2")
+                                        </div>
+                                        <div class="inline-flex items-center gap-1 text-3xs font-extrabold @(item.ChangePercent24h >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                            <i class="fa-solid @(item.ChangePercent24h >= 0 ? "fa-arrow-trend-up" : "fa-arrow-trend-down") text-4xs"></i>
+                                            <span>@(item.ChangePercent24h >= 0 ? "+" : "")@item.ChangePercent24h.ToString("N2")%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Row 2: Feed Status Indicator & Action Buttons -->
+                                <div class="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-3xs">
+                                    <div class="flex items-center gap-1.5 text-slate-400 font-semibold">
+                                        @if (item.IsSimulated || IsSimulatedFeed(item.AssetClass))
+                                        {
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                                            <span class="text-4xs uppercase tracking-wider text-amber-600 dark:text-amber-400 font-bold">Simulated Paper</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                            <span class="text-4xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-bold">Live Market Feed</span>
+                                        }
+                                    </div>
+
+                                    <div class="flex items-center gap-1.5">
+                                        <form asp-action="ToggleWatchlist" method="post" class="inline">
+                                            <input type="hidden" name="symbol" value="@item.Symbol" />
+                                            <input type="hidden" name="assetName" value="@item.AssetName" />
+                                            <input type="hidden" name="assetClass" value="@((int)item.AssetClass)" />
+                                            <button type="submit" class="w-7 h-7 rounded-lg text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center justify-center transition-colors" title="Remove from Watchlist">
+                                                <i class="fa-solid fa-star text-xs"></i>
+                                            </button>
+                                        </form>
+
+                                        <a asp-action="Trade" asp-route-symbol="@item.Symbol" class="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-black text-3xs shadow-2xs hover:shadow-xs transition-all">
+                                            <span>Trade</span>
+                                            <i class="fa-solid fa-chevron-right text-4xs"></i>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         }
@@ -576,16 +590,50 @@
     const searchDropdown = document.getElementById('searchDropdownMenu');
     const clearBtn = document.getElementById('clearSearchBtn');
 
+    let searchDebounceTimer = null;
+
     searchInput.addEventListener('input', function() {
-        const query = this.value.trim().toLowerCase();
+        const query = this.value.trim();
         if (query.length > 0) {
             clearBtn.classList.remove('hidden');
             renderSearchDropdown(query);
+
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                fetchServerSearchResults(query);
+            }, 250);
         } else {
             clearBtn.classList.add('hidden');
             searchDropdown.classList.add('hidden');
         }
     });
+
+    async function fetchServerSearchResults(query) {
+        try {
+            const res = await fetch(`/Trading/Trading/Search?query=${encodeURIComponent(query)}`);
+            if (res.ok) {
+                const serverResults = await res.json();
+                if (serverResults && serverResults.length > 0) {
+                    serverResults.forEach(sq => {
+                        const sqSym = sq.Symbol || sq.symbol;
+                        const existing = allQuotes.find(q => (q.Symbol || q.symbol || '').toLowerCase() === sqSym.toLowerCase());
+                        if (!existing) {
+                            allQuotes.push(sq);
+                        } else {
+                            Object.assign(existing, sq);
+                        }
+                    });
+
+                    // Re-render if input still matches query
+                    if (searchInput.value.trim().toLowerCase() === query.toLowerCase()) {
+                        renderSearchDropdown(query);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Search fetch failed', e);
+        }
+    }
 
     searchInput.addEventListener('focus', function() {
         if (this.value.trim().length > 0) {
@@ -608,16 +656,17 @@
     }
 
     function renderSearchDropdown(query) {
+        const qLower = query.toLowerCase();
         const filtered = allQuotes.filter(q => 
-            q.Symbol.toLowerCase().includes(query) || 
-            q.AssetName.toLowerCase().includes(query)
+            (q.Symbol || q.symbol || '').toLowerCase().includes(qLower) || 
+            (q.AssetName || q.assetName || '').toLowerCase().includes(qLower)
         );
 
         if (filtered.length === 0) {
             searchDropdown.innerHTML = `
                 <div class="p-6 text-center text-xs text-slate-400">
-                    <i class="fa-solid fa-magnifying-glass text-xl mb-1 text-slate-300"></i>
-                    <p class="font-bold">No assets found matching "${query}"</p>
+                    <i class="fa-solid fa-spinner fa-spin text-xl mb-1 text-brand-500"></i>
+                    <p class="font-bold">Searching Binance & DEX live feeds for "${query}"...</p>
                 </div>
             `;
             searchDropdown.classList.remove('hidden');
@@ -626,58 +675,65 @@
 
         let html = '';
         filtered.forEach(item => {
+            const sym = item.Symbol || item.symbol;
+            const name = item.AssetName || item.assetName || sym;
+            const price = Number(item.Price ?? item.price ?? 0);
             const chgPct = Number(item.ChangePercent24h ?? item.changePercent24h ?? 0);
             const isPos = chgPct >= 0;
             const changeClass = isPos ? 'text-emerald-500' : 'text-rose-500';
             const sign = isPos ? '+' : '';
-            const tradeUrl = `/Trading/Trading/Trade?symbol=${encodeURIComponent(item.Symbol || item.symbol)}`;
+            const tradeUrl = `/Trading/Trading/Trade?symbol=${encodeURIComponent(sym)}`;
+            const isWatch = item.IsWatchlisted ?? item.isWatchlisted ?? false;
 
+            const assetClass = item.AssetClass ?? item.assetClass ?? 1;
             let badgeColor = 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
-            if (item.AssetClass === 1) badgeColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'; // Crypto
-            else if (item.AssetClass === 2) badgeColor = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'; // Forex
-            else if (item.AssetClass === 3) badgeColor = 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'; // Stock
-            else if (item.AssetClass === 4) badgeColor = 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20'; // Index
-            else if (item.AssetClass === 5) badgeColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'; // Future
+            if (assetClass === 1) badgeColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20';
+            else if (assetClass === 2) badgeColor = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20';
+            else if (assetClass === 3) badgeColor = 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20';
+            else if (assetClass === 4) badgeColor = 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20';
+            else if (assetClass === 5) badgeColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
 
             const assetClassNames = { 1: 'Crypto', 2: 'Forex', 3: 'Stock', 4: 'Indices', 5: 'Futures' };
-            const typeLabel = assetClassNames[item.AssetClass] || 'Asset';
-            const isSim = (item.AssetClass === 3 || item.AssetClass === 4 || item.AssetClass === 5 || item.IsSimulated || item.isSimulated);
+            const typeLabel = assetClassNames[assetClass] || 'Crypto';
+            const isSim = (assetClass === 3 || assetClass === 4 || assetClass === 5 || item.IsSimulated || item.isSimulated);
             const feedBadge = isSim
                 ? `<span class="px-1.5 py-0.5 rounded text-4xs font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Simulate</span>`
                 : `<span class="px-1.5 py-0.5 rounded text-4xs font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Live API</span>`;
 
+            const priceFmt = price < 0.01 ? price.toFixed(6) : price < 1 ? price.toFixed(4) : price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
             html += `
-                <a href="${tradeUrl}" class="p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center justify-between transition-colors group">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-mono font-black text-xs text-slate-700 dark:text-slate-300">
-                            ${item.Symbol.substring(0, 3)}
+                <div class="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center justify-between gap-3 transition-colors group">
+                    <a href="${tradeUrl}" class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-mono font-black text-xs text-slate-700 dark:text-slate-300 shrink-0">
+                            ${sym.substring(0, Math.Min(3, sym.length))}
                         </div>
                         <div class="min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-sm font-black text-slate-900 dark:text-white group-hover:text-brand-500 transition-colors">${item.Symbol}</span>
-                                <span class="px-2 py-0.5 rounded text-3xs font-extrabold uppercase ${badgeColor}">${typeLabel}</span>
-                                ${feedBadge}
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-sm font-black text-slate-900 dark:text-white group-hover:text-brand-500 transition-colors truncate">${sym}</span>
+                                <span class="px-1.5 py-0.5 rounded text-4xs font-extrabold uppercase ${badgeColor} shrink-0">${typeLabel}</span>
+                                <span class="shrink-0">${feedBadge}</span>
                             </div>
-                            <p class="text-xs text-slate-400 truncate">${item.AssetName}</p>
+                            <p class="text-3xs text-slate-400 truncate">${name}</p>
                         </div>
-                    </div>
+                    </a>
 
                     <div class="text-right flex items-center gap-3 shrink-0">
                         <div>
-                            <div class="text-sm font-black text-slate-900 dark:text-white">$${Number(item.Price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</div>
+                            <div class="text-sm font-mono font-black text-slate-900 dark:text-white">$${priceFmt}</div>
                             <div class="text-3xs font-extrabold ${changeClass}">${sign}${chgPct.toFixed(2)}%</div>
                         </div>
                         <button type="button" 
-                                onclick="toggleWatchlistDatalist(event, '${item.Symbol}', '${(item.AssetName || '').replace(/'/g, "\\'")}', ${item.AssetClass}, this)"
+                                onclick="toggleWatchlistDatalist(event, '${sym}', '${name.replace(/'/g, "\\'")}', ${assetClass}, this)"
                                 class="w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-amber-400 bg-white dark:bg-slate-800 flex items-center justify-center transition-all shadow-2xs hover:scale-105"
-                                title="${item.IsWatchlisted ? 'Remove from Watchlist' : 'Add to Watchlist'}">
-                            <i class="${item.IsWatchlisted ? 'fa-solid fa-star text-amber-500' : 'fa-regular fa-star text-slate-400 hover:text-amber-500'} text-xs"></i>
+                                title="${isWatch ? 'Remove from Watchlist' : 'Add to Watchlist'}">
+                            <i class="${isWatch ? 'fa-solid fa-star text-amber-500' : 'fa-regular fa-star text-slate-400 hover:text-amber-500'} text-xs"></i>
                         </button>
-                        <div class="w-8 h-8 rounded-xl bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs group-hover:bg-brand-500 group-hover:text-white transition-all shadow-2xs">
+                        <a href="${tradeUrl}" class="w-8 h-8 rounded-xl bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs group-hover:bg-brand-500 group-hover:text-white transition-all shadow-2xs" title="Open Chart & Trade">
                             <i class="fa-solid fa-arrow-right"></i>
-                        </div>
+                        </a>
                     </div>
-                </a>
+                </div>
             `;
         });
 

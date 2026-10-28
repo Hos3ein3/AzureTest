@@ -101,7 +101,19 @@ public sealed class GetTradingDashboardQueryHandler : IQueryHandler<GetTradingDa
         var quotes = await _marketData.GetAllQuotesAsync(watchlistedSymbols, ct);
 
         var selectedSymbol = string.IsNullOrWhiteSpace(q.SelectedSymbol) ? "BTCUSDT" : q.SelectedSymbol.Trim().ToUpperInvariant();
-        var selectedQuote = quotes.FirstOrDefault(x => x.Symbol.Equals(selectedSymbol, StringComparison.OrdinalIgnoreCase)) ?? quotes.First();
+        var selectedQuote = quotes.FirstOrDefault(x => x.Symbol.Equals(selectedSymbol, StringComparison.OrdinalIgnoreCase));
+        if (selectedQuote == null)
+        {
+            selectedQuote = await _marketData.GetQuoteAsync(selectedSymbol, watchlistedSymbols, ct);
+            if (selectedQuote != null)
+            {
+                quotes = quotes.Append(selectedQuote).ToList();
+            }
+            else
+            {
+                selectedQuote = quotes.FirstOrDefault() ?? new TradingQuoteDto("BTCUSDT", "Bitcoin", AssetClass.Crypto, 67450m, 0m, 0m, 68000m, 66000m, 1000000m, false, false);
+            }
+        }
 
         var dto = new TradingDashboardDto(
             GetTradingDashboardQuery.Mapping.ToDto(account),

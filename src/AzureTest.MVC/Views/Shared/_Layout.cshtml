@@ -201,7 +201,7 @@
                             </div>
                         </div>
                         <div class="py-1">
-                            <a asp-action="Index" asp-controller="Profile" class="flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60">
+                            <a asp-area="" asp-action="Index" asp-controller="Profile" class="flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60">
                                 <i class="fa-solid fa-user mr-3 w-4 text-center text-slate-400"></i> Profile
                             </a>
                             <button type="button" onclick="document.getElementById('settingGear')?.click(); closeMobileActionsDropdown();" class="w-full flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-left">
@@ -213,18 +213,18 @@
                             <button type="button" onclick="triggerPwaInstall(); closeMobileActionsDropdown();" class="w-full flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-left">
                                 <i class="fa-solid fa-mobile-screen-button mr-3 w-4 text-center text-slate-400"></i> Install Mobile App
                             </button>
-                            <a asp-action="Manage" asp-controller="Dashboard" class="flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60">
+                            <a asp-area="" asp-action="Manage" asp-controller="Dashboard" class="flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60">
                                 <i class="fab fa-windows mr-3 w-4 text-center text-slate-400"></i> Dashboards
                             </a>
                             @if (_CurrentUser?.IsAdmin == true && _TenantProvider != null && _TenantProvider.IsMultiTenancyEnabled)
                             {
-                                <a asp-action="Index" asp-controller="Tenant" class="flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60">
+                                <a asp-area="" asp-action="Index" asp-controller="Tenant" class="flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60">
                                     <i class="fa-solid fa-building-user mr-3 w-4 text-center text-indigo-500"></i> Tenants (@(_TenantProvider.IsAdminImpersonating ? "Impersonating" : "Manage"))
                                 </a>
                             }
                         </div>
                         <div class="py-1">
-                            <form asp-controller="Auth" asp-action="Logout" method="post" class="w-full">
+                            <form asp-area="" asp-controller="Auth" asp-action="Logout" method="post" class="w-full">
                                 <button type="submit" class="w-full flex items-center px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-left">
                                     <i class="fa-solid fa-arrow-right-from-bracket mr-3 w-4 text-center text-red-500"></i> Logout
                                 </button>
@@ -258,10 +258,10 @@
                             <span class="text-[9px] font-extrabold uppercase tracking-wider text-amber-100">Impersonating</span>
                             <span class="font-bold truncate text-white">@(!string.IsNullOrWhiteSpace(_TenantProvider.ImpersonatedTenantName) ? _TenantProvider.ImpersonatedTenantName : _TenantProvider.CurrentTenantId.ToString())</span>
                         </div>
-                        <a asp-controller="Tenant" asp-action="Index" class="ml-1 px-1.5 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white font-semibold text-[11px] transition-colors" title="Switch to another tenant">
+                        <a asp-area="" asp-controller="Tenant" asp-action="Index" class="ml-1 px-1.5 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white font-semibold text-[11px] transition-colors" title="Switch to another tenant">
                             <i class="fa-solid fa-users-gear"></i>
                         </a>
-                        <form asp-controller="Tenant" asp-action="ResetTenant" method="post" class="inline">
+                        <form asp-area="" asp-controller="Tenant" asp-action="ResetTenant" method="post" class="inline">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
                             <button type="submit" class="w-5 h-5 rounded bg-amber-700 hover:bg-amber-800 text-white flex items-center justify-center transition-colors" title="Exit Impersonation (Return to your own workspace)">
@@ -308,19 +308,19 @@
                     <i class="fa-solid fa-gear text-lg"></i>
                 </button>
 
-                <a asp-action="Manage" asp-controller="Dashboard" class="text-slate-400 hover:text-brand-500 transition-colors" title="Dashboards">
+                <a asp-area="" asp-action="Manage" asp-controller="Dashboard" class="text-slate-400 hover:text-brand-500 transition-colors" title="Dashboards">
                     <i class="fab fa-windows text-lg"></i>
                 </a>
                 
                 @if (_CurrentUser?.IsAdmin == true && _TenantProvider != null && _TenantProvider.IsMultiTenancyEnabled)
                 {
-                    <a asp-action="Index" asp-controller="Tenant" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold @(_TenantProvider.IsAdminImpersonating ? "bg-amber-100 text-amber-800 border border-amber-300 animate-pulse" : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200") transition-all" title="Manage & Switch Tenant Workspace">
+                    <a asp-area="" asp-action="Index" asp-controller="Tenant"  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold @(_TenantProvider.IsAdminImpersonating ? "bg-amber-100 text-amber-800 border border-amber-300 animate-pulse" : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200") transition-all" title="Manage & Switch Tenant Workspace">
                         <i class="fa-solid fa-building-user @(_TenantProvider.IsAdminImpersonating ? "text-amber-600" : "text-indigo-600") text-sm"></i>
                         <span class="hidden sm:inline">@(_TenantProvider.IsAdminImpersonating ? "Impersonating" : "Tenants")</span>
                     </a>
                 }
 
-                <a asp-action="Index" asp-controller="Profile" class="text-slate-400 hover:text-brand-500 transition-colors flex items-center" title="My Profile">
+                <a asp-area="" asp-action="Index" asp-controller="Profile" class="text-slate-400 hover:text-brand-500 transition-colors flex items-center" title="My Profile">
                     @if(!string.IsNullOrEmpty(_CurrentUser.ProfileImage)){
                         <img src="@_CurrentUser.ProfileImage" class="w-7 h-7 rounded-full object-cover border border-slate-200" />
                     } else {
@@ -328,7 +328,7 @@
                     }
                 </a>
 
-                <form asp-controller="Auth" asp-action="Logout" method="post" class="inline">
+                <form asp-area="" asp-controller="Auth" asp-action="Logout" method="post" class="inline">
                     <button type="submit" class="text-slate-400 hover:text-brand-500 transition-colors" title="Logout">
                         <i class="fa-solid fa-arrow-right-from-bracket text-lg"></i>
                     </button>
@@ -363,10 +363,10 @@
                     }
                 </div>
                 <div class="flex items-center space-x-2">
-                    <a asp-controller="Tenant" asp-action="Index" class="inline-flex items-center px-3 py-1 bg-white text-amber-900 hover:bg-amber-50 text-xs font-bold rounded shadow-sm transition">
+                    <a asp-area="" asp-controller="Tenant" asp-action="Index" class="inline-flex items-center px-3 py-1 bg-white text-amber-900 hover:bg-amber-50 text-xs font-bold rounded shadow-sm transition">
                         <i class="fa-solid fa-users-gear mr-1"></i> Switch Tenant
                     </a>
-                    <form asp-controller="Tenant" asp-action="ResetTenant" method="post" class="inline">
+                    <form asp-area="" asp-controller="Tenant" asp-action="ResetTenant" method="post" class="inline">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
                         <button type="submit" class="inline-flex items-center px-3 py-1 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded shadow-sm transition">

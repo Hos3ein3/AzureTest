@@ -58,13 +58,13 @@
             <i class="fa-solid fa-arrow-left"></i> Go Back
         </button>
 
-        <a asp-controller="Tenant" asp-action="Index" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold shadow-2xs hover:bg-slate-50 transition-colors">
+        <a asp-area="" asp-controller="Tenant" asp-action="Index" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold shadow-2xs hover:bg-slate-50 transition-colors">
             <i class="fa-solid fa-building-user text-brand-600"></i> Manage Tenants
         </a>
 
         @if (_TenantProvider?.IsAdminImpersonating == true)
         {
-            <form asp-controller="Tenant" asp-action="ResetTenant" method="post" class="inline">
+            <form asp-area="" asp-controller="Tenant" asp-action="ResetTenant" method="post" class="inline">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="returnUrl" value="@returnUrl" />
                 <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 text-white text-xs font-semibold shadow-2xs hover:bg-amber-700 transition-colors">

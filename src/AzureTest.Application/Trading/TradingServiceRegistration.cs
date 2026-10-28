@@ -22,8 +22,12 @@ public static class TradingServiceRegistration
 {
     public static IServiceCollection AddTradingModule(this IServiceCollection services)
     {
-        // Core Market Data Service (Scoped to inject ICryptoMarketDataService & IForexMarketDataService)
-        services.AddScoped<ITradingMarketDataService, TradingMarketDataService>();
+        // Core Market Data Service (HttpClient typed client + Scoped to inject ICryptoMarketDataService & IForexMarketDataService)
+        services.AddHttpClient<ITradingMarketDataService, TradingMarketDataService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(6);
+            client.DefaultRequestHeaders.Add("User-Agent", "AzureTest-TradingTerminal/1.0");
+        });
 
         // Command Handlers
         services.AddScoped<ICommandHandler<PlaceTradingOrderCommand, Result<Guid>>, PlaceTradingOrderCommandHandler>();

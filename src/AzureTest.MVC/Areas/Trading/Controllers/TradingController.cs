@@ -85,6 +85,18 @@ public class TradingController : Controller
         return Json(quote);
     }
 
+    [HttpGet]
+    [DisplayName("Search Trading Assets")]
+    [Description("Search instruments dynamically across built-in catalog, Binance live pairs, and DexScreener DEX tokens.")]
+    public async Task<IActionResult> Search(string query, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return Json(Array.Empty<TradingQuoteDto>());
+
+        var quotes = await _marketData.SearchAssetsAsync(query.Trim(), ct: ct);
+        return Json(quotes);
+    }
+
     [HttpPost]
     [DisplayName("Place Order")]
     [Description("Validate and execute a Market, Limit, or Stop paper trade order with multi-level risk parameters.")]
