@@ -187,6 +187,7 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                 }
                 catch (Exception ex)
                 {
+                    
                     _logger.LogWarning(ex, "TradingMarketDataService: Failed to update live Frankfurter forex quote for {Symbol}.", f.Symbol);
                 }
             });
