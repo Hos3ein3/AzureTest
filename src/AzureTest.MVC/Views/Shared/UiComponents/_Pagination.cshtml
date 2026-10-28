@@ -75,7 +75,9 @@
         {
             foreach (var kv in Model.RouteParams)
             {
-                if (!string.Equals(kv.Key, "page", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(kv.Value))
+                if (!string.Equals(kv.Key, "page", StringComparison.OrdinalIgnoreCase) && 
+                    !string.Equals(kv.Key, "pagenumber", StringComparison.OrdinalIgnoreCase) && 
+                    !string.IsNullOrWhiteSpace(kv.Value))
                 {
                     url += $"&{System.Net.WebUtility.UrlEncode(kv.Key)}={System.Net.WebUtility.UrlEncode(kv.Value)}";
                 }

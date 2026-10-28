@@ -126,7 +126,9 @@ public sealed class AddWatchItemCommandHandler : ICommandHandler<AddWatchItemCom
         {
             var details = effectiveCmd.Type == MediaType.Movie
                 ? await _tmdbService.GetMovieDetailsAsync(effectiveCmd.TmdbId, ct)
-                : await _tmdbService.GetTvShowDetailsAsync(effectiveCmd.TmdbId, ct);
+                : (effectiveCmd.Type == MediaType.Anime
+                    ? (await _tmdbService.GetMovieDetailsAsync(effectiveCmd.TmdbId, ct) ?? await _tmdbService.GetTvShowDetailsAsync(effectiveCmd.TmdbId, ct))
+                    : await _tmdbService.GetTvShowDetailsAsync(effectiveCmd.TmdbId, ct));
 
             if (details != null)
             {
@@ -140,7 +142,8 @@ public sealed class AddWatchItemCommandHandler : ICommandHandler<AddWatchItemCom
                     ReleaseDate = effectiveCmd.ReleaseDate ?? details.ReleaseDate,
                     TmdbVoteAverage = effectiveCmd.TmdbVoteAverage ?? details.VoteAverage,
                     RuntimeMinutes = effectiveCmd.RuntimeMinutes ?? details.RuntimeMinutes,
-                    TotalSeasons = details.Seasons?.Count ?? effectiveCmd.TotalSeasons,
+                    TotalSeasons = details.Seasons?.Count > 0 ? details.Seasons.Count : 1,
+                    TotalEpisodes = details.Seasons?.Count > 0 ? details.Seasons.Sum(s => s.EpisodeCount) : 1,
                     Genres = details.Genres ?? effectiveCmd.Genres
                 };
             }

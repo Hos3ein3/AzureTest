@@ -34,6 +34,9 @@ public record WatchItemDto(
     Dictionary<string, int>? EpisodeRewatches = null
 )
 {
+    public bool IsMovie => Type == MediaType.Movie || (Type == MediaType.Anime && TotalEpisodes <= 1 && TotalSeasons <= 1);
+    public bool IsSeries => !IsMovie;
+
     public int GetSeasonRewatchCount(int season) =>
         SeasonRewatches != null && SeasonRewatches.TryGetValue(season.ToString(), out var c) ? c : 0;
 

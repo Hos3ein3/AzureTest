@@ -283,12 +283,25 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                             using var doc = JsonDocument.Parse(json);
                             if (doc.RootElement.TryGetProperty("pairs", out var pairs) && pairs.ValueKind == JsonValueKind.Array)
                             {
-                                var bestPair = pairs.EnumerateArray().FirstOrDefault(p =>
-                                    p.TryGetProperty("baseToken", out var bt) &&
-                                    bt.TryGetProperty("symbol", out var sym) &&
-                                    sym.GetString()?.Equals(cleanToken, StringComparison.OrdinalIgnoreCase) == true &&
-                                    p.TryGetProperty("priceUsd", out var pu) &&
-                                    !string.IsNullOrWhiteSpace(pu.GetString()));
+                                var bestPair = pairs.EnumerateArray()
+                                    .Where(p =>
+                                        p.TryGetProperty("baseToken", out var bt) &&
+                                        bt.TryGetProperty("symbol", out var sym) &&
+                                        sym.GetString()?.Equals(cleanToken, StringComparison.OrdinalIgnoreCase) == true &&
+                                        p.TryGetProperty("priceUsd", out var pu) &&
+                                        decimal.TryParse(pu.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pr) &&
+                                        pr > 0)
+                                    .OrderByDescending(p =>
+                                    {
+                                        if (p.TryGetProperty("liquidity", out var liq) &&
+                                            liq.TryGetProperty("usd", out var usdProp) &&
+                                            usdProp.ValueKind == JsonValueKind.Number)
+                                        {
+                                            return usdProp.GetDecimal();
+                                        }
+                                        return 0m;
+                                    })
+                                    .FirstOrDefault();
 
                                 if (bestPair.ValueKind != JsonValueKind.Undefined &&
                                     decimal.TryParse(bestPair.GetProperty("priceUsd").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var newPrice) &&
@@ -418,33 +431,36 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
             if (quote != null) results[quote.Symbol] = quote;
         }
 
-        // 2. Search in DynamicCatalog
-        foreach (var d in DynamicCatalog.Values.Where(d => d.Symbol.Contains(cleanQ, StringComparison.OrdinalIgnoreCase) || d.Name.Contains(cleanQ, StringComparison.OrdinalIgnoreCase)))
+        // 2. Search in DynamicCatalog (only trust verified non-dexscreener items upfront)
+        foreach (var d in DynamicCatalog.Values.Where(d => d.FeedSource != "dexscreener" && (d.Symbol.Contains(cleanQ, StringComparison.OrdinalIgnoreCase) || d.Name.Contains(cleanQ, StringComparison.OrdinalIgnoreCase))))
         {
             var quote = GetQuote(d.Symbol, watchlistedSymbols);
             if (quote != null) results[quote.Symbol] = quote;
         }
 
-        // 3. Live search via Binance Public 24hr Ticker API
-        if (cleanQ.Length >= 2)
+        var targetSym = cleanQ.EndsWith("USDT") ? cleanQ : cleanQ + "USDT";
+
+        // 3. Live search via Binance Public 24hr Ticker API (Tier-1 Primary crypto exchange)
+        if (cleanQ.Length >= 2 && (!results.ContainsKey(targetSym) || (DynamicCatalog.TryGetValue(targetSym, out var dynBin) && dynBin.FeedSource == "binance")))
         {
             try
             {
-                var binanceSym = cleanQ.EndsWith("USDT") ? cleanQ : cleanQ + "USDT";
+                var binanceSym = targetSym;
                 var res = await _http.GetAsync($"https://api.binance.com/api/v3/ticker/24hr?symbol={binanceSym}", ct);
                 if (res.IsSuccessStatusCode)
                 {
                     var json = await res.Content.ReadAsStringAsync(ct);
                     using var doc = JsonDocument.Parse(json);
                     var root = doc.RootElement;
-                    if (root.TryGetProperty("lastPrice", out var lpProp))
+                    if (root.TryGetProperty("lastPrice", out var lpProp) &&
+                        decimal.TryParse(lpProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var price) &&
+                        price > 0)
                     {
-                        decimal price = decimal.Parse(lpProp.GetString()!, CultureInfo.InvariantCulture);
-                        decimal change = decimal.Parse(root.GetProperty("priceChange").GetString()!, CultureInfo.InvariantCulture);
-                        decimal pct = decimal.Parse(root.GetProperty("priceChangePercent").GetString()!, CultureInfo.InvariantCulture);
-                        decimal high = decimal.Parse(root.GetProperty("highPrice").GetString()!, CultureInfo.InvariantCulture);
-                        decimal low = decimal.Parse(root.GetProperty("lowPrice").GetString()!, CultureInfo.InvariantCulture);
-                        decimal vol = decimal.Parse(root.GetProperty("volume").GetString()!, CultureInfo.InvariantCulture);
+                        decimal change = decimal.TryParse(root.GetProperty("priceChange").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var cVal) ? cVal : 0m;
+                        decimal pct = decimal.TryParse(root.GetProperty("priceChangePercent").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pVal) ? pVal : 0m;
+                        decimal high = decimal.TryParse(root.GetProperty("highPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var hVal) ? hVal : price * 1.05m;
+                        decimal low = decimal.TryParse(root.GetProperty("lowPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var lVal) ? lVal : price * 0.95m;
+                        decimal vol = decimal.TryParse(root.GetProperty("volume").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var vVal) ? vVal : 100000m;
 
                         var assetBase = binanceSym.EndsWith("USDT") ? binanceSym.Substring(0, binanceSym.Length - 4) : binanceSym;
                         var item = new TradingCatalogItem(binanceSym, $"{assetBase} / Tether USD", AssetClass.Crypto, price, pct, high, low, vol, IsSimulated: false, FeedSource: "binance");
@@ -471,57 +487,59 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
             {
                 _logger.LogDebug(ex, "Binance live search query failed for {Query}", cleanQ);
             }
+        }
 
-            // 3.5 Live search via MEXC Public 24hr Ticker API (for tokens not listed on Binance, e.g. AGTUSDT)
-            var targetSym = cleanQ.EndsWith("USDT") ? cleanQ : cleanQ + "USDT";
-            if (!results.ContainsKey(targetSym))
+        // 3.5 Live search via MEXC Public 24hr Ticker API (Tier-2 authoritative exchange for tokens not listed on Binance, e.g. AGTUSDT)
+        if (cleanQ.Length >= 2 && !results.ContainsKey(targetSym))
+        {
+            try
             {
-                try
+                var mexcRes = await _http.GetAsync($"https://api.mexc.com/api/v3/ticker/24hr?symbol={targetSym}", ct);
+                if (mexcRes.IsSuccessStatusCode)
                 {
-                    var mexcRes = await _http.GetAsync($"https://api.mexc.com/api/v3/ticker/24hr?symbol={targetSym}", ct);
-                    if (mexcRes.IsSuccessStatusCode)
+                    var json = await mexcRes.Content.ReadAsStringAsync(ct);
+                    using var doc = JsonDocument.Parse(json);
+                    var root = doc.RootElement;
+                    if (root.TryGetProperty("lastPrice", out var lpProp) &&
+                        decimal.TryParse(lpProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var price) &&
+                        price > 0)
                     {
-                        var json = await mexcRes.Content.ReadAsStringAsync(ct);
-                        using var doc = JsonDocument.Parse(json);
-                        var root = doc.RootElement;
-                        if (root.TryGetProperty("lastPrice", out var lpProp) &&
-                            decimal.TryParse(lpProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var price) &&
-                            price > 0)
-                        {
-                            decimal change = decimal.TryParse(root.GetProperty("priceChange").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var cVal) ? cVal : 0m;
-                            decimal pct = decimal.TryParse(root.GetProperty("priceChangePercent").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pVal) ? pVal * 100m : 0m;
-                            decimal high = decimal.TryParse(root.GetProperty("highPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var hVal) ? hVal : price * 1.05m;
-                            decimal low = decimal.TryParse(root.GetProperty("lowPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var lVal) ? lVal : price * 0.95m;
-                            decimal vol = decimal.TryParse(root.GetProperty("volume").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var vVal) ? vVal : 100000m;
+                        decimal change = decimal.TryParse(root.GetProperty("priceChange").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var cVal) ? cVal : 0m;
+                        decimal pct = decimal.TryParse(root.GetProperty("priceChangePercent").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pVal) ? pVal * 100m : 0m;
+                        decimal high = decimal.TryParse(root.GetProperty("highPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var hVal) ? hVal : price * 1.05m;
+                        decimal low = decimal.TryParse(root.GetProperty("lowPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var lVal) ? lVal : price * 0.95m;
+                        decimal vol = decimal.TryParse(root.GetProperty("volume").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var vVal) ? vVal : 100000m;
 
-                            var assetBase = targetSym.EndsWith("USDT") ? targetSym.Substring(0, targetSym.Length - 4) : targetSym;
-                            var item = new TradingCatalogItem(targetSym, $"{assetBase} / Tether USD", AssetClass.Crypto, price, pct, high, low, vol, IsSimulated: false, FeedSource: "mexc");
-                            DynamicCatalog[targetSym] = item;
-                            LiveCache[targetSym] = new LiveQuoteState(price, change, pct, high, low, vol, IsSimulated: false);
+                        var assetBase = targetSym.EndsWith("USDT") ? targetSym.Substring(0, targetSym.Length - 4) : targetSym;
+                        var item = new TradingCatalogItem(targetSym, $"{assetBase} / Tether USD", AssetClass.Crypto, price, pct, high, low, vol, IsSimulated: false, FeedSource: "mexc");
+                        DynamicCatalog[targetSym] = item;
+                        LiveCache[targetSym] = new LiveQuoteState(price, change, pct, high, low, vol, IsSimulated: false);
 
-                            results[targetSym] = new TradingQuoteDto(
-                                targetSym,
-                                item.Name,
-                                AssetClass.Crypto,
-                                price,
-                                change,
-                                pct,
-                                high,
-                                low,
-                                vol,
-                                watchlistedSymbols.Contains(targetSym),
-                                IsSimulated: false,
-                                FeedSource: "mexc");
-                        }
+                        results[targetSym] = new TradingQuoteDto(
+                            targetSym,
+                            item.Name,
+                            AssetClass.Crypto,
+                            price,
+                            change,
+                            pct,
+                            high,
+                            low,
+                            vol,
+                            watchlistedSymbols.Contains(targetSym),
+                            IsSimulated: false,
+                            FeedSource: "mexc");
                     }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogDebug(ex, "MEXC live search query failed for {Query}", targetSym);
-                }
             }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "MEXC live search query failed for {Query}", targetSym);
+            }
+        }
 
-            // 4. Live search via DexScreener for DEX tokens (e.g. BLESS, BRETT, PEPE, AERO, etc.)
+        // 4. Live search via DexScreener for DEX-native tokens (ONLY if NOT resolved by Binance, MEXC or Catalog)
+        if (!results.ContainsKey(targetSym) && !Catalog.Any(c => c.Symbol.Equals(targetSym, StringComparison.OrdinalIgnoreCase)))
+        {
             try
             {
                 var rawSearch = cleanQ.EndsWith("USDT") ? cleanQ.Substring(0, cleanQ.Length - 4) : cleanQ;
@@ -532,54 +550,73 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                     using var doc = JsonDocument.Parse(dexJson);
                     if (doc.RootElement.TryGetProperty("pairs", out var pairs) && pairs.ValueKind == JsonValueKind.Array)
                     {
-                        foreach (var pair in pairs.EnumerateArray().Take(4))
-                        {
-                            if (pair.TryGetProperty("baseToken", out var baseToken) &&
-                                pair.TryGetProperty("priceUsd", out var pUsd) &&
-                                decimal.TryParse(pUsd.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var price) &&
-                                price > 0)
+                        // Order pairs by liquidity USD descending to pick the primary/most liquid legitimate pair
+                        var validPairs = pairs.EnumerateArray()
+                            .Where(p => p.TryGetProperty("baseToken", out var bt) &&
+                                        !string.IsNullOrWhiteSpace(bt.GetProperty("symbol").GetString()) &&
+                                        p.TryGetProperty("priceUsd", out var pu) &&
+                                        decimal.TryParse(pu.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pr) &&
+                                        pr > 0)
+                            .OrderByDescending(p =>
                             {
-                                var baseSym = baseToken.GetProperty("symbol").GetString() ?? "";
-                                var baseName = baseToken.GetProperty("name").GetString() ?? baseSym;
-                                var pairSym = baseSym.ToUpperInvariant();
-                                if (!pairSym.EndsWith("USDT")) pairSym += "USDT";
-
-                                decimal pct = 0m;
-                                if (pair.TryGetProperty("priceChange", out var pc) && pc.TryGetProperty("h24", out var h24Prop) && h24Prop.ValueKind == JsonValueKind.Number)
+                                if (p.TryGetProperty("liquidity", out var liq) &&
+                                    liq.TryGetProperty("usd", out var usdProp) &&
+                                    usdProp.ValueKind == JsonValueKind.Number)
                                 {
-                                    pct = h24Prop.GetDecimal();
+                                    return usdProp.GetDecimal();
                                 }
+                                return 0m;
+                            })
+                            .Take(4);
 
-                                decimal vol = 100000m;
-                                if (pair.TryGetProperty("volume", out var volProp) && volProp.TryGetProperty("h24", out var v24) && v24.ValueKind == JsonValueKind.Number)
-                                {
-                                    vol = v24.GetDecimal();
-                                }
+                        foreach (var pair in validPairs)
+                        {
+                            var baseToken = pair.GetProperty("baseToken");
+                            var baseSym = baseToken.GetProperty("symbol").GetString() ?? "";
+                            var baseName = baseToken.GetProperty("name").GetString() ?? baseSym;
+                            var pairSym = baseSym.ToUpperInvariant();
+                            if (!pairSym.EndsWith("USDT")) pairSym += "USDT";
 
-                                decimal high = price * 1.05m;
-                                decimal low = price * 0.95m;
-                                decimal change = price * (pct / 100m);
+                            // STRICT RULE: Never overwrite Tier-1 (Binance), Tier-2 (MEXC), or static Catalog items with DEX tokens
+                            if (Catalog.Any(c => c.Symbol.Equals(pairSym, StringComparison.OrdinalIgnoreCase))) continue;
+                            if (DynamicCatalog.TryGetValue(pairSym, out var existingItem) && existingItem.FeedSource is "binance" or "mexc") continue;
+                            if (results.ContainsKey(pairSym)) continue;
 
-                                var item = new TradingCatalogItem(pairSym, baseName, AssetClass.Crypto, price, pct, high, low, vol, IsSimulated: false, FeedSource: "dexscreener");
-                                DynamicCatalog[pairSym] = item;
-                                LiveCache[pairSym] = new LiveQuoteState(price, change, pct, high, low, vol, IsSimulated: false);
+                            decimal price = decimal.Parse(pair.GetProperty("priceUsd").GetString()!, CultureInfo.InvariantCulture);
 
-                                if (!results.ContainsKey(pairSym))
-                                {
-                                    results[pairSym] = new TradingQuoteDto(
-                                        pairSym,
-                                        baseName,
-                                        AssetClass.Crypto,
-                                        price,
-                                        change,
-                                        pct,
-                                        high,
-                                        low,
-                                        vol,
-                                        watchlistedSymbols.Contains(pairSym),
-                                        IsSimulated: false);
-                                }
+                            decimal pct = 0m;
+                            if (pair.TryGetProperty("priceChange", out var pc) && pc.TryGetProperty("h24", out var h24Prop) && h24Prop.ValueKind == JsonValueKind.Number)
+                            {
+                                pct = h24Prop.GetDecimal();
                             }
+
+                            decimal vol = 100000m;
+                            if (pair.TryGetProperty("volume", out var volProp) && volProp.TryGetProperty("h24", out var v24) && v24.ValueKind == JsonValueKind.Number)
+                            {
+                                vol = v24.GetDecimal();
+                            }
+
+                            decimal high = price * 1.05m;
+                            decimal low = price * 0.95m;
+                            decimal change = price * (pct / 100m);
+
+                            var item = new TradingCatalogItem(pairSym, baseName, AssetClass.Crypto, price, pct, high, low, vol, IsSimulated: false, FeedSource: "dexscreener");
+                            DynamicCatalog[pairSym] = item;
+                            LiveCache[pairSym] = new LiveQuoteState(price, change, pct, high, low, vol, IsSimulated: false);
+
+                            results[pairSym] = new TradingQuoteDto(
+                                pairSym,
+                                baseName,
+                                AssetClass.Crypto,
+                                price,
+                                change,
+                                pct,
+                                high,
+                                low,
+                                vol,
+                                watchlistedSymbols.Contains(pairSym),
+                                IsSimulated: false,
+                                FeedSource: "dexscreener");
                         }
                     }
                 }

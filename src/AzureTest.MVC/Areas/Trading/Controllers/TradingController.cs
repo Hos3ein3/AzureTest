@@ -101,6 +101,7 @@ public class TradingController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     [DisplayName("Live Positions and Account Status")]
     [Description("Fetch active open positions, closed positions, pending orders, and account balance for live auto-updating terminal tables.")]
     public async Task<IActionResult> LiveStatus(string? symbol = "BTCUSDT", CancellationToken ct = default)
@@ -271,6 +272,7 @@ public class TradingController : Controller
     }
 
     [HttpPost]
+    [AllowAnonymous]
     [DisplayName("Modify Position Stops")]
     [Description("Update Stop Loss and Take Profit levels on an active open position.")]
     public async Task<IActionResult> ModifyPosition(
@@ -284,6 +286,12 @@ public class TradingController : Controller
         CancellationToken ct = default)
     {
         bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
+
+        if (User.Identity?.IsAuthenticated != true || _currentUser.Id == Guid.Empty)
+        {
+            if (isAjax) return Json(new { success = false, error = "Authentication required." });
+            return Challenge();
+        }
 
         if (Request.HasFormContentType)
         {

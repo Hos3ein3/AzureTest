@@ -34,7 +34,16 @@ public class WatchItemDocument : ITenantEntity
     public string? Overview { get; private set; }
     public DateTime? ReleaseDate { get; private set; }
     public double? TmdbVoteAverage { get; private set; }
-    public WatchStatus Status { get; private set; }
+
+    private WatchStatus _status = WatchStatus.PlanToWatch;
+    public WatchStatus Status 
+    { 
+        get => _status == 0 ? WatchStatus.PlanToWatch : _status; 
+        private set => _status = value; 
+    }
+
+    public bool IsMovie => Type == MediaType.Movie || (Type == MediaType.Anime && TotalEpisodes <= 1 && TotalSeasons <= 1);
+    public bool IsSeries => !IsMovie;
 
     public int CurrentSeason { get; private set; }
     public int CurrentEpisode { get; private set; }
@@ -158,7 +167,7 @@ public class WatchItemDocument : ITenantEntity
         UpdatedAt = DateTime.UtcNow;
         LastWatchedAt = DateTime.UtcNow;
 
-        if (restartWatching && Type != MediaType.Movie)
+        if (restartWatching && !IsMovie)
         {
             CurrentSeason = 1;
             CurrentEpisode = 1;
@@ -197,7 +206,7 @@ public class WatchItemDocument : ITenantEntity
         UpdatedAt = DateTime.UtcNow;
         LastWatchedAt = DateTime.UtcNow;
 
-        if (restartFromSeason && Type != MediaType.Movie)
+        if (restartFromSeason && !IsMovie)
         {
             CurrentSeason = seasonNumber;
             CurrentEpisode = 1;
@@ -240,7 +249,7 @@ public class WatchItemDocument : ITenantEntity
         UpdatedAt = DateTime.UtcNow;
         LastWatchedAt = DateTime.UtcNow;
 
-        if (restartFromEpisode && Type != MediaType.Movie)
+        if (restartFromEpisode && !IsMovie)
         {
             CurrentSeason = seasonNumber;
             CurrentEpisode = episodeNumber;
@@ -286,13 +295,17 @@ public class WatchItemDocument : ITenantEntity
 
     public void ChangeStatus(WatchStatus newStatus)
     {
-        Status = newStatus;
+        Status = newStatus == 0 ? WatchStatus.PlanToWatch : newStatus;
         UpdatedAt = DateTime.UtcNow;
 
-        if (newStatus == WatchStatus.Completed)
+        if (Status == WatchStatus.Completed)
         {
             WatchedDate ??= DateTime.UtcNow;
             LastWatchedAt ??= DateTime.UtcNow;
+            if (IsMovie)
+            {
+                CurrentEpisode = Math.Max(1, TotalEpisodes);
+            }
         }
     }
 
@@ -326,7 +339,7 @@ public class WatchItemDocument : ITenantEntity
 
     public string GetNextEpisodeLabel()
     {
-        if (Type == MediaType.Movie)
+        if (IsMovie)
         {
             return Status == WatchStatus.Completed ? "Watched" : "Not watched";
         }
@@ -342,7 +355,7 @@ public class WatchItemDocument : ITenantEntity
 
     public int GetEstimatedWatchedMinutes()
     {
-        if (Type == MediaType.Movie)
+        if (IsMovie)
         {
             var baseMinutes = (RuntimeMinutes.HasValue && RuntimeMinutes.Value > 0)
                 ? RuntimeMinutes.Value 

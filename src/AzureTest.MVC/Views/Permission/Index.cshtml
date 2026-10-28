@@ -14,7 +14,7 @@
         Title = "Permissions Management",
         Subtitle = "Review and enforce endpoint restriction rules across all controller actions.",
         Icon = "fa-solid fa-key",
-        Badge = $"{Model.Count} Listed",
+        Badge = $"{(ViewBag.TotalItems ?? Model.Count)} Listed",
         Breadcrumbs = breadcrumbs
     };
 }
@@ -188,8 +188,8 @@
         {
             CurrentPage = (int)(ViewBag.CurrentPage ?? 1),
             TotalPages = (int)(ViewBag.TotalPages ?? 1),
-            PageSize = 20,
-            TotalItems = (int)(ViewBag.TotalPages * 20),
+            PageSize = (int)(ViewBag.PageSize ?? 15),
+            TotalItems = (int)(ViewBag.TotalItems ?? (ViewBag.TotalPages * 15)),
             BaseUrl = "/Permission/Index",
             RouteParams = new Dictionary<string, string>
             {

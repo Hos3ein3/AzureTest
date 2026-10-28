@@ -69,7 +69,7 @@
                     case WatchStatus.Watching:
                         <span class="px-2 py-0.5 rounded-lg text-3xs font-bold backdrop-blur-xs bg-blue-600/95 text-white shadow-2xs flex items-center gap-1">
                             <i class="fa-solid fa-play text-3xs"></i>
-                            @(userWatchItem.Type != MediaType.Movie && (userWatchItem.CurrentSeason > 0 || userWatchItem.CurrentEpisode > 0)
+                            @(!userWatchItem.IsMovie && (userWatchItem.CurrentSeason > 0 || userWatchItem.CurrentEpisode > 0)
                                 ? $"S{userWatchItem.CurrentSeason}:E{userWatchItem.CurrentEpisode}"
                                 : "Watching")
                         </span>

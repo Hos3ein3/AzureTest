@@ -63,6 +63,8 @@ public class PermissionController : Controller
 
         ViewBag.CurrentPage = paged.PageNumber;
         ViewBag.TotalPages = paged.TotalPages;
+        ViewBag.PageSize = paged.PageSize;
+        ViewBag.TotalItems = paged.TotalCount;
         ViewBag.Sort = filter.SortBy;
         ViewBag.Dir = filter.SortDescending ? "desc" : "asc";
         ViewBag.Search = filter.SearchTerm ?? "";

@@ -143,7 +143,7 @@
                         <!-- Type & Status Badges -->
                         <div class="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap">
                             <span class="px-2 py-0.5 rounded-lg text-2xs font-bold border backdrop-blur-xs @typeBadgeColor">
-                                @item.Type
+                                @(item.Type == MediaType.Anime && item.IsMovie ? "Anime Movie" : item.Type.ToString())
                             </span>
                             <span class="px-2 py-0.5 rounded-lg text-2xs font-bold border backdrop-blur-xs @statusBadgeColor">
                                 @item.Status
@@ -188,7 +188,7 @@
                     <!-- Body Content -->
                     <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
                         <!-- Next to watch or Progress -->
-                        @if (item.Type != MediaType.Movie)
+                        @if (!item.IsMovie)
                         {
                             <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                                 <div class="flex items-center justify-between text-2xs mb-1.5">
@@ -227,7 +227,7 @@
                         <!-- Actions Footer -->
                         <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
                             <!-- Quick Update Progress Modal Trigger -->
-                            @if (item.Type != MediaType.Movie)
+                            @if (!item.IsMovie)
                             {
                                 <button type="button" 
                                         onclick="openProgressModal('@item.Id', @item.TmdbId, '@item.Type', '@Html.Raw(item.Title.Replace("'", "\\\'"))', @item.CurrentSeason, @item.CurrentEpisode, @item.TotalSeasons, @item.TotalEpisodes)" 

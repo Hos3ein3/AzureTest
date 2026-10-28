@@ -163,7 +163,7 @@
                                         <i class="fa-solid fa-check-circle mr-1"></i> @StatusName(userItem.Status)
                                     </span>
 
-                                    @if (Model.Type != MediaType.Movie)
+                                    @if (Model.Type != MediaType.Movie && validSeasons.Any())
                                     {
                                         <span class="text-xs text-white font-medium" id="headerProgressLabel">
                                             Season @userItem.CurrentSeason • Episode @userItem.CurrentEpisode
@@ -234,7 +234,7 @@
 
                             <!-- Progress & Status Management -->
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-white/10">
-                                @if (Model.Type != MediaType.Movie)
+                                @if (Model.Type != MediaType.Movie && validSeasons.Any())
                                 {
                                     <!-- Progress Update Form -->
                                     <form asp-action="UpdateProgress" asp-controller="Media" method="post" class="flex flex-wrap items-center gap-2">

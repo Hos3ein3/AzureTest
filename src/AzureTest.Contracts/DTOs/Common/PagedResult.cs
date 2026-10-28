@@ -31,6 +31,55 @@ public class PagedFilterRequest : IPagedFilter
     public List<Guid>? UserIds { get; set; }
     public DateTime? CreatedOnFrom { get; set; }
     public DateTime? CreatedOnTo { get; set; }
+
+    // Aliases to seamlessly support common query string parameter names (?page=, ?search=, ?sort=, ?dir=)
+    public int? Page
+    {
+        get => PageNumber;
+        set
+        {
+            if (value.HasValue && value.Value > 0)
+            {
+                PageNumber = value.Value;
+            }
+        }
+    }
+
+    public string? Search
+    {
+        get => SearchTerm;
+        set
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                SearchTerm = value;
+            }
+        }
+    }
+
+    public string? Sort
+    {
+        get => SortBy;
+        set
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                SortBy = value;
+            }
+        }
+    }
+
+    public string? Dir
+    {
+        get => SortDescending ? "desc" : "asc";
+        set
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                SortDescending = string.Equals(value, "desc", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+    }
 }
 
 /// <summary>

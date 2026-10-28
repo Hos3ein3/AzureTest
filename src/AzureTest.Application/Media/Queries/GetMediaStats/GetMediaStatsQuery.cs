@@ -54,7 +54,12 @@ public sealed class GetMediaStatsQueryHandler : IQueryHandler<GetMediaStatsQuery
 
         foreach (var item in allItems)
         {
-            statusCounts[item.Status]++;
+            var status = item.Status;
+            if (!statusCounts.ContainsKey(status) || (int)status == 0)
+            {
+                status = WatchStatus.PlanToWatch;
+            }
+            statusCounts[status]++;
 
             if (item.UserRating.HasValue)
             {
@@ -76,6 +81,8 @@ public sealed class GetMediaStatsQueryHandler : IQueryHandler<GetMediaStatsQuery
                         ? Math.Max(item.CurrentEpisode, item.TotalEpisodes)
                         : item.CurrentEpisode);
 
+                var isMovie = item.Type == MediaType.Movie || (item.Type == MediaType.Anime && item.TotalEpisodes <= 1 && item.TotalSeasons <= 1);
+
                 if (item.Type == MediaType.Movie)
                 {
                     if (item.Status == WatchStatus.Completed) totalMovies++;
@@ -84,7 +91,14 @@ public sealed class GetMediaStatsQueryHandler : IQueryHandler<GetMediaStatsQuery
                 else if (item.Type == MediaType.Anime)
                 {
                     totalAnime++;
-                    totalEpisodes += episodesWatched;
+                    if (isMovie)
+                    {
+                        if (item.Status == WatchStatus.Completed) totalMovies++;
+                    }
+                    else
+                    {
+                        totalEpisodes += episodesWatched;
+                    }
                     animeMinutes += itemMinutes;
                 }
                 else
@@ -123,10 +137,10 @@ public sealed class GetMediaStatsQueryHandler : IQueryHandler<GetMediaStatsQuery
 
         var statusBreakdown = new List<StatusCountDto>
         {
-            new("Watching", statusCounts[WatchStatus.Watching], "#3B82F6"),
-            new("Finished", statusCounts[WatchStatus.Completed], "#10B981"),
-            new("Wishlist", statusCounts[WatchStatus.PlanToWatch], "#F59E0B"),
-            new("Stopped", statusCounts[WatchStatus.Dropped], "#EF4444")
+            new("Watching", statusCounts.GetValueOrDefault(WatchStatus.Watching, 0), "#3B82F6"),
+            new("Finished", statusCounts.GetValueOrDefault(WatchStatus.Completed, 0), "#10B981"),
+            new("Wishlist", statusCounts.GetValueOrDefault(WatchStatus.PlanToWatch, 0), "#F59E0B"),
+            new("Stopped", statusCounts.GetValueOrDefault(WatchStatus.Dropped, 0), "#EF4444")
         };
 
         var typeBreakdown = new List<TypeCountDto>
@@ -144,7 +158,8 @@ public sealed class GetMediaStatsQueryHandler : IQueryHandler<GetMediaStatsQuery
 
         foreach (var item in rewatchedItems)
         {
-            if (item.Type == MediaType.Movie)
+            var isMovie = item.Type == MediaType.Movie || (item.Type == MediaType.Anime && item.TotalEpisodes <= 1 && item.TotalSeasons <= 1);
+            if (isMovie)
             {
                 var duration = (item.RuntimeMinutes.HasValue && item.RuntimeMinutes.Value > 0)
                     ? item.RuntimeMinutes.Value
