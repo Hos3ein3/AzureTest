@@ -20,15 +20,41 @@ APP_SETTINGS_FILES = [
     "src/AzureTest.MVC/appsettings.ProductionSimulateLocal.json"
 ]
 
-def bump_string(version_str: str) -> str:
+def get_version_suggestions(version_str: str):
     match = re.match(r"^([vV]?)(\d+(?:\.\d+)*)$", version_str.strip())
     if not match:
-        return version_str + ".1"
+        fallback = version_str + ".1"
+        return {"patch": fallback, "minor": fallback, "major": fallback}
     
     prefix = match.group(1) or ""
     parts = [int(p) for p in match.group(2).split(".")]
-    parts[-1] += 1
-    return f"{prefix}{'.'.join(str(p) for p in parts)}"
+    
+    if len(parts) == 1:
+        return {
+            "patch": f"{prefix}{parts[0]}.0.1",
+            "minor": f"{prefix}{parts[0]}.1",
+            "major": f"{prefix}{parts[0] + 1}.0"
+        }
+    elif len(parts) == 2:
+        return {
+            "patch": f"{prefix}{parts[0]}.{parts[1]}.1",
+            "minor": f"{prefix}{parts[0]}.{parts[1] + 1}",
+            "major": f"{prefix}{parts[0] + 1}.0"
+        }
+    else:
+        return {
+            "patch": f"{prefix}{parts[0]}.{parts[1]}.{parts[2] + 1}",
+            "minor": f"{prefix}{parts[0]}.{parts[1] + 1}",
+            "major": f"{prefix}{parts[0] + 1}.0"
+        }
+
+def bump_string(version_str: str) -> str:
+    sugg = get_version_suggestions(version_str)
+    raw = version_str.strip()
+    parts = raw.lstrip("vV").split(".")
+    # If version already has 3 or more segments (e.g. 3.4.1), bump the patch (3.4.2)
+    # If 2 segments (e.g. 3.4), bump the minor (3.5)
+    return sugg["patch"] if len(parts) >= 3 else sugg["minor"]
 
 def main():
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -55,14 +81,25 @@ def main():
         new_version = suggested_version
     else:
         # Interactive mode: show current version and ask for new version
+        sugg = get_version_suggestions(current_version)
         print(f"\nCurrent TrackerPro Version: {current_version}")
+        print(f"Suggestions: [Patch: {sugg['patch']} | Minor: {sugg['minor']} | Major: {sugg['major']}]")
         try:
-            prompt_text = f"Enter new version (Press Enter for '{suggested_version}'): "
+            prompt_text = f"Enter new version (Press Enter for '{suggested_version}', or type e.g. '{sugg['patch']}'): "
             user_input = input(prompt_text).strip()
-            new_version = user_input if user_input else suggested_version
+            if user_input.lower() in ("patch", "p"):
+                new_version = sugg["patch"]
+            elif user_input.lower() in ("minor", "m"):
+                new_version = sugg["minor"]
+            elif user_input.lower() in ("major", "maj"):
+                new_version = sugg["major"]
+            elif user_input:
+                new_version = user_input
+            else:
+                new_version = suggested_version
         except (KeyboardInterrupt, EOFError):
-            print("\nAborted.")
-            sys.exit(0)
+            print("\n[TrackerPro] Version update aborted.")
+            sys.exit(1)
 
     print(f"\nSetting TrackerPro AppVersion: {current_version} -> {new_version}")
 

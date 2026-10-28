@@ -1,0 +1,28 @@
+#!/bin/sh
+# TrackerPro Auto-Version Bump Pre-Commit Hook
+# Automatically prompts for or bumps the version in appsettings*.json on each commit if source files changed.
+
+STAGED_SRC_CHANGES=$(git diff --cached --name-only | grep -v 'appsettings.*\.json' | grep -E '\.(cs|cshtml|js|ts|css|json|csproj|py|sql|sh)$')
+
+if [ -n "$STAGED_SRC_CHANGES" ]; then
+    echo "[TrackerPro] Source code changes detected."
+
+    # Check if we can interact with a controlling terminal
+    if [ -t 1 ] && (exec < /dev/tty 2>/dev/null); then
+        exec < /dev/tty
+        python3 scripts/bump_version.py || {
+            echo "[TrackerPro] Commit aborted by user during version selection."
+            exit 1
+        }
+    else
+        echo "[TrackerPro] Non-interactive environment detected. Auto-incrementing version..."
+        python3 scripts/bump_version.py --auto
+    fi
+
+    # Stage the updated version files so they are included in this commit
+    git add src/AzureTest.MVC/appsettings.json \
+            src/AzureTest.MVC/appsettings.Development.json \
+            src/AzureTest.MVC/appsettings.ProductionSimulateLocal.json 2>/dev/null || true
+fi
+
+exit 0

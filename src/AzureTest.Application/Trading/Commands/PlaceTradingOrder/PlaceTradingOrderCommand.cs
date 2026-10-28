@@ -149,6 +149,8 @@ public sealed class PlaceTradingOrderCommandHandler : ICommandHandler<PlaceTradi
         decimal? effectiveStopLoss = cmd.StopLoss;
         decimal? effectiveTakeProfit = cmd.TakeProfit;
 
+        var precision = referencePrice < 0.0001m ? 8 : (referencePrice < 0.01m ? 6 : (referencePrice < 1.0m ? 5 : (referencePrice < 10m ? 4 : 2)));
+
         if (cmd.Side == TradingOrderSide.Buy)
         {
             if (effectiveStopLoss.HasValue && effectiveStopLoss.Value > 0)
@@ -156,11 +158,11 @@ public sealed class PlaceTradingOrderCommandHandler : ICommandHandler<PlaceTradi
                 if (cmd.OrderType == TradingOrderType.Market && effectiveStopLoss.Value >= referencePrice)
                 {
                     // If market order price ticked slightly during network latency, clamp SL slightly below entry
-                    effectiveStopLoss = Math.Round(referencePrice * 0.995m, 2);
+                    effectiveStopLoss = Math.Round(referencePrice * 0.995m, precision);
                 }
                 else if (effectiveStopLoss.Value >= referencePrice)
                 {
-                    return Result<Guid>.Failure($"For Buy (Long) orders, Stop Loss (${effectiveStopLoss.Value:N2}) must be set strictly BELOW the entry price (${referencePrice:N2}).");
+                    return Result<Guid>.Failure($"For Buy (Long) orders, Stop Loss (${effectiveStopLoss.Value.ToString("#,##0.00######", System.Globalization.CultureInfo.InvariantCulture)}) must be set strictly BELOW the entry price (${referencePrice.ToString("#,##0.00######", System.Globalization.CultureInfo.InvariantCulture)}).");
                 }
             }
 
@@ -168,11 +170,11 @@ public sealed class PlaceTradingOrderCommandHandler : ICommandHandler<PlaceTradi
             {
                 if (cmd.OrderType == TradingOrderType.Market && effectiveTakeProfit.Value <= referencePrice)
                 {
-                    effectiveTakeProfit = Math.Round(referencePrice * 1.01m, 2);
+                    effectiveTakeProfit = Math.Round(referencePrice * 1.01m, precision);
                 }
                 else if (effectiveTakeProfit.Value <= referencePrice)
                 {
-                    return Result<Guid>.Failure($"For Buy (Long) orders, Take Profit (${effectiveTakeProfit.Value:N2}) must be set strictly ABOVE the entry price (${referencePrice:N2}).");
+                    return Result<Guid>.Failure($"For Buy (Long) orders, Take Profit (${effectiveTakeProfit.Value.ToString("#,##0.00######", System.Globalization.CultureInfo.InvariantCulture)}) must be set strictly ABOVE the entry price (${referencePrice.ToString("#,##0.00######", System.Globalization.CultureInfo.InvariantCulture)}).");
                 }
             }
         }
@@ -182,11 +184,11 @@ public sealed class PlaceTradingOrderCommandHandler : ICommandHandler<PlaceTradi
             {
                 if (cmd.OrderType == TradingOrderType.Market && effectiveStopLoss.Value <= referencePrice)
                 {
-                    effectiveStopLoss = Math.Round(referencePrice * 1.005m, 2);
+                    effectiveStopLoss = Math.Round(referencePrice * 1.005m, precision);
                 }
                 else if (effectiveStopLoss.Value <= referencePrice)
                 {
-                    return Result<Guid>.Failure($"For Sell (Short) orders, Stop Loss (${effectiveStopLoss.Value:N2}) must be set strictly ABOVE the entry price (${referencePrice:N2}).");
+                    return Result<Guid>.Failure($"For Sell (Short) orders, Stop Loss (${effectiveStopLoss.Value.ToString("#,##0.00######", System.Globalization.CultureInfo.InvariantCulture)}) must be set strictly ABOVE the entry price (${referencePrice.ToString("#,##0.00######", System.Globalization.CultureInfo.InvariantCulture)}).");
                 }
             }
 
@@ -194,11 +196,11 @@ public sealed class PlaceTradingOrderCommandHandler : ICommandHandler<PlaceTradi
             {
                 if (cmd.OrderType == TradingOrderType.Market && effectiveTakeProfit.Value >= referencePrice)
                 {
-                    effectiveTakeProfit = Math.Round(referencePrice * 0.99m, 2);
+                    effectiveTakeProfit = Math.Round(referencePrice * 0.99m, precision);
                 }
                 else if (effectiveTakeProfit.Value >= referencePrice)
                 {
-                    return Result<Guid>.Failure($"For Sell (Short) orders, Take Profit (${effectiveTakeProfit.Value:N2}) must be set strictly BELOW the entry price (${referencePrice:N2}).");
+                    return Result<Guid>.Failure($"For Sell (Short) orders, Take Profit (${effectiveTakeProfit.Value.ToString("#,##0.00######", System.Globalization.CultureInfo.InvariantCulture)}) must be set strictly BELOW the entry price (${referencePrice.ToString("#,##0.00######", System.Globalization.CultureInfo.InvariantCulture)}).");
                 }
             }
         }

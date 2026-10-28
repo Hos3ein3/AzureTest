@@ -601,9 +601,12 @@ internal static class TradingMarketDataExtensions
 {
     public static int PricePrecision(this TradingCatalogItem item)
     {
+        if (item.AssetClass == AssetClass.Forex) return 5;
         if (item.BasePrice < 0.0001m) return 8;
         if (item.BasePrice < 0.01m) return 6;
-        if (item.BasePrice < 1.0m) return 4;
+        if (item.BasePrice < 1.0m) return 5;
+        if (item.BasePrice < 10.0m) return 4;
+        if (item.AssetClass == AssetClass.Stock) return 4;
         return 2;
     }
 }

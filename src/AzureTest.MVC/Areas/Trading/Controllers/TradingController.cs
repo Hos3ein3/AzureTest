@@ -120,6 +120,26 @@ public class TradingController : Controller
         DateTime? expiryDateUtc,
         CancellationToken ct = default)
     {
+        decimal? ParseDecimal(string key, decimal? boundValue)
+        {
+            if (Request.HasFormContentType && Request.Form.TryGetValue(key, out var rawVal) && !string.IsNullOrWhiteSpace(rawVal))
+            {
+                var s = rawVal.ToString().Trim().Replace(',', '.');
+                if (decimal.TryParse(s, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+                {
+                    return parsed;
+                }
+            }
+            return boundValue;
+        }
+
+        quantity = ParseDecimal("quantity", quantity) ?? quantity;
+        price = ParseDecimal("price", price);
+        triggerPrice = ParseDecimal("triggerPrice", triggerPrice);
+        stopLoss = ParseDecimal("stopLoss", stopLoss);
+        takeProfit = ParseDecimal("takeProfit", takeProfit);
+        trailingStopDistance = ParseDecimal("trailingStopDistance", trailingStopDistance);
+
         var command = new PlaceTradingOrderCommand(
             _currentUser.Id,
             _currentUser.TenantId,
