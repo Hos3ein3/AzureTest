@@ -27,6 +27,7 @@ public class UnitOfWork : IUnitOfWork
 
     private IPermissionRepository? _permissions;
     private IRolePermissionRepository? _rolePermissions;
+    private IUserPermissionRepository? _userPermissions;
     private IPomodoroRepository? _pomodoros;
 
     public UnitOfWork(AzureTestDbContext dbContext)
@@ -45,6 +46,7 @@ public class UnitOfWork : IUnitOfWork
     public IExpenseRepository Expenses => _expenses ??= new ExpenseRepository(_dbContext);
     public IPermissionRepository Permissions => _permissions ??= new PermissionRepository(_dbContext);
     public IRolePermissionRepository RolePermissions => _rolePermissions ??= new RolePermissionRepository(_dbContext);
+    public IUserPermissionRepository UserPermissions => _userPermissions ??= new UserPermissionRepository(_dbContext);
     public IPomodoroRepository Pomodoros => _pomodoros ??= new PomodoroRepository(_dbContext);
 
     // Football Fantasy

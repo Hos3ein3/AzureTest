@@ -111,6 +111,8 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
         public string LastName => "User";
         public string FullName => "Test User";
         public System.Collections.Generic.IReadOnlyList<string> Roles => new System.Collections.Generic.List<string> { "User" };
+        public System.Collections.Generic.IReadOnlyList<string> DirectPermissions => new System.Collections.Generic.List<string>();
+        public System.Collections.Generic.IReadOnlyList<string> RolePermissions => new System.Collections.Generic.List<string>();
         public System.Collections.Generic.IReadOnlyList<string> Permissions => new System.Collections.Generic.List<string>();
         public bool IsAdmin => false;
         public bool HasAccess() => true;

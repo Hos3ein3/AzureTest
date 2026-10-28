@@ -121,20 +121,28 @@ public class PermissionController : Controller
         var allPermissions = allPermissionsResult.Items;
         var assignedPermissions = await _queryUnit.GetRolePermissions.HandleAsync(new GetRolePermissionsQuery(roleName));
         var assignedIds = System.Linq.Enumerable.ToHashSet(System.Linq.Enumerable.Select(assignedPermissions, rp => rp.PermissionId));
+        var adminOnlyEndpoints = _scanner.GetAdminOnlyEndpoints();
 
         var model = new AzureTest.MVC.ViewModels.Permissions.RolePermissionsViewModel
         {
             RoleName = roleName,
-            Permissions = System.Linq.Enumerable.ToList(System.Linq.Enumerable.OrderBy(System.Linq.Enumerable.Select(allPermissions, p => new AzureTest.MVC.ViewModels.Permissions.RolePermissionItemViewModel
-            {
-                PermissionId = p.Id,
-                AreaName = p.AreaName,
-                ControllerName = p.ControllerName,
-                ActionName = p.ActionName,
-                DisplayName = p.DisplayName,
-                Description = p.Description,
-                IsRestricted = p.IsRestricted,
-                IsAssigned = assignedIds.Contains(p.Id)
+            Permissions = System.Linq.Enumerable.ToList(System.Linq.Enumerable.OrderBy(System.Linq.Enumerable.Select(allPermissions, p => {
+                var fullKey = !string.IsNullOrEmpty(p.AreaName) ? $"{p.AreaName}/{p.ControllerName}/{p.ActionName}" : $"{p.ControllerName}/{p.ActionName}";
+                var shortKey = $"{p.ControllerName}/{p.ActionName}";
+                var requiresAdmin = adminOnlyEndpoints.Contains(fullKey) || adminOnlyEndpoints.Contains(shortKey);
+
+                return new AzureTest.MVC.ViewModels.Permissions.RolePermissionItemViewModel
+                {
+                    PermissionId = p.Id,
+                    AreaName = p.AreaName,
+                    ControllerName = p.ControllerName,
+                    ActionName = p.ActionName,
+                    DisplayName = p.DisplayName,
+                    Description = p.Description,
+                    IsRestricted = p.IsRestricted,
+                    IsAssigned = assignedIds.Contains(p.Id),
+                    RequiresAdmin = requiresAdmin
+                };
             }), p => p.AreaName).ThenBy(p => p.ControllerName).ThenBy(p => p.ActionName))
         };
 

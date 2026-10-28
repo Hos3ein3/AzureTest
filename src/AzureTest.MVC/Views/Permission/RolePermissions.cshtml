@@ -27,6 +27,21 @@
 
 <partial name="UiComponents/_PageHeader" model="headerModel" />
 
+@if (Model.RoleName != "Admin")
+{
+    <div class="mb-6 p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-start gap-3 shadow-2xs">
+        <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div class="text-xs text-amber-800 space-y-1">
+            <div class="font-bold">Code-level Admin Restriction Notice</div>
+            <p class="text-2xs text-amber-700 leading-relaxed">
+                Some endpoints below are decorated in C# controllers with <code>[Authorize(Roles = "Admin")]</code>. Even if assigned to role <strong>@Model.RoleName</strong>, ASP.NET Core will still block access (403 Forbidden) unless the user also possesses the <strong>Admin</strong> role or the attribute in code is updated. Look for the <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-800 text-3xs border border-amber-200"><i class="fa-solid fa-lock text-3xs"></i> Admin Only Attribute</span> indicators below.
+            </p>
+        </div>
+    </div>
+}
+
 @if (TempData["SuccessMessage"] != null)
 {
     <div class="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-between gap-3 shadow-2xs">
@@ -166,10 +181,23 @@
                                                     <i class="fa-solid fa-lock-open text-3xs"></i> Unrestricted
                                                 </span>
                                             }
+                                            @if (perm.RequiresAdmin)
+                                            {
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-3xs font-bold bg-amber-100 text-amber-800 border border-amber-300" title="Controller or action is decorated with [Authorize(Roles = &quot;Admin&quot;)].">
+                                                    <i class="fa-solid fa-lock text-3xs text-amber-600"></i> Admin Only Attribute
+                                                </span>
+                                            }
                                         </div>
                                         @if (!string.IsNullOrWhiteSpace(perm.Description))
                                         {
                                             <div class="text-2xs text-slate-500 mt-0.5">@perm.Description</div>
+                                        }
+                                        @if (perm.RequiresAdmin && Model.RoleName != "Admin")
+                                        {
+                                            <div class="mt-1.5 p-2 rounded-xl bg-amber-50 border border-amber-200/80 text-3xs text-amber-800 flex items-center gap-1.5">
+                                                <i class="fa-solid fa-triangle-exclamation text-amber-500 shrink-0"></i>
+                                                <span><strong>Note:</strong> Endpoint has <code>[Authorize(Roles = "Admin")]</code> in code. Users with role <em>@Model.RoleName</em> cannot access this URL unless Admin role is also assigned or the attribute is updated.</span>
+                                            </div>
                                         }
                                         <div class="text-3xs font-mono text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
                                             <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-50 text-slate-600 border border-slate-200/70">

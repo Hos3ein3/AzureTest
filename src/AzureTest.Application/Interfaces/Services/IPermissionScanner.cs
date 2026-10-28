@@ -6,4 +6,5 @@ namespace AzureTest.Application.Interfaces.Services;
 public interface IPermissionScanner
 {
     List<DiscoveredPermissionDto> ScanPermissions();
+    HashSet<string> GetAdminOnlyEndpoints();
 }

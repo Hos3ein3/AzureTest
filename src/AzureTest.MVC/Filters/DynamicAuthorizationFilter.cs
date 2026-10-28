@@ -17,11 +17,16 @@ public class DynamicAuthorizationFilter : IAsyncAuthorizationFilter
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IRedisService _redisService;
+    private readonly AzureTest.Infrastructure.Configuration.InfrastructureFeatureOptions _featureOptions;
 
-    public DynamicAuthorizationFilter(IUnitOfWork unitOfWork, IRedisService redisService)
+    public DynamicAuthorizationFilter(
+        IUnitOfWork unitOfWork, 
+        IRedisService redisService,
+        Microsoft.Extensions.Options.IOptions<AzureTest.Infrastructure.Configuration.InfrastructureFeatureOptions> featureOptions)
     {
         _unitOfWork = unitOfWork;
         _redisService = redisService;
+        _featureOptions = featureOptions?.Value ?? new AzureTest.Infrastructure.Configuration.InfrastructureFeatureOptions();
     }
 
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
@@ -111,6 +116,30 @@ public class DynamicAuthorizationFilter : IAsyncAuthorizationFilter
                     currentUser.Permissions.Contains(shortKey, System.StringComparer.OrdinalIgnoreCase))
                 {
                     return; // Access granted via Redis cached permissions
+                }
+            }
+
+            // Check Direct User Permissions Override (Feature Flag: EnableDirectUserPermissions)
+            // If enabled, check if the user has been explicitly granted this permission.
+            // If granted, bypass role requirements and allow access. If feature is disabled, bypass this check.
+            if (_featureOptions.EnableDirectUserPermissions && permission != null)
+            {
+                var userIdClaim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (System.Guid.TryParse(userIdClaim, out var userId) && userId != System.Guid.Empty)
+                {
+                    var userPermCacheKey = $"UserPermissions_{userId}";
+                    var userPermsIds = await _redisService.GetAsync<List<System.Guid>>(userPermCacheKey);
+                    if (userPermsIds == null)
+                    {
+                        var userPerms = await _unitOfWork.UserPermissions.GetPermissionsByUserIdAsync(userId);
+                        userPermsIds = userPerms.Where(up => up.IsGranted).Select(up => up.PermissionId).ToList();
+                        await _redisService.SetAsync(userPermCacheKey, userPermsIds, System.TimeSpan.FromHours(24));
+                    }
+
+                    if (userPermsIds.Contains(permission.Id))
+                    {
+                        return; // Direct user permission granted - bypasses role requirements!
+                    }
                 }
             }
 

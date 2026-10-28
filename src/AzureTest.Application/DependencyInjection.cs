@@ -83,6 +83,20 @@ public static class DependencyInjection
         services.AddScoped<IExpenseCommandUnit, ExpenseCommandUnit>();
         services.AddScoped<AzureTest.Application.Permissions.IPermissionQueryUnit, AzureTest.Application.Permissions.PermissionQueryUnit>();
         services.AddScoped<AzureTest.Application.Permissions.IPermissionCommandUnit, AzureTest.Application.Permissions.PermissionCommandUnit>();
+        services.AddScoped<AzureTest.Application.UserPermissions.IUserPermissionQueryUnit, AzureTest.Application.UserPermissions.UserPermissionQueryUnit>();
+        services.AddScoped<AzureTest.Application.UserPermissions.IUserPermissionCommandUnit, AzureTest.Application.UserPermissions.UserPermissionCommandUnit>();
+        services.AddScoped<IQueryHandler<AzureTest.Application.UserPermissions.Queries.GetUserPermissions.GetUserPermissionsQuery, Result<System.Collections.Generic.IReadOnlyList<AzureTest.Contracts.DTOs.Permissions.UserPermissionDto>>>, AzureTest.Application.UserPermissions.Queries.GetUserPermissions.GetUserPermissionsQueryHandler>();
+        services.AddScoped<ICommandHandler<AzureTest.Application.UserPermissions.Commands.UpdateUserPermissions.UpdateUserPermissionsCommand>, AzureTest.Application.UserPermissions.Commands.UpdateUserPermissions.UpdateUserPermissionsCommandHandler>();
+
+        // Auth Feature
+        services.AddScoped<AzureTest.Application.Auth.Services.IAuthSessionService, AzureTest.Application.Auth.Services.AuthSessionService>();
+        services.AddScoped<AzureTest.Application.Auth.IAuthCommandUnit, AzureTest.Application.Auth.AuthCommandUnit>();
+        services.AddScoped<AzureTest.Application.Auth.IAuthQueryUnit, AzureTest.Application.Auth.AuthQueryUnit>();
+        services.AddScoped<ICommandHandler<AzureTest.Application.Auth.Commands.Login.LoginCommand, Result<AzureTest.Application.Auth.Commands.Login.LoginCommandResult>>, AzureTest.Application.Auth.Commands.Login.LoginCommandHandler>();
+        services.AddScoped<ICommandHandler<AzureTest.Application.Auth.Commands.Register.RegisterCommand, Result<AzureTest.Application.Auth.Commands.Register.RegisterCommandResult>>, AzureTest.Application.Auth.Commands.Register.RegisterCommandHandler>();
+        services.AddScoped<ICommandHandler<AzureTest.Application.Auth.Commands.Logout.LogoutCommand, Result>, AzureTest.Application.Auth.Commands.Logout.LogoutCommandHandler>();
+        services.AddScoped<ICommandHandler<AzureTest.Application.Auth.Commands.GoogleCallback.ProcessGoogleCallbackCommand, Result<AzureTest.Application.Auth.Commands.GoogleCallback.GoogleCallbackResult>>, AzureTest.Application.Auth.Commands.GoogleCallback.ProcessGoogleCallbackCommandHandler>();
+        services.AddScoped<IQueryHandler<AzureTest.Application.Auth.Queries.GetSessionUser.GetSessionUserQuery, Result<AzureTest.Contracts.DTOs.Users.UserSessionCacheDto?>>, AzureTest.Application.Auth.Queries.GetSessionUser.GetSessionUserQueryHandler>();
 
         // SampleNote dev playground
         services.AddScoped<ISampleNoteCommandUnit, SampleNoteCommandUnit>();

@@ -100,6 +100,19 @@
                     </label>
                 </div>
             </div>
+
+            <div class="md:col-span-2 p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-slate-800">Logout Other Devices on Login</span>
+                        <p class="text-2xs text-slate-500 mt-0.5">When enabled, signing in invalidates previous active sessions across all other devices and browsers.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input asp-for="LogoutOtherDevicesOnLogin" type="checkbox" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                    </label>
+                </div>
+            </div>
         </div>
 
         <div class="mt-8 pt-5 border-t border-slate-100 flex items-center justify-end gap-3">

@@ -17,7 +17,8 @@ public sealed record UpdateIdentitySettingCommand(
     string RedirectAfterRegister,
     string RedirectAfterLogin,
     List<string> RolesForRegister,
-    bool StayLoginAfterRegister
+    bool StayLoginAfterRegister,
+    bool LogoutOtherDevicesOnLogin = false
 ) : ICommand<Result>;
 
 public sealed class UpdateIdentitySettingCommandValidator : AbstractValidator<UpdateIdentitySettingCommand>
@@ -51,6 +52,7 @@ public sealed class UpdateIdentitySettingCommandHandler : ICommandHandler<Update
         setting.RedirectAfterLogin = request.RedirectAfterLogin;
         setting.RolesForRegister = request.RolesForRegister ?? new List<string>();
         setting.StayLoginAfterRegister = request.StayLoginAfterRegister;
+        setting.LogoutOtherDevicesOnLogin = request.LogoutOtherDevicesOnLogin;
 
         await _noSqlUnitOfWork.IdentitySettings.UpdateAsync(setting.Id, setting);
         await _noSqlUnitOfWork.SaveChangesAsync(cancellationToken);

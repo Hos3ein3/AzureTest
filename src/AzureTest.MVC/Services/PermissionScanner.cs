@@ -68,4 +68,52 @@ public class PermissionScanner : IPermissionScanner
 
         return permissions;
     }
+
+    public HashSet<string> GetAdminOnlyEndpoints()
+    {
+        var adminEndpoints = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+        var assembly = Assembly.GetExecutingAssembly();
+
+        var controllers = assembly.GetTypes()
+            .Where(type => typeof(Controller).IsAssignableFrom(type) || typeof(ControllerBase).IsAssignableFrom(type))
+            .Where(type => !type.IsAbstract);
+
+        foreach (var controller in controllers)
+        {
+            var controllerName = controller.Name.Replace("Controller", "");
+            var areaAttr = controller.GetCustomAttribute<AreaAttribute>();
+            var areaName = areaAttr?.RouteValue ?? string.Empty;
+
+            var controllerAuth = controller.GetCustomAttributes<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>(true);
+            var isControllerAdminOnly = controllerAuth.Any(a => 
+                (!string.IsNullOrEmpty(a.Roles) && a.Roles.Split(',').Select(r => r.Trim()).Contains("Admin", System.StringComparer.OrdinalIgnoreCase)) ||
+                string.Equals(a.Policy, "Admin", System.StringComparison.OrdinalIgnoreCase));
+
+            var actions = controller.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
+                .Where(m => !m.IsSpecialName && 
+                            (m.ReturnType == typeof(IActionResult) || 
+                             m.ReturnType == typeof(Task<IActionResult>) ||
+                             m.ReturnType.Name.Contains("ActionResult")))
+                .ToList();
+
+            foreach (var action in actions)
+            {
+                var actionAuth = action.GetCustomAttributes<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>(true);
+                var isActionAdminOnly = actionAuth.Any(a => 
+                    (!string.IsNullOrEmpty(a.Roles) && a.Roles.Split(',').Select(r => r.Trim()).Contains("Admin", System.StringComparer.OrdinalIgnoreCase)) ||
+                    string.Equals(a.Policy, "Admin", System.StringComparison.OrdinalIgnoreCase));
+
+                if (isControllerAdminOnly || isActionAdminOnly)
+                {
+                    if (!string.IsNullOrEmpty(areaName))
+                    {
+                        adminEndpoints.Add($"{areaName}/{controllerName}/{action.Name}");
+                    }
+                    adminEndpoints.Add($"{controllerName}/{action.Name}");
+                }
+            }
+        }
+
+        return adminEndpoints;
+    }
 }

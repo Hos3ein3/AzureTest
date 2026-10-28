@@ -103,7 +103,7 @@ else
     // Normal Identity Cookie Authentication
     builder.Services.Configure<Microsoft.AspNetCore.Identity.SecurityStampValidatorOptions>(options =>
     {
-        options.ValidationInterval = TimeSpan.FromHours(12);
+        options.ValidationInterval = infraOptions.EnableLogoutOtherDevices ? TimeSpan.Zero : TimeSpan.FromHours(12);
     });
 
     builder.Services.ConfigureApplicationCookie(options =>

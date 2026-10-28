@@ -19,4 +19,5 @@ public class RolePermissionItemViewModel
     public string Description { get; set; } = string.Empty;
     public bool IsRestricted { get; set; }
     public bool IsAssigned { get; set; }
+    public bool RequiresAdmin { get; set; }
 }

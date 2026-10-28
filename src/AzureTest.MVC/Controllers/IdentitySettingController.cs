@@ -58,7 +58,8 @@ public class IdentitySettingController : Controller
                 model.RedirectAfterRegister,
                 model.RedirectAfterLogin,
                 model.RolesForRegister,
-                model.StayLoginAfterRegister
+                model.StayLoginAfterRegister,
+                model.LogoutOtherDevicesOnLogin
             );
 
             var result = await _updateCommand.HandleAsync(command);

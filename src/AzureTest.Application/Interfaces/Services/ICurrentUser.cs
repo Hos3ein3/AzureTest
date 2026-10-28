@@ -14,6 +14,8 @@ public interface ICurrentUser
     string LastName { get; }
     string FullName { get; }
     System.Collections.Generic.IReadOnlyList<string> Roles { get; }
+    System.Collections.Generic.IReadOnlyList<string> DirectPermissions { get; }
+    System.Collections.Generic.IReadOnlyList<string> RolePermissions { get; }
     System.Collections.Generic.IReadOnlyList<string> Permissions { get; }
     public bool IsAdmin { get;  }
     public Guid TenantId { get; }

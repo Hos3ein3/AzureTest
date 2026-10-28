@@ -106,7 +106,15 @@ public class CurrentUser : ICurrentUser
         GetCachedSession()?.Roles
         ?? User?.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList() 
         ?? new System.Collections.Generic.List<string>();
-        
+
+    public System.Collections.Generic.IReadOnlyList<string> DirectPermissions =>
+        GetCachedSession()?.DirectPermissions
+        ?? new System.Collections.Generic.List<string>();
+
+    public System.Collections.Generic.IReadOnlyList<string> RolePermissions =>
+        GetCachedSession()?.RolePermissions
+        ?? new System.Collections.Generic.List<string>();
+
     public System.Collections.Generic.IReadOnlyList<string> Permissions =>
         GetCachedSession()?.Permissions
         ?? new System.Collections.Generic.List<string>();

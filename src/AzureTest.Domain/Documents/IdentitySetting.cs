@@ -10,4 +10,5 @@ public class IdentitySetting
     public string RedirectAfterLogin { get; set; } = "/";
     public List<string> RolesForRegister { get; set; } = new();
     public bool StayLoginAfterRegister { get; set; } = true;
+    public bool LogoutOtherDevicesOnLogin { get; set; } = false;
 }
