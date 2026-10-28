@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
 TrackerPro Version Bump Script
-Increments or sets the AppVersion across appsettings*.json in src/AzureTest.MVC.
+Displays current version, prompts for or automatically increments AppVersion across appsettings*.json in src/AzureTest.MVC.
+
 Usage:
-    python3 scripts/bump_version.py            # Bumps patch/minor: V3.1 -> V3.2
-    python3 scripts/bump_version.py V3.5       # Explicitly sets version to V3.5
+    python3 scripts/bump_version.py            # Interactive: shows current version & prompts for new version (default: auto-increment)
+    python3 scripts/bump_version.py 3.2        # Explicitly sets version to 3.2 or V3.2
+    python3 scripts/bump_version.py --auto     # Non-interactive: auto-increments without prompting (used by CI / git hooks)
 """
 
 import json
@@ -23,7 +25,7 @@ def bump_string(version_str: str) -> str:
     if not match:
         return version_str + ".1"
     
-    prefix = match.group(1) or "V"
+    prefix = match.group(1) or ""
     parts = [int(p) for p in match.group(2).split(".")]
     parts[-1] += 1
     return f"{prefix}{'.'.join(str(p) for p in parts)}"
@@ -41,15 +43,28 @@ def main():
         data = json.load(f)
 
     current_version = data.get("AppVersion", "V3.1")
+    suggested_version = bump_string(current_version)
 
-    if len(sys.argv) > 1 and sys.argv[1].strip():
-        new_version = sys.argv[1].strip()
-        if not new_version.upper().startswith("V"):
-            new_version = f"V{new_version}"
+    # Filter arguments
+    explicit_args = [a for a in sys.argv[1:] if a not in ("--auto", "-y", "-a")]
+    is_auto = "--auto" in sys.argv or "-y" in sys.argv or "-a" in sys.argv or not sys.stdin.isatty()
+
+    if explicit_args:
+        new_version = explicit_args[0].strip()
+    elif is_auto:
+        new_version = suggested_version
     else:
-        new_version = bump_string(current_version)
+        # Interactive mode: show current version and ask for new version
+        print(f"\nCurrent TrackerPro Version: {current_version}")
+        try:
+            prompt_text = f"Enter new version (Press Enter for '{suggested_version}'): "
+            user_input = input(prompt_text).strip()
+            new_version = user_input if user_input else suggested_version
+        except (KeyboardInterrupt, EOFError):
+            print("\nAborted.")
+            sys.exit(0)
 
-    print(f"Bumping TrackerPro AppVersion: {current_version} -> {new_version}")
+    print(f"\nSetting TrackerPro AppVersion: {current_version} -> {new_version}")
 
     for file_path in target_files:
         if not os.path.exists(file_path):

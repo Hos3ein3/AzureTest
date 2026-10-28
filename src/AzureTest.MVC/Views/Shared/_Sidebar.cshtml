@@ -70,7 +70,7 @@
             <div class="sidebar-text flex flex-col justify-center min-w-0 logo-brand">
                 <span class="text-xl font-black tracking-tight text-slate-800 dark:text-white truncate leading-tight">Tracker<span
                         class="text-brand-600">Pro</span></span>
-                <span class="text-3xs font-mono font-bold text-slate-400 dark:text-slate-500 tracking-wider leading-none">@appVersion</span>
+                <span class="text-3xs font-mono font-bold text-slate-400 dark:text-slate-500 tracking-wider leading-none">@(appVersion.StartsWith("V", StringComparison.OrdinalIgnoreCase) ? appVersion : $"V{appVersion}")</span>
             </div>
         </div>
         <button id="sidebarToggleDesktop"

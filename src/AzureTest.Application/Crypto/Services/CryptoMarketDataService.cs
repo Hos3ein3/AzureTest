@@ -411,7 +411,7 @@ public class CryptoMarketDataService : ICryptoMarketDataService
             "AVAXUSDT" => 28m,
             "LINKUSDT" => 11.5m,
             "SUIUSDT" => 2.10m,
-            _ => 10.0m
+            _ => 0m
         };
     }
 
