@@ -74,6 +74,7 @@ public class TradingController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     [DisplayName("Single Asset Live Quote")]
     [Description("Fetch fresh real-time quote for a specific symbol using live feeds for Crypto and Forex.")]
     public async Task<IActionResult> Quote(string symbol, CancellationToken ct = default)
@@ -86,6 +87,7 @@ public class TradingController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     [DisplayName("Search Trading Assets")]
     [Description("Search instruments dynamically across built-in catalog, Binance live pairs, and DexScreener DEX tokens.")]
     public async Task<IActionResult> Search(string query, CancellationToken ct = default)
@@ -275,6 +277,7 @@ public class TradingController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     [DisplayName("Query Market Quotes")]
     [Description("Fetch real-time quotes, price changes, and volatility across all supported asset classes.")]
     public async Task<IActionResult> Quotes([FromQuery] AssetClass? assetClass, [FromQuery] string? search, CancellationToken ct = default)

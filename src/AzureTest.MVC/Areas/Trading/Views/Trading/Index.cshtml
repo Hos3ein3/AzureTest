@@ -591,11 +591,13 @@
     const clearBtn = document.getElementById('clearSearchBtn');
 
     let searchDebounceTimer = null;
+    let isSearchingServer = false;
 
     searchInput.addEventListener('input', function() {
         const query = this.value.trim();
         if (query.length > 0) {
             clearBtn.classList.remove('hidden');
+            isSearchingServer = true;
             renderSearchDropdown(query);
 
             clearTimeout(searchDebounceTimer);
@@ -603,6 +605,7 @@
                 fetchServerSearchResults(query);
             }, 250);
         } else {
+            isSearchingServer = false;
             clearBtn.classList.add('hidden');
             searchDropdown.classList.add('hidden');
         }
@@ -610,10 +613,16 @@
 
     async function fetchServerSearchResults(query) {
         try {
-            const res = await fetch(`/Trading/Trading/Search?query=${encodeURIComponent(query)}`);
-            if (res.ok) {
+            const res = await fetch(`/Trading/Trading/Search?query=${encodeURIComponent(query)}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            const contentType = res.headers.get('content-type') || '';
+            if (res.ok && contentType.includes('application/json')) {
                 const serverResults = await res.json();
-                if (serverResults && serverResults.length > 0) {
+                if (serverResults && Array.isArray(serverResults) && serverResults.length > 0) {
                     serverResults.forEach(sq => {
                         const sqSym = sq.Symbol || sq.symbol;
                         const existing = allQuotes.find(q => (q.Symbol || q.symbol || '').toLowerCase() === sqSym.toLowerCase());
@@ -623,15 +632,15 @@
                             Object.assign(existing, sq);
                         }
                     });
-
-                    // Re-render if input still matches query
-                    if (searchInput.value.trim().toLowerCase() === query.toLowerCase()) {
-                        renderSearchDropdown(query);
-                    }
                 }
             }
         } catch (e) {
-            console.error('Search fetch failed', e);
+            console.warn('Search live fetch warning:', e);
+        } finally {
+            isSearchingServer = false;
+            if (searchInput.value.trim().toLowerCase() === query.toLowerCase()) {
+                renderSearchDropdown(query);
+            }
         }
     }
 
@@ -663,12 +672,22 @@
         );
 
         if (filtered.length === 0) {
-            searchDropdown.innerHTML = `
-                <div class="p-6 text-center text-xs text-slate-400">
-                    <i class="fa-solid fa-spinner fa-spin text-xl mb-1 text-brand-500"></i>
-                    <p class="font-bold">Searching Binance & DEX live feeds for "${query}"...</p>
-                </div>
-            `;
+            if (isSearchingServer) {
+                searchDropdown.innerHTML = `
+                    <div class="p-6 text-center text-xs text-slate-400">
+                        <i class="fa-solid fa-spinner fa-spin text-xl mb-1 text-brand-500"></i>
+                        <p class="font-bold">Searching Binance & DEX live feeds for "${query}"...</p>
+                    </div>
+                `;
+            } else {
+                searchDropdown.innerHTML = `
+                    <div class="p-6 text-center text-xs text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass text-xl mb-1 text-slate-300 dark:text-slate-600"></i>
+                        <p class="font-bold">No assets found matching "${query}"</p>
+                        <p class="text-3xs text-slate-400 mt-1">Try symbols like BTCUSDT, EURUSD, AAPL, OPUSDT, or BLESS</p>
+                    </div>
+                `;
+            }
             searchDropdown.classList.remove('hidden');
             return;
         }
@@ -706,7 +725,7 @@
                 <div class="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center justify-between gap-3 transition-colors group">
                     <a href="${tradeUrl}" class="flex items-center gap-3 min-w-0 flex-1">
                         <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-mono font-black text-xs text-slate-700 dark:text-slate-300 shrink-0">
-                            ${sym.substring(0, Math.Min(3, sym.length))}
+                            ${sym.substring(0, Math.min(3, sym.length))}
                         </div>
                         <div class="min-w-0">
                             <div class="flex items-center gap-1.5">

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trackerpro-cache-v4';
+const CACHE_NAME = 'trackerpro-cache-v5';
 const urlsToCache = [
   '/offline.html',
   '/css/site.css',
@@ -42,13 +42,26 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
+  // Strictly allow only http and https schemes (silently reject chrome-extension://, moz-extension://, blob:, data:, etc.)
+  const reqUrl = event.request.url || '';
+  if (!reqUrl.startsWith('http://') && !reqUrl.startsWith('https://')) return;
+
+  try {
+    const url = new URL(reqUrl);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+  } catch (e) {
+    return;
+  }
+
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
         .then(response => {
           if (response && response.status === 200) {
             const copy = response.clone();
-            caches.open(CACHE_NAME).then(c => c.put(event.request, copy));
+            caches.open(CACHE_NAME).then(c => {
+              c.put(event.request, copy).catch(() => {});
+            }).catch(() => {});
           }
           return response;
         })
@@ -68,8 +81,8 @@ self.addEventListener('fetch', event => {
         if (response && response.status === 200 && response.type === 'basic') {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseToCache);
-          });
+            cache.put(event.request, responseToCache).catch(() => {});
+          }).catch(() => {});
         }
         return response;
       })
