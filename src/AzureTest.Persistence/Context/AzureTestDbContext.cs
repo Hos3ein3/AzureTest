@@ -155,6 +155,12 @@ public class AzureTestDbContext : IdentityDbContext<ApplicationUser, Application
     public DbSet<AzureTest.Domain.Entities.Crypto.CryptoJournalEntry> CryptoJournalEntries => Set<AzureTest.Domain.Entities.Crypto.CryptoJournalEntry>();
     public DbSet<AzureTest.Domain.Entities.Crypto.CryptoApiSetting> CryptoApiSettings => Set<AzureTest.Domain.Entities.Crypto.CryptoApiSetting>();
 
+    // Universal Paper Trading
+    public DbSet<AzureTest.Domain.Entities.Trading.TradingAccount> TradingAccounts => Set<AzureTest.Domain.Entities.Trading.TradingAccount>();
+    public DbSet<AzureTest.Domain.Entities.Trading.TradingPosition> TradingPositions => Set<AzureTest.Domain.Entities.Trading.TradingPosition>();
+    public DbSet<AzureTest.Domain.Entities.Trading.TradingOrder> TradingOrders => Set<AzureTest.Domain.Entities.Trading.TradingOrder>();
+    public DbSet<AzureTest.Domain.Entities.Trading.TradingWatchlist> TradingWatchlists => Set<AzureTest.Domain.Entities.Trading.TradingWatchlist>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

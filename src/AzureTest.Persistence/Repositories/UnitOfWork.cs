@@ -201,6 +201,11 @@ public class UnitOfWork : IUnitOfWork
     private AzureTest.Application.Interfaces.Data.Crypto.ICryptoJournalEntryRepository? _cryptoJournalEntries;
     private AzureTest.Application.Interfaces.Data.Crypto.ICryptoApiSettingRepository? _cryptoApiSettings;
 
+    private AzureTest.Application.Interfaces.Data.Trading.ITradingAccountRepository? _tradingAccounts;
+    private AzureTest.Application.Interfaces.Data.Trading.ITradingPositionRepository? _tradingPositions;
+    private AzureTest.Application.Interfaces.Data.Trading.ITradingOrderRepository? _tradingOrders;
+    private AzureTest.Application.Interfaces.Data.Trading.ITradingWatchlistRepository? _tradingWatchlists;
+
     public AzureTest.Application.Interfaces.Data.Crypto.ICryptoAccountRepository CryptoAccounts => _cryptoAccounts ??= new Crypto.CryptoAccountRepository(_dbContext);
     public AzureTest.Application.Interfaces.Data.Crypto.ICryptoOrderRepository CryptoOrders => _cryptoOrders ??= new Crypto.CryptoOrderRepository(_dbContext);
     public AzureTest.Application.Interfaces.Data.Crypto.ICryptoPositionRepository CryptoPositions => _cryptoPositions ??= new Crypto.CryptoPositionRepository(_dbContext);
@@ -209,6 +214,11 @@ public class UnitOfWork : IUnitOfWork
     public AzureTest.Application.Interfaces.Data.Crypto.ICryptoAlertRepository CryptoAlerts => _cryptoAlerts ??= new Crypto.CryptoAlertRepository(_dbContext);
     public AzureTest.Application.Interfaces.Data.Crypto.ICryptoJournalEntryRepository CryptoJournalEntries => _cryptoJournalEntries ??= new Crypto.CryptoJournalEntryRepository(_dbContext);
     public AzureTest.Application.Interfaces.Data.Crypto.ICryptoApiSettingRepository CryptoApiSettings => _cryptoApiSettings ??= new Crypto.CryptoApiSettingRepository(_dbContext);
+
+    public AzureTest.Application.Interfaces.Data.Trading.ITradingAccountRepository TradingAccounts => _tradingAccounts ??= new Trading.TradingAccountRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Trading.ITradingPositionRepository TradingPositions => _tradingPositions ??= new Trading.TradingPositionRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Trading.ITradingOrderRepository TradingOrders => _tradingOrders ??= new Trading.TradingOrderRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Trading.ITradingWatchlistRepository TradingWatchlists => _tradingWatchlists ??= new Trading.TradingWatchlistRepository(_dbContext);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

@@ -124,6 +124,9 @@ public static class DependencyInjection
         // Crypto Markets & Algorithmic Trading
         AzureTest.Application.Crypto.CryptoServiceRegistration.AddCryptoModule(services);
 
+        // Universal Paper Trading
+        AzureTest.Application.Trading.TradingServiceRegistration.AddTradingModule(services);
+
         // Media (TMDb Movies, Series, Anime, Actors)
         
         // ── Command Handlers ──────────────────────────────────────────────────

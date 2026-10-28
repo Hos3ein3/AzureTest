@@ -451,6 +451,11 @@ if (builder.Configuration.GetValue<bool>("FeatureManagement:EnableHangfire"))
             "tenant-id-backfill-sync",
             job => job.ExecuteAsync(CancellationToken.None),
             Hangfire.Cron.Daily(2)); // Runs daily at 02:00 UTC, or trigger manually from Dashboard
+
+        recurringJobManager?.AddOrUpdate<AzureTest.Application.Interfaces.Services.ITradingPriceSyncJob>(
+            "paper-trading-price-sl-tp-monitor",
+            job => job.ExecuteAsync(CancellationToken.None),
+            Hangfire.Cron.Minutely()); // Runs every minute with an internal 5-second sub-minute cycle (12 ticks/min) to monitor prices and trigger Stop-Loss / Take-Profit
     }
     catch (Exception ex)
     {

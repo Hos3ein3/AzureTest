@@ -1,0 +1,756 @@
+@model AzureTest.Contracts.DTOs.Trading.TradingDashboardDto
+@{
+    ViewData["Title"] = "Universal Paper Trading Hub";
+    var account = Model.Account;
+}
+
+@functions {
+    string GetAssetBadgeClass(AzureTest.Domain.Entities.Trading.Enums.AssetClass assetClass) => assetClass switch
+    {
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Crypto => "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Forex => "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Stock => "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Index => "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Future => "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
+        _ => "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+    };
+
+    string GetAssetDisplayName(AzureTest.Domain.Entities.Trading.Enums.AssetClass assetClass) => assetClass switch
+    {
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Crypto => "Crypto",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Forex => "Forex",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Stock => "Stock",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Index => "Indices",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Future => "Futures",
+        _ => assetClass.ToString()
+    };
+}
+
+<div class="space-y-6 pb-12 font-sans">
+    <!-- Top Action Bar -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xl font-black">
+                <i class="fa-solid fa-chart-candlestick"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">Paper Trading Hub</h1>
+                    <span class="px-2.5 py-0.5 rounded-full text-3xs font-extrabold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 uppercase tracking-wide">100% Risk-Free</span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Multi-asset portfolio &amp; watchlist tracker for Crypto, Stocks, Forex, Indices, and Futures.
+                </p>
+            </div>
+        </div>
+
+        <!-- Global Action Buttons -->
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="openResetModal()" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-rotate-right text-brand-500"></i>
+                <span>Set / Reset Balance</span>
+            </button>
+            <button type="button" onclick="openJsonModal()" class="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 transition-colors flex items-center gap-2 border border-indigo-200 dark:border-indigo-800/40">
+                <i class="fa-solid fa-code"></i>
+                <span>JSON Batch</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Live Universal Search Bar with Rich Dropdown Datalist -->
+    <div class="relative z-30">
+        <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input type="text" id="globalAssetSearchInput" autocomplete="off"
+                   placeholder="Search any Crypto, Stock, Forex, Index, or Future (e.g. BTC, AAPL, EUR/USD, NVDA, Gold, SPX)..."
+                   class="w-full pl-11 pr-12 py-3.5 text-sm rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-bold focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none shadow-xs text-slate-800 dark:text-slate-100" />
+            <button type="button" id="clearSearchBtn" onclick="clearSearchDropdown()" class="hidden absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Rich Autocomplete Dropdown Datalist -->
+        <div id="searchDropdownMenu" class="hidden absolute left-0 right-0 top-full mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-h-96 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 scrollbar-thin">
+            <!-- Populated via JavaScript dynamically -->
+        </div>
+    </div>
+
+    <!-- Two-Column Layout: Left (Watchlist) | Right (What I Have) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- Left Column: Watchlist (col-span-12 lg:col-span-5 xl:col-span-4) -->
+        <div class="lg:col-span-5 xl:col-span-4 space-y-4">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-star text-amber-500"></i>
+                        <h2 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Watchlist</h2>
+                        <span class="px-2 py-0.5 rounded-full text-3xs font-extrabold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400" id="watchlistCountBadge">
+                            @Model.Watchlist.Count
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Category Filter Pills -->
+                <div class="flex flex-wrap gap-1.5 text-3xs">
+                    <button type="button" onclick="filterWatchlistCategory('All')" class="wl-cat-btn active px-2.5 py-1 rounded-lg font-bold bg-brand-500 text-white" data-cat="All">All</button>
+                    <button type="button" onclick="filterWatchlistCategory('Crypto')" class="wl-cat-btn px-2.5 py-1 rounded-lg font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200" data-cat="Crypto">Crypto</button>
+                    <button type="button" onclick="filterWatchlistCategory('Forex')" class="wl-cat-btn px-2.5 py-1 rounded-lg font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200" data-cat="Forex">Forex</button>
+                    <button type="button" onclick="filterWatchlistCategory('Stock')" class="wl-cat-btn px-2.5 py-1 rounded-lg font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200" data-cat="Stock">Stocks</button>
+                    <button type="button" onclick="filterWatchlistCategory('Index')" class="wl-cat-btn px-2.5 py-1 rounded-lg font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200" data-cat="Index">Indices</button>
+                    <button type="button" onclick="filterWatchlistCategory('Future')" class="wl-cat-btn px-2.5 py-1 rounded-lg font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200" data-cat="Future">Futures</button>
+                </div>
+
+                <!-- Watchlist Items List -->
+                <div id="watchlistContainer" class="space-y-2 max-h-[600px] overflow-y-auto scrollbar-thin pr-1">
+                    @if (Model.Quotes.Any(q => q.IsWatchlisted))
+                    {
+                        @foreach (var item in Model.Quotes.Where(q => q.IsWatchlisted))
+                        {
+                            <div class="wl-item p-3 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-brand-500/50 bg-slate-50/60 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 transition-all flex items-center justify-between group" data-category="@item.AssetClass">
+                                <a asp-action="Trade" asp-route-symbol="@item.Symbol" class="flex-1 min-w-0 flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center font-mono font-black text-2xs text-slate-700 dark:text-slate-200">
+                                        @item.Symbol.Substring(0, Math.Min(3, item.Symbol.Length))
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="text-xs font-black text-slate-900 dark:text-white truncate">@item.Symbol</span>
+                                            <span class="text-3xs uppercase px-1.5 py-0.5 rounded font-extrabold @GetAssetBadgeClass(item.AssetClass)">@GetAssetDisplayName(item.AssetClass)</span>
+                                        </div>
+                                        <p class="text-3xs text-slate-400 truncate">@item.AssetName</p>
+                                    </div>
+                                </a>
+
+                                <div class="text-right flex items-center gap-3 shrink-0">
+                                    <div>
+                                        <div class="text-xs font-black text-slate-900 dark:text-white">
+                                            $@item.Price.ToString("N2")
+                                        </div>
+                                        <div class="text-3xs font-extrabold @(item.ChangePercent24h >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                            @(item.ChangePercent24h >= 0 ? "+" : "")@item.ChangePercent24h.ToString("N2")%
+                                        </div>
+                                    </div>
+
+                                    <form asp-action="ToggleWatchlist" method="post" class="inline">
+                                        <input type="hidden" name="symbol" value="@item.Symbol" />
+                                        <input type="hidden" name="assetName" value="@item.AssetName" />
+                                        <input type="hidden" name="assetClass" value="@((int)item.AssetClass)" />
+                                        <button type="submit" class="w-7 h-7 rounded-lg text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center justify-center transition-colors" title="Remove from watchlist">
+                                            <i class="fa-solid fa-star text-xs"></i>
+                                        </button>
+                                    </form>
+
+                                    <a asp-action="Trade" asp-route-symbol="@item.Symbol" class="px-2.5 py-1.5 rounded-lg bg-brand-500 text-white font-bold text-3xs hover:bg-brand-600 transition-colors shadow-2xs">
+                                        Trade
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="p-6 text-center text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                            <i class="fa-regular fa-star text-2xl text-slate-300 dark:text-slate-700 mb-2"></i>
+                            <p class="text-xs font-bold text-slate-600 dark:text-slate-400">Your Watchlist is Empty</p>
+                            <p class="text-3xs text-slate-400 mt-1">Use the search bar above to find crypto, stocks, forex, and click the star to pin them here.</p>
+                        </div>
+                    }
+                </div>
+
+                <!-- Suggested Quick Stars Section -->
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <p class="text-3xs uppercase font-extrabold text-slate-400 tracking-wider mb-2">Popular Instruments</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        @foreach (var popular in Model.Quotes.Take(4))
+                        {
+                            <a asp-action="Trade" asp-route-symbol="@popular.Symbol" class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:border-brand-500 flex items-center justify-between text-3xs transition-all">
+                                <span class="font-black text-slate-800 dark:text-slate-200">@popular.Symbol</span>
+                                <span class="font-bold @(popular.ChangePercent24h >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                    @(popular.ChangePercent24h >= 0 ? "+" : "")@popular.ChangePercent24h.ToString("N1")%
+                                </span>
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: What I Have (Portfolio & Records) (col-span-12 lg:col-span-7 xl:col-span-8) -->
+        <div class="lg:col-span-7 xl:col-span-8 space-y-6">
+
+            <!-- Balance KPI Metrics Row -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                    <span class="text-3xs font-extrabold uppercase text-slate-400 tracking-wider block">Paper Cash Balance</span>
+                    <div class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
+                        $@account.CashBalance.ToString("N2")
+                    </div>
+                    <span class="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-1 block">Liquid Capital</span>
+                </div>
+
+                <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                    <span class="text-3xs font-extrabold uppercase text-slate-400 tracking-wider block">Total Net Equity</span>
+                    <div class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
+                        $@account.Equity.ToString("N2")
+                    </div>
+                    <span class="text-3xs font-bold @(account.Equity >= account.CashBalance ? "text-emerald-500" : "text-rose-500") mt-1 block">
+                        @(account.Equity >= account.CashBalance ? "In Profit" : "In Drawdown")
+                    </span>
+                </div>
+
+                <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                    <span class="text-3xs font-extrabold uppercase text-slate-400 tracking-wider block">Used Margin</span>
+                    <div class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
+                        $@account.MarginUsed.ToString("N2")
+                    </div>
+                    <span class="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-1 block">
+                        Free: $@account.FreeMargin.ToString("N2")
+                    </span>
+                </div>
+
+                <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                    <span class="text-3xs font-extrabold uppercase text-slate-400 tracking-wider block">Realized Total PnL</span>
+                    <div class="text-lg sm:text-xl font-black @(account.RealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500") mt-1">
+                        @(account.RealizedPnl >= 0 ? "+" : "")$@account.RealizedPnl.ToString("N2")
+                    </div>
+                    <span class="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-1 block">
+                        Open Trades: @Model.OpenPositions.Count
+                    </span>
+                </div>
+            </div>
+
+            <!-- "What I Have": Active Open Positions -->
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+                <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-briefcase text-brand-500"></i>
+                        <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">What I Have (Open Positions)</h3>
+                        <span class="px-2 py-0.5 rounded-full text-3xs font-extrabold bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400">
+                            @Model.OpenPositions.Count Active
+                        </span>
+                    </div>
+                </div>
+
+                @if (Model.OpenPositions.Count > 0)
+                {
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50/80 dark:bg-slate-800/50 text-slate-400 uppercase text-3xs font-black">
+                                <tr>
+                                    <th class="p-3 pl-5">Asset</th>
+                                    <th class="p-3">Side</th>
+                                    <th class="p-3">Quantity</th>
+                                    <th class="p-3">Entry Price</th>
+                                    <th class="p-3">Mark Price</th>
+                                    <th class="p-3">Margin</th>
+                                    <th class="p-3">Unrealized PnL</th>
+                                    <th class="p-3 pr-5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                @foreach (var pos in Model.OpenPositions)
+                                {
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                        <td class="p-3 pl-5 font-black text-slate-900 dark:text-white">
+                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                <span>@pos.Symbol</span>
+                                                <span class="px-1.5 py-0.5 rounded text-3xs font-extrabold uppercase @GetAssetBadgeClass(pos.AssetClass)">
+                                                    @GetAssetDisplayName(pos.AssetClass)
+                                                </span>
+                                                <span class="text-3xs uppercase px-1.5 py-0.2 rounded font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                                    @pos.Leverage&times;
+                                                </span>
+                                            </div>
+                                            <p class="text-3xs text-slate-400 truncate font-normal">@pos.AssetName</p>
+                                        </td>
+                                        <td class="p-3">
+                                            <span class="px-2 py-0.5 rounded-md font-extrabold text-3xs @(pos.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border border-rose-500/20")">
+                                                @pos.Side
+                                            </span>
+                                        </td>
+                                        <td class="p-3 font-mono font-bold text-slate-800 dark:text-slate-200">
+                                            @pos.Quantity.ToString("N4")
+                                        </td>
+                                        <td class="p-3 font-mono text-slate-600 dark:text-slate-300">
+                                            $@pos.EntryPrice.ToString("N2")
+                                        </td>
+                                        <td class="p-3 font-mono font-black text-slate-900 dark:text-white">
+                                            $@pos.CurrentPrice.ToString("N2")
+                                        </td>
+                                        <td class="p-3 font-mono text-slate-600 dark:text-slate-300">
+                                            $@pos.InitialMargin.ToString("N2")
+                                        </td>
+                                        <td class="p-3 font-mono font-black @(pos.UnrealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                            @(pos.UnrealizedPnl >= 0 ? "+" : "")$@pos.UnrealizedPnl.ToString("N2")
+                                        </td>
+                                        <td class="p-3 pr-5 text-right space-x-2 whitespace-nowrap">
+                                            <a asp-action="Trade" asp-route-symbol="@pos.Symbol" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-3xs hover:bg-slate-200 transition-colors">
+                                                Chart
+                                            </a>
+                                            <form asp-action="ClosePosition" method="post" class="inline">
+                                                <input type="hidden" name="positionId" value="@pos.Id" />
+                                                <input type="hidden" name="symbol" value="@pos.Symbol" />
+                                                <input type="hidden" name="sourcePage" value="index" />
+                                                <button type="submit" class="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-white font-bold text-3xs transition-colors border border-rose-500/20">
+                                                    Close
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-8 text-center text-slate-400">
+                        <i class="fa-solid fa-folder-open text-3xl text-slate-300 dark:text-slate-700 mb-2"></i>
+                        <p class="text-xs font-bold text-slate-700 dark:text-slate-300">No Open Positions</p>
+                        <p class="text-3xs text-slate-400 mt-1">Select an asset from the Watchlist or Search bar to place your first paper trade.</p>
+                    </div>
+                }
+            </div>
+
+            <!-- "What I Have": Outstanding Pending Orders -->
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+                <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-amber-500"></i>
+                        <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Pending Orders</h3>
+                        <span class="px-2 py-0.5 rounded-full text-3xs font-extrabold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+                            @Model.PendingOrders.Count Pending
+                        </span>
+                    </div>
+                </div>
+
+                @if (Model.PendingOrders.Count > 0)
+                {
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50/80 dark:bg-slate-800/50 text-slate-400 uppercase text-3xs font-black">
+                                <tr>
+                                    <th class="p-3 pl-5">Asset</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3">Side</th>
+                                    <th class="p-3">Quantity</th>
+                                    <th class="p-3">Target Price</th>
+                                    <th class="p-3">TIF</th>
+                                    <th class="p-3 pr-5 text-right">Cancel</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                @foreach (var order in Model.PendingOrders)
+                                {
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                        <td class="p-3 pl-5 font-black text-slate-900 dark:text-white">
+                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                <span>@order.Symbol</span>
+                                                <span class="px-1.5 py-0.5 rounded text-3xs font-extrabold uppercase @GetAssetBadgeClass(order.AssetClass)">
+                                                    @GetAssetDisplayName(order.AssetClass)
+                                                </span>
+                                            </div>
+                                            <p class="text-3xs text-slate-400 truncate font-normal">@order.AssetName</p>
+                                        </td>
+                                        <td class="p-3">
+                                            <span class="px-2 py-0.5 rounded text-3xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                                @order.OrderType
+                                            </span>
+                                        </td>
+                                        <td class="p-3">
+                                            <span class="px-2 py-0.5 rounded text-3xs font-extrabold @(order.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy ? "text-emerald-500" : "text-rose-500")">
+                                                @order.Side
+                                            </span>
+                                        </td>
+                                        <td class="p-3 font-mono font-bold">@order.Quantity.ToString("N4")</td>
+                                        <td class="p-3 font-mono font-bold text-slate-900 dark:text-white">
+                                            $@((order.Price ?? order.TriggerPrice ?? 0m).ToString("N2"))
+                                        </td>
+                                        <td class="p-3 text-3xs text-slate-500 font-bold">@order.TimeInForce</td>
+                                        <td class="p-3 pr-5 text-right">
+                                            <form asp-action="CancelOrder" method="post" class="inline">
+                                                <input type="hidden" name="orderId" value="@order.Id" />
+                                                <input type="hidden" name="symbol" value="@order.Symbol" />
+                                                <input type="hidden" name="sourcePage" value="index" />
+                                                <button type="submit" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-rose-500 hover:text-white text-rose-600 font-bold text-3xs transition-colors">
+                                                    Cancel
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-6 text-center text-slate-400">
+                        <p class="text-xs font-bold text-slate-600 dark:text-slate-400">No Pending Limit or Stop Orders</p>
+                    </div>
+                }
+            </div>
+
+            <!-- "What I Have": Recent Closed Positions History -->
+            @if (Model.ClosedPositions.Count > 0)
+            {
+                <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+                    <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-clock text-slate-400"></i>
+                            <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Closed Trades History</h3>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50/80 dark:bg-slate-800/50 text-slate-400 uppercase text-3xs font-black">
+                                <tr>
+                                    <th class="p-3 pl-5">Asset</th>
+                                    <th class="p-3">Side</th>
+                                    <th class="p-3">Entry Price</th>
+                                    <th class="p-3">Exit Price</th>
+                                    <th class="p-3">Realized PnL</th>
+                                    <th class="p-3 pr-5 text-right">Closed At</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                @foreach (var c in Model.ClosedPositions.Take(10))
+                                {
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                        <td class="p-3 pl-5 font-black text-slate-800 dark:text-slate-200">
+                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                <span>@c.Symbol</span>
+                                                <span class="px-1.5 py-0.5 rounded text-3xs font-extrabold uppercase @GetAssetBadgeClass(c.AssetClass)">
+                                                    @GetAssetDisplayName(c.AssetClass)
+                                                </span>
+                                            </div>
+                                            <p class="text-3xs text-slate-400 truncate font-normal">@c.AssetName</p>
+                                        </td>
+                                        <td class="p-3 text-3xs font-extrabold @(c.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy ? "text-emerald-500" : "text-rose-500")">@c.Side</td>
+                                        <td class="p-3 font-mono">$@c.EntryPrice.ToString("N2")</td>
+                                        <td class="p-3 font-mono">$@((c.ClosePrice ?? c.CurrentPrice).ToString("N2"))</td>
+                                        <td class="p-3 font-mono font-black @(c.RealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                            @(c.RealizedPnl >= 0 ? "+" : "")$@c.RealizedPnl.ToString("N2")
+                                        </td>
+                                        <td class="p-3 pr-5 text-right text-3xs text-slate-400">
+                                            @(c.ClosedAtUtc?.ToString("MMM dd, HH:mm") ?? "N/A")
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Set / Reset Balance Modal -->
+<div id="resetModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-in">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-rotate-right text-brand-500"></i>
+                <span>Set or Reset Paper Balance</span>
+            </h3>
+            <button type="button" onclick="closeResetModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+            Select a starter capital amount (from micro-accounts like $10 or $100 up to $100,000) or type a custom virtual allocation.
+        </p>
+
+        <!-- Preset Chips -->
+        <div class="grid grid-cols-5 gap-2">
+            <button type="button" onclick="setPresetBalance(10)" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold hover:border-brand-500 hover:text-brand-600 transition-colors">$10</button>
+            <button type="button" onclick="setPresetBalance(100)" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold hover:border-brand-500 hover:text-brand-600 transition-colors">$100</button>
+            <button type="button" onclick="setPresetBalance(1000)" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold hover:border-brand-500 hover:text-brand-600 transition-colors">$1,000</button>
+            <button type="button" onclick="setPresetBalance(10000)" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold hover:border-brand-500 hover:text-brand-600 transition-colors">$10,000</button>
+            <button type="button" onclick="setPresetBalance(50000)" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold hover:border-brand-500 hover:text-brand-600 transition-colors">$50,000</button>
+        </div>
+
+        <form asp-action="ResetBalance" method="post" class="space-y-4">
+            <div>
+                <label class="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Custom Amount (USD)</label>
+                <input type="number" step="1" min="1" max="1000000000" id="resetBalanceInput" name="newBalance" value="100"
+                       class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-bold focus:border-brand-500 focus:outline-none" />
+            </div>
+
+            <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-3xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5 shrink-0"></i>
+                <span><strong>Clean Slate:</strong> Resetting your balance will permanently wipe and delete all open positions, closed trade history, and pending orders so you start with fresh statistics.</span>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="closeResetModal()" class="w-1/2 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200">Cancel</button>
+                <button type="submit" class="w-1/2 py-2.5 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 shadow-xs">Confirm Reset</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- JSON Batch Action Runner Modal -->
+<div id="jsonModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-in">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-code text-indigo-500"></i>
+                <span>Execute JSON Batch Actions</span>
+            </h3>
+            <button type="button" onclick="closeJsonModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+            Paste a JSON array of commands to programmatically place trades, set balance, or close positions in one single call.
+        </p>
+
+        <!-- Template Buttons -->
+        <div class="flex flex-wrap gap-2 text-3xs">
+            <span class="text-slate-400 self-center">Templates:</span>
+            <button type="button" onclick="loadJsonTemplate('buyMarket')" class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 font-bold hover:bg-slate-200">Market Buy Order</button>
+            <button type="button" onclick="loadJsonTemplate('limitOrder')" class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 font-bold hover:bg-slate-200">Limit Order</button>
+            <button type="button" onclick="loadJsonTemplate('reset')" class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 font-bold hover:bg-slate-200">Reset Balance</button>
+        </div>
+
+        <div>
+            <textarea id="jsonBatchInput" rows="8" class="w-full p-3 font-mono text-2xs rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-slate-950 text-slate-800 dark:text-emerald-400 focus:outline-none focus:border-brand-500"></textarea>
+        </div>
+
+        <div id="jsonBatchOutput" class="hidden p-3 rounded-xl bg-slate-100 dark:bg-slate-950 text-3xs font-mono max-h-36 overflow-y-auto"></div>
+
+        <div class="flex items-center justify-end gap-3">
+            <button type="button" onclick="closeJsonModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200">Close</button>
+            <button type="button" onclick="runJsonBatch()" id="runJsonBatchBtn" class="px-5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 shadow-xs flex items-center gap-2">
+                <i class="fa-solid fa-play"></i>
+                <span>Execute Batch</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // In-memory catalog of quotes for live datalist search
+    let allQuotes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Quotes));
+
+    const searchInput = document.getElementById('globalAssetSearchInput');
+    const searchDropdown = document.getElementById('searchDropdownMenu');
+    const clearBtn = document.getElementById('clearSearchBtn');
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim().toLowerCase();
+        if (query.length > 0) {
+            clearBtn.classList.remove('hidden');
+            renderSearchDropdown(query);
+        } else {
+            clearBtn.classList.add('hidden');
+            searchDropdown.classList.add('hidden');
+        }
+    });
+
+    searchInput.addEventListener('focus', function() {
+        if (this.value.trim().length > 0) {
+            searchDropdown.classList.remove('hidden');
+        } else {
+            renderSearchDropdown(''); // show all or top instruments
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
+            searchDropdown.classList.add('hidden');
+        }
+    });
+
+    function clearSearchDropdown() {
+        searchInput.value = '';
+        clearBtn.classList.add('hidden');
+        searchDropdown.classList.add('hidden');
+    }
+
+    function renderSearchDropdown(query) {
+        const filtered = allQuotes.filter(q => 
+            q.Symbol.toLowerCase().includes(query) || 
+            q.AssetName.toLowerCase().includes(query)
+        );
+
+        if (filtered.length === 0) {
+            searchDropdown.innerHTML = `
+                <div class="p-6 text-center text-xs text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass text-xl mb-1 text-slate-300"></i>
+                    <p class="font-bold">No assets found matching "${query}"</p>
+                </div>
+            `;
+            searchDropdown.classList.remove('hidden');
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(item => {
+            const chgPct = Number(item.ChangePercent24h ?? item.changePercent24h ?? 0);
+            const isPos = chgPct >= 0;
+            const changeClass = isPos ? 'text-emerald-500' : 'text-rose-500';
+            const sign = isPos ? '+' : '';
+            const tradeUrl = `/Trading/Trading/Trade?symbol=${encodeURIComponent(item.Symbol || item.symbol)}`;
+
+            let badgeColor = 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
+            if (item.AssetClass === 1) badgeColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'; // Crypto
+            else if (item.AssetClass === 2) badgeColor = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'; // Forex
+            else if (item.AssetClass === 3) badgeColor = 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'; // Stock
+            else if (item.AssetClass === 4) badgeColor = 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20'; // Index
+            else if (item.AssetClass === 5) badgeColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'; // Future
+
+            const assetClassNames = { 1: 'Crypto', 2: 'Forex', 3: 'Stock', 4: 'Indices', 5: 'Futures' };
+            const typeLabel = assetClassNames[item.AssetClass] || 'Asset';
+
+            html += `
+                <a href="${tradeUrl}" class="p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center justify-between transition-colors group">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-mono font-black text-xs text-slate-700 dark:text-slate-300">
+                            ${item.Symbol.substring(0, 3)}
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-black text-slate-900 dark:text-white group-hover:text-brand-500 transition-colors">${item.Symbol}</span>
+                                <span class="px-2 py-0.5 rounded text-3xs font-extrabold uppercase ${badgeColor}">${typeLabel}</span>
+                            </div>
+                            <p class="text-xs text-slate-400 truncate">${item.AssetName}</p>
+                        </div>
+                    </div>
+
+                    <div class="text-right flex items-center gap-3 shrink-0">
+                        <div>
+                            <div class="text-sm font-black text-slate-900 dark:text-white">$${Number(item.Price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</div>
+                            <div class="text-3xs font-extrabold ${changeClass}">${sign}${chgPct.toFixed(2)}%</div>
+                        </div>
+                        <button type="button" 
+                                onclick="toggleWatchlistDatalist(event, '${item.Symbol}', '${(item.AssetName || '').replace(/'/g, "\\'")}', ${item.AssetClass}, this)"
+                                class="w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-amber-400 bg-white dark:bg-slate-800 flex items-center justify-center transition-all shadow-2xs hover:scale-105"
+                                title="${item.IsWatchlisted ? 'Remove from Watchlist' : 'Add to Watchlist'}">
+                            <i class="${item.IsWatchlisted ? 'fa-solid fa-star text-amber-500' : 'fa-regular fa-star text-slate-400 hover:text-amber-500'} text-xs"></i>
+                        </button>
+                        <div class="w-8 h-8 rounded-xl bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs group-hover:bg-brand-500 group-hover:text-white transition-all shadow-2xs">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </div>
+                    </div>
+                </a>
+            `;
+        });
+
+        searchDropdown.innerHTML = html;
+        searchDropdown.classList.remove('hidden');
+    }
+
+    // Category filtering for watchlist
+    function filterWatchlistCategory(cat) {
+        document.querySelectorAll('.wl-cat-btn').forEach(b => {
+            b.classList.remove('active', 'bg-brand-500', 'text-white');
+            b.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-400');
+        });
+
+        const activeBtn = document.querySelector(`.wl-cat-btn[data-cat="${cat}"]`);
+        if (activeBtn) {
+            activeBtn.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-400');
+            activeBtn.classList.add('active', 'bg-brand-500', 'text-white');
+        }
+
+        const items = document.querySelectorAll('.wl-item');
+        items.forEach(el => {
+            const itemCat = el.getAttribute('data-category');
+            if (cat === 'All' || itemCat.toLowerCase() === cat.toLowerCase()) {
+                el.style.display = 'flex';
+            } else {
+                el.style.display = 'none';
+            }
+        });
+    }
+
+    // Modal helpers
+    function openResetModal() { document.getElementById('resetModal').classList.remove('hidden'); }
+    function closeResetModal() { document.getElementById('resetModal').classList.add('hidden'); }
+    function setPresetBalance(amount) { document.getElementById('resetBalanceInput').value = amount; }
+
+    function openJsonModal() { document.getElementById('jsonModal').classList.remove('hidden'); }
+    function closeJsonModal() { document.getElementById('jsonModal').classList.add('hidden'); }
+
+    function loadJsonTemplate(tpl) {
+        const ta = document.getElementById('jsonBatchInput');
+        if (tpl === 'buyMarket') {
+            ta.value = JSON.stringify([
+                { "action": "place_order", "symbol": "BTCUSDT", "side": 1, "orderType": 1, "quantity": 0.1, "leverage": 2, "stopLoss": 66000, "takeProfit": 70000 }
+            ], null, 2);
+        } else if (tpl === 'limitOrder') {
+            ta.value = JSON.stringify([
+                { "action": "place_order", "symbol": "ETHUSDT", "side": 1, "orderType": 2, "quantity": 1.0, "price": 3400, "leverage": 1, "timeInForce": 1 }
+            ], null, 2);
+        } else if (tpl === 'reset') {
+            ta.value = JSON.stringify([
+                { "action": "reset_balance", "resetBalance": 100 }
+            ], null, 2);
+        }
+    }
+
+    async function runJsonBatch() {
+        const btn = document.getElementById('runJsonBatchBtn');
+        const output = document.getElementById('jsonBatchOutput');
+        const json = document.getElementById('jsonBatchInput').value;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+
+        try {
+            const res = await fetch('/Trading/Trading/ExecuteJson', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ json: json })
+            });
+
+            const data = await res.json();
+            output.classList.remove('hidden');
+            output.innerHTML = `<pre class="text-emerald-500">${JSON.stringify(data, null, 2)}</pre>`;
+            setTimeout(() => { window.location.reload(); }, 1200);
+        } catch (err) {
+            output.classList.remove('hidden');
+            output.innerHTML = `<span class="text-rose-500">Error: ${err.message}</span>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-play"></i> <span>Execute Batch</span>';
+        }
+    }
+    async function toggleWatchlistDatalist(e, sym, name, cls, btn) {
+        e.stopPropagation();
+        e.preventDefault();
+        try {
+            const formData = new FormData();
+            formData.append('symbol', sym);
+            formData.append('assetName', name);
+            formData.append('assetClass', cls);
+
+            const res = await fetch('/Trading/Trading/ToggleWatchlist', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const icon = btn.querySelector('i');
+                const targetQuote = allQuotes.find(q => q.Symbol.toLowerCase() === sym.toLowerCase());
+                if (targetQuote) targetQuote.IsWatchlisted = data.isWatchlisted;
+
+                if (data.isWatchlisted) {
+                    icon.className = 'fa-solid fa-star text-amber-500 text-xs';
+                    btn.title = 'Remove from Watchlist';
+                } else {
+                    icon.className = 'fa-regular fa-star text-slate-400 hover:text-amber-500 text-xs';
+                    btn.title = 'Add to Watchlist';
+                }
+            }
+        } catch (err) {
+            console.error('Watchlist toggle failed:', err);
+        }
+    }
+</script>
+}

@@ -1,0 +1,1488 @@
+@model AzureTest.Contracts.DTOs.Trading.TradingDashboardDto
+@{
+    var selected = Model.SelectedQuote;
+    ViewData["Title"] = $"{selected.Symbol} - Trade & Pro Chart";
+    var account = Model.Account;
+    var openForSymbol = Model.OpenPositions.Where(p => p.Symbol.Equals(selected.Symbol, StringComparison.OrdinalIgnoreCase)).ToList();
+    var pendingForSymbol = Model.PendingOrders.Where(o => o.Symbol.Equals(selected.Symbol, StringComparison.OrdinalIgnoreCase)).ToList();
+}
+
+@functions {
+    string GetAssetBadgeClass(AzureTest.Domain.Entities.Trading.Enums.AssetClass assetClass) => assetClass switch
+    {
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Crypto => "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Forex => "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Stock => "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Index => "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Future => "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
+        _ => "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+    };
+
+    string GetAssetDisplayName(AzureTest.Domain.Entities.Trading.Enums.AssetClass assetClass) => assetClass switch
+    {
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Crypto => "Crypto",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Forex => "Forex",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Stock => "Stock",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Index => "Indices",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Future => "Futures",
+        _ => assetClass.ToString()
+    };
+}
+
+<div class="space-y-6 pb-12 font-sans">
+    <!-- Top Asset Bar & Navigation -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div class="flex items-center gap-3">
+            <a asp-action="Index" class="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center transition-colors" title="Back to Watchlist & Portfolio">
+                <i class="fa-solid fa-arrow-left text-sm"></i>
+            </a>
+
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight" id="terminalSymbolTitle">@selected.Symbol</h1>
+                    <span class="px-2.5 py-0.5 rounded-full text-3xs font-extrabold uppercase tracking-wide @GetAssetBadgeClass(selected.AssetClass)">
+                        @GetAssetDisplayName(selected.AssetClass)
+                    </span>
+                    <!-- Watchlist Toggle Button (AJAX Icon) -->
+                    <button type="button" 
+                            id="tradeWatchlistBtn"
+                            onclick="toggleTradeWatchlist('@selected.Symbol', '@selected.AssetName.Replace("'", "\\'")', @((int)selected.AssetClass))"
+                            class="w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-amber-400 bg-white dark:bg-slate-800 flex items-center justify-center transition-all shadow-2xs hover:scale-105"
+                            title="@(selected.IsWatchlisted ? "Remove from watchlist" : "Add to watchlist")">
+                        <i id="tradeWatchlistIcon" class="@(selected.IsWatchlisted ? "fa-solid fa-star text-amber-500" : "fa-regular fa-star text-slate-400 hover:text-amber-500") text-sm"></i>
+                    </button>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">@selected.AssetName</p>
+            </div>
+        </div>
+
+        <!-- Live Price & Statistics Strip -->
+        <div class="flex items-center gap-4 sm:gap-6 flex-wrap">
+            <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+                <span class="text-3xs uppercase font-extrabold text-slate-400 tracking-wider block">Live Market Price</span>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <span class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white transition-colors" id="liveTickerPrice">
+                        $@selected.Price.ToString("N2")
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md text-2xs font-extrabold @(selected.ChangePercent24h >= 0 ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border border-rose-500/20")" id="liveTickerChange">
+                        @(selected.ChangePercent24h >= 0 ? "+" : "")@selected.ChangePercent24h.ToString("N2")%
+                    </span>
+                </div>
+            </div>
+
+            <!-- Available Margin Badge -->
+            <div class="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                <span class="text-3xs uppercase font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider block">Available Margin</span>
+                <div class="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5" id="topAvailableMarginDisplay">
+                    $@account.FreeMargin.ToString("N2")
+                </div>
+            </div>
+
+            <div class="hidden sm:block text-xs space-y-0.5 text-slate-500 dark:text-slate-400">
+                <div>24h High: <strong class="text-slate-800 dark:text-slate-200" id="liveHighDisplay">$@selected.High24h.ToString("N2")</strong></div>
+                <div>24h Low: <strong class="text-slate-800 dark:text-slate-200" id="liveLowDisplay">$@selected.Low24h.ToString("N2")</strong></div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-3xs font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider" id="syncStatusLabel">Live Sync</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP SECTION: Interactive TradingView Chart with All 8 Drawing Tool Suites -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
+        <!-- Chart Controls Header -->
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <!-- Timeframe Pills -->
+            <div class="flex items-center gap-1 text-3xs font-bold bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                <button type="button" onclick="setTimeframe('1m')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="1m">1m</button>
+                <button type="button" onclick="setTimeframe('5m')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="5m">5m</button>
+                <button type="button" onclick="setTimeframe('15m')" class="tf-btn px-2.5 py-1 rounded-lg active bg-brand-500 text-white" data-tf="15m">15m</button>
+                <button type="button" onclick="setTimeframe('1h')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="1h">1h</button>
+                <button type="button" onclick="setTimeframe('4h')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="4h">4h</button>
+                <button type="button" onclick="setTimeframe('1D')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="1D">1D</button>
+            </div>
+
+            <!-- Candle Style Selector -->
+            <div class="flex items-center gap-2">
+                <span class="text-3xs uppercase font-extrabold text-slate-400">Style:</span>
+                <select id="chartStyleSelect" onchange="setChartStyle(this.value)" class="text-xs font-bold px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none">
+                    <option value="candles">Candles</option>
+                    <option value="hollow">Hollow Candles</option>
+                    <option value="heikin">Heikin-Ashi</option>
+                    <option value="line">Line</option>
+                    <option value="area">Area</option>
+                    <option value="bars">Bars</option>
+                </select>
+            </div>
+
+            <!-- Indicator Toggles -->
+            <div class="flex items-center gap-1.5 text-3xs font-bold">
+                <button type="button" onclick="toggleIndicator('ema20')" id="btnEma20" class="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300">EMA 20</button>
+                <button type="button" onclick="toggleIndicator('ema50')" id="btnEma50" class="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300">EMA 50</button>
+                <button type="button" onclick="toggleIndicator('bollinger')" id="btnBollinger" class="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Bollinger</button>
+                <button type="button" onclick="toggleIndicator('volume')" id="btnVolume" class="px-2 py-1 rounded-lg border border-brand-500 bg-brand-500 text-white">Volume</button>
+            </div>
+        </div>
+
+        <!-- TradingView 8-Suite Drawing Tools Toolbar -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin text-3xs">
+            <span class="text-slate-400 font-extrabold uppercase shrink-0"><i class="fa-solid fa-paintbrush mr-1"></i> Tools:</span>
+
+            <!-- 1. Lines & Channels -->
+            <div class="relative group shrink-0">
+                <button type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:border-brand-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-arrows-left-right text-brand-500"></i>
+                    <span>Lines &amp; Channels</span>
+                    <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
+                </button>
+                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 w-52 p-1.5 space-y-0.5 text-left">
+                    <button type="button" onclick="selectTool('Trend Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Trend Line</button>
+                    <button type="button" onclick="selectTool('Ray')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Ray</button>
+                    <button type="button" onclick="selectTool('Info Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Info Line</button>
+                    <button type="button" onclick="selectTool('Extended Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Extended Line</button>
+                    <button type="button" onclick="selectTool('Trend Angle')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Trend Angle</button>
+                    <button type="button" onclick="selectTool('Horizontal Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Horizontal Line</button>
+                    <button type="button" onclick="selectTool('Horizontal Ray')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Horizontal Ray</button>
+                    <button type="button" onclick="selectTool('Vertical Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Vertical Line</button>
+                    <button type="button" onclick="selectTool('Cross Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Cross Line</button>
+                    <button type="button" onclick="selectTool('Parallel Channel')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-brand-600">Parallel Channel</button>
+                    <button type="button" onclick="selectTool('Regression Trend')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Regression Trend</button>
+                    <button type="button" onclick="selectTool('Flat Top/Bottom')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Flat Top/Bottom</button>
+                    <button type="button" onclick="selectTool('Disjoint Channel')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Disjoint Channel</button>
+                    <button type="button" onclick="selectTool('Pitchfork')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Pitchfork</button>
+                    <button type="button" onclick="selectTool('Schiff Pitchfork')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Schiff Pitchfork</button>
+                    <button type="button" onclick="selectTool('Modified Schiff')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Modified Schiff</button>
+                    <button type="button" onclick="selectTool('Inside Pitchfork')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Inside Pitchfork</button>
+                </div>
+            </div>
+
+            <!-- 2. Gann & Fibonacci -->
+            <div class="relative group shrink-0">
+                <button type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:border-brand-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-calculator text-amber-500"></i>
+                    <span>Gann &amp; Fibonacci</span>
+                    <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
+                </button>
+                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 w-52 p-1.5 space-y-0.5 text-left">
+                    <button type="button" onclick="selectTool('Fib Retracement')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-amber-600">Fib Retracement</button>
+                    <button type="button" onclick="selectTool('Trend-Based Fib')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Trend-Based Fib</button>
+                    <button type="button" onclick="selectTool('Fib Channel')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Fib Channel</button>
+                    <button type="button" onclick="selectTool('Fib Time Zone')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Fib Time Zone</button>
+                    <button type="button" onclick="selectTool('Fib Speed Resistance')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Fib Speed Resistance</button>
+                    <button type="button" onclick="selectTool('Fib Circle')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Fib Circle</button>
+                    <button type="button" onclick="selectTool('Fib Spiral')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Fib Spiral</button>
+                    <button type="button" onclick="selectTool('Fib Wedge')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Fib Wedge</button>
+                    <button type="button" onclick="selectTool('Pitchfan')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Pitchfan</button>
+                    <button type="button" onclick="selectTool('Gann Box')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Gann Box</button>
+                    <button type="button" onclick="selectTool('Gann Square Fixed')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Gann Square Fixed</button>
+                    <button type="button" onclick="selectTool('Gann Fan')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Gann Fan</button>
+                </div>
+            </div>
+
+            <!-- 3. Patterns -->
+            <div class="relative group shrink-0">
+                <button type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:border-brand-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-shapes text-purple-500"></i>
+                    <span>Patterns</span>
+                    <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
+                </button>
+                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 w-52 p-1.5 space-y-0.5 text-left">
+                    <button type="button" onclick="selectTool('XABCD Pattern')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">XABCD Pattern</button>
+                    <button type="button" onclick="selectTool('Cypher Pattern')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Cypher Pattern</button>
+                    <button type="button" onclick="selectTool('Head & Shoulders')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-purple-600">Head &amp; Shoulders</button>
+                    <button type="button" onclick="selectTool('ABCD Pattern')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">ABCD Pattern</button>
+                    <button type="button" onclick="selectTool('Triangle Pattern')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Triangle Pattern</button>
+                    <button type="button" onclick="selectTool('Three Drives')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Three Drives</button>
+                    <button type="button" onclick="selectTool('Elliott Impulse (12345)')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Elliott Impulse</button>
+                    <button type="button" onclick="selectTool('Elliott Correction (ABC)')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Elliott Correction</button>
+                    <button type="button" onclick="selectTool('Elliott Triangle')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Elliott Triangle</button>
+                    <button type="button" onclick="selectTool('Elliott Double')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Elliott Double</button>
+                    <button type="button" onclick="selectTool('Elliott Triple')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Elliott Triple</button>
+                    <button type="button" onclick="selectTool('Cyclic Lines')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Cyclic Lines</button>
+                    <button type="button" onclick="selectTool('Time Cycles')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Time Cycles</button>
+                    <button type="button" onclick="selectTool('Sine Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Sine Line</button>
+                </div>
+            </div>
+
+            <!-- 4. Forecasting & Measurement -->
+            <div class="relative group shrink-0">
+                <button type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:border-brand-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-ruler-combined text-emerald-500"></i>
+                    <span>Forecasting</span>
+                    <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
+                </button>
+                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 w-52 p-1.5 space-y-0.5 text-left">
+                    <button type="button" onclick="selectTool('Long Position')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-emerald-600">Long Position</button>
+                    <button type="button" onclick="selectTool('Short Position')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-rose-600">Short Position</button>
+                    <button type="button" onclick="selectTool('Forecast')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Forecast</button>
+                    <button type="button" onclick="selectTool('Bars Pattern')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Bars Pattern</button>
+                    <button type="button" onclick="selectTool('Ghost Feed')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Ghost Feed</button>
+                    <button type="button" onclick="selectTool('Projection')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Projection</button>
+                    <button type="button" onclick="selectTool('Anchored VWAP')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Anchored VWAP</button>
+                    <button type="button" onclick="selectTool('Fixed Range Volume')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Fixed Range Volume</button>
+                    <button type="button" onclick="selectTool('Anchored Volume')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Anchored Volume</button>
+                    <button type="button" onclick="selectTool('Price Range')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Price Range</button>
+                    <button type="button" onclick="selectTool('Date Range')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Date Range</button>
+                    <button type="button" onclick="selectTool('Date and Price Range')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Date and Price Range</button>
+                </div>
+            </div>
+
+            <!-- 5. Geometric Shapes -->
+            <div class="relative group shrink-0">
+                <button type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:border-brand-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-draw-polygon text-indigo-500"></i>
+                    <span>Shapes</span>
+                    <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
+                </button>
+                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 w-52 p-1.5 space-y-0.5 text-left">
+                    <button type="button" onclick="selectTool('Brush')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Brush</button>
+                    <button type="button" onclick="selectTool('Highlighter')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Highlighter</button>
+                    <button type="button" onclick="selectTool('Arrow Marker')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Arrow Marker</button>
+                    <button type="button" onclick="selectTool('Arrow')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Arrow</button>
+                    <button type="button" onclick="selectTool('Arrow Marker Up')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Arrow Marker Up</button>
+                    <button type="button" onclick="selectTool('Arrow Marker Down')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Arrow Marker Down</button>
+                    <button type="button" onclick="selectTool('Rectangle')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold">Rectangle</button>
+                    <button type="button" onclick="selectTool('Rotated Rectangle')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Rotated Rectangle</button>
+                    <button type="button" onclick="selectTool('Path')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Path</button>
+                    <button type="button" onclick="selectTool('Circle')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Circle</button>
+                    <button type="button" onclick="selectTool('Ellipse')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Ellipse</button>
+                    <button type="button" onclick="selectTool('Polyline')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Polyline</button>
+                    <button type="button" onclick="selectTool('Triangle')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Triangle</button>
+                    <button type="button" onclick="selectTool('Arc')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Arc</button>
+                    <button type="button" onclick="selectTool('Curve')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Curve</button>
+                    <button type="button" onclick="selectTool('Double Curve')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Double Curve</button>
+                </div>
+            </div>
+
+            <!-- 6. Annotations -->
+            <div class="relative group shrink-0">
+                <button type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:border-brand-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-comment-dots text-cyan-500"></i>
+                    <span>Annotations</span>
+                    <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
+                </button>
+                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 w-52 p-1.5 space-y-0.5 text-left">
+                    <button type="button" onclick="selectTool('Text')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold">Text</button>
+                    <button type="button" onclick="selectTool('Anchored Text')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Anchored Text</button>
+                    <button type="button" onclick="selectTool('Note')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Note</button>
+                    <button type="button" onclick="selectTool('Price Note')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Price Note</button>
+                    <button type="button" onclick="selectTool('Pin')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Pin</button>
+                    <button type="button" onclick="selectTool('Table')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Table</button>
+                    <button type="button" onclick="selectTool('Callout')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Callout</button>
+                    <button type="button" onclick="selectTool('Comment')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Comment</button>
+                    <button type="button" onclick="selectTool('Price Label')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Price Label</button>
+                    <button type="button" onclick="selectTool('Signpost')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Signpost</button>
+                    <button type="button" onclick="selectTool('Flag Mark')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Flag Mark</button>
+                    <button type="button" onclick="selectTool('Image')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Image</button>
+                    <button type="button" onclick="selectTool('Tweet')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Tweet</button>
+                    <button type="button" onclick="selectTool('Idea')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Idea</button>
+                </div>
+            </div>
+
+            <!-- 7. Visuals -->
+            <div class="relative group shrink-0">
+                <button type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:border-brand-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-icons text-pink-500"></i>
+                    <span>Visuals</span>
+                    <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
+                </button>
+                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 w-44 p-1.5 space-y-0.5 text-left">
+                    <button type="button" onclick="selectTool('Emojis')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Emojis 🚀 📈 🔥</button>
+                    <button type="button" onclick="selectTool('Stickers')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Stickers</button>
+                    <button type="button" onclick="selectTool('Icons')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Icons</button>
+                </div>
+            </div>
+
+            <button type="button" onclick="clearDrawings()" class="px-2.5 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold hover:bg-rose-100 shrink-0">
+                <i class="fa-solid fa-trash-can mr-1"></i> Clear Tools
+            </button>
+        </div>
+
+        <!-- HTML5 Canvas Chart -->
+        <div class="relative w-full h-[460px] bg-slate-950 rounded-2xl overflow-hidden border border-slate-800">
+            <canvas id="tradingCanvas" class="w-full h-full cursor-crosshair"></canvas>
+
+            <div id="chartWatermark" class="absolute left-6 bottom-6 pointer-events-none font-mono font-black text-slate-800/40 text-5xl select-none">
+                @selected.Symbol
+            </div>
+
+            <!-- Active Drawing Tool Label -->
+            <div id="activeToolBanner" class="hidden absolute top-4 left-4 px-3 py-1 rounded-lg bg-brand-500/90 text-white font-bold text-3xs shadow-md pointer-events-none">
+                Active: <span id="activeToolName">Trend Line</span> (Click canvas to place)
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM SECTION: Buy / Sell Order Terminal with UIComponent Tabs & iOS Plain English Switch -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+            <div>
+                <h3 class="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-wallet text-brand-500"></i>
+                    <span>Order Execution Terminal</span>
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Execute simulated market, limit, or stop positions with multi-level profit taking and loss protection.
+                </p>
+            </div>
+
+            <!-- UIComponent iOS Switch Button: Plain English (Simple Mode) vs Professional Buzzwords -->
+            <div class="flex items-center gap-3 p-2 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+                <div class="text-right">
+                    <span class="text-xs font-black text-slate-800 dark:text-slate-200 block" id="modeTitleLabel">Plain English Mode</span>
+                    <span class="text-3xs text-slate-400 block" id="modeSubtitleLabel">Beginner-friendly field names</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="terminologyToggle" onchange="toggleTerminology(this.checked)" class="sr-only peer" />
+                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-brand-500"></div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Account Margin Overview KPI Strip -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
+            <div>
+                <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">Available Margin</span>
+                <div class="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 mt-0.5" id="availMarginCardDisplay">
+                    $@account.FreeMargin.ToString("N2")
+                </div>
+            </div>
+            <div>
+                <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">Cash Balance</span>
+                <div class="text-base sm:text-lg font-black text-slate-800 dark:text-slate-200 mt-0.5">
+                    $@account.CashBalance.ToString("N2")
+                </div>
+            </div>
+            <div>
+                <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">Used Margin</span>
+                <div class="text-base sm:text-lg font-black text-slate-800 dark:text-slate-200 mt-0.5">
+                    $@account.MarginUsed.ToString("N2")
+                </div>
+            </div>
+            <div>
+                <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">Total Equity</span>
+                <div class="text-base sm:text-lg font-black text-brand-600 dark:text-brand-400 mt-0.5">
+                    $@account.Equity.ToString("N2")
+                </div>
+            </div>
+        </div>
+
+        <!-- UIComponent Group Tab: Market | Limit | Stop -->
+        <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <button type="button" onclick="setOrderTab('market')" id="tabMarket" class="order-type-tab px-4 py-2 rounded-xl text-xs font-black bg-brand-500 text-white shadow-xs transition-all">
+                Market Order
+            </button>
+            <button type="button" onclick="setOrderTab('limit')" id="tabLimit" class="order-type-tab px-4 py-2 rounded-xl text-xs font-black bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 transition-all">
+                Limit Order
+            </button>
+            <button type="button" onclick="setOrderTab('stop')" id="tabStop" class="order-type-tab px-4 py-2 rounded-xl text-xs font-black bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 transition-all">
+                Stop Order
+            </button>
+        </div>
+
+        <!-- Order Form Submission -->
+        <form asp-action="PlaceOrder" method="post" id="tradingOrderForm" class="space-y-6">
+            <input type="hidden" name="symbol" value="@selected.Symbol" />
+            <input type="hidden" name="assetName" value="@selected.AssetName" />
+            <input type="hidden" name="assetClass" value="@((int)selected.AssetClass)" />
+            <input type="hidden" name="side" id="formOrderSide" value="1" /> <!-- 1 = Buy, 2 = Sell -->
+            <input type="hidden" name="orderType" id="formOrderType" value="1" /> <!-- 1 = Market, 2 = Limit, 3 = Stop -->
+            <input type="hidden" name="multipleTakeProfitsJson" id="formMultiTpJson" value="" />
+            <input type="hidden" name="quantity" id="orderQuantityInput" value="1" />
+
+            <!-- Price & Order Duration Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Market Execution Price Display (Active by default on Market Tab) -->
+                <div id="marketPriceGroup" class="space-y-1">
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
+                        <span class="term-market-label">Market Execution Price</span>
+                        <span class="inline-flex items-center gap-1 text-3xs font-extrabold text-emerald-500">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Auto-Syncing
+                        </span>
+                    </div>
+                    <div class="px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-mono font-black text-slate-900 dark:text-white flex items-center justify-between">
+                        <span id="marketOrderPriceDisplay">$@selected.Price.ToString("N2")</span>
+                        <span class="text-3xs uppercase font-extrabold px-1.5 py-0.5 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400">Instant Fill</span>
+                    </div>
+                </div>
+
+                <!-- Limit / Stop Trigger Price (Shown conditionally based on active tab) -->
+                <div id="priceInputGroup" class="hidden space-y-1">
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
+                        <span class="term-price-label">Limit Price ($)</span>
+                        <button type="button" onclick="setLimitToMarket()" class="text-3xs font-extrabold text-brand-500 hover:underline">
+                            ⚡ Market: <span id="limitMarketHint">$@selected.Price.ToString("N2")</span>
+                        </button>
+                    </div>
+                    <input type="number" step="any" min="0.000001" name="price" id="orderPriceInput" value="@selected.Price" oninput="recalculateAllSizeAndMargin()"
+                           class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-bold focus:border-brand-500 focus:outline-none" />
+                </div>
+
+                <div id="stopTriggerInputGroup" class="hidden space-y-1">
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
+                        <span class="term-trigger-label">Stop Activation Price ($)</span>
+                        <button type="button" onclick="setStopToMarket()" class="text-3xs font-extrabold text-brand-500 hover:underline">
+                            ⚡ Market: <span id="stopMarketHint">$@selected.Price.ToString("N2")</span>
+                        </button>
+                    </div>
+                    <input type="number" step="any" min="0.000001" name="triggerPrice" id="orderTriggerPriceInput" value="@selected.Price" oninput="recalculateAllSizeAndMargin()"
+                           class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-bold focus:border-brand-500 focus:outline-none" />
+                </div>
+
+                <!-- Time In Force (Limit & Stop tabs) -->
+                <div id="tifGroup" class="hidden space-y-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 term-tif-label">Order Duration / TIF</label>
+                    <select name="timeInForce" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-bold focus:border-brand-500 focus:outline-none">
+                        <option value="GTC">Good 'Til Cancelled (GTC)</option>
+                        <option value="Day">Day Order (Expires at market close)</option>
+                        <option value="Week">Week (Expires Friday)</option>
+                        <option value="Month">Month (Expires End of Month)</option>
+                        <option value="GTD">Good Till Date (GTD)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Order Size Card with Multi-Unit Mode Selector & Real-Time Calculated Types -->
+            <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <label class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
+                        <i class="fa-solid fa-coins text-brand-500"></i>
+                        <span class="term-quantity-label">Order Size</span>
+                    </label>
+
+                    <!-- Input Mode Selector: Units | USD Margin | % Balance | Total USD -->
+                    <div class="flex items-center gap-1 bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-3xs font-extrabold">
+                        <button type="button" onclick="setTradeSizeMode('units')" id="sizeModeBtnUnits" class="size-mode-btn px-2.5 py-1 rounded-lg bg-brand-500 text-white shadow-2xs transition-all">
+                            Units
+                        </button>
+                        <button type="button" onclick="setTradeSizeMode('margin')" id="sizeModeBtnMargin" class="size-mode-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                            USD Margin ($)
+                        </button>
+                        <button type="button" onclick="setTradeSizeMode('percent')" id="sizeModeBtnPercent" class="size-mode-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                            % Balance
+                        </button>
+                        <button type="button" onclick="setTradeSizeMode('total')" id="sizeModeBtnTotal" class="size-mode-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                            Total Value ($)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Primary Number Input with Dynamic Prefix & Suffix -->
+                <div class="relative">
+                    <span id="sizeInputPrefix" class="hidden absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">$</span>
+                    <input type="number" step="any" min="0.000001" id="orderSizeMainInput" value="1"
+                           oninput="onSizeMainInputChange(this.value)"
+                           placeholder="Enter quantity or margin..."
+                           class="w-full pl-3.5 pr-28 py-3 text-sm rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 font-black text-slate-900 dark:text-white focus:border-brand-500 focus:outline-none shadow-xs" required />
+                    <span id="sizeInputSuffix" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-brand-600 dark:text-brand-400 uppercase tracking-wider">
+                        Units
+                    </span>
+                </div>
+
+                <!-- Trade Value Slider (% Available Margin) -->
+                <div class="space-y-1.5 pt-1">
+                    <div class="flex justify-between items-center text-3xs font-extrabold text-slate-500 dark:text-slate-400">
+                        <span>Trade Value Slider (% Available Margin)</span>
+                        <span id="tradeValueSliderLabel" class="text-brand-500 font-black">10%</span>
+                    </div>
+                    <input type="range" min="1" max="100" value="10" id="tradeValueSlider"
+                           oninput="onTradeValueSliderChange(this.value)"
+                           class="w-full accent-brand-500 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg" />
+                    <div class="flex items-center justify-between text-3xs font-extrabold text-slate-400">
+                        <button type="button" onclick="setSliderPreset(10)" class="hover:text-brand-500">10%</button>
+                        <button type="button" onclick="setSliderPreset(25)" class="hover:text-brand-500">25%</button>
+                        <button type="button" onclick="setSliderPreset(50)" class="hover:text-brand-500">50%</button>
+                        <button type="button" onclick="setSliderPreset(75)" class="hover:text-brand-500">75%</button>
+                        <button type="button" onclick="setSliderPreset(100)" class="hover:text-brand-500 font-black">100% (Max)</button>
+                    </div>
+                </div>
+
+                <!-- Real-Time Conversions Strip: Displays All Types Under the Input -->
+                <div class="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs shadow-2xs">
+                    <div>
+                        <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">📦 Units (Quantity)</span>
+                        <div class="font-mono font-black text-slate-900 dark:text-white mt-0.5 truncate" id="calcUnitsDisplay">
+                            1.0000 <span class="text-3xs font-bold text-slate-400">@selected.Symbol</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">💵 USD Margin</span>
+                        <div class="font-mono font-black text-slate-900 dark:text-white mt-0.5 truncate" id="calcMarginDisplay">
+                            $0.00
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">📊 % Available Margin</span>
+                        <div class="font-mono font-black text-slate-900 dark:text-white mt-0.5 truncate" id="calcBalancePctDisplay">
+                            0.00%
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">🏷️ Total Order Value</span>
+                        <div class="font-mono font-black text-brand-600 dark:text-brand-400 mt-0.5 truncate" id="calcTotalValueDisplay">
+                            $0.00
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leverage Multiplier Slider Card -->
+            <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-3">
+                <div class="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <span class="term-leverage-label flex items-center gap-1.5 font-black uppercase tracking-wide">
+                        <i class="fa-solid fa-bolt text-amber-500"></i>
+                        <span>Leverage Multiplier</span>
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-3xs uppercase font-bold text-slate-400">Multiplier:</span>
+                        <span id="leverageDisplay" class="px-2.5 py-0.5 rounded-lg bg-brand-500 text-white font-mono font-black text-xs shadow-2xs">1x</span>
+                    </div>
+                </div>
+                <input type="range" min="1" max="250" value="1" name="leverage" id="orderLeverageInput"
+                       oninput="updateLeverage(this.value)"
+                       class="w-full accent-brand-500 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg" />
+                <div class="flex flex-wrap items-center justify-between gap-1 text-3xs font-extrabold text-slate-400">
+                    <button type="button" onclick="setLeveragePreset(1)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors">1x</button>
+                    <button type="button" onclick="setLeveragePreset(2)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors">2x</button>
+                    <button type="button" onclick="setLeveragePreset(5)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors">5x</button>
+                    <button type="button" onclick="setLeveragePreset(10)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors">10x</button>
+                    <button type="button" onclick="setLeveragePreset(20)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors">20x</button>
+                    <button type="button" onclick="setLeveragePreset(50)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors">50x</button>
+                    <button type="button" onclick="setLeveragePreset(100)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors">100x</button>
+                    <button type="button" onclick="setLeveragePreset(150)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors">150x</button>
+                    <button type="button" onclick="setLeveragePreset(200)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors">200x</button>
+                    <button type="button" onclick="setLeveragePreset(250)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors font-black text-brand-600 dark:text-brand-400">250x</button>
+                </div>
+            </div>
+
+            <!-- Exit Management Section: Take Profit & Stop Loss with iOS ON/OFF Switches -->
+            <div class="p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+                    <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-emerald-500"></i>
+                        <span class="term-exit-header">Target Profit &amp; Loss Protection</span>
+                    </h4>
+                    <!-- Quick R:R Pre-set Buttons -->
+                    <div class="flex items-center gap-1.5 text-3xs">
+                        <span class="text-slate-400">R:R Presets:</span>
+                        <button type="button" onclick="setRiskReward(1)" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 font-bold hover:bg-slate-200">1:1</button>
+                        <button type="button" onclick="setRiskReward(2)" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 font-bold hover:bg-slate-200">1:2</button>
+                        <button type="button" onclick="setRiskReward(3)" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 font-bold hover:bg-slate-200">1:3</button>
+                    </div>
+                </div>
+
+                <!-- Inputs Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Take Profit (Reward) with iOS Switch -->
+                    <div class="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                            <div class="flex items-center gap-2.5">
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="tpEnableToggle" onchange="toggleTpEnabled(this.checked)" checked class="sr-only peer" />
+                                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-500"></div>
+                                </label>
+                                <span class="text-xs font-black text-slate-800 dark:text-slate-200 term-tp-label">Take Profit</span>
+                            </div>
+                            <span class="text-3xs text-emerald-500 font-bold" id="tpRewardSummary">+0.00 USD</span>
+                        </div>
+
+                        <div id="tpInputsContainer" class="space-y-3">
+                            <input type="number" step="any" name="takeProfit" id="orderTakeProfitInput" oninput="calculateRiskRewardOutputs()"
+                                   placeholder="e.g. Target Exit Price ($)"
+                                   class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-bold focus:border-emerald-500 focus:outline-none" />
+
+                            <!-- Multi-Level Take Profit Section (TP1, TP2, TP3) -->
+                            <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-3xs font-extrabold uppercase text-slate-500">Multi-Level Partial Exits</span>
+                                    <button type="button" onclick="toggleMultiTpInputs()" id="toggleMultiTpBtn" class="text-3xs text-brand-500 font-bold hover:underline">
+                                        + Add TP1 / TP2 / TP3
+                                    </button>
+                                </div>
+                                <div id="multiTpContainer" class="hidden space-y-1.5 pt-1">
+                                    <div class="grid grid-cols-3 gap-1.5 text-3xs">
+                                        <input type="number" step="any" id="tp1Price" placeholder="TP1 Price" class="p-1.5 rounded-lg border dark:bg-slate-900 font-bold" oninput="syncMultiTpJson()" />
+                                        <input type="number" id="tp1Pct" placeholder="50%" value="50" class="p-1.5 rounded-lg border dark:bg-slate-900 font-bold" oninput="syncMultiTpJson()" />
+                                        <span class="self-center text-slate-400 font-bold">50% size</span>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-1.5 text-3xs">
+                                        <input type="number" step="any" id="tp2Price" placeholder="TP2 Price" class="p-1.5 rounded-lg border dark:bg-slate-900 font-bold" oninput="syncMultiTpJson()" />
+                                        <input type="number" id="tp2Pct" placeholder="30%" value="30" class="p-1.5 rounded-lg border dark:bg-slate-900 font-bold" oninput="syncMultiTpJson()" />
+                                        <span class="self-center text-slate-400 font-bold">30% size</span>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-1.5 text-3xs">
+                                        <input type="number" step="any" id="tp3Price" placeholder="TP3 Price" class="p-1.5 rounded-lg border dark:bg-slate-900 font-bold" oninput="syncMultiTpJson()" />
+                                        <input type="number" id="tp3Pct" placeholder="20%" value="20" class="p-1.5 rounded-lg border dark:bg-slate-900 font-bold" oninput="syncMultiTpJson()" />
+                                        <span class="self-center text-slate-400 font-bold">20% size</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stop Loss (Risk) with iOS Switch -->
+                    <div class="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                            <div class="flex items-center gap-2.5">
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="slEnableToggle" onchange="toggleSlEnabled(this.checked)" checked class="sr-only peer" />
+                                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-rose-500"></div>
+                                </label>
+                                <span class="text-xs font-black text-slate-800 dark:text-slate-200 term-sl-label">Stop Loss Protection</span>
+                            </div>
+                            <span class="text-3xs text-rose-500 font-bold" id="slRiskSummary">-0.00 USD</span>
+                        </div>
+
+                        <div id="slInputsContainer" class="space-y-3">
+                            <input type="number" step="any" name="stopLoss" id="orderStopLossInput" oninput="calculateRiskRewardOutputs()"
+                                   placeholder="e.g. Protective Exit Price ($)"
+                                   class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-bold focus:border-rose-500 focus:outline-none" />
+
+                            <!-- Trailing Stop Distance -->
+                            <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-1.5">
+                                <label class="text-3xs font-extrabold uppercase text-slate-500 block">Trailing Stop Distance ($)</label>
+                                <input type="number" step="any" min="0" name="trailingStopDistance" id="orderTrailingStopInput"
+                                       placeholder="Trail distance (auto ratchets upward in profit)"
+                                       class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-900 font-bold" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Action Buttons (Buy / Long vs Sell / Short) -->
+            <div class="grid grid-cols-2 gap-4 pt-2">
+                <button type="button" onclick="submitOrder(1)" class="py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:scale-[0.99] text-white font-black text-sm shadow-md transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                    <span id="buyBtnLabel">Buy (Long)</span>
+                </button>
+                <button type="button" onclick="submitOrder(2)" class="py-3.5 rounded-2xl bg-rose-500 hover:bg-rose-600 active:scale-[0.99] text-white font-black text-sm shadow-md transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-trend-down"></i>
+                    <span id="sellBtnLabel">Sell (Short)</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Active Positions / Orders for THIS Asset -->
+    @if (openForSymbol.Count > 0 || pendingForSymbol.Count > 0)
+    {
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
+            <h4 class="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-layer-group text-brand-500"></i>
+                <span>Your Holdings in @selected.Symbol</span>
+            </h4>
+
+            @if (openForSymbol.Count > 0)
+            {
+                <div class="space-y-2">
+                    <p class="text-3xs uppercase font-extrabold text-slate-400">Open Positions</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        @foreach (var pos in openForSymbol)
+                        {
+                            <div class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-between text-xs">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2 py-0.5 rounded text-3xs font-black @(pos.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600")">@pos.Side @pos.Leverage&times;</span>
+                                        <strong class="font-bold">@pos.Quantity.ToString("N4") units</strong>
+                                    </div>
+                                    <div class="text-3xs text-slate-400 mt-1">Entry: $@pos.EntryPrice.ToString("N2") | Margin: $@pos.InitialMargin.ToString("N2")</div>
+                                </div>
+                                <div class="text-right flex items-center gap-3">
+                                    <div class="font-mono font-black @(pos.UnrealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                        @(pos.UnrealizedPnl >= 0 ? "+" : "")$@pos.UnrealizedPnl.ToString("N2")
+                                    </div>
+                                    <form asp-action="ClosePosition" method="post">
+                                        <input type="hidden" name="positionId" value="@pos.Id" />
+                                        <input type="hidden" name="symbol" value="@pos.Symbol" />
+                                        <input type="hidden" name="sourcePage" value="trade" />
+                                        <button type="submit" class="px-2.5 py-1 rounded-lg bg-rose-500 text-white font-bold text-3xs hover:bg-rose-600 shadow-2xs">
+                                            Close
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (pendingForSymbol.Count > 0)
+            {
+                <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <p class="text-3xs uppercase font-extrabold text-slate-400">Pending Orders</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        @foreach (var ord in pendingForSymbol)
+                        {
+                            <div class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-between text-xs">
+                                <div>
+                                    <span class="px-2 py-0.5 rounded text-3xs font-black bg-slate-200 dark:bg-slate-700">@ord.OrderType @ord.Side</span>
+                                    <div class="text-3xs text-slate-400 mt-1">Price: $@((ord.Price ?? ord.TriggerPrice ?? 0m).ToString("N2")) | Qty: @ord.Quantity.ToString("N4")</div>
+                                </div>
+                                <form asp-action="CancelOrder" method="post">
+                                    <input type="hidden" name="orderId" value="@ord.Id" />
+                                    <input type="hidden" name="symbol" value="@ord.Symbol" />
+                                    <input type="hidden" name="sourcePage" value="trade" />
+                                    <button type="submit" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-rose-500 hover:text-white font-bold text-3xs">
+                                        Cancel
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+<script>
+    const symbol = "@selected.Symbol";
+    let basePrice = @selected.Price;
+    let cashBalance = @account.CashBalance;
+    let freeMargin = @account.FreeMargin;
+    let currentSide = 1; // 1 = Buy, 2 = Sell
+    let currentOrderTab = 'market';
+    let isBuzzwordsMode = false;
+    let isSymbolWatchlisted = @(selected.IsWatchlisted ? "true" : "false");
+    let currentSizeMode = 'units'; // 'units', 'margin', 'percent', 'total'
+    let currentCalculatedUnits = 1.0;
+    let currentCalculatedMargin = 0;
+    let currentCalculatedPercent = 0;
+    let currentCalculatedTotal = 0;
+    let tpEnabled = true;
+    let slEnabled = true;
+
+    // ── 1. Live Price Auto-Update Polling (Every 3 seconds, in-place, NO refresh) ─────
+    setInterval(async () => {
+        try {
+            const res = await fetch(`/Trading/Trading/Quote?symbol=${encodeURIComponent(symbol)}`);
+            if (res.ok) {
+                const quote = await res.json();
+                const newPrice = Number(quote.Price);
+
+                if (newPrice && newPrice !== basePrice) {
+                    const priceEl = document.getElementById('liveTickerPrice');
+                    const changeEl = document.getElementById('liveTickerChange');
+
+                    // Flash animation on live badge
+                    if (newPrice > basePrice) {
+                        priceEl.classList.add('text-emerald-500');
+                        setTimeout(() => priceEl.classList.remove('text-emerald-500'), 800);
+                    } else {
+                        priceEl.classList.add('text-rose-500');
+                        setTimeout(() => priceEl.classList.remove('text-rose-500'), 800);
+                    }
+
+                    basePrice = newPrice;
+                    priceEl.textContent = `$${newPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+                    const chg24h = Number(quote.ChangePercent24h ?? quote.changePercent24h ?? 0);
+                    changeEl.textContent = `${chg24h >= 0 ? '+' : ''}${chg24h.toFixed(2)}%`;
+
+                    const highEl = document.getElementById('liveHighDisplay');
+                    if (highEl && quote.High24h) highEl.textContent = `$${Number(quote.High24h).toFixed(2)}`;
+                    const lowEl = document.getElementById('liveLowDisplay');
+                    if (lowEl && quote.Low24h) lowEl.textContent = `$${Number(quote.Low24h).toFixed(2)}`;
+
+                    // Seamlessly update market order execution display and quick hints in-place
+                    const marketPriceEl = document.getElementById('marketOrderPriceDisplay');
+                    if (marketPriceEl) {
+                        marketPriceEl.textContent = `$${newPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+                    }
+
+                    const limitHint = document.getElementById('limitMarketHint');
+                    if (limitHint) limitHint.textContent = `$${newPrice.toFixed(2)}`;
+                    const stopHint = document.getElementById('stopMarketHint');
+                    if (stopHint) stopHint.textContent = `$${newPrice.toFixed(2)}`;
+
+                    // Recalculate indicators & size conversions dynamically with the new live price
+                    recalculateAllSizeAndMargin();
+                }
+            }
+        } catch (err) {
+            console.debug('Price sync polling idle:', err);
+        }
+    }, 3000);
+
+    function getActiveReferencePrice() {
+        if (currentOrderTab === 'limit') {
+            const p = parseFloat(document.getElementById('orderPriceInput').value);
+            return (p && p > 0) ? p : basePrice;
+        } else if (currentOrderTab === 'stop') {
+            const p = parseFloat(document.getElementById('orderTriggerPriceInput').value);
+            return (p && p > 0) ? p : basePrice;
+        }
+        return basePrice > 0 ? basePrice : 1;
+    }
+
+    function setLimitToMarket() {
+        document.getElementById('orderPriceInput').value = basePrice;
+        recalculateAllSizeAndMargin();
+    }
+
+    function setStopToMarket() {
+        document.getElementById('orderTriggerPriceInput').value = basePrice;
+        recalculateAllSizeAndMargin();
+    }
+
+    async function toggleTradeWatchlist(sym, name, cls) {
+        try {
+            const formData = new FormData();
+            formData.append('symbol', sym);
+            formData.append('assetName', name);
+            formData.append('assetClass', cls);
+
+            const res = await fetch('/Trading/Trading/ToggleWatchlist', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                isSymbolWatchlisted = data.isWatchlisted;
+                const icon = document.getElementById('tradeWatchlistIcon');
+                const btn = document.getElementById('tradeWatchlistBtn');
+                if (isSymbolWatchlisted) {
+                    icon.className = 'fa-solid fa-star text-amber-500 text-sm';
+                    btn.title = 'Remove from watchlist';
+                } else {
+                    icon.className = 'fa-regular fa-star text-slate-400 hover:text-amber-500 text-sm';
+                    btn.title = 'Add to watchlist';
+                }
+            }
+        } catch (err) {
+            console.error('Failed to toggle watchlist in trade terminal:', err);
+        }
+    }
+
+    // ── 2. Order Tab Switcher (Market, Limit, Stop) ──────────────────────────
+    function setOrderTab(tab) {
+        currentOrderTab = tab;
+        document.querySelectorAll('.order-type-tab').forEach(b => {
+            b.classList.remove('bg-brand-500', 'text-white', 'shadow-xs');
+            b.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-400');
+        });
+
+        const activeBtn = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+        if (activeBtn) {
+            activeBtn.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-600', 'dark:text-slate-400');
+            activeBtn.classList.add('bg-brand-500', 'text-white', 'shadow-xs');
+        }
+
+        const marketGroup = document.getElementById('marketPriceGroup');
+        const priceGroup = document.getElementById('priceInputGroup');
+        const stopTriggerGroup = document.getElementById('stopTriggerInputGroup');
+        const tifGroup = document.getElementById('tifGroup');
+        const formOrderType = document.getElementById('formOrderType');
+
+        if (tab === 'market') {
+            formOrderType.value = 1;
+            if (marketGroup) marketGroup.classList.remove('hidden');
+            priceGroup.classList.add('hidden');
+            stopTriggerGroup.classList.add('hidden');
+            tifGroup.classList.add('hidden');
+        } else if (tab === 'limit') {
+            formOrderType.value = 2;
+            if (marketGroup) marketGroup.classList.add('hidden');
+            priceGroup.classList.remove('hidden');
+            stopTriggerGroup.classList.add('hidden');
+            tifGroup.classList.remove('hidden');
+            if (!document.getElementById('orderPriceInput').value) {
+                document.getElementById('orderPriceInput').value = basePrice;
+            }
+        } else if (tab === 'stop') {
+            formOrderType.value = 3;
+            if (marketGroup) marketGroup.classList.add('hidden');
+            priceGroup.classList.add('hidden');
+            stopTriggerGroup.classList.remove('hidden');
+            tifGroup.classList.remove('hidden');
+            if (!document.getElementById('orderTriggerPriceInput').value) {
+                document.getElementById('orderTriggerPriceInput').value = basePrice;
+            }
+        }
+
+        recalculateAllSizeAndMargin();
+    }
+
+    // ── 3. Trade Size Modes & Multi-Unit Calculations ────────────────────────
+    function setTradeSizeMode(mode) {
+        currentSizeMode = mode;
+        document.querySelectorAll('.size-mode-btn').forEach(b => {
+            b.classList.remove('bg-brand-500', 'text-white', 'shadow-2xs');
+            b.classList.add('text-slate-600', 'dark:text-slate-400');
+        });
+
+        const activeBtn = document.getElementById('sizeModeBtn' + mode.charAt(0).toUpperCase() + mode.slice(1));
+        if (activeBtn) {
+            activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+            activeBtn.classList.add('bg-brand-500', 'text-white', 'shadow-2xs');
+        }
+
+        const prefix = document.getElementById('sizeInputPrefix');
+        const suffix = document.getElementById('sizeInputSuffix');
+        const input = document.getElementById('orderSizeMainInput');
+
+        if (mode === 'units') {
+            prefix.classList.add('hidden');
+            suffix.textContent = 'Units';
+            input.value = currentCalculatedUnits > 0 ? (currentCalculatedUnits > 1 ? currentCalculatedUnits.toFixed(4) : currentCalculatedUnits.toFixed(6)) : '1';
+        } else if (mode === 'margin') {
+            prefix.classList.remove('hidden');
+            suffix.textContent = 'USD Margin';
+            input.value = currentCalculatedMargin > 0 ? currentCalculatedMargin.toFixed(2) : '10.00';
+        } else if (mode === 'percent') {
+            prefix.classList.add('hidden');
+            suffix.textContent = '% Balance';
+            input.value = currentCalculatedPercent > 0 ? currentCalculatedPercent.toFixed(1) : '10.0';
+        } else if (mode === 'total') {
+            prefix.classList.remove('hidden');
+            suffix.textContent = 'Total USD';
+            input.value = currentCalculatedTotal > 0 ? currentCalculatedTotal.toFixed(2) : '100.00';
+        }
+
+        recalculateAllSizeAndMargin();
+    }
+
+    function onSizeMainInputChange(val) {
+        recalculateAllSizeAndMargin();
+    }
+
+    function onTradeValueSliderChange(pctVal) {
+        const pct = parseFloat(pctVal) || 0;
+        document.getElementById('tradeValueSliderLabel').textContent = pct + '%';
+
+        const refPrice = getActiveReferencePrice();
+        const lev = parseInt(document.getElementById('orderLeverageInput').value) || 1;
+        const avail = freeMargin > 0 ? freeMargin : (cashBalance > 0 ? cashBalance : 100);
+
+        const targetMargin = (avail * pct) / 100;
+        const targetTotal = targetMargin * lev;
+        const targetUnits = refPrice > 0 ? targetTotal / refPrice : 0;
+
+        const input = document.getElementById('orderSizeMainInput');
+        if (currentSizeMode === 'units') {
+            input.value = targetUnits > 1 ? targetUnits.toFixed(4) : targetUnits.toFixed(6);
+        } else if (currentSizeMode === 'margin') {
+            input.value = targetMargin.toFixed(2);
+        } else if (currentSizeMode === 'percent') {
+            input.value = pct.toFixed(1);
+        } else if (currentSizeMode === 'total') {
+            input.value = targetTotal.toFixed(2);
+        }
+
+        recalculateAllSizeAndMargin();
+    }
+
+    function setSliderPreset(pct) {
+        const slider = document.getElementById('tradeValueSlider');
+        if (slider) slider.value = pct;
+        onTradeValueSliderChange(pct);
+    }
+
+    function setLeveragePreset(lev) {
+        const levInput = document.getElementById('orderLeverageInput');
+        if (levInput) levInput.value = lev;
+        updateLeverage(lev);
+    }
+
+    function updateLeverage(val) {
+        document.getElementById('leverageDisplay').textContent = val + 'x';
+        recalculateAllSizeAndMargin();
+    }
+
+    function recalculateAllSizeAndMargin() {
+        const refPrice = getActiveReferencePrice();
+        const lev = parseInt(document.getElementById('orderLeverageInput').value) || 1;
+        const avail = freeMargin > 0 ? freeMargin : (cashBalance > 0 ? cashBalance : 100);
+        const val = parseFloat(document.getElementById('orderSizeMainInput').value) || 0;
+
+        let units = 0;
+        let margin = 0;
+        let total = 0;
+        let balancePct = 0;
+
+        if (currentSizeMode === 'units') {
+            units = val;
+            total = units * refPrice;
+            margin = total / lev;
+            balancePct = avail > 0 ? (margin / avail) * 100 : 0;
+        } else if (currentSizeMode === 'margin') {
+            margin = val;
+            total = margin * lev;
+            units = refPrice > 0 ? total / refPrice : 0;
+            balancePct = avail > 0 ? (margin / avail) * 100 : 0;
+        } else if (currentSizeMode === 'percent') {
+            balancePct = val;
+            margin = (avail * balancePct) / 100;
+            total = margin * lev;
+            units = refPrice > 0 ? total / refPrice : 0;
+        } else if (currentSizeMode === 'total') {
+            total = val;
+            units = refPrice > 0 ? total / refPrice : 0;
+            margin = total / lev;
+            balancePct = avail > 0 ? (margin / avail) * 100 : 0;
+        }
+
+        currentCalculatedUnits = units;
+        currentCalculatedMargin = margin;
+        currentCalculatedPercent = balancePct;
+        currentCalculatedTotal = total;
+
+        // Keep hidden quantity field in sync so backend receives exact decimal units
+        document.getElementById('orderQuantityInput').value = units > 0 ? (units > 1 ? units.toFixed(6) : units.toFixed(8)) : '0';
+
+        // Update live bottom conversions strip
+        const unitsStr = units > 1 ? units.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : units.toFixed(6);
+        document.getElementById('calcUnitsDisplay').innerHTML = `${unitsStr} <span class="text-3xs font-bold text-slate-400">@selected.Symbol</span>`;
+        document.getElementById('calcMarginDisplay').textContent = `$${margin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        document.getElementById('calcBalancePctDisplay').textContent = `${balancePct.toFixed(2)}%`;
+        document.getElementById('calcTotalValueDisplay').textContent = `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        // Sync slider position if user typed directly
+        const slider = document.getElementById('tradeValueSlider');
+        if (slider && document.activeElement !== slider) {
+            const clampedPct = Math.min(100, Math.max(1, Math.round(balancePct)));
+            slider.value = clampedPct;
+            document.getElementById('tradeValueSliderLabel').textContent = clampedPct + '%';
+        }
+
+        calculateRiskRewardOutputs();
+    }
+
+    // ── 4. Exit Protection (Take Profit & Stop Loss with iOS ON/OFF Switches) ──
+    function toggleTpEnabled(enabled) {
+        tpEnabled = enabled;
+        const container = document.getElementById('tpInputsContainer');
+        const summary = document.getElementById('tpRewardSummary');
+        const input = document.getElementById('orderTakeProfitInput');
+        if (enabled) {
+            container.classList.remove('opacity-40', 'pointer-events-none');
+            input.disabled = false;
+        } else {
+            container.classList.add('opacity-40', 'pointer-events-none');
+            input.disabled = true;
+            summary.textContent = 'Disabled';
+        }
+        calculateRiskRewardOutputs();
+    }
+
+    function toggleSlEnabled(enabled) {
+        slEnabled = enabled;
+        const container = document.getElementById('slInputsContainer');
+        const summary = document.getElementById('slRiskSummary');
+        const input = document.getElementById('orderStopLossInput');
+        if (enabled) {
+            container.classList.remove('opacity-40', 'pointer-events-none');
+            input.disabled = false;
+        } else {
+            container.classList.add('opacity-40', 'pointer-events-none');
+            input.disabled = true;
+            summary.textContent = 'Disabled';
+        }
+        calculateRiskRewardOutputs();
+    }
+
+    function calculateRiskRewardOutputs() {
+        const qty = currentCalculatedUnits;
+        const refPrice = getActiveReferencePrice();
+
+        if (slEnabled) {
+            const slPrice = parseFloat(document.getElementById('orderStopLossInput').value) || 0;
+            if (slPrice > 0) {
+                const riskUsd = currentSide === 1 ? Math.max(0, (refPrice - slPrice) * qty) : Math.max(0, (slPrice - refPrice) * qty);
+                const riskPct = cashBalance > 0 ? (riskUsd / cashBalance) * 100 : 0;
+                document.getElementById('slRiskSummary').textContent = `-$${riskUsd.toFixed(2)} USD (${riskPct.toFixed(1)}%)`;
+            } else {
+                document.getElementById('slRiskSummary').textContent = 'No Stop Loss Set';
+            }
+        } else {
+            document.getElementById('slRiskSummary').textContent = 'Protection OFF';
+        }
+
+        if (tpEnabled) {
+            const tpPrice = parseFloat(document.getElementById('orderTakeProfitInput').value) || 0;
+            if (tpPrice > 0) {
+                const rewardUsd = currentSide === 1 ? Math.max(0, (tpPrice - refPrice) * qty) : Math.max(0, (refPrice - tpPrice) * qty);
+                const rewardPct = cashBalance > 0 ? (rewardUsd / cashBalance) * 100 : 0;
+                document.getElementById('tpRewardSummary').textContent = `+$${rewardUsd.toFixed(2)} USD (${rewardPct.toFixed(1)}%)`;
+            } else {
+                document.getElementById('tpRewardSummary').textContent = 'No Profit Target Set';
+            }
+        } else {
+            document.getElementById('tpRewardSummary').textContent = 'Target OFF';
+        }
+    }
+
+    function setRiskReward(ratio) {
+        const refPrice = getActiveReferencePrice();
+        const slInput = document.getElementById('orderStopLossInput');
+        const tpInput = document.getElementById('orderTakeProfitInput');
+        const slDistance = refPrice * 0.015; // default 1.5% SL distance
+
+        if (!slEnabled) {
+            document.getElementById('slEnableToggle').checked = true;
+            toggleSlEnabled(true);
+        }
+        if (!tpEnabled) {
+            document.getElementById('tpEnableToggle').checked = true;
+            toggleTpEnabled(true);
+        }
+
+        if (currentSide === 1) { // Buy
+            const sl = Math.max(0.01, refPrice - slDistance);
+            const tp = refPrice + (slDistance * ratio);
+            slInput.value = sl.toFixed(2);
+            tpInput.value = tp.toFixed(2);
+        } else { // Sell
+            const sl = refPrice + slDistance;
+            const tp = Math.max(0.01, refPrice - (slDistance * ratio));
+            slInput.value = sl.toFixed(2);
+            tpInput.value = tp.toFixed(2);
+        }
+        calculateRiskRewardOutputs();
+    }
+
+    function toggleMultiTpInputs() {
+        const container = document.getElementById('multiTpContainer');
+        container.classList.toggle('hidden');
+    }
+
+    function syncMultiTpJson() {
+        const p1 = parseFloat(document.getElementById('tp1Price').value) || 0;
+        const p2 = parseFloat(document.getElementById('tp2Price').value) || 0;
+        const p3 = parseFloat(document.getElementById('tp3Price').value) || 0;
+
+        const list = [];
+        if (p1 > 0) list.push({ level: 1, price: p1, percentage: parseFloat(document.getElementById('tp1Pct').value) || 50 });
+        if (p2 > 0) list.push({ level: 2, price: p2, percentage: parseFloat(document.getElementById('tp2Pct').value) || 30 });
+        if (p3 > 0) list.push({ level: 3, price: p3, percentage: parseFloat(document.getElementById('tp3Pct').value) || 20 });
+
+        document.getElementById('formMultiTpJson').value = list.length > 0 ? JSON.stringify(list) : '';
+    }
+
+    // ── 5. UIComponent iOS Terminology Switch ────────────────────────────────
+    function toggleTerminology(isBuzzwords) {
+        isBuzzwordsMode = isBuzzwords;
+        const modeTitle = document.getElementById('modeTitleLabel');
+        const modeSub = document.getElementById('modeSubtitleLabel');
+
+        if (isBuzzwords) {
+            modeTitle.textContent = "Pro Buzzwords Mode";
+            modeSub.textContent = "% Balance, USD Margin, Risk USD, Ticks";
+            document.querySelectorAll('.term-quantity-label').forEach(el => el.textContent = "Order Size / Units / Margin");
+            document.querySelectorAll('.term-leverage-label').forEach(el => el.textContent = "Margin Leverage");
+            document.querySelectorAll('.term-price-label').forEach(el => el.textContent = "Limit Execution Price ($)");
+            document.querySelectorAll('.term-trigger-label').forEach(el => el.textContent = "Stop Trigger Activation ($)");
+            document.querySelectorAll('.term-tif-label').forEach(el => el.textContent = "Time in Force (TIF)");
+            document.querySelectorAll('.term-tp-label').forEach(el => el.textContent = "Take Profit Target");
+            document.querySelectorAll('.term-sl-label').forEach(el => el.textContent = "Stop Loss Threshold");
+            document.querySelectorAll('.term-exit-header').forEach(el => el.textContent = "Risk-to-Reward & Protective Stops");
+            document.getElementById('buyBtnLabel').textContent = "Long (Buy Position)";
+            document.getElementById('sellBtnLabel').textContent = "Short (Sell Position)";
+        } else {
+            modeTitle.textContent = "Plain English Mode";
+            modeSub.textContent = "Simple, everyday trading language";
+            document.querySelectorAll('.term-quantity-label').forEach(el => el.textContent = "How Much to Trade");
+            document.querySelectorAll('.term-leverage-label').forEach(el => el.textContent = "Borrow Multiplier");
+            document.querySelectorAll('.term-price-label').forEach(el => el.textContent = "Desired Purchase Price ($)");
+            document.querySelectorAll('.term-trigger-label').forEach(el => el.textContent = "Trigger Price ($)");
+            document.querySelectorAll('.term-tif-label').forEach(el => el.textContent = "How Long Order Stays Open");
+            document.querySelectorAll('.term-tp-label').forEach(el => el.textContent = "Profit Goal (Sell when up)");
+            document.querySelectorAll('.term-sl-label').forEach(el => el.textContent = "Safety Stop (Sell if down)");
+            document.querySelectorAll('.term-exit-header').forEach(el => el.textContent = "Safety Stops & Profit Goals");
+            document.getElementById('buyBtnLabel').textContent = "Buy (Long)";
+            document.getElementById('sellBtnLabel').textContent = "Sell (Short)";
+        }
+    }
+
+    // ── 6. Client-Side Validation on Submit ──────────────────────────────────
+    function submitOrder(side) {
+        currentSide = side;
+        document.getElementById('formOrderSide').value = side;
+
+        const qty = parseFloat(document.getElementById('orderQuantityInput').value) || 0;
+        if (qty <= 0) {
+            alert('Order quantity must be greater than 0. Please enter a valid trade size or adjust the slider.');
+            return;
+        }
+
+        const checkPrice = getActiveReferencePrice();
+
+        // Handle Take Profit
+        if (!tpEnabled) {
+            document.getElementById('orderTakeProfitInput').value = '';
+            document.getElementById('formMultiTpJson').value = '';
+        } else {
+            const tp = parseFloat(document.getElementById('orderTakeProfitInput').value) || 0;
+            if (side === 1 && tp > 0 && tp <= checkPrice) {
+                alert(`For Buy (Long) orders, Take Profit ($${tp}) must be set strictly ABOVE the entry price ($${checkPrice.toFixed(2)}).`);
+                return;
+            }
+            if (side === 2 && tp > 0 && tp >= checkPrice) {
+                alert(`For Sell (Short) orders, Take Profit ($${tp}) must be set strictly BELOW the entry price ($${checkPrice.toFixed(2)}).`);
+                return;
+            }
+            syncMultiTpJson();
+        }
+
+        // Handle Stop Loss
+        if (!slEnabled) {
+            document.getElementById('orderStopLossInput').value = '';
+            document.getElementById('orderTrailingStopInput').value = '';
+        } else {
+            const sl = parseFloat(document.getElementById('orderStopLossInput').value) || 0;
+            if (side === 1 && sl > 0 && sl >= checkPrice) {
+                alert(`For Buy (Long) orders, Stop Loss ($${sl}) must be set strictly BELOW the entry price ($${checkPrice.toFixed(2)}).`);
+                return;
+            }
+            if (side === 2 && sl > 0 && sl <= checkPrice) {
+                alert(`For Sell (Short) orders, Stop Loss ($${sl}) must be set strictly ABOVE the entry price ($${checkPrice.toFixed(2)}).`);
+                return;
+            }
+        }
+
+        document.getElementById('tradingOrderForm').submit();
+    }
+
+    // ── 7. Interactive HTML5 Canvas Pro Chart with Drawing Tools ────────────
+    const canvas = document.getElementById('tradingCanvas');
+    const ctx = canvas.getContext('2d');
+    let candles = [];
+    let currentStyle = 'candles';
+    let activeIndicators = { ema20: false, ema50: false, bollinger: false, volume: true };
+    let activeTool = null;
+    let drawings = [];
+
+    function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        drawChart();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function generateRealisticCandles(count = 70) {
+        candles = [];
+        let price = basePrice * 0.95;
+        const now = Date.now();
+        const intervalMs = 15 * 60 * 1000;
+
+        for (let i = count; i >= 0; i--) {
+            const time = new Date(now - i * intervalMs);
+            const delta = (Math.random() - 0.48) * (price * 0.008);
+            const open = price;
+            const close = open + delta;
+            const high = Math.max(open, close) + Math.random() * (price * 0.004);
+            const low = Math.min(open, close) - Math.random() * (price * 0.004);
+            const volume = Math.floor(Math.random() * 8000) + 1200;
+
+            candles.push({ time, open, high, low, close, volume });
+            price = close;
+        }
+    }
+
+    function setTimeframe(tf) {
+        document.querySelectorAll('.tf-btn').forEach(b => {
+            b.classList.remove('active', 'bg-brand-500', 'text-white');
+        });
+        const btn = document.querySelector(`.tf-btn[data-tf="${tf}"]`);
+        if (btn) btn.classList.add('active', 'bg-brand-500', 'text-white');
+        generateRealisticCandles();
+        drawChart();
+    }
+
+    function setChartStyle(style) {
+        currentStyle = style;
+        drawChart();
+    }
+
+    function toggleIndicator(ind) {
+        activeIndicators[ind] = !activeIndicators[ind];
+        const btn = document.getElementById('btn' + ind.charAt(0).toUpperCase() + ind.slice(1));
+        if (activeIndicators[ind]) {
+            btn.classList.add('border-brand-500', 'bg-brand-500', 'text-white');
+            btn.classList.remove('bg-slate-50', 'dark:bg-slate-800');
+        } else {
+            btn.classList.remove('border-brand-500', 'bg-brand-500', 'text-white');
+            btn.classList.add('bg-slate-50', 'dark:bg-slate-800');
+        }
+        drawChart();
+    }
+
+    function selectTool(name) {
+        activeTool = name;
+        const banner = document.getElementById('activeToolBanner');
+        document.getElementById('activeToolName').textContent = name;
+        banner.classList.remove('hidden');
+    }
+
+    function clearDrawings() {
+        drawings = [];
+        activeTool = null;
+        document.getElementById('activeToolBanner').classList.add('hidden');
+        drawChart();
+    }
+
+    canvas.addEventListener('click', function(e) {
+        if (!activeTool) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        drawings.push({ tool: activeTool, x, y });
+        activeTool = null;
+        document.getElementById('activeToolBanner').classList.add('hidden');
+        drawChart();
+    });
+
+    function drawChart() {
+        if (!canvas.width || !candles.length) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const paddingRight = 65;
+        const paddingBottom = 25;
+        const chartWidth = canvas.width - paddingRight;
+        const chartHeight = canvas.height - paddingBottom;
+
+        let minPrice = Math.min(...candles.map(c => c.low));
+        let maxPrice = Math.max(...candles.map(c => c.high));
+        const priceRange = maxPrice - minPrice || 1;
+
+        // Grid lines
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        for (let i = 1; i <= 5; i++) {
+            const y = (chartHeight / 5) * i;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(chartWidth, y);
+            ctx.stroke();
+
+            // Price Labels
+            const p = maxPrice - (priceRange / 5) * i;
+            ctx.fillStyle = '#64748b';
+            ctx.font = '10px monospace';
+            ctx.fillText('$' + p.toFixed(2), chartWidth + 6, y + 3);
+        }
+
+        const candleWidth = chartWidth / candles.length;
+
+        // Draw Volume Bars
+        if (activeIndicators.volume) {
+            const maxVol = Math.max(...candles.map(c => c.volume));
+            candles.forEach((c, idx) => {
+                const x = idx * candleWidth;
+                const vHeight = (c.volume / maxVol) * (chartHeight * 0.2);
+                ctx.fillStyle = c.close >= c.open ? 'rgba(16, 185, 129, 0.25)' : 'rgba(244, 63, 94, 0.25)';
+                ctx.fillRect(x + 1, chartHeight - vHeight, candleWidth - 2, vHeight);
+            });
+        }
+
+        // Draw Candles or Line
+        candles.forEach((c, idx) => {
+            const x = idx * candleWidth + candleWidth / 2;
+            const openY = chartHeight - ((c.open - minPrice) / priceRange) * chartHeight;
+            const closeY = chartHeight - ((c.close - minPrice) / priceRange) * chartHeight;
+            const highY = chartHeight - ((c.high - minPrice) / priceRange) * chartHeight;
+            const lowY = chartHeight - ((c.low - minPrice) / priceRange) * chartHeight;
+            const isGreen = c.close >= c.open;
+
+            ctx.strokeStyle = isGreen ? '#10b981' : '#f43f5e';
+            ctx.fillStyle = isGreen ? '#10b981' : '#f43f5e';
+
+            if (currentStyle === 'candles' || currentStyle === 'heikin') {
+                // Wick
+                ctx.beginPath();
+                ctx.moveTo(x, highY);
+                ctx.lineTo(x, lowY);
+                ctx.stroke();
+
+                // Body
+                const bodyY = Math.min(openY, closeY);
+                const bodyH = Math.max(Math.abs(closeY - openY), 2);
+                ctx.fillRect(x - (candleWidth * 0.35), bodyY, candleWidth * 0.7, bodyH);
+            } else if (currentStyle === 'line' || currentStyle === 'area') {
+                if (idx > 0) {
+                    const prevC = candles[idx - 1];
+                    const prevX = (idx - 1) * candleWidth + candleWidth / 2;
+                    const prevCloseY = chartHeight - ((prevC.close - minPrice) / priceRange) * chartHeight;
+
+                    ctx.strokeStyle = '#3b82f6';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(prevX, prevCloseY);
+                    ctx.lineTo(x, closeY);
+                    ctx.stroke();
+                }
+            }
+        });
+
+        // Draw Indicator EMAs
+        if (activeIndicators.ema20) drawMovingAverage(20, '#38bdf8');
+        if (activeIndicators.ema50) drawMovingAverage(50, '#f59e0b');
+
+        // Draw User On-Chart Tool Annotations
+        drawings.forEach(d => {
+            ctx.fillStyle = '#f59e0b';
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2;
+
+            if (d.tool.includes('Line') || d.tool.includes('Ray')) {
+                ctx.beginPath();
+                ctx.moveTo(0, d.y);
+                ctx.lineTo(chartWidth, d.y);
+                ctx.stroke();
+                ctx.font = '10px sans-serif';
+                ctx.fillText(d.tool, 10, d.y - 4);
+            } else if (d.tool.includes('Fib')) {
+                for (let step = 0; step <= 4; step++) {
+                    const fy = d.y + step * 25;
+                    ctx.strokeStyle = 'rgba(245, 158, 11, ' + (1 - step * 0.2) + ')';
+                    ctx.beginPath();
+                    ctx.moveTo(0, fy);
+                    ctx.lineTo(chartWidth, fy);
+                    ctx.stroke();
+                }
+                ctx.fillText(d.tool, 10, d.y - 4);
+            } else {
+                ctx.font = '12px sans-serif';
+                ctx.fillText(`📍 ${d.tool}`, d.x, d.y);
+            }
+        });
+    }
+
+    function drawMovingAverage(period, color) {
+        const paddingBottom = 25;
+        const chartWidth = canvas.width - 65;
+        const chartHeight = canvas.height - paddingBottom;
+        const minPrice = Math.min(...candles.map(c => c.low));
+        const maxPrice = Math.max(...candles.map(c => c.high));
+        const priceRange = maxPrice - minPrice || 1;
+        const candleWidth = chartWidth / candles.length;
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+
+        for (let i = period - 1; i < candles.length; i++) {
+            const subset = candles.slice(i - period + 1, i + 1);
+            const avg = subset.reduce((acc, v) => acc + v.close, 0) / period;
+            const x = i * candleWidth + candleWidth / 2;
+            const y = chartHeight - ((avg - minPrice) / priceRange) * chartHeight;
+
+            if (i === period - 1) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    // Initialize chart & calculations on page load
+    generateRealisticCandles();
+    setTimeout(resizeCanvas, 50);
+    recalculateAllSizeAndMargin();
+</script>
+}

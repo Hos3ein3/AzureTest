@@ -105,5 +105,11 @@ public interface IUnitOfWork : IDisposable
     AzureTest.Application.Interfaces.Data.Crypto.ICryptoJournalEntryRepository CryptoJournalEntries { get; }
     AzureTest.Application.Interfaces.Data.Crypto.ICryptoApiSettingRepository CryptoApiSettings { get; }
 
+    // Universal Paper Trading
+    AzureTest.Application.Interfaces.Data.Trading.ITradingAccountRepository TradingAccounts { get; }
+    AzureTest.Application.Interfaces.Data.Trading.ITradingPositionRepository TradingPositions { get; }
+    AzureTest.Application.Interfaces.Data.Trading.ITradingOrderRepository TradingOrders { get; }
+    AzureTest.Application.Interfaces.Data.Trading.ITradingWatchlistRepository TradingWatchlists { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
