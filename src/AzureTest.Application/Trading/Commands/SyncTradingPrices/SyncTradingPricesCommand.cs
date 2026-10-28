@@ -33,6 +33,9 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
 
     public async Task<Result<int>> HandleAsync(SyncTradingPricesCommand cmd, CancellationToken ct)
     {
+        // 1. Refresh live real-world data from Binance (Crypto) and Frankfurter ECB (Forex)
+        await _marketData.RefreshRealWorldDataAsync(ct);
+
         var positions = (await _uow.TradingPositions.GetAllAsync())
             .Where(p => p.Status == TradingPositionStatus.Open)
             .ToList();
@@ -41,7 +44,7 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
 
         foreach (var pos in positions)
         {
-            var currentPrice = _marketData.GetCurrentPrice(pos.Symbol, pos.CurrentPrice);
+            var currentPrice = await _marketData.GetCurrentPriceAsync(pos.Symbol, pos.CurrentPrice, ct);
             pos.UpdateCurrentPrice(currentPrice);
 
             bool shouldClose = false;
@@ -96,7 +99,7 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
 
         foreach (var order in pendingOrders)
         {
-            var marketPrice = _marketData.GetCurrentPrice(order.Symbol, 100m);
+            var marketPrice = await _marketData.GetCurrentPriceAsync(order.Symbol, 100m, ct);
             bool shouldFill = false;
 
             if (order.OrderType == TradingOrderType.Limit && order.Price.HasValue)

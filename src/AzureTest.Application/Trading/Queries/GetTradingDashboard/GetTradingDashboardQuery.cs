@@ -62,10 +62,11 @@ public sealed class GetTradingDashboardQueryHandler : IQueryHandler<GetTradingDa
             .ToList();
 
         // Update current prices and unrealized pnl for open positions
+        await _marketData.RefreshRealWorldDataAsync(ct);
         decimal totalUnrealizedPnl = 0m;
         foreach (var pos in allPositions.Where(p => p.Status == TradingPositionStatus.Open))
         {
-            var curPrice = _marketData.GetCurrentPrice(pos.Symbol, pos.CurrentPrice);
+            var curPrice = await _marketData.GetCurrentPriceAsync(pos.Symbol, pos.CurrentPrice, ct);
             pos.UpdateCurrentPrice(curPrice);
             totalUnrealizedPnl += pos.UnrealizedPnl;
         }
@@ -97,7 +98,7 @@ public sealed class GetTradingDashboardQueryHandler : IQueryHandler<GetTradingDa
         var watchlistedSymbols = new HashSet<string>(watchlistEntities.Select(w => w.Symbol), StringComparer.OrdinalIgnoreCase);
         var watchlist = watchlistEntities.Select(GetTradingDashboardQuery.Mapping.ToDto).ToList();
 
-        var quotes = _marketData.GetAllQuotes(watchlistedSymbols);
+        var quotes = await _marketData.GetAllQuotesAsync(watchlistedSymbols, ct);
 
         var selectedSymbol = string.IsNullOrWhiteSpace(q.SelectedSymbol) ? "BTCUSDT" : q.SelectedSymbol.Trim().ToUpperInvariant();
         var selectedQuote = quotes.FirstOrDefault(x => x.Symbol.Equals(selectedSymbol, StringComparison.OrdinalIgnoreCase)) ?? quotes.First();

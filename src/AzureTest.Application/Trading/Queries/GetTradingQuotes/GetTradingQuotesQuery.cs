@@ -36,7 +36,7 @@ public sealed class GetTradingQuotesQueryHandler : IQueryHandler<GetTradingQuote
             watchlists.Where(w => w.UserId == q.UserId && (q.TenantId == Guid.Empty || w.TenantId == q.TenantId)).Select(w => w.Symbol),
             StringComparer.OrdinalIgnoreCase);
 
-        var quotes = _marketData.GetAllQuotes(watchlisted).AsEnumerable();
+        var quotes = (await _marketData.GetAllQuotesAsync(watchlisted, ct)).AsEnumerable();
 
         if (q.AssetClass.HasValue)
         {

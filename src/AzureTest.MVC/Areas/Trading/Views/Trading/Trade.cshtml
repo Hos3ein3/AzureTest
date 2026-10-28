@@ -27,6 +27,11 @@
         AzureTest.Domain.Entities.Trading.Enums.AssetClass.Future => "Futures",
         _ => assetClass.ToString()
     };
+
+    bool IsSimulatedFeed(AzureTest.Domain.Entities.Trading.Enums.AssetClass assetClass) =>
+        assetClass == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Stock ||
+        assetClass == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Index ||
+        assetClass == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Future;
 }
 
 <div class="space-y-6 pb-12 font-sans">
@@ -38,11 +43,25 @@
             </a>
 
             <div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                     <h1 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight" id="terminalSymbolTitle">@selected.Symbol</h1>
                     <span class="px-2.5 py-0.5 rounded-full text-3xs font-extrabold uppercase tracking-wide @GetAssetBadgeClass(selected.AssetClass)">
                         @GetAssetDisplayName(selected.AssetClass)
                     </span>
+                    @if (selected.IsSimulated || IsSimulatedFeed(selected.AssetClass))
+                    {
+                        <span class="px-2 py-0.5 rounded-lg text-4xs font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1 shadow-2xs">
+                            <i class="fa-solid fa-flask text-amber-500"></i>
+                            <span>Simulate</span>
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="px-2 py-0.5 rounded-lg text-4xs font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1 shadow-2xs">
+                            <i class="fa-solid fa-satellite-dish text-emerald-500 animate-pulse"></i>
+                            <span>Live API</span>
+                        </span>
+                    }
                     <!-- Watchlist Toggle Button (AJAX Icon) -->
                     <button type="button" 
                             id="tradeWatchlistBtn"
@@ -84,8 +103,10 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span class="text-3xs font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider" id="syncStatusLabel">Live Sync</span>
+                <span class="w-2.5 h-2.5 rounded-full @(selected.IsSimulated || IsSimulatedFeed(selected.AssetClass) ? "bg-amber-500" : "bg-emerald-500") animate-pulse"></span>
+                <span class="text-3xs font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider" id="syncStatusLabel">
+                    @(selected.IsSimulated || IsSimulatedFeed(selected.AssetClass) ? "Simulate Sync" : "Live API Sync")
+                </span>
             </div>
         </div>
     </div>

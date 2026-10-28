@@ -44,7 +44,7 @@ public sealed class CloseTradingPositionCommandHandler : ICommandHandler<CloseTr
             return Result<Guid>.Failure("Active position not found or already closed.");
         }
 
-        var exitPrice = cmd.ClosePrice ?? _marketData.GetCurrentPrice(position.Symbol, position.CurrentPrice);
+        var exitPrice = cmd.ClosePrice ?? await _marketData.GetCurrentPriceAsync(position.Symbol, position.CurrentPrice, ct);
         position.Close(exitPrice);
 
         var account = await _uow.TradingAccounts.GetByIdAsync(position.AccountId);

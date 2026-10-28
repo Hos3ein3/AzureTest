@@ -22,8 +22,8 @@ public static class TradingServiceRegistration
 {
     public static IServiceCollection AddTradingModule(this IServiceCollection services)
     {
-        // Core Market Data Service
-        services.AddSingleton<ITradingMarketDataService, TradingMarketDataService>();
+        // Core Market Data Service (Scoped to inject ICryptoMarketDataService & IForexMarketDataService)
+        services.AddScoped<ITradingMarketDataService, TradingMarketDataService>();
 
         // Command Handlers
         services.AddScoped<ICommandHandler<PlaceTradingOrderCommand, Result<Guid>>, PlaceTradingOrderCommandHandler>();

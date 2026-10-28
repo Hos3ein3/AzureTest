@@ -24,6 +24,11 @@
         AzureTest.Domain.Entities.Trading.Enums.AssetClass.Future => "Futures",
         _ => assetClass.ToString()
     };
+
+    bool IsSimulatedFeed(AzureTest.Domain.Entities.Trading.Enums.AssetClass assetClass) =>
+        assetClass == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Stock ||
+        assetClass == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Index ||
+        assetClass == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Future;
 }
 
 <div class="space-y-6 pb-12 font-sans">
@@ -116,6 +121,14 @@
                                         <div class="flex items-center gap-1.5 flex-wrap">
                                             <span class="text-xs font-black text-slate-900 dark:text-white truncate">@item.Symbol</span>
                                             <span class="text-3xs uppercase px-1.5 py-0.5 rounded font-extrabold @GetAssetBadgeClass(item.AssetClass)">@GetAssetDisplayName(item.AssetClass)</span>
+                                            @if (item.IsSimulated || IsSimulatedFeed(item.AssetClass))
+                                            {
+                                                <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Simulate</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Live API</span>
+                                            }
                                         </div>
                                         <p class="text-3xs text-slate-400 truncate">@item.AssetName</p>
                                     </div>
@@ -257,6 +270,14 @@
                                                 <span class="px-1.5 py-0.5 rounded text-3xs font-extrabold uppercase @GetAssetBadgeClass(pos.AssetClass)">
                                                     @GetAssetDisplayName(pos.AssetClass)
                                                 </span>
+                                                @if (IsSimulatedFeed(pos.AssetClass))
+                                                {
+                                                    <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Simulate</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Live API</span>
+                                                }
                                                 <span class="text-3xs uppercase px-1.5 py-0.2 rounded font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                                                     @pos.Leverage&times;
                                                 </span>
@@ -349,6 +370,14 @@
                                                 <span class="px-1.5 py-0.5 rounded text-3xs font-extrabold uppercase @GetAssetBadgeClass(order.AssetClass)">
                                                     @GetAssetDisplayName(order.AssetClass)
                                                 </span>
+                                                @if (IsSimulatedFeed(order.AssetClass))
+                                                {
+                                                    <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Simulate</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Live API</span>
+                                                }
                                             </div>
                                             <p class="text-3xs text-slate-400 truncate font-normal">@order.AssetName</p>
                                         </td>
@@ -424,6 +453,14 @@
                                                 <span class="px-1.5 py-0.5 rounded text-3xs font-extrabold uppercase @GetAssetBadgeClass(c.AssetClass)">
                                                     @GetAssetDisplayName(c.AssetClass)
                                                 </span>
+                                                @if (IsSimulatedFeed(c.AssetClass))
+                                                {
+                                                    <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Simulate</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Live API</span>
+                                                }
                                             </div>
                                             <p class="text-3xs text-slate-400 truncate font-normal">@c.AssetName</p>
                                         </td>
@@ -604,6 +641,10 @@
 
             const assetClassNames = { 1: 'Crypto', 2: 'Forex', 3: 'Stock', 4: 'Indices', 5: 'Futures' };
             const typeLabel = assetClassNames[item.AssetClass] || 'Asset';
+            const isSim = (item.AssetClass === 3 || item.AssetClass === 4 || item.AssetClass === 5 || item.IsSimulated || item.isSimulated);
+            const feedBadge = isSim
+                ? `<span class="px-1.5 py-0.5 rounded text-4xs font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Simulate</span>`
+                : `<span class="px-1.5 py-0.5 rounded text-4xs font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Live API</span>`;
 
             html += `
                 <a href="${tradeUrl}" class="p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center justify-between transition-colors group">
@@ -612,9 +653,10 @@
                             ${item.Symbol.substring(0, 3)}
                         </div>
                         <div class="min-w-0">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
                                 <span class="text-sm font-black text-slate-900 dark:text-white group-hover:text-brand-500 transition-colors">${item.Symbol}</span>
                                 <span class="px-2 py-0.5 rounded text-3xs font-extrabold uppercase ${badgeColor}">${typeLabel}</span>
+                                ${feedBadge}
                             </div>
                             <p class="text-xs text-slate-400 truncate">${item.AssetName}</p>
                         </div>

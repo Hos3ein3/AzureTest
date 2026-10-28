@@ -102,7 +102,7 @@ public sealed class ExecuteTradingJsonBatchCommandHandler : ICommandHandler<Exec
 
                         if (orderType == TradingOrderType.Market)
                         {
-                            var marketPrice = _marketData.GetCurrentPrice(symbol, action.Price ?? 100m);
+                            var marketPrice = await _marketData.GetCurrentPriceAsync(symbol, action.Price ?? 100m, ct);
                             var position = TradingPosition.Open(
                                 account.Id,
                                 cmd.UserId,
@@ -196,7 +196,7 @@ public sealed class ExecuteTradingJsonBatchCommandHandler : ICommandHandler<Exec
                                 break;
                             }
 
-                            var exitPrice = action.Price ?? _marketData.GetCurrentPrice(openPos.Symbol, openPos.CurrentPrice);
+                            var exitPrice = action.Price ?? await _marketData.GetCurrentPriceAsync(openPos.Symbol, openPos.CurrentPrice, ct);
                             openPos.Close(exitPrice);
                             account.ApplyRealizedPnl(openPos.RealizedPnl, openPos.InitialMargin);
                             results.Add(new TradingActionResultDto(true, $"Position {openPos.Symbol} closed at ${exitPrice:N2} with PnL ${openPos.RealizedPnl:N2}.", openPos.Id));
@@ -210,7 +210,7 @@ public sealed class ExecuteTradingJsonBatchCommandHandler : ICommandHandler<Exec
                                 break;
                             }
 
-                            var exitPrice = action.Price ?? _marketData.GetCurrentPrice(pos.Symbol, pos.CurrentPrice);
+                            var exitPrice = action.Price ?? await _marketData.GetCurrentPriceAsync(pos.Symbol, pos.CurrentPrice, ct);
                             pos.Close(exitPrice);
                             account.ApplyRealizedPnl(pos.RealizedPnl, pos.InitialMargin);
                             results.Add(new TradingActionResultDto(true, $"Position {pos.Symbol} closed at ${exitPrice:N2} with PnL ${pos.RealizedPnl:N2}.", pos.Id));

@@ -13,6 +13,8 @@ using AzureTest.Application.Trading.Commands.ResetTradingAccountBalance;
 using AzureTest.Application.Trading.Commands.ToggleTradingWatchlist;
 using AzureTest.Application.Trading.Queries.GetTradingDashboard;
 using AzureTest.Application.Trading.Queries.GetTradingQuotes;
+using AzureTest.Application.Trading.Services;
+using AzureTest.Contracts.DTOs.Trading;
 using AzureTest.Domain.Entities.Trading.Enums;
 using AzureTest.MVC.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -35,17 +37,20 @@ public class TradingController : Controller
     private readonly ITradingCommandUnit _commands;
     private readonly IValidationService _validator;
     private readonly ICurrentUser _currentUser;
+    private readonly ITradingMarketDataService _marketData;
 
     public TradingController(
         ITradingQueryUnit queries,
         ITradingCommandUnit commands,
         IValidationService validator,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        ITradingMarketDataService marketData)
     {
         _queries = queries;
         _commands = commands;
         _validator = validator;
         _currentUser = currentUser;
+        _marketData = marketData;
     }
 
     [DisplayName("Trading Hub")]
@@ -70,11 +75,10 @@ public class TradingController : Controller
 
     [HttpGet]
     [DisplayName("Single Asset Live Quote")]
-    [Description("Fetch fresh real-time quote for a specific symbol to detect stale client prices.")]
+    [Description("Fetch fresh real-time quote for a specific symbol using live feeds for Crypto and Forex.")]
     public async Task<IActionResult> Quote(string symbol, CancellationToken ct = default)
     {
-        var result = await _queries.GetQuotesAsync(new GetTradingQuotesQuery(_currentUser.Id, _currentUser.TenantId, null, symbol), ct);
-        var quote = result.Value.FirstOrDefault(q => q.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
+        var quote = await _marketData.GetQuoteAsync(symbol, ct: ct);
         if (quote == null)
             return NotFound(new { error = "Asset quote not found." });
 

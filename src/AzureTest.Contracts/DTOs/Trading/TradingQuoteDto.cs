@@ -12,5 +12,6 @@ public sealed record TradingQuoteDto(
     decimal High24h,
     decimal Low24h,
     decimal Volume24h,
-    bool IsWatchlisted
+    bool IsWatchlisted,
+    bool IsSimulated = false
 );

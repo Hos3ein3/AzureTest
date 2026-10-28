@@ -137,7 +137,7 @@ public sealed class PlaceTradingOrderCommandHandler : ICommandHandler<PlaceTradi
         }
 
         // Always resolve the fresh real-time market price at execution time to protect against stale cached client prices
-        var marketPrice = _marketData.GetCurrentPrice(cmd.Symbol, cmd.Price ?? 100m);
+        var marketPrice = await _marketData.GetCurrentPriceAsync(cmd.Symbol, cmd.Price ?? 100m, ct);
         var referencePrice = cmd.OrderType switch
         {
             TradingOrderType.Limit => cmd.Price ?? marketPrice,
