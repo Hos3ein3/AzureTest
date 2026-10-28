@@ -5,6 +5,7 @@
     var account = Model.Account;
     var openForSymbol = Model.OpenPositions.Where(p => p.Symbol.Equals(selected.Symbol, StringComparison.OrdinalIgnoreCase)).ToList();
     var pendingForSymbol = Model.PendingOrders.Where(o => o.Symbol.Equals(selected.Symbol, StringComparison.OrdinalIgnoreCase)).ToList();
+    var totalUnrealizedPnl = Model.OpenPositions.Sum(p => p.UnrealizedPnl);
 }
 
 @functions {
@@ -35,6 +36,40 @@
 }
 
 <div class="space-y-6 pb-12 font-sans">
+    <!-- Dynamic Alert Toasts / Notification Container -->
+    <div id="dynamicAlertContainer" class="space-y-3">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 flex items-center justify-between shadow-xs">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-circle-check text-lg text-emerald-500"></i>
+                    <div>
+                        <strong class="font-bold text-xs uppercase tracking-wider">Success</strong>
+                        <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">@TempData["SuccessMessage"]</p>
+                    </div>
+                </div>
+                <button type="button" onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 flex items-center justify-between shadow-xs">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-circle-exclamation text-lg text-rose-500"></i>
+                    <div>
+                        <strong class="font-bold text-xs uppercase tracking-wider">Execution Error</strong>
+                        <p class="text-xs text-rose-600 dark:text-rose-400 mt-0.5">@TempData["ErrorMessage"]</p>
+                    </div>
+                </div>
+                <button type="button" onclick="this.parentElement.remove()" class="text-rose-500 hover:text-rose-700">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        }
+    </div>
+
     <!-- Top Asset Bar & Navigation -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
         <div class="flex items-center gap-3">
@@ -103,7 +138,7 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full @(selected.IsSimulated || IsSimulatedFeed(selected.AssetClass) ? "bg-amber-500" : "bg-emerald-500") animate-pulse"></span>
+                <span class="w-2.5 h-2.5 rounded-full @(selected.IsSimulated || IsSimulatedFeed(selected.AssetClass) ? "bg-amber-500" : "bg-emerald-500") animate-pulse" id="syncStatusDot"></span>
                 <span class="text-3xs font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider" id="syncStatusLabel">
                     @(selected.IsSimulated || IsSimulatedFeed(selected.AssetClass) ? "Simulate Sync" : "Live API Sync")
                 </span>
@@ -111,208 +146,108 @@
         </div>
     </div>
 
-    <!-- TOP SECTION: Interactive TradingView Chart with All 8 Drawing Tool Suites -->
+    <!-- TOP SECTION: Interactive Professional Chart with Official TradingView Widget & Canvas Engine -->
     <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
         <!-- Chart Controls Header -->
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-            <!-- Timeframe Pills -->
-            <div class="flex items-center gap-1 text-3xs font-bold bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                <button type="button" onclick="setTimeframe('1m')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="1m">1m</button>
-                <button type="button" onclick="setTimeframe('5m')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="5m">5m</button>
-                <button type="button" onclick="setTimeframe('15m')" class="tf-btn px-2.5 py-1 rounded-lg active bg-brand-500 text-white" data-tf="15m">15m</button>
-                <button type="button" onclick="setTimeframe('1h')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="1h">1h</button>
-                <button type="button" onclick="setTimeframe('4h')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="4h">4h</button>
-                <button type="button" onclick="setTimeframe('1D')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="1D">1D</button>
+            <!-- Left: Chart Engine Mode Switcher -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-3xs font-extrabold">
+                    <button type="button" onclick="switchChartEngine('tradingview')" id="btnTvEngine" class="px-3 py-1.5 rounded-lg active bg-brand-500 text-white shadow-2xs transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>TradingView Pro Live</span>
+                    </button>
+                    <button type="button" onclick="switchChartEngine('canvas')" id="btnCanvasEngine" class="px-3 py-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-palette"></i>
+                        <span>Canvas Studio</span>
+                    </button>
+                </div>
+
+                <!-- Canvas Timeframe Pills (shown in canvas mode) -->
+                <div id="canvasTfGroup" class="hidden flex items-center gap-1 text-3xs font-bold bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                    <button type="button" onclick="setTimeframe('1m')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="1m">1m</button>
+                    <button type="button" onclick="setTimeframe('5m')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="5m">5m</button>
+                    <button type="button" onclick="setTimeframe('15m')" class="tf-btn px-2.5 py-1 rounded-lg active bg-brand-500 text-white" data-tf="15m">15m</button>
+                    <button type="button" onclick="setTimeframe('1h')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="1h">1h</button>
+                    <button type="button" onclick="setTimeframe('4h')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="4h">4h</button>
+                    <button type="button" onclick="setTimeframe('1D')" class="tf-btn px-2.5 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-colors" data-tf="1D">1D</button>
+                </div>
             </div>
 
-            <!-- Candle Style Selector -->
-            <div class="flex items-center gap-2">
-                <span class="text-3xs uppercase font-extrabold text-slate-400">Style:</span>
-                <select id="chartStyleSelect" onchange="setChartStyle(this.value)" class="text-xs font-bold px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none">
-                    <option value="candles">Candles</option>
-                    <option value="hollow">Hollow Candles</option>
-                    <option value="heikin">Heikin-Ashi</option>
-                    <option value="line">Line</option>
-                    <option value="area">Area</option>
-                    <option value="bars">Bars</option>
-                </select>
-            </div>
+            <!-- Right: Chart Height & Fullscreen Resizers -->
+            <div class="flex items-center gap-2 flex-wrap text-3xs font-bold">
+                <span class="text-slate-400 uppercase font-extrabold mr-1">Height:</span>
+                <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                    <button type="button" onclick="setChartHeight(440)" class="chart-h-btn px-2 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-all text-slate-600 dark:text-slate-400" data-h="440">440px</button>
+                    <button type="button" onclick="setChartHeight(560)" class="chart-h-btn px-2 py-1 rounded-lg active bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-2xs transition-all font-black" data-h="560">560px</button>
+                    <button type="button" onclick="setChartHeight(700)" class="chart-h-btn px-2 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-all text-slate-600 dark:text-slate-400" data-h="700">700px</button>
+                    <button type="button" onclick="toggleChartFullscreen()" class="px-2 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-all text-slate-700 dark:text-slate-300" title="Fullscreen Mode">
+                        <i class="fa-solid fa-expand"></i>
+                    </button>
+                </div>
 
-            <!-- Indicator Toggles -->
-            <div class="flex items-center gap-1.5 text-3xs font-bold">
-                <button type="button" onclick="toggleIndicator('ema20')" id="btnEma20" class="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300">EMA 20</button>
-                <button type="button" onclick="toggleIndicator('ema50')" id="btnEma50" class="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300">EMA 50</button>
-                <button type="button" onclick="toggleIndicator('bollinger')" id="btnBollinger" class="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Bollinger</button>
-                <button type="button" onclick="toggleIndicator('volume')" id="btnVolume" class="px-2 py-1 rounded-lg border border-brand-500 bg-brand-500 text-white">Volume</button>
+                <!-- Canvas Style & Indicators Controls (only in Canvas mode) -->
+                <div id="canvasExtrasGroup" class="hidden flex items-center gap-2">
+                    <select id="chartStyleSelect" onchange="setChartStyle(this.value)" class="text-xs font-bold px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none">
+                        <option value="candles">Candles</option>
+                        <option value="hollow">Hollow</option>
+                        <option value="heikin">Heikin-Ashi</option>
+                        <option value="line">Line</option>
+                        <option value="area">Area</option>
+                    </select>
+
+                    <button type="button" onclick="toggleIndicator('ema20')" id="btnEma20" class="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300">EMA20</button>
+                    <button type="button" onclick="toggleIndicator('bollinger')" id="btnBollinger" class="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300">BB</button>
+                    <button type="button" onclick="toggleIndicator('volume')" id="btnVolume" class="px-2 py-1 rounded-lg border border-brand-500 bg-brand-500 text-white">Vol</button>
+                </div>
             </div>
         </div>
 
-        <!-- TradingView 8-Suite Drawing Tools Toolbar -->
-        <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin text-3xs">
+        <!-- Drawing Tools Toolbar (Visible when Canvas Studio is active, completely above the chart with z-50) -->
+        <div id="canvasToolbar" class="hidden relative z-50 flex flex-wrap items-center gap-2 pb-2 text-3xs">
             <span class="text-slate-400 font-extrabold uppercase shrink-0"><i class="fa-solid fa-paintbrush mr-1"></i> Tools:</span>
 
-            <!-- 1. Lines & Channels -->
+            <!-- Lines & Channels -->
             <div class="relative group shrink-0">
                 <button type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:border-brand-500 flex items-center gap-1.5">
                     <i class="fa-solid fa-arrows-left-right text-brand-500"></i>
                     <span>Lines &amp; Channels</span>
                     <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
                 </button>
-                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 w-52 p-1.5 space-y-0.5 text-left">
+                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 w-52 p-2 space-y-0.5 text-left">
                     <button type="button" onclick="selectTool('Trend Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Trend Line</button>
                     <button type="button" onclick="selectTool('Ray')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Ray</button>
-                    <button type="button" onclick="selectTool('Info Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Info Line</button>
-                    <button type="button" onclick="selectTool('Extended Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Extended Line</button>
-                    <button type="button" onclick="selectTool('Trend Angle')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Trend Angle</button>
-                    <button type="button" onclick="selectTool('Horizontal Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Horizontal Line</button>
-                    <button type="button" onclick="selectTool('Horizontal Ray')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Horizontal Ray</button>
+                    <button type="button" onclick="selectTool('Horizontal Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-brand-600">Horizontal Line</button>
                     <button type="button" onclick="selectTool('Vertical Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Vertical Line</button>
-                    <button type="button" onclick="selectTool('Cross Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Cross Line</button>
-                    <button type="button" onclick="selectTool('Parallel Channel')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-brand-600">Parallel Channel</button>
-                    <button type="button" onclick="selectTool('Regression Trend')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Regression Trend</button>
-                    <button type="button" onclick="selectTool('Flat Top/Bottom')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Flat Top/Bottom</button>
-                    <button type="button" onclick="selectTool('Disjoint Channel')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Disjoint Channel</button>
-                    <button type="button" onclick="selectTool('Pitchfork')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Pitchfork</button>
-                    <button type="button" onclick="selectTool('Schiff Pitchfork')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Schiff Pitchfork</button>
-                    <button type="button" onclick="selectTool('Modified Schiff')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Modified Schiff</button>
-                    <button type="button" onclick="selectTool('Inside Pitchfork')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Inside Pitchfork</button>
+                    <button type="button" onclick="selectTool('Parallel Channel')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-amber-500">Parallel Channel</button>
                 </div>
             </div>
 
-            <!-- 2. Gann & Fibonacci -->
+            <!-- Gann & Fibonacci -->
             <div class="relative group shrink-0">
                 <button type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:border-brand-500 flex items-center gap-1.5">
                     <i class="fa-solid fa-calculator text-amber-500"></i>
-                    <span>Gann &amp; Fibonacci</span>
+                    <span>Fibonacci</span>
                     <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
                 </button>
-                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 w-52 p-1.5 space-y-0.5 text-left">
+                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 w-52 p-2 space-y-0.5 text-left">
                     <button type="button" onclick="selectTool('Fib Retracement')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-amber-600">Fib Retracement</button>
                     <button type="button" onclick="selectTool('Trend-Based Fib')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Trend-Based Fib</button>
                     <button type="button" onclick="selectTool('Fib Channel')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Fib Channel</button>
-                    <button type="button" onclick="selectTool('Fib Time Zone')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Fib Time Zone</button>
-                    <button type="button" onclick="selectTool('Fib Speed Resistance')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Fib Speed Resistance</button>
-                    <button type="button" onclick="selectTool('Fib Circle')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Fib Circle</button>
-                    <button type="button" onclick="selectTool('Fib Spiral')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Fib Spiral</button>
-                    <button type="button" onclick="selectTool('Fib Wedge')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Fib Wedge</button>
-                    <button type="button" onclick="selectTool('Pitchfan')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Pitchfan</button>
-                    <button type="button" onclick="selectTool('Gann Box')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Gann Box</button>
-                    <button type="button" onclick="selectTool('Gann Square Fixed')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Gann Square Fixed</button>
-                    <button type="button" onclick="selectTool('Gann Fan')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Gann Fan</button>
                 </div>
             </div>
 
-            <!-- 3. Patterns -->
-            <div class="relative group shrink-0">
-                <button type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:border-brand-500 flex items-center gap-1.5">
-                    <i class="fa-solid fa-shapes text-purple-500"></i>
-                    <span>Patterns</span>
-                    <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
-                </button>
-                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 w-52 p-1.5 space-y-0.5 text-left">
-                    <button type="button" onclick="selectTool('XABCD Pattern')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">XABCD Pattern</button>
-                    <button type="button" onclick="selectTool('Cypher Pattern')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Cypher Pattern</button>
-                    <button type="button" onclick="selectTool('Head & Shoulders')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-purple-600">Head &amp; Shoulders</button>
-                    <button type="button" onclick="selectTool('ABCD Pattern')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">ABCD Pattern</button>
-                    <button type="button" onclick="selectTool('Triangle Pattern')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Triangle Pattern</button>
-                    <button type="button" onclick="selectTool('Three Drives')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Three Drives</button>
-                    <button type="button" onclick="selectTool('Elliott Impulse (12345)')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Elliott Impulse</button>
-                    <button type="button" onclick="selectTool('Elliott Correction (ABC)')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Elliott Correction</button>
-                    <button type="button" onclick="selectTool('Elliott Triangle')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Elliott Triangle</button>
-                    <button type="button" onclick="selectTool('Elliott Double')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Elliott Double</button>
-                    <button type="button" onclick="selectTool('Elliott Triple')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Elliott Triple</button>
-                    <button type="button" onclick="selectTool('Cyclic Lines')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Cyclic Lines</button>
-                    <button type="button" onclick="selectTool('Time Cycles')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Time Cycles</button>
-                    <button type="button" onclick="selectTool('Sine Line')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Sine Line</button>
-                </div>
-            </div>
-
-            <!-- 4. Forecasting & Measurement -->
+            <!-- Risk Management Forecast -->
             <div class="relative group shrink-0">
                 <button type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:border-brand-500 flex items-center gap-1.5">
                     <i class="fa-solid fa-ruler-combined text-emerald-500"></i>
-                    <span>Forecasting</span>
+                    <span>Risk Forecast</span>
                     <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
                 </button>
-                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 w-52 p-1.5 space-y-0.5 text-left">
-                    <button type="button" onclick="selectTool('Long Position')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-emerald-600">Long Position</button>
-                    <button type="button" onclick="selectTool('Short Position')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-rose-600">Short Position</button>
-                    <button type="button" onclick="selectTool('Forecast')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Forecast</button>
-                    <button type="button" onclick="selectTool('Bars Pattern')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Bars Pattern</button>
-                    <button type="button" onclick="selectTool('Ghost Feed')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Ghost Feed</button>
-                    <button type="button" onclick="selectTool('Projection')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Projection</button>
-                    <button type="button" onclick="selectTool('Anchored VWAP')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Anchored VWAP</button>
-                    <button type="button" onclick="selectTool('Fixed Range Volume')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Fixed Range Volume</button>
-                    <button type="button" onclick="selectTool('Anchored Volume')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Anchored Volume</button>
-                    <button type="button" onclick="selectTool('Price Range')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Price Range</button>
-                    <button type="button" onclick="selectTool('Date Range')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Date Range</button>
-                    <button type="button" onclick="selectTool('Date and Price Range')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Date and Price Range</button>
-                </div>
-            </div>
-
-            <!-- 5. Geometric Shapes -->
-            <div class="relative group shrink-0">
-                <button type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:border-brand-500 flex items-center gap-1.5">
-                    <i class="fa-solid fa-draw-polygon text-indigo-500"></i>
-                    <span>Shapes</span>
-                    <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
-                </button>
-                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 w-52 p-1.5 space-y-0.5 text-left">
-                    <button type="button" onclick="selectTool('Brush')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Brush</button>
-                    <button type="button" onclick="selectTool('Highlighter')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Highlighter</button>
-                    <button type="button" onclick="selectTool('Arrow Marker')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Arrow Marker</button>
-                    <button type="button" onclick="selectTool('Arrow')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Arrow</button>
-                    <button type="button" onclick="selectTool('Arrow Marker Up')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Arrow Marker Up</button>
-                    <button type="button" onclick="selectTool('Arrow Marker Down')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Arrow Marker Down</button>
-                    <button type="button" onclick="selectTool('Rectangle')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold">Rectangle</button>
-                    <button type="button" onclick="selectTool('Rotated Rectangle')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Rotated Rectangle</button>
-                    <button type="button" onclick="selectTool('Path')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Path</button>
-                    <button type="button" onclick="selectTool('Circle')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Circle</button>
-                    <button type="button" onclick="selectTool('Ellipse')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Ellipse</button>
-                    <button type="button" onclick="selectTool('Polyline')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Polyline</button>
-                    <button type="button" onclick="selectTool('Triangle')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Triangle</button>
-                    <button type="button" onclick="selectTool('Arc')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Arc</button>
-                    <button type="button" onclick="selectTool('Curve')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Curve</button>
-                    <button type="button" onclick="selectTool('Double Curve')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Double Curve</button>
-                </div>
-            </div>
-
-            <!-- 6. Annotations -->
-            <div class="relative group shrink-0">
-                <button type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:border-brand-500 flex items-center gap-1.5">
-                    <i class="fa-solid fa-comment-dots text-cyan-500"></i>
-                    <span>Annotations</span>
-                    <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
-                </button>
-                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 w-52 p-1.5 space-y-0.5 text-left">
-                    <button type="button" onclick="selectTool('Text')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold">Text</button>
-                    <button type="button" onclick="selectTool('Anchored Text')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Anchored Text</button>
-                    <button type="button" onclick="selectTool('Note')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Note</button>
-                    <button type="button" onclick="selectTool('Price Note')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Price Note</button>
-                    <button type="button" onclick="selectTool('Pin')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Pin</button>
-                    <button type="button" onclick="selectTool('Table')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Table</button>
-                    <button type="button" onclick="selectTool('Callout')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Callout</button>
-                    <button type="button" onclick="selectTool('Comment')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Comment</button>
-                    <button type="button" onclick="selectTool('Price Label')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Price Label</button>
-                    <button type="button" onclick="selectTool('Signpost')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Signpost</button>
-                    <button type="button" onclick="selectTool('Flag Mark')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Flag Mark</button>
-                    <button type="button" onclick="selectTool('Image')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Image</button>
-                    <button type="button" onclick="selectTool('Tweet')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Tweet</button>
-                    <button type="button" onclick="selectTool('Idea')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Idea</button>
-                </div>
-            </div>
-
-            <!-- 7. Visuals -->
-            <div class="relative group shrink-0">
-                <button type="button" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:border-brand-500 flex items-center gap-1.5">
-                    <i class="fa-solid fa-icons text-pink-500"></i>
-                    <span>Visuals</span>
-                    <i class="fa-solid fa-chevron-down text-3xs text-slate-400"></i>
-                </button>
-                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 w-44 p-1.5 space-y-0.5 text-left">
-                    <button type="button" onclick="selectTool('Emojis')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Emojis 🚀 📈 🔥</button>
-                    <button type="button" onclick="selectTool('Stickers')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Stickers</button>
-                    <button type="button" onclick="selectTool('Icons')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Icons</button>
+                <div class="hidden group-hover:block absolute left-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 w-52 p-2 space-y-0.5 text-left">
+                    <button type="button" onclick="selectTool('Long Position')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-emerald-600">Long Position (Target/SL)</button>
+                    <button type="button" onclick="selectTool('Short Position')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 font-bold text-rose-600">Short Position (Target/SL)</button>
+                    <button type="button" onclick="selectTool('Price Range')" class="w-full text-left px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">Price Range Measure</button>
                 </div>
             </div>
 
@@ -321,17 +256,37 @@
             </button>
         </div>
 
-        <!-- HTML5 Canvas Chart -->
-        <div class="relative w-full h-[460px] bg-slate-950 rounded-2xl overflow-hidden border border-slate-800">
-            <canvas id="tradingCanvas" class="w-full h-full cursor-crosshair"></canvas>
+        <!-- Main Chart Display Container (Resizable & Fullscreen Capable) -->
+        <div id="chartMainContainer" class="relative w-full h-[560px] bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-inner transition-all">
+            <!-- 1. Official TradingView Real-Time Embed Widget (Live Interactive with Pan, Zoom, Multi-Timeframe) -->
+            <div id="tradingview_widget" class="w-full h-full"></div>
 
-            <div id="chartWatermark" class="absolute left-6 bottom-6 pointer-events-none font-mono font-black text-slate-800/40 text-5xl select-none">
+            <!-- 2. Interactive Canvas Chart (Studio Fallback / Mode) -->
+            <canvas id="tradingCanvas" class="hidden w-full h-full cursor-crosshair block"></canvas>
+
+            <!-- Chart Watermark for Canvas Mode -->
+            <div id="chartWatermark" class="hidden absolute left-6 bottom-6 pointer-events-none font-mono font-black text-slate-800/30 text-6xl select-none">
                 @selected.Symbol
             </div>
 
+            <!-- Hover Bar Stats for Canvas Mode -->
+            <div id="canvasStatsPill" class="hidden absolute top-3 left-4 px-3 py-1.5 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-white font-mono text-3xs flex items-center gap-3 pointer-events-none z-10">
+                <span>O: <strong id="hoverO" class="text-emerald-400">--</strong></span>
+                <span>H: <strong id="hoverH" class="text-slate-200">--</strong></span>
+                <span>L: <strong id="hoverL" class="text-rose-400">--</strong></span>
+                <span>C: <strong id="hoverC" class="text-emerald-400">--</strong></span>
+            </div>
+
+            <!-- Bottom Left Canvas Usage Guide -->
+            <div id="canvasGuidePill" class="hidden absolute left-4 bottom-3 z-10 pointer-events-none text-4xs font-mono text-slate-500 bg-slate-900/70 px-2.5 py-1 rounded-lg flex items-center gap-2">
+                <span><i class="fa-solid fa-computer-mouse mr-1"></i> Scroll = Zoom</span>
+                <span>• Drag = Pan</span>
+                <span>• Crosshair active</span>
+            </div>
+
             <!-- Active Drawing Tool Label -->
-            <div id="activeToolBanner" class="hidden absolute top-4 left-4 px-3 py-1 rounded-lg bg-brand-500/90 text-white font-bold text-3xs shadow-md pointer-events-none">
-                Active: <span id="activeToolName">Trend Line</span> (Click canvas to place)
+            <div id="activeToolBanner" class="hidden absolute top-3 right-4 px-3 py-1 rounded-lg bg-brand-500 text-white font-bold text-3xs shadow-md pointer-events-none z-20">
+                Active Tool: <span id="activeToolName">Trend Line</span>
             </div>
         </div>
     </div>
@@ -372,19 +327,19 @@
             </div>
             <div>
                 <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">Cash Balance</span>
-                <div class="text-base sm:text-lg font-black text-slate-800 dark:text-slate-200 mt-0.5">
+                <div class="text-base sm:text-lg font-black text-slate-800 dark:text-slate-200 mt-0.5" id="cashBalanceCardDisplay">
                     $@account.CashBalance.ToString("N2")
                 </div>
             </div>
             <div>
                 <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">Used Margin</span>
-                <div class="text-base sm:text-lg font-black text-slate-800 dark:text-slate-200 mt-0.5">
+                <div class="text-base sm:text-lg font-black text-slate-800 dark:text-slate-200 mt-0.5" id="marginUsedCardDisplay">
                     $@account.MarginUsed.ToString("N2")
                 </div>
             </div>
             <div>
                 <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">Total Equity</span>
-                <div class="text-base sm:text-lg font-black text-brand-600 dark:text-brand-400 mt-0.5">
+                <div class="text-base sm:text-lg font-black text-brand-600 dark:text-brand-400 mt-0.5" id="equityCardDisplay">
                     $@account.Equity.ToString("N2")
                 </div>
             </div>
@@ -415,98 +370,99 @@
 
             <!-- Price & Order Duration Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Market Execution Price Display (Active by default on Market Tab) -->
-                <div id="marketPriceGroup" class="space-y-1">
-                    <div class="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
-                        <span class="term-market-label">Market Execution Price</span>
-                        <span class="inline-flex items-center gap-1 text-3xs font-extrabold text-emerald-500">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Auto-Syncing
+                <!-- Market Execution Price Display (Market Tab) -->
+                <div id="marketPriceGroup" class="space-y-1.5">
+                    <label class="text-xs font-bold text-slate-600 dark:text-slate-300">Market Execution Price</label>
+                    <div class="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 font-mono font-black text-slate-800 dark:text-white flex items-center justify-between border border-slate-200 dark:border-slate-700">
+                        <span id="marketOrderPriceDisplay">$@selected.Price.ToString("N2")</span>
+                        <span class="text-3xs uppercase font-extrabold text-emerald-500 flex items-center gap-1">
+                            <i class="fa-solid fa-bolt"></i> Instant Fill
                         </span>
                     </div>
-                    <div class="px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-mono font-black text-slate-900 dark:text-white flex items-center justify-between">
-                        <span id="marketOrderPriceDisplay">$@selected.Price.ToString("N2")</span>
-                        <span class="text-3xs uppercase font-extrabold px-1.5 py-0.5 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400">Instant Fill</span>
-                    </div>
                 </div>
 
-                <!-- Limit / Stop Trigger Price (Shown conditionally based on active tab) -->
-                <div id="priceInputGroup" class="hidden space-y-1">
-                    <div class="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
-                        <span class="term-price-label">Limit Price ($)</span>
+                <!-- Limit Price Input (Limit Tab) -->
+                <div id="priceInputGroup" class="hidden space-y-1.5">
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-300">
+                        <label class="term-price-label">Desired Purchase Price ($)</label>
                         <button type="button" onclick="setLimitToMarket()" class="text-3xs font-extrabold text-brand-500 hover:underline">
-                            ⚡ Market: <span id="limitMarketHint">$@selected.Price.ToString("N2")</span>
+                            Market: $<span id="limitMarketHint">@selected.Price.ToString("N2")</span>
                         </button>
                     </div>
-                    <input type="number" step="any" min="0.000001" name="price" id="orderPriceInput" value="@selected.Price" oninput="recalculateAllSizeAndMargin()"
-                           class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-bold focus:border-brand-500 focus:outline-none" />
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-sm">$</span>
+                        <input type="number" step="any" name="price" id="orderPriceInput" value="@selected.Price"
+                               oninput="recalculateAllSizeAndMargin()"
+                               class="w-full pl-8 pr-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-bold text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" />
+                    </div>
                 </div>
 
-                <div id="stopTriggerInputGroup" class="hidden space-y-1">
-                    <div class="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
-                        <span class="term-trigger-label">Stop Activation Price ($)</span>
+                <!-- Stop Trigger Price Input (Stop Tab) -->
+                <div id="stopTriggerInputGroup" class="hidden space-y-1.5">
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-600 dark:text-slate-300">
+                        <label class="term-trigger-label">Trigger Price ($)</label>
                         <button type="button" onclick="setStopToMarket()" class="text-3xs font-extrabold text-brand-500 hover:underline">
-                            ⚡ Market: <span id="stopMarketHint">$@selected.Price.ToString("N2")</span>
+                            Current: $<span id="stopMarketHint">@selected.Price.ToString("N2")</span>
                         </button>
                     </div>
-                    <input type="number" step="any" min="0.000001" name="triggerPrice" id="orderTriggerPriceInput" value="@selected.Price" oninput="recalculateAllSizeAndMargin()"
-                           class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-bold focus:border-brand-500 focus:outline-none" />
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-sm">$</span>
+                        <input type="number" step="any" name="triggerPrice" id="orderTriggerPriceInput" value="@selected.Price"
+                               oninput="recalculateAllSizeAndMargin()"
+                               class="w-full pl-8 pr-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-bold text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" />
+                    </div>
                 </div>
 
-                <!-- Time In Force (Limit & Stop tabs) -->
-                <div id="tifGroup" class="hidden space-y-1">
-                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 term-tif-label">Order Duration / TIF</label>
-                    <select name="timeInForce" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-bold focus:border-brand-500 focus:outline-none">
-                        <option value="GTC">Good 'Til Cancelled (GTC)</option>
-                        <option value="Day">Day Order (Expires at market close)</option>
-                        <option value="Week">Week (Expires Friday)</option>
-                        <option value="Month">Month (Expires End of Month)</option>
-                        <option value="GTD">Good Till Date (GTD)</option>
+                <!-- Time in Force (TIF) -->
+                <div id="tifGroup" class="hidden space-y-1.5">
+                    <label class="term-tif-label text-xs font-bold text-slate-600 dark:text-slate-300">How Long Order Stays Open</label>
+                    <select name="timeInForce" id="orderTifSelect" class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        <option value="1">Good 'Til Cancelled (GTC)</option>
+                        <option value="2">Immediate Or Cancel (IOC)</option>
+                        <option value="3">Fill Or Kill (FOK)</option>
+                        <option value="4">Day Order (Expires at Midnight)</option>
                     </select>
                 </div>
             </div>
 
-            <!-- Order Size Card with Multi-Unit Mode Selector & Real-Time Calculated Types -->
+            <!-- Multi-Unit Type Input & Trade Size Slider Card -->
             <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-4">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <label class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
-                        <i class="fa-solid fa-coins text-brand-500"></i>
-                        <span class="term-quantity-label">Order Size</span>
-                    </label>
-
-                    <!-- Input Mode Selector: Units | USD Margin | % Balance | Total USD -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span class="term-quantity-label text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                        Order Size &amp; Units
+                    </span>
+                    
+                    <!-- Multi-Unit Mode Switcher (Units | USD Margin | % Balance | Total Value) -->
                     <div class="flex items-center gap-1 bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-3xs font-extrabold">
                         <button type="button" onclick="setTradeSizeMode('units')" id="sizeModeBtnUnits" class="size-mode-btn px-2.5 py-1 rounded-lg bg-brand-500 text-white shadow-2xs transition-all">
                             Units
                         </button>
-                        <button type="button" onclick="setTradeSizeMode('margin')" id="sizeModeBtnMargin" class="size-mode-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                        <button type="button" onclick="setTradeSizeMode('margin')" id="sizeModeBtnMargin" class="size-mode-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 transition-all">
                             USD Margin ($)
                         </button>
-                        <button type="button" onclick="setTradeSizeMode('percent')" id="sizeModeBtnPercent" class="size-mode-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                        <button type="button" onclick="setTradeSizeMode('percent')" id="sizeModeBtnPercent" class="size-mode-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 transition-all">
                             % Balance
                         </button>
-                        <button type="button" onclick="setTradeSizeMode('total')" id="sizeModeBtnTotal" class="size-mode-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
+                        <button type="button" onclick="setTradeSizeMode('total')" id="sizeModeBtnTotal" class="size-mode-btn px-2.5 py-1 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 transition-all">
                             Total Value ($)
                         </button>
                     </div>
                 </div>
 
-                <!-- Primary Number Input with Dynamic Prefix & Suffix -->
+                <!-- Main Input Field -->
                 <div class="relative">
-                    <span id="sizeInputPrefix" class="hidden absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">$</span>
-                    <input type="number" step="any" min="0.000001" id="orderSizeMainInput" value="1"
-                           oninput="onSizeMainInputChange(this.value)"
-                           placeholder="Enter quantity or margin..."
-                           class="w-full pl-3.5 pr-28 py-3 text-sm rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 font-black text-slate-900 dark:text-white focus:border-brand-500 focus:outline-none shadow-xs" required />
-                    <span id="sizeInputSuffix" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-brand-600 dark:text-brand-400 uppercase tracking-wider">
-                        Units
-                    </span>
+                    <span id="mainInputPrefix" class="hidden absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-sm">$</span>
+                    <input type="number" step="any" min="0.000001" id="orderSizeMainInput" value="1.0"
+                           oninput="onMainSizeInputChange(this.value)"
+                           class="w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-black text-base focus:ring-2 focus:ring-brand-500 focus:outline-none" />
+                    <span id="mainInputSuffix" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">@selected.Symbol</span>
                 </div>
 
-                <!-- Trade Value Slider (% Available Margin) -->
-                <div class="space-y-1.5 pt-1">
-                    <div class="flex justify-between items-center text-3xs font-extrabold text-slate-500 dark:text-slate-400">
-                        <span>Trade Value Slider (% Available Margin)</span>
-                        <span id="tradeValueSliderLabel" class="text-brand-500 font-black">10%</span>
+                <!-- Slider for Trade Value (1% - 100% of Available Margin) -->
+                <div class="space-y-2 pt-1">
+                    <div class="flex justify-between items-center text-3xs font-extrabold text-slate-400">
+                        <span>Trade Size Slider (% Available Margin):</span>
+                        <span id="tradeValueSliderLabel" class="font-mono text-brand-600 dark:text-brand-400 font-black">10%</span>
                     </div>
                     <input type="range" min="1" max="100" value="10" id="tradeValueSlider"
                            oninput="onTradeValueSliderChange(this.value)"
@@ -516,32 +472,32 @@
                         <button type="button" onclick="setSliderPreset(25)" class="hover:text-brand-500">25%</button>
                         <button type="button" onclick="setSliderPreset(50)" class="hover:text-brand-500">50%</button>
                         <button type="button" onclick="setSliderPreset(75)" class="hover:text-brand-500">75%</button>
-                        <button type="button" onclick="setSliderPreset(100)" class="hover:text-brand-500 font-black">100% (Max)</button>
+                        <button type="button" onclick="setSliderPreset(100)" class="hover:text-brand-500 text-amber-500 font-black">100% (Max)</button>
                     </div>
                 </div>
 
-                <!-- Real-Time Conversions Strip: Displays All Types Under the Input -->
-                <div class="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs shadow-2xs">
-                    <div>
-                        <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">📦 Units (Quantity)</span>
+                <!-- Real-Time Calculated Conversions Strip -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-xs">
+                    <div class="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700">
+                        <span class="text-3xs uppercase font-extrabold text-slate-400 block">📦 Units</span>
                         <div class="font-mono font-black text-slate-900 dark:text-white mt-0.5 truncate" id="calcUnitsDisplay">
                             1.0000 <span class="text-3xs font-bold text-slate-400">@selected.Symbol</span>
                         </div>
                     </div>
-                    <div>
-                        <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">💵 USD Margin</span>
-                        <div class="font-mono font-black text-slate-900 dark:text-white mt-0.5 truncate" id="calcMarginDisplay">
+                    <div class="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700">
+                        <span class="text-3xs uppercase font-extrabold text-slate-400 block">💵 USD Margin</span>
+                        <div class="font-mono font-black text-emerald-600 dark:text-emerald-400 mt-0.5 truncate" id="calcMarginDisplay">
                             $0.00
                         </div>
                     </div>
-                    <div>
-                        <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">📊 % Available Margin</span>
-                        <div class="font-mono font-black text-slate-900 dark:text-white mt-0.5 truncate" id="calcBalancePctDisplay">
+                    <div class="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700">
+                        <span class="text-3xs uppercase font-extrabold text-slate-400 block">📊 % Balance</span>
+                        <div class="font-mono font-black text-blue-600 dark:text-blue-400 mt-0.5 truncate" id="calcBalancePctDisplay">
                             0.00%
                         </div>
                     </div>
-                    <div>
-                        <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">🏷️ Total Order Value</span>
+                    <div class="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700">
+                        <span class="text-3xs uppercase font-extrabold text-slate-400 block">🏷️ Total Value</span>
                         <div class="font-mono font-black text-brand-600 dark:text-brand-400 mt-0.5 truncate" id="calcTotalValueDisplay">
                             $0.00
                         </div>
@@ -549,7 +505,7 @@
                 </div>
             </div>
 
-            <!-- Leverage Multiplier Slider Card -->
+            <!-- Leverage Multiplier Slider Card (1x to 250x) -->
             <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-3">
                 <div class="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
                     <span class="term-leverage-label flex items-center gap-1.5 font-black uppercase tracking-wide">
@@ -587,86 +543,68 @@
                     </h4>
                     <!-- Quick R:R Pre-set Buttons -->
                     <div class="flex items-center gap-1.5 text-3xs">
-                        <span class="text-slate-400">R:R Presets:</span>
-                        <button type="button" onclick="setRiskReward(1)" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 font-bold hover:bg-slate-200">1:1</button>
-                        <button type="button" onclick="setRiskReward(2)" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 font-bold hover:bg-slate-200">1:2</button>
-                        <button type="button" onclick="setRiskReward(3)" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 font-bold hover:bg-slate-200">1:3</button>
+                        <span class="text-slate-400 font-bold uppercase mr-1">R:R:</span>
+                        <button type="button" onclick="setQuickRr(1.5)" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors">1:1.5</button>
+                        <button type="button" onclick="setQuickRr(2.0)" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors">1:2</button>
+                        <button type="button" onclick="setQuickRr(3.0)" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors">1:3</button>
                     </div>
                 </div>
 
-                <!-- Inputs Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Take Profit (Reward) with iOS Switch -->
-                    <div class="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                            <div class="flex items-center gap-2.5">
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="tpEnableToggle" onchange="toggleTpEnabled(this.checked)" checked class="sr-only peer" />
-                                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-500"></div>
-                                </label>
-                                <span class="text-xs font-black text-slate-800 dark:text-slate-200 term-tp-label">Take Profit</span>
-                            </div>
-                            <span class="text-3xs text-emerald-500 font-bold" id="tpRewardSummary">+0.00 USD</span>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Take Profit Box with iOS Switch -->
+                    <div class="p-4 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span class="term-tp-label">Profit Goal (Sell when up)</span>
+                            </span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="tpToggleSwitch" checked onchange="toggleTpEnabled(this.checked)" class="sr-only peer" />
+                                <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-500"></div>
+                            </label>
                         </div>
 
-                        <div id="tpInputsContainer" class="space-y-3">
-                            <input type="number" step="any" name="takeProfit" id="orderTakeProfitInput" oninput="calculateRiskRewardOutputs()"
-                                   placeholder="e.g. Target Exit Price ($)"
-                                   class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-bold focus:border-emerald-500 focus:outline-none" />
+                        <div id="tpInputsContainer" class="space-y-2 transition-opacity">
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-xs">$</span>
+                                <input type="number" step="any" name="takeProfit" id="orderTakeProfitInput"
+                                       value="@((selected.Price * 1.05m).ToString("F2", System.Globalization.CultureInfo.InvariantCulture))"
+                                       oninput="calculateRiskRewardOutputs()"
+                                       class="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                            </div>
 
-                            <!-- Multi-Level Take Profit Section (TP1, TP2, TP3) -->
-                            <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-3xs font-extrabold uppercase text-slate-500">Multi-Level Partial Exits</span>
-                                    <button type="button" onclick="toggleMultiTpInputs()" id="toggleMultiTpBtn" class="text-3xs text-brand-500 font-bold hover:underline">
-                                        + Add TP1 / TP2 / TP3
-                                    </button>
-                                </div>
-                                <div id="multiTpContainer" class="hidden space-y-1.5 pt-1">
-                                    <div class="grid grid-cols-3 gap-1.5 text-3xs">
-                                        <input type="number" step="any" id="tp1Price" placeholder="TP1 Price" class="p-1.5 rounded-lg border dark:bg-slate-900 font-bold" oninput="syncMultiTpJson()" />
-                                        <input type="number" id="tp1Pct" placeholder="50%" value="50" class="p-1.5 rounded-lg border dark:bg-slate-900 font-bold" oninput="syncMultiTpJson()" />
-                                        <span class="self-center text-slate-400 font-bold">50% size</span>
-                                    </div>
-                                    <div class="grid grid-cols-3 gap-1.5 text-3xs">
-                                        <input type="number" step="any" id="tp2Price" placeholder="TP2 Price" class="p-1.5 rounded-lg border dark:bg-slate-900 font-bold" oninput="syncMultiTpJson()" />
-                                        <input type="number" id="tp2Pct" placeholder="30%" value="30" class="p-1.5 rounded-lg border dark:bg-slate-900 font-bold" oninput="syncMultiTpJson()" />
-                                        <span class="self-center text-slate-400 font-bold">30% size</span>
-                                    </div>
-                                    <div class="grid grid-cols-3 gap-1.5 text-3xs">
-                                        <input type="number" step="any" id="tp3Price" placeholder="TP3 Price" class="p-1.5 rounded-lg border dark:bg-slate-900 font-bold" oninput="syncMultiTpJson()" />
-                                        <input type="number" id="tp3Pct" placeholder="20%" value="20" class="p-1.5 rounded-lg border dark:bg-slate-900 font-bold" oninput="syncMultiTpJson()" />
-                                        <span class="self-center text-slate-400 font-bold">20% size</span>
-                                    </div>
-                                </div>
+                            <div class="flex justify-between items-center text-3xs font-bold text-slate-400">
+                                <span>Estimated Reward:</span>
+                                <span id="tpRewardSummary" class="text-emerald-600 font-mono font-black">+$0.00 (+5.00%)</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Stop Loss (Risk) with iOS Switch -->
-                    <div class="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                            <div class="flex items-center gap-2.5">
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="slEnableToggle" onchange="toggleSlEnabled(this.checked)" checked class="sr-only peer" />
-                                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-rose-500"></div>
-                                </label>
-                                <span class="text-xs font-black text-slate-800 dark:text-slate-200 term-sl-label">Stop Loss Protection</span>
-                            </div>
-                            <span class="text-3xs text-rose-500 font-bold" id="slRiskSummary">-0.00 USD</span>
+                    <!-- Stop Loss Box with iOS Switch -->
+                    <div class="p-4 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                                <span class="term-sl-label">Safety Stop (Sell if down)</span>
+                            </span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="slToggleSwitch" checked onchange="toggleSlEnabled(this.checked)" class="sr-only peer" />
+                                <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-rose-500"></div>
+                            </label>
                         </div>
 
-                        <div id="slInputsContainer" class="space-y-3">
-                            <input type="number" step="any" name="stopLoss" id="orderStopLossInput" oninput="calculateRiskRewardOutputs()"
-                                   placeholder="e.g. Protective Exit Price ($)"
-                                   class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-bold focus:border-rose-500 focus:outline-none" />
+                        <div id="slInputsContainer" class="space-y-2 transition-opacity">
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-xs">$</span>
+                                <input type="number" step="any" name="stopLoss" id="orderStopLossInput"
+                                       value="@((selected.Price * 0.97m).ToString("F2", System.Globalization.CultureInfo.InvariantCulture))"
+                                       oninput="calculateRiskRewardOutputs()"
+                                       class="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none" />
+                            </div>
 
-                            <!-- Trailing Stop Distance -->
-                            <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-1.5">
-                                <label class="text-3xs font-extrabold uppercase text-slate-500 block">Trailing Stop Distance ($)</label>
-                                <input type="number" step="any" min="0" name="trailingStopDistance" id="orderTrailingStopInput"
-                                       placeholder="Trail distance (auto ratchets upward in profit)"
-                                       class="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-900 font-bold" />
+                            <div class="flex justify-between items-center text-3xs font-bold text-slate-400">
+                                <span>Estimated Risk:</span>
+                                <span id="slRiskSummary" class="text-rose-600 font-mono font-black">-$0.00 (-3.00%)</span>
                             </div>
                         </div>
                     </div>
@@ -675,93 +613,300 @@
 
             <!-- Submit Action Buttons (Buy / Long vs Sell / Short) -->
             <div class="grid grid-cols-2 gap-4 pt-2">
-                <button type="button" onclick="submitOrder(1)" class="py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:scale-[0.99] text-white font-black text-sm shadow-md transition-all flex items-center justify-center gap-2">
+                <button type="button" id="buyOrderSubmitBtn" onclick="submitOrder(1)" class="py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:scale-[0.99] text-white font-black text-sm shadow-md transition-all flex items-center justify-center gap-2">
                     <i class="fa-solid fa-arrow-trend-up"></i>
-                    <span id="buyBtnLabel">Buy (Long)</span>
+                    <span id="buyBtnLabel">Buy (Long Position)</span>
                 </button>
-                <button type="button" onclick="submitOrder(2)" class="py-3.5 rounded-2xl bg-rose-500 hover:bg-rose-600 active:scale-[0.99] text-white font-black text-sm shadow-md transition-all flex items-center justify-center gap-2">
+                <button type="button" id="sellOrderSubmitBtn" onclick="submitOrder(2)" class="py-4 rounded-2xl bg-rose-500 hover:bg-rose-600 active:scale-[0.99] text-white font-black text-sm shadow-md transition-all flex items-center justify-center gap-2">
                     <i class="fa-solid fa-arrow-trend-down"></i>
-                    <span id="sellBtnLabel">Sell (Short)</span>
+                    <span id="sellBtnLabel">Sell (Short Position)</span>
                 </button>
             </div>
         </form>
     </div>
 
-    <!-- Active Positions / Orders for THIS Asset -->
-    @if (openForSymbol.Count > 0 || pendingForSymbol.Count > 0)
-    {
-        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-4">
-            <h4 class="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <i class="fa-solid fa-layer-group text-brand-500"></i>
-                <span>Your Holdings in @selected.Symbol</span>
-            </h4>
+    <!-- BOTTOM SECTION: Comprehensive Portfolio, Holdings & Profit/Loss Trade Terminal -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+            <div>
+                <h3 class="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-brand-500"></i>
+                    <span>Portfolio Terminal &amp; Trade Monitor</span>
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Live profit and loss tracking for all active holdings and completed trades.
+                </p>
+            </div>
 
-            @if (openForSymbol.Count > 0)
+            <!-- Station Tab Switchers -->
+            <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl text-xs font-black">
+                <button type="button" onclick="switchHoldingTab('open')" id="tabHoldingOpen" class="holding-tab-btn px-4 py-2 rounded-xl active bg-brand-500 text-white shadow-2xs transition-all flex items-center gap-1.5">
+                    <span>Open Positions</span>
+                    <span class="px-1.5 py-0.2 rounded-full bg-white/20 text-3xs font-extrabold" id="openCountBadge">@Model.OpenPositions.Count</span>
+                </button>
+                <button type="button" onclick="switchHoldingTab('pending')" id="tabHoldingPending" class="holding-tab-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 transition-all flex items-center gap-1.5">
+                    <span>Pending Orders</span>
+                    <span class="px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 text-3xs font-extrabold">@Model.PendingOrders.Count</span>
+                </button>
+                <button type="button" onclick="switchHoldingTab('closed')" id="tabHoldingClosed" class="holding-tab-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 transition-all flex items-center gap-1.5">
+                    <span>Closed Trades (PnL)</span>
+                    <span class="px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 text-3xs font-extrabold">@Model.ClosedPositions.Count</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 1: Open Positions Table -->
+        <div id="holdingPanelOpen" class="space-y-4">
+            <!-- Filter Toggle: All vs Current Symbol Only -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-3xs uppercase font-extrabold text-slate-400 tracking-wider">Scope:</span>
+                    <button type="button" onclick="filterPositionsView('all')" id="btnPosFilterAll" class="pos-filter-btn px-3 py-1 rounded-lg text-xs font-black bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 border border-brand-500/30">
+                        All Assets (@Model.OpenPositions.Count)
+                    </button>
+                    <button type="button" onclick="filterPositionsView('current')" id="btnPosFilterCurrent" class="pos-filter-btn px-3 py-1 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">
+                        @selected.Symbol Only (@openForSymbol.Count)
+                    </button>
+                </div>
+                
+                <div class="text-xs font-black text-slate-700 dark:text-slate-300">
+                    Total Unrealized PnL: 
+                    <strong class="@(totalUnrealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500") font-mono" id="totalPnlSummaryBadge">
+                        @(totalUnrealizedPnl >= 0 ? "+" : "")$@totalUnrealizedPnl.ToString("N2")
+                    </strong>
+                </div>
+            </div>
+
+            @if (Model.OpenPositions.Count == 0)
             {
-                <div class="space-y-2">
-                    <p class="text-3xs uppercase font-extrabold text-slate-400">Open Positions</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        @foreach (var pos in openForSymbol)
-                        {
-                            <div class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-between text-xs">
-                                <div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="px-2 py-0.5 rounded text-3xs font-black @(pos.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600")">@pos.Side @pos.Leverage&times;</span>
-                                        <strong class="font-bold">@pos.Quantity.ToString("N4") units</strong>
-                                    </div>
-                                    <div class="text-3xs text-slate-400 mt-1">Entry: $@pos.EntryPrice.ToString("N2") | Margin: $@pos.InitialMargin.ToString("N2")</div>
-                                </div>
-                                <div class="text-right flex items-center gap-3">
-                                    <div class="font-mono font-black @(pos.UnrealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500")">
-                                        @(pos.UnrealizedPnl >= 0 ? "+" : "")$@pos.UnrealizedPnl.ToString("N2")
-                                    </div>
-                                    <form asp-action="ClosePosition" method="post">
-                                        <input type="hidden" name="positionId" value="@pos.Id" />
-                                        <input type="hidden" name="symbol" value="@pos.Symbol" />
-                                        <input type="hidden" name="sourcePage" value="trade" />
-                                        <button type="submit" class="px-2.5 py-1 rounded-lg bg-rose-500 text-white font-bold text-3xs hover:bg-rose-600 shadow-2xs">
-                                            Close
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        }
+                <div class="p-10 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-2">
+                    <div class="w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-500 mx-auto flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-layer-group"></i>
                     </div>
+                    <h5 class="text-sm font-black text-slate-800 dark:text-slate-200">No Open Positions Currently</h5>
+                    <p class="text-xs text-slate-400 max-w-sm mx-auto">
+                        Place a Buy (Long) or Sell (Short) order above to start testing your strategy with real-time profit and loss tracking.
+                    </p>
                 </div>
             }
-
-            @if (pendingForSymbol.Count > 0)
+            else
             {
-                <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <p class="text-3xs uppercase font-extrabold text-slate-400">Pending Orders</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        @foreach (var ord in pendingForSymbol)
-                        {
-                            <div class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-between text-xs">
-                                <div>
-                                    <span class="px-2 py-0.5 rounded text-3xs font-black bg-slate-200 dark:bg-slate-700">@ord.OrderType @ord.Side</span>
-                                    <div class="text-3xs text-slate-400 mt-1">Price: $@((ord.Price ?? ord.TriggerPrice ?? 0m).ToString("N2")) | Qty: @ord.Quantity.ToString("N4")</div>
-                                </div>
-                                <form asp-action="CancelOrder" method="post">
-                                    <input type="hidden" name="orderId" value="@ord.Id" />
-                                    <input type="hidden" name="symbol" value="@ord.Symbol" />
-                                    <input type="hidden" name="sourcePage" value="trade" />
-                                    <button type="submit" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-rose-500 hover:text-white font-bold text-3xs">
-                                        Cancel
-                                    </button>
-                                </form>
-                            </div>
-                        }
-                    </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50/80 dark:bg-slate-800/50 text-slate-400 uppercase text-3xs font-black">
+                            <tr>
+                                <th class="p-3 pl-4">Asset</th>
+                                <th class="p-3">Side &amp; Lev</th>
+                                <th class="p-3">Quantity</th>
+                                <th class="p-3">Entry Price</th>
+                                <th class="p-3">Mark Price</th>
+                                <th class="p-3">Margin</th>
+                                <th class="p-3">Stop Loss</th>
+                                <th class="p-3">Take Profit</th>
+                                <th class="p-3 font-black text-slate-700 dark:text-slate-300">Profit / Loss (PnL)</th>
+                                <th class="p-3 pr-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800" id="openPositionsTableBody">
+                            @foreach (var pos in Model.OpenPositions)
+                            {
+                                var isCurrentSym = pos.Symbol.Equals(selected.Symbol, StringComparison.OrdinalIgnoreCase);
+                                var roi = pos.InitialMargin > 0 ? (pos.UnrealizedPnl / pos.InitialMargin) * 100m : 0m;
+                                <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors pos-row @(isCurrentSym ? "bg-brand-500/5" : "")" data-symbol="@pos.Symbol">
+                                    <td class="p-3 pl-4 font-black text-slate-900 dark:text-white">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <a asp-action="Trade" asp-route-symbol="@pos.Symbol" class="hover:text-brand-500 transition-colors underline-offset-2 hover:underline">
+                                                @pos.Symbol
+                                            </a>
+                                            <span class="px-1.5 py-0.5 rounded text-4xs font-extrabold uppercase @GetAssetBadgeClass(pos.AssetClass)">
+                                                @GetAssetDisplayName(pos.AssetClass)
+                                            </span>
+                                            @if (IsSimulatedFeed(pos.AssetClass))
+                                            {
+                                                <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Simulate</span>
+                                            }
+                                        </div>
+                                        <p class="text-3xs text-slate-400 truncate font-normal">@pos.AssetName</p>
+                                    </td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-0.5 rounded-md font-black text-3xs @(pos.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border border-rose-500/20")">
+                                            @pos.Side @pos.Leverage&times;
+                                        </span>
+                                    </td>
+                                    <td class="p-3 font-mono font-bold text-slate-800 dark:text-slate-200">
+                                        @pos.Quantity.ToString("N4")
+                                    </td>
+                                    <td class="p-3 font-mono text-slate-600 dark:text-slate-300">
+                                        $@pos.EntryPrice.ToString("N2")
+                                    </td>
+                                    <td class="p-3 font-mono font-black text-slate-900 dark:text-white" id="posCurrentPrice_@pos.Id">
+                                        $@pos.CurrentPrice.ToString("N2")
+                                    </td>
+                                    <td class="p-3 font-mono text-slate-600 dark:text-slate-300">
+                                        $@pos.InitialMargin.ToString("N2")
+                                    </td>
+                                    <td class="p-3 font-mono text-3xs text-slate-500">
+                                        @(pos.StopLoss.HasValue && pos.StopLoss > 0 ? $"${pos.StopLoss.Value:N2}" : "--")
+                                    </td>
+                                    <td class="p-3 font-mono text-3xs text-slate-500">
+                                        @(pos.TakeProfit.HasValue && pos.TakeProfit > 0 ? $"${pos.TakeProfit.Value:N2}" : "--")
+                                    </td>
+                                    <td class="p-3 font-mono font-black" id="posPnl_@pos.Id">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="@(pos.UnrealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500") text-sm">
+                                                @(pos.UnrealizedPnl >= 0 ? "+" : "")$@pos.UnrealizedPnl.ToString("N2")
+                                            </span>
+                                            <span class="text-3xs px-1.5 py-0.2 rounded font-extrabold @(roi >= 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600")">
+                                                @(roi >= 0 ? "+" : "")@roi.ToString("N2")%
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="p-3 pr-4 text-right">
+                                        <button type="button" onclick="ajaxClosePosition('@pos.Id', '@pos.Symbol')" class="px-3 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-white font-bold text-3xs transition-all shadow-2xs">
+                                            Close Trade
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                 </div>
             }
         </div>
-    }
+
+        <!-- TAB 2: Pending Orders Table -->
+        <div id="holdingPanelPending" class="hidden space-y-4">
+            @if (Model.PendingOrders.Count == 0)
+            {
+                <div class="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-1">
+                    <p class="text-xs font-bold text-slate-500">No working limit or stop orders pending execution.</p>
+                </div>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50/80 dark:bg-slate-800/50 text-slate-400 uppercase text-3xs font-black">
+                            <tr>
+                                <th class="p-3 pl-4">Asset</th>
+                                <th class="p-3">Order Type</th>
+                                <th class="p-3">Side</th>
+                                <th class="p-3">Quantity</th>
+                                <th class="p-3">Target Price</th>
+                                <th class="p-3">TIF</th>
+                                <th class="p-3">Placed At</th>
+                                <th class="p-3 pr-4 text-right">Cancel</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            @foreach (var ord in Model.PendingOrders)
+                            {
+                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                    <td class="p-3 pl-4 font-black text-slate-900 dark:text-white">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span>@ord.Symbol</span>
+                                            <span class="px-1.5 py-0.5 rounded text-4xs font-extrabold uppercase @GetAssetBadgeClass(ord.AssetClass)">
+                                                @GetAssetDisplayName(ord.AssetClass)
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-0.5 rounded text-3xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                            @ord.OrderType
+                                        </span>
+                                    </td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-0.5 rounded text-3xs font-extrabold @(ord.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy ? "text-emerald-500" : "text-rose-500")">
+                                            @ord.Side
+                                        </span>
+                                    </td>
+                                    <td class="p-3 font-mono font-bold">@ord.Quantity.ToString("N4")</td>
+                                    <td class="p-3 font-mono font-black text-slate-900 dark:text-white">
+                                        $@((ord.Price ?? ord.TriggerPrice ?? 0m).ToString("N2"))
+                                    </td>
+                                    <td class="p-3 text-3xs text-slate-400">@ord.TimeInForce</td>
+                                    <td class="p-3 text-3xs text-slate-400">@ord.PlacedAtUtc.ToString("HH:mm:ss")</td>
+                                    <td class="p-3 pr-4 text-right">
+                                        <button type="button" onclick="ajaxCancelOrder('@ord.Id', '@ord.Symbol')" class="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-rose-500 hover:text-white font-bold text-3xs transition-colors">
+                                            Cancel
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <!-- TAB 3: Closed Trades & Profit/Loss History -->
+        <div id="holdingPanelClosed" class="hidden space-y-4">
+            @if (Model.ClosedPositions.Count == 0)
+            {
+                <div class="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-1">
+                    <p class="text-xs font-bold text-slate-500">No closed trades yet in your paper trading history.</p>
+                </div>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50/80 dark:bg-slate-800/50 text-slate-400 uppercase text-3xs font-black">
+                            <tr>
+                                <th class="p-3 pl-4">Asset</th>
+                                <th class="p-3">Side</th>
+                                <th class="p-3">Quantity</th>
+                                <th class="p-3">Entry Price</th>
+                                <th class="p-3">Exit Price</th>
+                                <th class="p-3 font-black text-slate-700 dark:text-slate-300">Realized Profit / Loss (PnL)</th>
+                                <th class="p-3 pr-4 text-right">Closed At</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            @foreach (var c in Model.ClosedPositions)
+                            {
+                                var isWin = c.RealizedPnl >= 0;
+                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                    <td class="p-3 pl-4 font-black text-slate-800 dark:text-slate-200">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span>@c.Symbol</span>
+                                            <span class="px-1.5 py-0.5 rounded text-4xs font-extrabold uppercase @GetAssetBadgeClass(c.AssetClass)">
+                                                @GetAssetDisplayName(c.AssetClass)
+                                            </span>
+                                        </div>
+                                        <p class="text-3xs text-slate-400 truncate font-normal">@c.AssetName</p>
+                                    </td>
+                                    <td class="p-3 text-3xs font-extrabold @(c.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy ? "text-emerald-500" : "text-rose-500")">
+                                        @c.Side
+                                    </td>
+                                    <td class="p-3 font-mono font-bold">@c.Quantity.ToString("N4")</td>
+                                    <td class="p-3 font-mono text-slate-600 dark:text-slate-400">$@c.EntryPrice.ToString("N2")</td>
+                                    <td class="p-3 font-mono text-slate-900 dark:text-white font-bold">$@((c.ClosePrice ?? c.CurrentPrice).ToString("N2"))</td>
+                                    <td class="p-3 font-mono font-black">
+                                        <span class="px-2.5 py-1 rounded-lg text-xs font-black @(isWin ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30" : "bg-rose-500/10 text-rose-600 border border-rose-500/30")">
+                                            @(isWin ? "+" : "")$@c.RealizedPnl.ToString("N2")
+                                        </span>
+                                    </td>
+                                    <td class="p-3 pr-4 text-right text-3xs text-slate-400">
+                                        @((c.ClosedAtUtc ?? DateTime.UtcNow).ToString("yyyy-MM-dd HH:mm"))
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
 </div>
 
 @section Scripts {
+<!-- Official TradingView Real-Time Chart Widget Script -->
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+
 <script>
     const symbol = "@selected.Symbol";
+    const selectedAssetClass = @((int)selected.AssetClass);
     let basePrice = @selected.Price;
     let cashBalance = @account.CashBalance;
     let freeMargin = @account.FreeMargin;
@@ -777,50 +922,95 @@
     let tpEnabled = true;
     let slEnabled = true;
 
+    // Chart Engine State
+    let currentChartEngine = 'tradingview'; // 'tradingview' or 'canvas'
+    let tvWidget = null;
+
+    // Toast Alert Helper
+    function showToast(type, msg) {
+        const c = document.getElementById('dynamicAlertContainer');
+        if (!c) return;
+        const isSuccess = type === 'success';
+        const el = document.createElement('div');
+        el.className = `p-4 rounded-2xl ${isSuccess ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300'} border flex items-center justify-between shadow-xs transition-all`;
+        el.innerHTML = `
+            <div class="flex items-center gap-3">
+                <i class="fa-solid ${isSuccess ? 'fa-circle-check text-emerald-500' : 'fa-circle-exclamation text-rose-500'} text-lg"></i>
+                <div>
+                    <strong class="font-bold text-xs uppercase tracking-wider">${isSuccess ? 'Success' : 'Execution Notice'}</strong>
+                    <p class="text-xs ${isSuccess ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} mt-0.5">${msg}</p>
+                </div>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="${isSuccess ? 'text-emerald-500' : 'text-rose-500'} hover:opacity-75">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        `;
+        c.prepend(el);
+        setTimeout(() => el.remove(), 7000);
+    }
+
     // ── 1. Live Price Auto-Update Polling (Every 3 seconds, in-place, NO refresh) ─────
     setInterval(async () => {
         try {
             const res = await fetch(`/Trading/Trading/Quote?symbol=${encodeURIComponent(symbol)}`);
             if (res.ok) {
                 const quote = await res.json();
-                const newPrice = Number(quote.Price);
+                // Support both camelCase and PascalCase properties
+                const newPrice = Number(quote.price ?? quote.Price);
+                const high24 = Number(quote.high24h ?? quote.High24h ?? 0);
+                const low24 = Number(quote.low24h ?? quote.Low24h ?? 0);
+                const chg24h = Number(quote.changePercent24h ?? quote.ChangePercent24h ?? 0);
 
-                if (newPrice && newPrice !== basePrice) {
+                if (newPrice && !isNaN(newPrice)) {
                     const priceEl = document.getElementById('liveTickerPrice');
                     const changeEl = document.getElementById('liveTickerChange');
+                    const syncDot = document.getElementById('syncStatusDot');
 
                     // Flash animation on live badge
                     if (newPrice > basePrice) {
                         priceEl.classList.add('text-emerald-500');
                         setTimeout(() => priceEl.classList.remove('text-emerald-500'), 800);
-                    } else {
+                    } else if (newPrice < basePrice) {
                         priceEl.classList.add('text-rose-500');
                         setTimeout(() => priceEl.classList.remove('text-rose-500'), 800);
                     }
 
+                    if (syncDot) {
+                        syncDot.classList.add('scale-125');
+                        setTimeout(() => syncDot.classList.remove('scale-125'), 300);
+                    }
+
                     basePrice = newPrice;
                     priceEl.textContent = `$${newPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
-                    const chg24h = Number(quote.ChangePercent24h ?? quote.changePercent24h ?? 0);
                     changeEl.textContent = `${chg24h >= 0 ? '+' : ''}${chg24h.toFixed(2)}%`;
 
                     const highEl = document.getElementById('liveHighDisplay');
-                    if (highEl && quote.High24h) highEl.textContent = `$${Number(quote.High24h).toFixed(2)}`;
+                    if (highEl && high24 > 0) highEl.textContent = `$${high24.toFixed(2)}`;
                     const lowEl = document.getElementById('liveLowDisplay');
-                    if (lowEl && quote.Low24h) lowEl.textContent = `$${Number(quote.Low24h).toFixed(2)}`;
+                    if (lowEl && low24 > 0) lowEl.textContent = `$${low24.toFixed(2)}`;
 
-                    // Seamlessly update market order execution display and quick hints in-place
+                    // Update market order execution display in-place
                     const marketPriceEl = document.getElementById('marketOrderPriceDisplay');
                     if (marketPriceEl) {
                         marketPriceEl.textContent = `$${newPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
                     }
 
                     const limitHint = document.getElementById('limitMarketHint');
-                    if (limitHint) limitHint.textContent = `$${newPrice.toFixed(2)}`;
+                    if (limitHint) limitHint.textContent = `${newPrice.toFixed(2)}`;
                     const stopHint = document.getElementById('stopMarketHint');
-                    if (stopHint) stopHint.textContent = `$${newPrice.toFixed(2)}`;
+                    if (stopHint) stopHint.textContent = `${newPrice.toFixed(2)}`;
 
                     // Recalculate indicators & size conversions dynamically with the new live price
                     recalculateAllSizeAndMargin();
+
+                    // Update live positions mark price and unrealized PnL in open positions table
+                    document.querySelectorAll('.pos-row').forEach(row => {
+                        const sym = row.getAttribute('data-symbol');
+                        if (sym && sym.toUpperCase() === symbol.toUpperCase()) {
+                            const curCell = row.querySelector('[id^="posCurrentPrice_"]');
+                            if (curCell) curCell.textContent = `$${newPrice.toFixed(2)}`;
+                        }
+                    });
                 }
             }
         } catch (err) {
@@ -939,46 +1129,46 @@
 
         const activeBtn = document.getElementById('sizeModeBtn' + mode.charAt(0).toUpperCase() + mode.slice(1));
         if (activeBtn) {
-            activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
             activeBtn.classList.add('bg-brand-500', 'text-white', 'shadow-2xs');
+            activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
         }
 
-        const prefix = document.getElementById('sizeInputPrefix');
-        const suffix = document.getElementById('sizeInputSuffix');
+        const prefix = document.getElementById('mainInputPrefix');
+        const suffix = document.getElementById('mainInputSuffix');
         const input = document.getElementById('orderSizeMainInput');
 
         if (mode === 'units') {
             prefix.classList.add('hidden');
-            suffix.textContent = 'Units';
-            input.value = currentCalculatedUnits > 0 ? (currentCalculatedUnits > 1 ? currentCalculatedUnits.toFixed(4) : currentCalculatedUnits.toFixed(6)) : '1';
+            suffix.classList.remove('hidden');
+            suffix.textContent = symbol;
+            input.value = currentCalculatedUnits > 0 ? (currentCalculatedUnits > 1 ? currentCalculatedUnits.toFixed(4) : currentCalculatedUnits.toFixed(6)) : "1.0";
         } else if (mode === 'margin') {
             prefix.classList.remove('hidden');
-            suffix.textContent = 'USD Margin';
-            input.value = currentCalculatedMargin > 0 ? currentCalculatedMargin.toFixed(2) : '10.00';
+            suffix.classList.add('hidden');
+            input.value = currentCalculatedMargin > 0 ? currentCalculatedMargin.toFixed(2) : "50.00";
         } else if (mode === 'percent') {
             prefix.classList.add('hidden');
-            suffix.textContent = '% Balance';
-            input.value = currentCalculatedPercent > 0 ? currentCalculatedPercent.toFixed(1) : '10.0';
+            suffix.classList.remove('hidden');
+            suffix.textContent = "% Balance";
+            input.value = currentCalculatedPercent > 0 ? currentCalculatedPercent.toFixed(1) : "10.0";
         } else if (mode === 'total') {
             prefix.classList.remove('hidden');
-            suffix.textContent = 'Total USD';
-            input.value = currentCalculatedTotal > 0 ? currentCalculatedTotal.toFixed(2) : '100.00';
+            suffix.classList.add('hidden');
+            input.value = currentCalculatedTotal > 0 ? currentCalculatedTotal.toFixed(2) : (basePrice > 0 ? basePrice.toFixed(2) : "100.00");
         }
 
         recalculateAllSizeAndMargin();
     }
 
-    function onSizeMainInputChange(val) {
+    function onMainSizeInputChange(val) {
         recalculateAllSizeAndMargin();
     }
 
-    function onTradeValueSliderChange(pctVal) {
-        const pct = parseFloat(pctVal) || 0;
+    function onTradeValueSliderChange(pct) {
         document.getElementById('tradeValueSliderLabel').textContent = pct + '%';
-
-        const refPrice = getActiveReferencePrice();
-        const lev = parseInt(document.getElementById('orderLeverageInput').value) || 1;
         const avail = freeMargin > 0 ? freeMargin : (cashBalance > 0 ? cashBalance : 100);
+        const lev = parseInt(document.getElementById('orderLeverageInput').value) || 1;
+        const refPrice = getActiveReferencePrice();
 
         const targetMargin = (avail * pct) / 100;
         const targetTotal = targetMargin * lev;
@@ -990,7 +1180,7 @@
         } else if (currentSizeMode === 'margin') {
             input.value = targetMargin.toFixed(2);
         } else if (currentSizeMode === 'percent') {
-            input.value = pct.toFixed(1);
+            input.value = Number(pct).toFixed(1);
         } else if (currentSizeMode === 'total') {
             input.value = targetTotal.toFixed(2);
         }
@@ -1053,12 +1243,12 @@
         currentCalculatedPercent = balancePct;
         currentCalculatedTotal = total;
 
-        // Keep hidden quantity field in sync so backend receives exact decimal units
-        document.getElementById('orderQuantityInput').value = units > 0 ? (units > 1 ? units.toFixed(6) : units.toFixed(8)) : '0';
+        // Keep hidden quantity field in sync
+        document.getElementById('orderQuantityInput').value = units > 0 ? (units > 1 ? units.toFixed(4) : units.toFixed(6)) : '0';
 
         // Update live bottom conversions strip
         const unitsStr = units > 1 ? units.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : units.toFixed(6);
-        document.getElementById('calcUnitsDisplay').innerHTML = `${unitsStr} <span class="text-3xs font-bold text-slate-400">@selected.Symbol</span>`;
+        document.getElementById('calcUnitsDisplay').innerHTML = `${unitsStr} <span class="text-3xs font-bold text-slate-400">${symbol}</span>`;
         document.getElementById('calcMarginDisplay').textContent = `$${margin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         document.getElementById('calcBalancePctDisplay').textContent = `${balancePct.toFixed(2)}%`;
         document.getElementById('calcTotalValueDisplay').textContent = `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -1107,82 +1297,58 @@
         calculateRiskRewardOutputs();
     }
 
-    function calculateRiskRewardOutputs() {
-        const qty = currentCalculatedUnits;
+    function setQuickRr(ratio) {
         const refPrice = getActiveReferencePrice();
+        const slPct = 0.03;
+        const tpPct = slPct * ratio;
 
-        if (slEnabled) {
-            const slPrice = parseFloat(document.getElementById('orderStopLossInput').value) || 0;
-            if (slPrice > 0) {
-                const riskUsd = currentSide === 1 ? Math.max(0, (refPrice - slPrice) * qty) : Math.max(0, (slPrice - refPrice) * qty);
-                const riskPct = cashBalance > 0 ? (riskUsd / cashBalance) * 100 : 0;
-                document.getElementById('slRiskSummary').textContent = `-$${riskUsd.toFixed(2)} USD (${riskPct.toFixed(1)}%)`;
-            } else {
-                document.getElementById('slRiskSummary').textContent = 'No Stop Loss Set';
-            }
-        } else {
-            document.getElementById('slRiskSummary').textContent = 'Protection OFF';
-        }
-
-        if (tpEnabled) {
-            const tpPrice = parseFloat(document.getElementById('orderTakeProfitInput').value) || 0;
-            if (tpPrice > 0) {
-                const rewardUsd = currentSide === 1 ? Math.max(0, (tpPrice - refPrice) * qty) : Math.max(0, (refPrice - tpPrice) * qty);
-                const rewardPct = cashBalance > 0 ? (rewardUsd / cashBalance) * 100 : 0;
-                document.getElementById('tpRewardSummary').textContent = `+$${rewardUsd.toFixed(2)} USD (${rewardPct.toFixed(1)}%)`;
-            } else {
-                document.getElementById('tpRewardSummary').textContent = 'No Profit Target Set';
-            }
-        } else {
-            document.getElementById('tpRewardSummary').textContent = 'Target OFF';
-        }
-    }
-
-    function setRiskReward(ratio) {
-        const refPrice = getActiveReferencePrice();
-        const slInput = document.getElementById('orderStopLossInput');
         const tpInput = document.getElementById('orderTakeProfitInput');
-        const slDistance = refPrice * 0.015; // default 1.5% SL distance
-
-        if (!slEnabled) {
-            document.getElementById('slEnableToggle').checked = true;
-            toggleSlEnabled(true);
-        }
-        if (!tpEnabled) {
-            document.getElementById('tpEnableToggle').checked = true;
-            toggleTpEnabled(true);
-        }
+        const slInput = document.getElementById('orderStopLossInput');
 
         if (currentSide === 1) { // Buy
-            const sl = Math.max(0.01, refPrice - slDistance);
-            const tp = refPrice + (slDistance * ratio);
-            slInput.value = sl.toFixed(2);
-            tpInput.value = tp.toFixed(2);
+            tpInput.value = (refPrice * (1 + tpPct)).toFixed(2);
+            slInput.value = (refPrice * (1 - slPct)).toFixed(2);
         } else { // Sell
-            const sl = refPrice + slDistance;
-            const tp = Math.max(0.01, refPrice - (slDistance * ratio));
-            slInput.value = sl.toFixed(2);
-            tpInput.value = tp.toFixed(2);
+            tpInput.value = (refPrice * (1 - tpPct)).toFixed(2);
+            slInput.value = (refPrice * (1 + slPct)).toFixed(2);
         }
+
+        if (!tpEnabled) {
+            document.getElementById('tpToggleSwitch').checked = true;
+            toggleTpEnabled(true);
+        }
+        if (!slEnabled) {
+            document.getElementById('slToggleSwitch').checked = true;
+            toggleSlEnabled(true);
+        }
+
         calculateRiskRewardOutputs();
     }
 
-    function toggleMultiTpInputs() {
-        const container = document.getElementById('multiTpContainer');
-        container.classList.toggle('hidden');
-    }
+    function calculateRiskRewardOutputs() {
+        const refPrice = getActiveReferencePrice();
+        const units = currentCalculatedUnits;
 
-    function syncMultiTpJson() {
-        const p1 = parseFloat(document.getElementById('tp1Price').value) || 0;
-        const p2 = parseFloat(document.getElementById('tp2Price').value) || 0;
-        const p3 = parseFloat(document.getElementById('tp3Price').value) || 0;
+        if (tpEnabled) {
+            const tp = parseFloat(document.getElementById('orderTakeProfitInput').value) || 0;
+            const tpSummary = document.getElementById('tpRewardSummary');
+            if (tp > 0 && units > 0 && refPrice > 0) {
+                const diff = currentSide === 1 ? (tp - refPrice) : (refPrice - diff);
+                const rewardUsd = Math.abs(tp - refPrice) * units;
+                const rewardPct = ((Math.abs(tp - refPrice) / refPrice) * 100);
+                tpSummary.textContent = `+$${rewardUsd.toFixed(2)} (+${rewardPct.toFixed(2)}%)`;
+            }
+        }
 
-        const list = [];
-        if (p1 > 0) list.push({ level: 1, price: p1, percentage: parseFloat(document.getElementById('tp1Pct').value) || 50 });
-        if (p2 > 0) list.push({ level: 2, price: p2, percentage: parseFloat(document.getElementById('tp2Pct').value) || 30 });
-        if (p3 > 0) list.push({ level: 3, price: p3, percentage: parseFloat(document.getElementById('tp3Pct').value) || 20 });
-
-        document.getElementById('formMultiTpJson').value = list.length > 0 ? JSON.stringify(list) : '';
+        if (slEnabled) {
+            const sl = parseFloat(document.getElementById('orderStopLossInput').value) || 0;
+            const slSummary = document.getElementById('slRiskSummary');
+            if (sl > 0 && units > 0 && refPrice > 0) {
+                const riskUsd = Math.abs(refPrice - sl) * units;
+                const riskPct = ((Math.abs(refPrice - sl) / refPrice) * 100);
+                slSummary.textContent = `-$${riskUsd.toFixed(2)} (-${riskPct.toFixed(2)}%)`;
+            }
+        }
     }
 
     // ── 5. UIComponent iOS Terminology Switch ────────────────────────────────
@@ -1207,69 +1373,333 @@
         } else {
             modeTitle.textContent = "Plain English Mode";
             modeSub.textContent = "Simple, everyday trading language";
-            document.querySelectorAll('.term-quantity-label').forEach(el => el.textContent = "How Much to Trade");
-            document.querySelectorAll('.term-leverage-label').forEach(el => el.textContent = "Borrow Multiplier");
+            document.querySelectorAll('.term-quantity-label').forEach(el => el.textContent = "Order Size & Units");
+            document.querySelectorAll('.term-leverage-label').forEach(el => el.textContent = "Leverage Multiplier");
             document.querySelectorAll('.term-price-label').forEach(el => el.textContent = "Desired Purchase Price ($)");
             document.querySelectorAll('.term-trigger-label').forEach(el => el.textContent = "Trigger Price ($)");
             document.querySelectorAll('.term-tif-label').forEach(el => el.textContent = "How Long Order Stays Open");
             document.querySelectorAll('.term-tp-label').forEach(el => el.textContent = "Profit Goal (Sell when up)");
             document.querySelectorAll('.term-sl-label').forEach(el => el.textContent = "Safety Stop (Sell if down)");
-            document.querySelectorAll('.term-exit-header').forEach(el => el.textContent = "Safety Stops & Profit Goals");
-            document.getElementById('buyBtnLabel').textContent = "Buy (Long)";
-            document.getElementById('sellBtnLabel').textContent = "Sell (Short)";
+            document.querySelectorAll('.term-exit-header').forEach(el => el.textContent = "Target Profit & Loss Protection");
+            document.getElementById('buyBtnLabel').textContent = "Buy (Long Position)";
+            document.getElementById('sellBtnLabel').textContent = "Sell (Short Position)";
         }
     }
 
-    // ── 6. Client-Side Validation on Submit ──────────────────────────────────
-    function submitOrder(side) {
+    // ── 6. Client-Side Validation & AJAX Order Placement ───────────────────
+    async function submitOrder(side) {
         currentSide = side;
         document.getElementById('formOrderSide').value = side;
 
         const qty = parseFloat(document.getElementById('orderQuantityInput').value) || 0;
         if (qty <= 0) {
-            alert('Order quantity must be greater than 0. Please enter a valid trade size or adjust the slider.');
+            showToast('error', 'Order quantity must be greater than 0. Please enter a valid trade size or adjust the slider.');
             return;
         }
 
         const checkPrice = getActiveReferencePrice();
 
-        // Handle Take Profit
+        // Handle Take Profit validation
         if (!tpEnabled) {
             document.getElementById('orderTakeProfitInput').value = '';
-            document.getElementById('formMultiTpJson').value = '';
         } else {
             const tp = parseFloat(document.getElementById('orderTakeProfitInput').value) || 0;
             if (side === 1 && tp > 0 && tp <= checkPrice) {
-                alert(`For Buy (Long) orders, Take Profit ($${tp}) must be set strictly ABOVE the entry price ($${checkPrice.toFixed(2)}).`);
+                showToast('error', `For Buy (Long) orders, Take Profit ($${tp}) must be set strictly ABOVE the entry price ($${checkPrice.toFixed(2)}).`);
                 return;
             }
             if (side === 2 && tp > 0 && tp >= checkPrice) {
-                alert(`For Sell (Short) orders, Take Profit ($${tp}) must be set strictly BELOW the entry price ($${checkPrice.toFixed(2)}).`);
+                showToast('error', `For Sell (Short) orders, Take Profit ($${tp}) must be set strictly BELOW the entry price ($${checkPrice.toFixed(2)}).`);
                 return;
             }
-            syncMultiTpJson();
         }
 
-        // Handle Stop Loss
+        // Handle Stop Loss validation
         if (!slEnabled) {
             document.getElementById('orderStopLossInput').value = '';
-            document.getElementById('orderTrailingStopInput').value = '';
         } else {
             const sl = parseFloat(document.getElementById('orderStopLossInput').value) || 0;
             if (side === 1 && sl > 0 && sl >= checkPrice) {
-                alert(`For Buy (Long) orders, Stop Loss ($${sl}) must be set strictly BELOW the entry price ($${checkPrice.toFixed(2)}).`);
+                showToast('error', `For Buy (Long) orders, Stop Loss ($${sl}) must be set strictly BELOW the entry price ($${checkPrice.toFixed(2)}).`);
                 return;
             }
             if (side === 2 && sl > 0 && sl <= checkPrice) {
-                alert(`For Sell (Short) orders, Stop Loss ($${sl}) must be set strictly ABOVE the entry price ($${checkPrice.toFixed(2)}).`);
+                showToast('error', `For Sell (Short) orders, Stop Loss ($${sl}) must be set strictly ABOVE the entry price ($${checkPrice.toFixed(2)}).`);
                 return;
             }
         }
 
-        document.getElementById('tradingOrderForm').submit();
+        // Disable buttons and show processing state
+        const buyBtn = document.getElementById('buyOrderSubmitBtn');
+        const sellBtn = document.getElementById('sellOrderSubmitBtn');
+        if (buyBtn) buyBtn.disabled = true;
+        if (sellBtn) sellBtn.disabled = true;
+
+        const form = document.getElementById('tradingOrderForm');
+        const formData = new FormData(form);
+
+        try {
+            const res = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    showToast('success', data.message || 'Trade executed successfully!');
+                    setTimeout(() => window.location.reload(), 800);
+                    return;
+                } else {
+                    showToast('error', data.error || 'Failed to place order.');
+                }
+            } else {
+                form.submit();
+                return;
+            }
+        } catch (err) {
+            console.warn('AJAX submit fallback:', err);
+            form.submit();
+            return;
+        } finally {
+            if (buyBtn) buyBtn.disabled = false;
+            if (sellBtn) sellBtn.disabled = false;
+        }
     }
 
-    // ── 7. Interactive HTML5 Canvas Pro Chart with Drawing Tools ────────────
+    async function ajaxClosePosition(posId, sym) {
+        try {
+            const formData = new FormData();
+            formData.append('positionId', posId);
+            formData.append('symbol', sym);
+            formData.append('sourcePage', 'trade');
+
+            const res = await fetch('/Trading/Trading/ClosePosition', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    showToast('success', data.message || 'Position closed successfully.');
+                    setTimeout(() => window.location.reload(), 700);
+                } else {
+                    showToast('error', data.error || 'Failed to close position.');
+                }
+            }
+        } catch (err) {
+            console.error('Failed to close position:', err);
+        }
+    }
+
+    async function ajaxCancelOrder(ordId, sym) {
+        try {
+            const formData = new FormData();
+            formData.append('orderId', ordId);
+            formData.append('symbol', sym);
+            formData.append('sourcePage', 'trade');
+
+            const res = await fetch('/Trading/Trading/CancelOrder', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) {
+                    showToast('success', data.message || 'Pending order cancelled.');
+                    setTimeout(() => window.location.reload(), 700);
+                } else {
+                    showToast('error', data.error || 'Failed to cancel order.');
+                }
+            }
+        } catch (err) {
+            console.error('Failed to cancel order:', err);
+        }
+    }
+
+    // ── 7. Holdings Station Tabs & Filters ──────────────────────────────────
+    function switchHoldingTab(tab) {
+        document.querySelectorAll('.holding-tab-btn').forEach(b => {
+            b.classList.remove('bg-brand-500', 'text-white', 'shadow-2xs');
+            b.classList.add('text-slate-600', 'dark:text-slate-400');
+        });
+
+        const activeBtn = document.getElementById('tabHolding' + tab.charAt(0).toUpperCase() + tab.slice(1));
+        if (activeBtn) {
+            activeBtn.classList.add('bg-brand-500', 'text-white', 'shadow-2xs');
+            activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+        }
+
+        document.getElementById('holdingPanelOpen').classList.add('hidden');
+        document.getElementById('holdingPanelPending').classList.add('hidden');
+        document.getElementById('holdingPanelClosed').classList.add('hidden');
+
+        if (tab === 'open') document.getElementById('holdingPanelOpen').classList.remove('hidden');
+        else if (tab === 'pending') document.getElementById('holdingPanelPending').classList.remove('hidden');
+        else if (tab === 'closed') document.getElementById('holdingPanelClosed').classList.remove('hidden');
+    }
+
+    function filterPositionsView(scope) {
+        const btnAll = document.getElementById('btnPosFilterAll');
+        const btnCurr = document.getElementById('btnPosFilterCurrent');
+
+        if (scope === 'all') {
+            btnAll.className = "pos-filter-btn px-3 py-1 rounded-lg text-xs font-black bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 border border-brand-500/30";
+            btnCurr.className = "pos-filter-btn px-3 py-1 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200";
+            document.querySelectorAll('.pos-row').forEach(r => r.classList.remove('hidden'));
+        } else {
+            btnCurr.className = "pos-filter-btn px-3 py-1 rounded-lg text-xs font-black bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 border border-brand-500/30";
+            btnAll.className = "pos-filter-btn px-3 py-1 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200";
+            document.querySelectorAll('.pos-row').forEach(r => {
+                const s = r.getAttribute('data-symbol');
+                if (s && s.toUpperCase() === symbol.toUpperCase()) {
+                    r.classList.remove('hidden');
+                } else {
+                    r.classList.add('hidden');
+                }
+            });
+        }
+    }
+
+    // ── 8. Chart Engine (Official TradingView Pro Widget & Interactive Canvas) ──
+    function getTradingViewSymbol(sym, assetClass) {
+        const s = (sym || '').toUpperCase();
+        if (assetClass === 1) { // Crypto
+            if (s.endsWith('USDT')) return 'BINANCE:' + s;
+            return 'BINANCE:' + s + 'USDT';
+        } else if (assetClass === 2) { // Forex
+            return 'FX:' + s.replace('/', '');
+        } else if (assetClass === 3) { // Stock
+            return 'NASDAQ:' + s;
+        } else if (assetClass === 4) { // Index
+            if (s === 'SPX') return 'SP:SPX';
+            if (s === 'NDX') return 'NASDAQ:NDX';
+            if (s === 'DJI') return 'DJ:DJI';
+            if (s === 'DAX') return 'XETR:DAX';
+            if (s === 'FTSE') return 'INDEX:FTSE';
+            return s;
+        } else if (assetClass === 5) { // Future
+            if (s === 'XAUUSD') return 'OANDA:XAUUSD';
+            if (s === 'XAGUSD') return 'OANDA:XAGUSD';
+            if (s === 'USOIL') return 'TVC:USOIL';
+            if (s === 'NATGAS') return 'TVC:NATGAS';
+            if (s === 'ES') return 'CME_MINI:ES1!';
+            return s;
+        }
+        return 'BINANCE:BTCUSDT';
+    }
+
+    function initTradingViewWidget() {
+        const container = document.getElementById('tradingview_widget');
+        if (!container) return;
+        container.innerHTML = '';
+
+        const tvSymbol = getTradingViewSymbol(symbol, selectedAssetClass);
+
+        if (typeof TradingView !== 'undefined') {
+            try {
+                tvWidget = new TradingView.widget({
+                    "autosize": true,
+                    "symbol": tvSymbol,
+                    "interval": "15",
+                    "timezone": "Etc/UTC",
+                    "theme": document.documentElement.classList.contains('dark') ? "dark" : "light",
+                    "style": "1",
+                    "locale": "en",
+                    "toolbar_bg": "#f1f3f6",
+                    "enable_publishing": false,
+                    "hide_side_toolbar": false,
+                    "allow_symbol_change": true,
+                    "container_id": "tradingview_widget"
+                });
+            } catch (e) {
+                console.warn("TradingView widget failed, fallback to canvas:", e);
+                switchChartEngine('canvas');
+            }
+        } else {
+            switchChartEngine('canvas');
+        }
+    }
+
+    function switchChartEngine(engine) {
+        currentChartEngine = engine;
+        const btnTv = document.getElementById('btnTvEngine');
+        const btnCanvas = document.getElementById('btnCanvasEngine');
+        const tvDiv = document.getElementById('tradingview_widget');
+        const canvasEl = document.getElementById('tradingCanvas');
+        const canvasTf = document.getElementById('canvasTfGroup');
+        const canvasExtras = document.getElementById('canvasExtrasGroup');
+        const canvasToolbar = document.getElementById('canvasToolbar');
+        const canvasStats = document.getElementById('canvasStatsPill');
+        const canvasGuide = document.getElementById('canvasGuidePill');
+        const watermark = document.getElementById('chartWatermark');
+
+        if (engine === 'tradingview') {
+            btnTv.className = "px-3 py-1.5 rounded-lg active bg-brand-500 text-white shadow-2xs transition-all flex items-center gap-1.5";
+            btnCanvas.className = "px-3 py-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 transition-all flex items-center gap-1.5";
+            tvDiv.classList.remove('hidden');
+            canvasEl.classList.add('hidden');
+            canvasTf.classList.add('hidden');
+            canvasExtras.classList.add('hidden');
+            canvasToolbar.classList.add('hidden');
+            canvasStats.classList.add('hidden');
+            canvasGuide.classList.add('hidden');
+            watermark.classList.add('hidden');
+            initTradingViewWidget();
+        } else {
+            btnCanvas.className = "px-3 py-1.5 rounded-lg active bg-brand-500 text-white shadow-2xs transition-all flex items-center gap-1.5";
+            btnTv.className = "px-3 py-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 transition-all flex items-center gap-1.5";
+            tvDiv.classList.add('hidden');
+            canvasEl.classList.remove('hidden');
+            canvasTf.classList.remove('hidden');
+            canvasExtras.classList.remove('hidden');
+            canvasToolbar.classList.remove('hidden');
+            canvasStats.classList.remove('hidden');
+            canvasGuide.classList.remove('hidden');
+            watermark.classList.remove('hidden');
+            generateRealisticCandles();
+            resizeCanvas();
+        }
+    }
+
+    function setChartHeight(h) {
+        document.querySelectorAll('.chart-h-btn').forEach(b => {
+            b.classList.remove('bg-white', 'dark:bg-slate-700', 'text-brand-600', 'dark:text-brand-400', 'shadow-2xs', 'font-black');
+            b.classList.add('text-slate-600', 'dark:text-slate-400');
+        });
+        const activeBtn = document.querySelector(`.chart-h-btn[data-h="${h}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('bg-white', 'dark:bg-slate-700', 'text-brand-600', 'dark:text-brand-400', 'shadow-2xs', 'font-black');
+            activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+        }
+
+        const container = document.getElementById('chartMainContainer');
+        if (container) {
+            container.style.height = h + 'px';
+            if (currentChartEngine === 'canvas') resizeCanvas();
+        }
+    }
+
+    function toggleChartFullscreen() {
+        const c = document.getElementById('chartMainContainer');
+        if (!c) return;
+        if (!document.fullscreenElement) {
+            c.requestFullscreen?.().then(() => {
+                if (currentChartEngine === 'canvas') setTimeout(resizeCanvas, 150);
+            }).catch(() => {});
+        } else {
+            document.exitFullscreen?.().then(() => {
+                if (currentChartEngine === 'canvas') setTimeout(resizeCanvas, 150);
+            });
+        }
+    }
+
+    // ── 9. Interactive HTML5 Canvas Chart with Mouse Drag & Wheel Zoom ────────
     const canvas = document.getElementById('tradingCanvas');
     const ctx = canvas.getContext('2d');
     let candles = [];
@@ -1278,7 +1708,15 @@
     let activeTool = null;
     let drawings = [];
 
+    // Interactive Viewport State (Pan & Zoom)
+    let visibleCount = 55;
+    let panOffset = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let mousePos = { x: -1, y: -1 };
+
     function resizeCanvas() {
+        if (!canvas || currentChartEngine !== 'canvas') return;
         const rect = canvas.getBoundingClientRect();
         canvas.width = rect.width;
         canvas.height = rect.height;
@@ -1286,19 +1724,19 @@
     }
     window.addEventListener('resize', resizeCanvas);
 
-    function generateRealisticCandles(count = 70) {
+    function generateRealisticCandles(count = 90) {
         candles = [];
-        let price = basePrice * 0.95;
+        let price = basePrice * 0.94;
         const now = Date.now();
         const intervalMs = 15 * 60 * 1000;
 
         for (let i = count; i >= 0; i--) {
             const time = new Date(now - i * intervalMs);
-            const delta = (Math.random() - 0.48) * (price * 0.008);
+            const delta = (Math.random() - 0.48) * (price * 0.007);
             const open = price;
             const close = open + delta;
-            const high = Math.max(open, close) + Math.random() * (price * 0.004);
-            const low = Math.min(open, close) - Math.random() * (price * 0.004);
+            const high = Math.max(open, close) + Math.random() * (price * 0.003);
+            const low = Math.min(open, close) - Math.random() * (price * 0.003);
             const volume = Math.floor(Math.random() * 8000) + 1200;
 
             candles.push({ time, open, high, low, close, volume });
@@ -1324,12 +1762,14 @@
     function toggleIndicator(ind) {
         activeIndicators[ind] = !activeIndicators[ind];
         const btn = document.getElementById('btn' + ind.charAt(0).toUpperCase() + ind.slice(1));
-        if (activeIndicators[ind]) {
-            btn.classList.add('border-brand-500', 'bg-brand-500', 'text-white');
-            btn.classList.remove('bg-slate-50', 'dark:bg-slate-800');
-        } else {
-            btn.classList.remove('border-brand-500', 'bg-brand-500', 'text-white');
-            btn.classList.add('bg-slate-50', 'dark:bg-slate-800');
+        if (btn) {
+            if (activeIndicators[ind]) {
+                btn.classList.add('border-brand-500', 'bg-brand-500', 'text-white');
+                btn.classList.remove('bg-slate-50', 'dark:bg-slate-800');
+            } else {
+                btn.classList.remove('border-brand-500', 'bg-brand-500', 'text-white');
+                btn.classList.add('bg-slate-50', 'dark:bg-slate-800');
+            }
         }
         drawChart();
     }
@@ -1348,162 +1788,193 @@
         drawChart();
     }
 
-    canvas.addEventListener('click', function(e) {
-        if (!activeTool) return;
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+    // Canvas Mouse Wheel Event (Zoom In/Out)
+    canvas.addEventListener('wheel', (e) => {
+        if (currentChartEngine !== 'canvas') return;
+        e.preventDefault();
+        if (e.deltaY < 0) {
+            // Zoom in
+            visibleCount = Math.max(15, visibleCount - 4);
+        } else {
+            // Zoom out
+            visibleCount = Math.min(candles.length - 2, visibleCount + 4);
+        }
+        drawChart();
+    }, { passive: false });
 
-        drawings.push({ tool: activeTool, x, y });
-        activeTool = null;
-        document.getElementById('activeToolBanner').classList.add('hidden');
+    // Canvas Mouse Dragging (Pan)
+    canvas.addEventListener('mousedown', (e) => {
+        if (currentChartEngine !== 'canvas') return;
+        isDragging = true;
+        dragStartX = e.clientX;
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (currentChartEngine !== 'canvas') return;
+        const rect = canvas.getBoundingClientRect();
+        mousePos.x = e.clientX - rect.left;
+        mousePos.y = e.clientY - rect.top;
+
+        if (isDragging) {
+            const dx = e.clientX - dragStartX;
+            if (Math.abs(dx) > 10) {
+                const shift = Math.round(dx / 12);
+                panOffset = Math.max(0, Math.min(candles.length - visibleCount, panOffset - shift));
+                dragStartX = e.clientX;
+            }
+        }
+
+        drawChart();
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+        mousePos.x = -1;
+        mousePos.y = -1;
+        isDragging = false;
         drawChart();
     });
 
     function drawChart() {
-        if (!canvas.width || !candles.length) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!canvas || currentChartEngine !== 'canvas') return;
+        const w = canvas.width;
+        const h = canvas.height;
+        if (!w || !h) return;
 
-        const paddingRight = 65;
-        const paddingBottom = 25;
-        const chartWidth = canvas.width - paddingRight;
-        const chartHeight = canvas.height - paddingBottom;
+        ctx.clearRect(0, 0, w, h);
 
-        let minPrice = Math.min(...candles.map(c => c.low));
-        let maxPrice = Math.max(...candles.map(c => c.high));
-        const priceRange = maxPrice - minPrice || 1;
+        const padTop = 30;
+        const padBottom = 40;
+        const padRight = 75;
+        const plotW = w - padRight;
+        const plotH = h - padTop - padBottom;
 
-        // Grid lines
+        // Draw Dark Background Grid
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 1;
-        for (let i = 1; i <= 5; i++) {
-            const y = (chartHeight / 5) * i;
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(chartWidth, y);
-            ctx.stroke();
-
-            // Price Labels
-            const p = maxPrice - (priceRange / 5) * i;
-            ctx.fillStyle = '#64748b';
-            ctx.font = '10px monospace';
-            ctx.fillText('$' + p.toFixed(2), chartWidth + 6, y + 3);
-        }
-
-        const candleWidth = chartWidth / candles.length;
-
-        // Draw Volume Bars
-        if (activeIndicators.volume) {
-            const maxVol = Math.max(...candles.map(c => c.volume));
-            candles.forEach((c, idx) => {
-                const x = idx * candleWidth;
-                const vHeight = (c.volume / maxVol) * (chartHeight * 0.2);
-                ctx.fillStyle = c.close >= c.open ? 'rgba(16, 185, 129, 0.25)' : 'rgba(244, 63, 94, 0.25)';
-                ctx.fillRect(x + 1, chartHeight - vHeight, candleWidth - 2, vHeight);
-            });
-        }
-
-        // Draw Candles or Line
-        candles.forEach((c, idx) => {
-            const x = idx * candleWidth + candleWidth / 2;
-            const openY = chartHeight - ((c.open - minPrice) / priceRange) * chartHeight;
-            const closeY = chartHeight - ((c.close - minPrice) / priceRange) * chartHeight;
-            const highY = chartHeight - ((c.high - minPrice) / priceRange) * chartHeight;
-            const lowY = chartHeight - ((c.low - minPrice) / priceRange) * chartHeight;
-            const isGreen = c.close >= c.open;
-
-            ctx.strokeStyle = isGreen ? '#10b981' : '#f43f5e';
-            ctx.fillStyle = isGreen ? '#10b981' : '#f43f5e';
-
-            if (currentStyle === 'candles' || currentStyle === 'heikin') {
-                // Wick
-                ctx.beginPath();
-                ctx.moveTo(x, highY);
-                ctx.lineTo(x, lowY);
-                ctx.stroke();
-
-                // Body
-                const bodyY = Math.min(openY, closeY);
-                const bodyH = Math.max(Math.abs(closeY - openY), 2);
-                ctx.fillRect(x - (candleWidth * 0.35), bodyY, candleWidth * 0.7, bodyH);
-            } else if (currentStyle === 'line' || currentStyle === 'area') {
-                if (idx > 0) {
-                    const prevC = candles[idx - 1];
-                    const prevX = (idx - 1) * candleWidth + candleWidth / 2;
-                    const prevCloseY = chartHeight - ((prevC.close - minPrice) / priceRange) * chartHeight;
-
-                    ctx.strokeStyle = '#3b82f6';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.moveTo(prevX, prevCloseY);
-                    ctx.lineTo(x, closeY);
-                    ctx.stroke();
-                }
-            }
-        });
-
-        // Draw Indicator EMAs
-        if (activeIndicators.ema20) drawMovingAverage(20, '#38bdf8');
-        if (activeIndicators.ema50) drawMovingAverage(50, '#f59e0b');
-
-        // Draw User On-Chart Tool Annotations
-        drawings.forEach(d => {
-            ctx.fillStyle = '#f59e0b';
-            ctx.strokeStyle = '#f59e0b';
-            ctx.lineWidth = 2;
-
-            if (d.tool.includes('Line') || d.tool.includes('Ray')) {
-                ctx.beginPath();
-                ctx.moveTo(0, d.y);
-                ctx.lineTo(chartWidth, d.y);
-                ctx.stroke();
-                ctx.font = '10px sans-serif';
-                ctx.fillText(d.tool, 10, d.y - 4);
-            } else if (d.tool.includes('Fib')) {
-                for (let step = 0; step <= 4; step++) {
-                    const fy = d.y + step * 25;
-                    ctx.strokeStyle = 'rgba(245, 158, 11, ' + (1 - step * 0.2) + ')';
-                    ctx.beginPath();
-                    ctx.moveTo(0, fy);
-                    ctx.lineTo(chartWidth, fy);
-                    ctx.stroke();
-                }
-                ctx.fillText(d.tool, 10, d.y - 4);
-            } else {
-                ctx.font = '12px sans-serif';
-                ctx.fillText(`📍 ${d.tool}`, d.x, d.y);
-            }
-        });
-    }
-
-    function drawMovingAverage(period, color) {
-        const paddingBottom = 25;
-        const chartWidth = canvas.width - 65;
-        const chartHeight = canvas.height - paddingBottom;
-        const minPrice = Math.min(...candles.map(c => c.low));
-        const maxPrice = Math.max(...candles.map(c => c.high));
-        const priceRange = maxPrice - minPrice || 1;
-        const candleWidth = chartWidth / candles.length;
-
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.5;
         ctx.beginPath();
-
-        for (let i = period - 1; i < candles.length; i++) {
-            const subset = candles.slice(i - period + 1, i + 1);
-            const avg = subset.reduce((acc, v) => acc + v.close, 0) / period;
-            const x = i * candleWidth + candleWidth / 2;
-            const y = chartHeight - ((avg - minPrice) / priceRange) * chartHeight;
-
-            if (i === period - 1) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
+        for (let i = 1; i <= 5; i++) {
+            const y = padTop + (plotH / 6) * i;
+            ctx.moveTo(0, y);
+            ctx.lineTo(plotW, y);
+        }
+        for (let i = 1; i <= 6; i++) {
+            const x = (plotW / 7) * i;
+            ctx.moveTo(x, padTop);
+            ctx.lineTo(x, padTop + plotH);
         }
         ctx.stroke();
+
+        // Slice visible candles according to zoom and pan
+        const endIndex = Math.min(candles.length, candles.length - panOffset);
+        const startIndex = Math.max(0, endIndex - visibleCount);
+        const viewCandles = candles.slice(startIndex, endIndex);
+
+        if (viewCandles.length === 0) return;
+
+        let minPrice = Infinity;
+        let maxPrice = -Infinity;
+        viewCandles.forEach(c => {
+            if (c.low < minPrice) minPrice = c.low;
+            if (c.high > maxPrice) maxPrice = c.high;
+        });
+
+        const priceRange = (maxPrice - minPrice) || 1;
+        const buffer = priceRange * 0.08;
+        const lo = minPrice - buffer;
+        const hi = maxPrice + buffer;
+        const range = hi - lo;
+
+        function getY(p) {
+            return padTop + plotH - ((p - lo) / range) * plotH;
+        }
+
+        const barW = Math.max(3, (plotW / viewCandles.length) * 0.7);
+        const stepX = plotW / viewCandles.length;
+
+        // Render Candles
+        viewCandles.forEach((c, i) => {
+            const x = i * stepX + (stepX - barW) / 2;
+            const isBull = c.close >= c.open;
+            const candleColor = isBull ? '#10b981' : '#f43f5e';
+
+            // Wick
+            ctx.strokeStyle = candleColor;
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(x + barW / 2, getY(c.high));
+            ctx.lineTo(x + barW / 2, getY(c.low));
+            ctx.stroke();
+
+            // Body
+            const topY = getY(Math.max(c.open, c.close));
+            const botY = getY(Math.min(c.open, c.close));
+            const bodyH = Math.max(2, botY - topY);
+
+            ctx.fillStyle = candleColor;
+            ctx.fillRect(x, topY, barW, bodyH);
+        });
+
+        // Price Axis on Right
+        ctx.fillStyle = '#64748b';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'left';
+        for (let i = 0; i <= 5; i++) {
+            const priceLvl = lo + (range / 5) * i;
+            const y = padTop + plotH - (plotH / 5) * i;
+            ctx.fillText('$' + priceLvl.toFixed(2), plotW + 8, y + 3);
+        }
+
+        // Crosshairs when mouse hovering
+        if (mousePos.x > 0 && mousePos.x < plotW && mousePos.y > padTop && mousePos.y < padTop + plotH) {
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 0.8;
+            ctx.setLineDash([3, 3]);
+
+            // Vertical line
+            ctx.beginPath();
+            ctx.moveTo(mousePos.x, padTop);
+            ctx.lineTo(mousePos.x, padTop + plotH);
+            ctx.stroke();
+
+            // Horizontal line
+            ctx.beginPath();
+            ctx.moveTo(0, mousePos.y);
+            ctx.lineTo(plotW, mousePos.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Hover Price Tag on Axis
+            const hoverPrice = hi - ((mousePos.y - padTop) / plotH) * range;
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(plotW + 2, mousePos.y - 9, 65, 18);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 9px monospace';
+            ctx.fillText('$' + hoverPrice.toFixed(2), plotW + 6, mousePos.y + 4);
+
+            // Update Hover Info Stats in Header
+            const hoverIndex = Math.min(viewCandles.length - 1, Math.max(0, Math.floor(mousePos.x / stepX)));
+            const hc = viewCandles[hoverIndex];
+            if (hc) {
+                const elO = document.getElementById('hoverO');
+                const elH = document.getElementById('hoverH');
+                const elL = document.getElementById('hoverL');
+                const elC = document.getElementById('hoverC');
+                if (elO) elO.textContent = hc.open.toFixed(2);
+                if (elH) elH.textContent = hc.high.toFixed(2);
+                if (elL) elL.textContent = hc.low.toFixed(2);
+                if (elC) elC.textContent = hc.close.toFixed(2);
+            }
+        }
     }
 
-    // Initialize chart & calculations on page load
-    generateRealisticCandles();
-    setTimeout(resizeCanvas, 50);
-    recalculateAllSizeAndMargin();
+    // Initial Startup
+    document.addEventListener('DOMContentLoaded', () => {
+        recalculateAllSizeAndMargin();
+        initTradingViewWidget();
+    });
 </script>
 }

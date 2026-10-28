@@ -192,10 +192,31 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                 }
             });
 
-            // 3. For Stocks, Indices, Futures, ensure simulated flags are retained
+            // 3. For Stocks, Indices, Futures, apply realistic micro-ticks on each update cycle
+            var rng = Random.Shared;
             foreach (var s in Catalog.Where(c => c.AssetClass == AssetClass.Stock || c.AssetClass == AssetClass.Index || c.AssetClass == AssetClass.Future))
             {
-                if (!LiveCache.ContainsKey(s.Symbol))
+                if (LiveCache.TryGetValue(s.Symbol, out var currentLive))
+                {
+                    // Gentle micro-tick walk (-0.05% to +0.05%)
+                    var jitter = (decimal)(rng.NextDouble() * 0.001 - 0.0005);
+                    var newPrice = Math.Round(currentLive.Price * (1m + jitter), s.Symbol == "NATGAS" ? 3 : 2);
+                    var delta = newPrice - s.BasePrice;
+                    var pct = s.BasePrice > 0 ? Math.Round((delta / s.BasePrice) * 100m, 2) : 0m;
+                    var high = Math.Max(currentLive.High, newPrice);
+                    var low = Math.Min(currentLive.Low, newPrice);
+
+                    LiveCache[s.Symbol] = currentLive with
+                    {
+                        Price = newPrice,
+                        Change = delta,
+                        ChangePercent = pct,
+                        High = high,
+                        Low = low,
+                        IsSimulated = true
+                    };
+                }
+                else
                 {
                     LiveCache[s.Symbol] = new LiveQuoteState(
                         s.BasePrice,
@@ -204,7 +225,7 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                         s.High,
                         s.Low,
                         s.Volume,
-                        IsSimulated: true // Simulated paper feed
+                        IsSimulated: true
                     );
                 }
             }

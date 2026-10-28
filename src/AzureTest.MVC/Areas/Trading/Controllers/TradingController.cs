@@ -125,20 +125,27 @@ public class TradingController : Controller
             timeInForce,
             expiryDateUtc);
 
+        bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
+
         var validation = await _validator.ValidateAsync(command, ct);
         if (validation.IsFailure)
         {
-            TempData["ErrorMessage"] = validation.Message ?? validation.Error ?? "Order validation failed.";
+            var err = validation.Message ?? validation.Error ?? "Order validation failed.";
+            if (isAjax) return Json(new { success = false, error = err });
+            TempData["ErrorMessage"] = err;
             return RedirectToAction(nameof(Trade), new { symbol });
         }
 
         var result = await _commands.PlaceOrderAsync(command, ct);
         if (result.IsSuccess)
         {
-            TempData["SuccessMessage"] = $"Order placed successfully for {quantity} {symbol}.";
+            var msg = $"Order placed successfully for {quantity:N4} {symbol}.";
+            if (isAjax) return Json(new { success = true, message = msg, orderId = result.Value });
+            TempData["SuccessMessage"] = msg;
         }
         else
         {
+            if (isAjax) return Json(new { success = false, error = result.Error });
             TempData["ErrorMessage"] = result.Error;
         }
 
@@ -150,13 +157,21 @@ public class TradingController : Controller
     [Description("Close an open position at the specified market price and update paper equity and realized PnL.")]
     public async Task<IActionResult> ClosePosition(Guid positionId, decimal? closePrice, string? symbol, string? sourcePage = "index", CancellationToken ct = default)
     {
+        bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
+
         var command = new CloseTradingPositionCommand(positionId, _currentUser.Id, _currentUser.TenantId, closePrice);
         var result = await _commands.ClosePositionAsync(command, ct);
 
         if (result.IsSuccess)
+        {
+            if (isAjax) return Json(new { success = true, message = "Position closed successfully." });
             TempData["SuccessMessage"] = "Position closed successfully.";
+        }
         else
+        {
+            if (isAjax) return Json(new { success = false, error = result.Error });
             TempData["ErrorMessage"] = result.Error;
+        }
 
         if (string.Equals(sourcePage, "trade", StringComparison.OrdinalIgnoreCase))
             return RedirectToAction(nameof(Trade), new { symbol = symbol ?? "BTCUSDT" });
@@ -169,13 +184,21 @@ public class TradingController : Controller
     [Description("Cancel an outstanding pending Limit or Stop order.")]
     public async Task<IActionResult> CancelOrder(Guid orderId, string? symbol, string? sourcePage = "index", CancellationToken ct = default)
     {
+        bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
+
         var command = new CancelTradingOrderCommand(orderId, _currentUser.Id, _currentUser.TenantId);
         var result = await _commands.CancelOrderAsync(command, ct);
 
         if (result.IsSuccess)
+        {
+            if (isAjax) return Json(new { success = true, message = "Pending order cancelled." });
             TempData["SuccessMessage"] = "Pending order cancelled.";
+        }
         else
+        {
+            if (isAjax) return Json(new { success = false, error = result.Error });
             TempData["ErrorMessage"] = result.Error;
+        }
 
         if (string.Equals(sourcePage, "trade", StringComparison.OrdinalIgnoreCase))
             return RedirectToAction(nameof(Trade), new { symbol = symbol ?? "BTCUSDT" });
