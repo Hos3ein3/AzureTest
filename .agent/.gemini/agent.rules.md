@@ -315,6 +315,12 @@ public class OrdersController(
 6. MVC: controller with `DisplayName` + `Description` on class and actions, filter class for Index, return with `ToView` / `ToForm`.
 7. Before output, scan the code for literal numbers/strings used as limits. Move each one into `Rules`.
 8. Output files grouped by layer with their full paths.
+9. Bump AppVersion in `src/AzureTest.MVC/appsettings*.json` (run `python3 scripts/bump_version.py`) after making source code changes.
+
+# Versioning
+- The application version (e.g. `V3.1`) is stored in `appsettings.json`, `appsettings.Development.json`, and `appsettings.ProductionSimulateLocal.json` under the key `"AppVersion"`.
+- It is displayed directly below `TrackerPro` in the sidebar (`_Sidebar.cshtml`).
+- Every time source code changes are implemented, increment `AppVersion` using `python3 scripts/bump_version.py`.
 
 # Do not
 - Do not use MediatR, AutoMapper, Mapster or any mapping library.
