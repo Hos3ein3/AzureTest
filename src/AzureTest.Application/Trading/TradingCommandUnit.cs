@@ -7,6 +7,7 @@ using AzureTest.Application.Messaging;
 using AzureTest.Application.Trading.Commands.CancelTradingOrder;
 using AzureTest.Application.Trading.Commands.CloseTradingPosition;
 using AzureTest.Application.Trading.Commands.ExecuteTradingJsonBatch;
+using AzureTest.Application.Trading.Commands.ModifyTradingPosition;
 using AzureTest.Application.Trading.Commands.PlaceTradingOrder;
 using AzureTest.Application.Trading.Commands.ResetTradingAccountBalance;
 using AzureTest.Application.Trading.Commands.SyncTradingPrices;
@@ -19,6 +20,7 @@ public interface ITradingCommandUnit
 {
     Task<Result<Guid>> PlaceOrderAsync(PlaceTradingOrderCommand cmd, CancellationToken ct = default);
     Task<Result<Guid>> ClosePositionAsync(CloseTradingPositionCommand cmd, CancellationToken ct = default);
+    Task<Result<Guid>> ModifyPositionAsync(ModifyTradingPositionCommand cmd, CancellationToken ct = default);
     Task<Result<Guid>> CancelOrderAsync(CancelTradingOrderCommand cmd, CancellationToken ct = default);
     Task<Result<Guid>> ResetAccountBalanceAsync(ResetTradingAccountBalanceCommand cmd, CancellationToken ct = default);
     Task<Result<bool>> ToggleWatchlistAsync(ToggleTradingWatchlistCommand cmd, CancellationToken ct = default);
@@ -30,6 +32,7 @@ public sealed class TradingCommandUnit : ITradingCommandUnit
 {
     private readonly ICommandHandler<PlaceTradingOrderCommand, Result<Guid>> _placeOrder;
     private readonly ICommandHandler<CloseTradingPositionCommand, Result<Guid>> _closePosition;
+    private readonly ICommandHandler<ModifyTradingPositionCommand, Result<Guid>> _modifyPosition;
     private readonly ICommandHandler<CancelTradingOrderCommand, Result<Guid>> _cancelOrder;
     private readonly ICommandHandler<ResetTradingAccountBalanceCommand, Result<Guid>> _resetBalance;
     private readonly ICommandHandler<ToggleTradingWatchlistCommand, Result<bool>> _toggleWatchlist;
@@ -39,6 +42,7 @@ public sealed class TradingCommandUnit : ITradingCommandUnit
     public TradingCommandUnit(
         ICommandHandler<PlaceTradingOrderCommand, Result<Guid>> placeOrder,
         ICommandHandler<CloseTradingPositionCommand, Result<Guid>> closePosition,
+        ICommandHandler<ModifyTradingPositionCommand, Result<Guid>> modifyPosition,
         ICommandHandler<CancelTradingOrderCommand, Result<Guid>> cancelOrder,
         ICommandHandler<ResetTradingAccountBalanceCommand, Result<Guid>> resetBalance,
         ICommandHandler<ToggleTradingWatchlistCommand, Result<bool>> toggleWatchlist,
@@ -47,6 +51,7 @@ public sealed class TradingCommandUnit : ITradingCommandUnit
     {
         _placeOrder = placeOrder;
         _closePosition = closePosition;
+        _modifyPosition = modifyPosition;
         _cancelOrder = cancelOrder;
         _resetBalance = resetBalance;
         _toggleWatchlist = toggleWatchlist;
@@ -59,6 +64,9 @@ public sealed class TradingCommandUnit : ITradingCommandUnit
 
     public Task<Result<Guid>> ClosePositionAsync(CloseTradingPositionCommand cmd, CancellationToken ct = default) =>
         _closePosition.HandleAsync(cmd, ct);
+
+    public Task<Result<Guid>> ModifyPositionAsync(ModifyTradingPositionCommand cmd, CancellationToken ct = default) =>
+        _modifyPosition.HandleAsync(cmd, ct);
 
     public Task<Result<Guid>> CancelOrderAsync(CancelTradingOrderCommand cmd, CancellationToken ct = default) =>
         _cancelOrder.HandleAsync(cmd, ct);

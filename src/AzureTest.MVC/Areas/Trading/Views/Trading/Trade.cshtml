@@ -34,6 +34,28 @@
         assetClass == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Index ||
         assetClass == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Future;
 
+    string FormatTablePrice5(decimal? price, bool showDollar = true)
+    {
+        if (!price.HasValue || price.Value <= 0m) return "--";
+        var p = price.Value;
+        string formatted = p < 0.0001m
+            ? p.ToString("0.00000000", System.Globalization.CultureInfo.InvariantCulture)
+            : p.ToString("#,##0.00000", System.Globalization.CultureInfo.InvariantCulture);
+        return showDollar ? $"${formatted}" : formatted;
+    }
+
+    string FormatTablePnl5(decimal pnl)
+    {
+        var sign = pnl >= 0 ? "+" : "-";
+        var str = Math.Abs(pnl).ToString("#,##0.00000", System.Globalization.CultureInfo.InvariantCulture);
+        return $"{sign}${str}";
+    }
+
+    string FormatTableQty5(decimal qty)
+    {
+        return qty.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
     string FormatPrice(decimal? price, bool showDollar = true)
     {
         if (!price.HasValue || price.Value <= 0m) return "--";
@@ -708,11 +730,11 @@
                 </button>
                 <button type="button" onclick="switchHoldingTab('pending')" id="tabHoldingPending" class="holding-tab-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 transition-all flex items-center gap-1.5">
                     <span>Pending Orders</span>
-                    <span class="px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 text-3xs font-extrabold">@Model.PendingOrders.Count</span>
+                    <span class="px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 text-3xs font-extrabold" id="pendingCountBadge">@Model.PendingOrders.Count</span>
                 </button>
                 <button type="button" onclick="switchHoldingTab('closed')" id="tabHoldingClosed" class="holding-tab-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 transition-all flex items-center gap-1.5">
                     <span>Closed Trades (PnL)</span>
-                    <span class="px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 text-3xs font-extrabold">@Model.ClosedPositions.Count</span>
+                    <span class="px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 text-3xs font-extrabold" id="closedCountBadge">@Model.ClosedPositions.Count</span>
                 </button>
             </div>
         </div>
@@ -774,7 +796,7 @@
                             {
                                 var isCurrentSym = pos.Symbol.Equals(selected.Symbol, StringComparison.OrdinalIgnoreCase);
                                 var roi = pos.InitialMargin > 0 ? (pos.UnrealizedPnl / pos.InitialMargin) * 100m : 0m;
-                                <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors pos-row @(isCurrentSym ? "bg-brand-500/5" : "")" data-symbol="@pos.Symbol">
+                                <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors pos-row @(isCurrentSym ? "bg-brand-500/5" : "")" id="posRow_@pos.Id" data-pos-id="@pos.Id" data-symbol="@pos.Symbol" data-side="@pos.Side" data-entry="@pos.EntryPrice" data-qty="@pos.Quantity" data-margin="@pos.InitialMargin">
                                     <td class="p-3 pl-4 font-black text-slate-900 dark:text-white whitespace-nowrap">
                                         <div class="flex items-center gap-1.5 flex-wrap">
                                             <a asp-action="Trade" asp-route-symbol="@pos.Symbol" class="hover:text-brand-500 transition-colors underline-offset-2 hover:underline">
@@ -797,34 +819,38 @@
                                         </div>
                                     </td>
                                     <td class="p-3 font-mono font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                                        @pos.Quantity.ToString("N4")
+                                        @FormatTableQty5(pos.Quantity)
                                     </td>
                                     <td class="p-3 font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                                        @FormatPrice(pos.EntryPrice)
+                                        @FormatTablePrice5(pos.EntryPrice)
                                     </td>
                                     <td class="p-3 font-mono font-black text-slate-900 dark:text-white whitespace-nowrap" id="posCurrentPrice_@pos.Id">
-                                        @FormatPrice(pos.CurrentPrice)
+                                        @FormatTablePrice5(pos.CurrentPrice)
                                     </td>
                                     <td class="p-3 font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                                        $@pos.InitialMargin.ToString("N2")
+                                        @FormatTablePrice5(pos.InitialMargin)
                                     </td>
-                                    <td class="p-3 font-mono text-3xs text-slate-500 whitespace-nowrap">
-                                        @(pos.StopLoss.HasValue && pos.StopLoss > 0 ? FormatPrice(pos.StopLoss.Value) : "--")
+                                    <td class="p-3 font-mono text-3xs text-slate-500 whitespace-nowrap" id="posSl_@pos.Id">
+                                        @(pos.StopLoss.HasValue && pos.StopLoss > 0 ? FormatTablePrice5(pos.StopLoss.Value) : "--")
                                     </td>
-                                    <td class="p-3 font-mono text-3xs text-slate-500 whitespace-nowrap">
-                                        @(pos.TakeProfit.HasValue && pos.TakeProfit > 0 ? FormatPrice(pos.TakeProfit.Value) : "--")
+                                    <td class="p-3 font-mono text-3xs text-slate-500 whitespace-nowrap" id="posTp_@pos.Id">
+                                        @(pos.TakeProfit.HasValue && pos.TakeProfit > 0 ? FormatTablePrice5(pos.TakeProfit.Value) : "--")
                                     </td>
                                     <td class="p-3 font-mono font-black whitespace-nowrap" id="posPnl_@pos.Id">
                                         <div class="flex items-center gap-1.5">
-                                            <span class="@(pos.UnrealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500") text-sm">
-                                                @(pos.UnrealizedPnl >= 0 ? "+" : "")$@pos.UnrealizedPnl.ToString("N2")
+                                            <span class="@(pos.UnrealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500") text-sm" id="posPnlVal_@pos.Id">
+                                                @FormatTablePnl5(pos.UnrealizedPnl)
                                             </span>
-                                            <span class="text-3xs px-1.5 py-0.2 rounded font-extrabold @(roi >= 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600")">
+                                            <span class="text-3xs px-1.5 py-0.2 rounded font-extrabold @(roi >= 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600")" id="posRoiVal_@pos.Id">
                                                 @(roi >= 0 ? "+" : "")@roi.ToString("N2")%
                                             </span>
                                         </div>
                                     </td>
-                                    <td class="p-3 pr-4 text-right whitespace-nowrap">
+                                    <td class="p-3 pr-4 text-right whitespace-nowrap space-x-1.5">
+                                        <button type="button" onclick="openModifyModal('@pos.Id', '@pos.Symbol', '@pos.Side', '@pos.EntryPrice', '@pos.CurrentPrice', '@(pos.StopLoss ?? 0)', '@(pos.TakeProfit ?? 0)')"
+                                                class="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold text-3xs transition-all border border-indigo-200 dark:border-indigo-800/40" title="Edit Stop Loss & Take Profit">
+                                            <i class="fa-solid fa-pen-to-square mr-1"></i>Edit
+                                        </button>
                                         <button type="button" onclick="ajaxClosePosition('@pos.Id', '@pos.Symbol')" class="px-3 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-white font-bold text-3xs transition-all shadow-2xs">
                                             Close Trade
                                         </button>
@@ -864,7 +890,7 @@
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                             @foreach (var ord in Model.PendingOrders)
                             {
-                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30" id="ordRow_@ord.Id">
                                     <td class="p-3 pl-4 font-black text-slate-900 dark:text-white whitespace-nowrap">
                                         <div class="flex items-center gap-1.5 flex-wrap">
                                             <span>@ord.Symbol</span>
@@ -883,9 +909,9 @@
                                             @ord.Side
                                         </span>
                                     </td>
-                                    <td class="p-3 font-mono font-bold whitespace-nowrap">@ord.Quantity.ToString("N4")</td>
+                                    <td class="p-3 font-mono font-bold whitespace-nowrap">@FormatTableQty5(ord.Quantity)</td>
                                     <td class="p-3 font-mono font-black text-slate-900 dark:text-white whitespace-nowrap">
-                                        @FormatPrice(ord.Price ?? ord.TriggerPrice)
+                                        @FormatTablePrice5(ord.Price ?? ord.TriggerPrice)
                                     </td>
                                     <td class="p-3 text-3xs text-slate-400 whitespace-nowrap">@ord.TimeInForce</td>
                                     <td class="p-3 text-3xs text-slate-400 whitespace-nowrap">@ord.PlacedAtUtc.ToString("HH:mm:ss")</td>
@@ -906,12 +932,11 @@
         <div id="holdingPanelClosed" class="hidden space-y-4">
             @if (Model.ClosedPositions.Count == 0)
             {
-                <div class="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-1">
+                <div class="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-1" id="emptyClosedState">
                     <p class="text-xs font-bold text-slate-500">No closed trades yet in your paper trading history.</p>
                 </div>
             }
-            else
-            {
+            <div id="closedPositionsTableWrapper" class="@(Model.ClosedPositions.Count == 0 ? "hidden" : "")">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs">
                         <thead class="bg-slate-50/80 dark:bg-slate-800/50 text-slate-400 uppercase text-3xs font-black">
@@ -925,7 +950,7 @@
                                 <th class="p-3 pr-4 text-right whitespace-nowrap">Closed At</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800" id="closedPositionsTableBody">
                             @foreach (var c in Model.ClosedPositions)
                             {
                                 var isWin = c.RealizedPnl >= 0;
@@ -942,12 +967,12 @@
                                     <td class="p-3 text-3xs font-extrabold whitespace-nowrap @(c.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy ? "text-emerald-500" : "text-rose-500")">
                                         @c.Side
                                     </td>
-                                    <td class="p-3 font-mono font-bold whitespace-nowrap">@c.Quantity.ToString("N4")</td>
-                                    <td class="p-3 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">@FormatPrice(c.EntryPrice)</td>
-                                    <td class="p-3 font-mono text-slate-900 dark:text-white font-bold whitespace-nowrap">@FormatPrice(c.ClosePrice ?? c.CurrentPrice)</td>
+                                    <td class="p-3 font-mono font-bold whitespace-nowrap">@FormatTableQty5(c.Quantity)</td>
+                                    <td class="p-3 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">@FormatTablePrice5(c.EntryPrice)</td>
+                                    <td class="p-3 font-mono text-slate-900 dark:text-white font-bold whitespace-nowrap">@FormatTablePrice5(c.ClosePrice ?? c.CurrentPrice)</td>
                                     <td class="p-3 font-mono font-black whitespace-nowrap">
                                         <span class="px-2.5 py-1 rounded-lg text-xs font-black @(isWin ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30" : "bg-rose-500/10 text-rose-600 border border-rose-500/30")">
-                                            @(isWin ? "+" : "")$@c.RealizedPnl.ToString("N2")
+                                            @FormatTablePnl5(c.RealizedPnl)
                                         </span>
                                     </td>
                                     <td class="p-3 pr-4 text-right text-3xs text-slate-400 whitespace-nowrap">
@@ -958,8 +983,75 @@
                         </tbody>
                     </table>
                 </div>
-            }
+            </div>
         </div>
+    </div>
+</div>
+
+<!-- Modify Position Modal (Edit Stop Loss & Take Profit) -->
+<div id="modifyPositionModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-in">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square text-brand-500"></i>
+                <span>Modify Position Protection (TP / SL)</span>
+            </h3>
+            <button type="button" onclick="closeModifyModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs">
+            <div>
+                <span class="text-3xs uppercase font-extrabold text-slate-400 block" id="modifyModalSideBadge">Long Position</span>
+                <span class="text-sm font-black text-slate-900 dark:text-white font-mono" id="modifyModalSymbol">BTCUSDT</span>
+            </div>
+            <div class="text-right">
+                <span class="text-3xs uppercase font-extrabold text-slate-400 block">Entry / Current Price</span>
+                <span class="text-xs font-mono font-bold text-slate-700 dark:text-slate-300" id="modifyModalPrices">$0.00000 / $0.00000</span>
+            </div>
+        </div>
+
+        <form id="modifyPositionForm" onsubmit="submitModifyPosition(event)" class="space-y-4">
+            <input type="hidden" id="modifyPosId" name="positionId" />
+            <input type="hidden" id="modifyPosSymbol" name="symbol" />
+            <input type="hidden" id="modifyPosSide" />
+            <input type="hidden" id="modifyPosCurrentPrice" />
+
+            <!-- Stop Loss -->
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                        <span>Stop Loss (SL)</span>
+                    </label>
+                    <button type="button" onclick="document.getElementById('modifyPosSlInput').value = ''" class="text-3xs text-rose-500 hover:underline font-bold">Clear SL</button>
+                </div>
+                <input type="text" inputmode="decimal" id="modifyPosSlInput" name="stopLoss" placeholder="Leave blank to remove Stop Loss"
+                       class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-mono font-bold focus:border-brand-500 focus:outline-none" />
+                <p class="text-4xs text-slate-400 mt-1" id="modifySlHint">Price to automatically close trade and prevent loss.</p>
+            </div>
+
+            <!-- Take Profit -->
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span>Take Profit (TP)</span>
+                    </label>
+                    <button type="button" onclick="document.getElementById('modifyPosTpInput').value = ''" class="text-3xs text-emerald-500 hover:underline font-bold">Clear TP</button>
+                </div>
+                <input type="text" inputmode="decimal" id="modifyPosTpInput" name="takeProfit" placeholder="Leave blank to remove Take Profit"
+                       class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-mono font-bold focus:border-brand-500 focus:outline-none" />
+                <p class="text-4xs text-slate-400 mt-1" id="modifyTpHint">Price to automatically close trade and lock in profit.</p>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+                <button type="button" onclick="closeModifyModal()" class="w-1/2 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 transition-colors">Cancel</button>
+                <button type="submit" id="btnSaveModifyPosition" class="w-1/2 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Save Protection</span>
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -1053,19 +1145,41 @@
         return s;
     }
 
-    // ── 1. Live Price Auto-Update Polling (Every 3 seconds, in-place, NO refresh) ─────
-    setInterval(async () => {
+    function formatPrice5(val, showDollar = true) {
+        const num = Number(val);
+        if (isNaN(num) || num <= 0) return '--';
+        const str = num < 0.0001
+            ? num.toFixed(8)
+            : num.toLocaleString('en-US', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
+        return showDollar ? '$' + str : str;
+    }
+
+    function formatPnl5(val) {
+        const num = Number(val);
+        if (isNaN(num)) return '$0.00000';
+        const sign = num >= 0 ? '+' : '-';
+        const abs = Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
+        return `${sign}$${abs}`;
+    }
+
+    let knownOpenTradePosIds = new Set(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OpenPositions.Select(p => p.Id.ToString()))));
+
+    // ── 1. Live Price & Holding Terminal Auto-Update Polling (Every 3 seconds, in-place, NO refresh) ─────
+    async function pollLiveTradeStatus(immediate = false) {
         try {
-            const res = await fetch(`/Trading/Trading/Quote?symbol=${encodeURIComponent(symbol)}`, {
+            const res = await fetch(`/Trading/Trading/LiveStatus?symbol=${encodeURIComponent(symbol)}`, {
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             });
-            const contentType = res.headers.get('content-type') || '';
-            if (res.ok && contentType.includes('application/json')) {
-                const quote = await res.json();
-                // Support both camelCase and PascalCase properties
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data || !data.success) return;
+
+            // 1. Update Selected Asset Quote
+            const quote = data.selectedQuote;
+            if (quote) {
                 const newPrice = Number(quote.price ?? quote.Price);
                 const high24 = Number(quote.high24h ?? quote.High24h ?? 0);
                 const low24 = Number(quote.low24h ?? quote.Low24h ?? 0);
@@ -1076,13 +1190,15 @@
                     const changeEl = document.getElementById('liveTickerChange');
                     const syncDot = document.getElementById('syncStatusDot');
 
-                    // Flash animation on live badge
-                    if (newPrice > basePrice) {
-                        priceEl.classList.add('text-emerald-500');
-                        setTimeout(() => priceEl.classList.remove('text-emerald-500'), 800);
-                    } else if (newPrice < basePrice) {
-                        priceEl.classList.add('text-rose-500');
-                        setTimeout(() => priceEl.classList.remove('text-rose-500'), 800);
+                    if (priceEl) {
+                        if (newPrice > basePrice) {
+                            priceEl.classList.add('text-emerald-500');
+                            setTimeout(() => priceEl.classList.remove('text-emerald-500'), 800);
+                        } else if (newPrice < basePrice) {
+                            priceEl.classList.add('text-rose-500');
+                            setTimeout(() => priceEl.classList.remove('text-rose-500'), 800);
+                        }
+                        priceEl.textContent = formatPrice(newPrice);
                     }
 
                     if (syncDot) {
@@ -1091,42 +1207,128 @@
                     }
 
                     basePrice = newPrice;
-                    priceEl.textContent = formatPrice(newPrice);
-                    changeEl.textContent = `${chg24h >= 0 ? '+' : ''}${chg24h.toFixed(2)}%`;
+                    if (changeEl) changeEl.textContent = `${chg24h >= 0 ? '+' : ''}${chg24h.toFixed(2)}%`;
 
                     const highEl = document.getElementById('liveHighDisplay');
                     if (highEl && high24 > 0) highEl.textContent = formatPrice(high24);
                     const lowEl = document.getElementById('liveLowDisplay');
                     if (lowEl && low24 > 0) lowEl.textContent = formatPrice(low24);
 
-                    // Update market order execution display in-place
                     const marketPriceEl = document.getElementById('marketOrderPriceDisplay');
-                    if (marketPriceEl) {
-                        marketPriceEl.textContent = formatPrice(newPrice);
-                    }
+                    if (marketPriceEl) marketPriceEl.textContent = formatPrice(newPrice);
 
                     const limitHint = document.getElementById('limitMarketHint');
                     if (limitHint) limitHint.textContent = formatPrice(newPrice, false);
                     const stopHint = document.getElementById('stopMarketHint');
                     if (stopHint) stopHint.textContent = formatPrice(newPrice, false);
 
-                    // Recalculate indicators & size conversions dynamically with the new live price
                     recalculateAllSizeAndMargin();
-
-                    // Update live positions mark price and unrealized PnL in open positions table
-                    document.querySelectorAll('.pos-row').forEach(row => {
-                        const sym = row.getAttribute('data-symbol');
-                        if (sym && sym.toUpperCase() === symbol.toUpperCase()) {
-                            const curCell = row.querySelector('[id^="posCurrentPrice_"]');
-                            if (curCell) curCell.textContent = formatPrice(newPrice);
-                        }
-                    });
                 }
             }
+
+            // 2. Update Account balances
+            if (data.account) {
+                cashBalance = Number(data.account.cashBalance ?? data.account.CashBalance);
+                freeMargin = Number(data.account.freeMargin ?? data.account.FreeMargin);
+            }
+
+            // 3. Update Portfolio Terminal Open Positions (Mark Price, PnL, ROI, SL/TP)
+            const currentOpen = data.openPositions || [];
+            const currentOpenIds = new Set(currentOpen.map(p => String(p.id ?? p.Id)));
+
+            // Detect any positions closed by SL/TP in background
+            knownOpenTradePosIds.forEach(id => {
+                if (!currentOpenIds.has(String(id))) {
+                    const row = document.getElementById(`posRow_${id}`);
+                    if (row) {
+                        const sym = row.getAttribute('data-symbol') || 'Trade';
+                        row.remove();
+
+                        const closed = (data.closedPositions || []).find(c => String(c.id ?? c.Id) === String(id));
+                        const pnl = closed ? Number(closed.realizedPnl ?? closed.RealizedPnl ?? 0) : 0;
+                        showToast('info', `Trade ${sym} closed! Realized PnL: ${formatPnl5(pnl)}`);
+
+                        const closedTableBody = document.getElementById('closedPositionsTableBody');
+                        const closedWrapper = document.getElementById('closedPositionsTableWrapper');
+                        const emptyClosed = document.getElementById('emptyClosedState');
+                        if (closedTableBody && closed) {
+                            if (emptyClosed) emptyClosed.classList.add('hidden');
+                            if (closedWrapper) closedWrapper.classList.remove('hidden');
+                            const tr = document.createElement('tr');
+                            tr.className = 'hover:bg-slate-50/50 dark:hover:bg-slate-800/30 animate-fade-in';
+                            const isWin = pnl >= 0;
+                            tr.innerHTML = `
+                                <td class="p-3 pl-4 font-black text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                                    <span>${closed.symbol ?? sym}</span>
+                                </td>
+                                <td class="p-3 text-3xs font-extrabold whitespace-nowrap ${closed.side == 1 ? 'text-emerald-500' : 'text-rose-500'}">
+                                    ${closed.side == 1 ? 'Buy' : 'Sell'}
+                                </td>
+                                <td class="p-3 font-mono font-bold whitespace-nowrap">${Number(closed.quantity ?? 0).toFixed(5)}</td>
+                                <td class="p-3 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">${formatPrice5(closed.entryPrice)}</td>
+                                <td class="p-3 font-mono text-slate-900 dark:text-white font-bold whitespace-nowrap">${formatPrice5(closed.closePrice ?? closed.currentPrice)}</td>
+                                <td class="p-3 font-mono font-black whitespace-nowrap">
+                                    <span class="px-2.5 py-1 rounded-lg text-xs font-black ${isWin ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-600 border border-rose-500/30'}">
+                                        ${formatPnl5(pnl)}
+                                    </span>
+                                </td>
+                                <td class="p-3 pr-4 text-right text-3xs text-slate-400 whitespace-nowrap">Just now</td>
+                            `;
+                            closedTableBody.prepend(tr);
+                        }
+                    }
+                }
+            });
+
+            knownOpenTradePosIds = currentOpenIds;
+
+            // Update Mark Price & PnL on active open rows
+            currentOpen.forEach(pos => {
+                const id = pos.id ?? pos.Id;
+                const curPrice = Number(pos.currentPrice ?? pos.CurrentPrice ?? 0);
+                const unPnl = Number(pos.unrealizedPnl ?? pos.UnrealizedPnl ?? 0);
+                const margin = Number(pos.initialMargin ?? pos.InitialMargin ?? 0);
+
+                const curCell = document.getElementById(`posCurrentPrice_${id}`);
+                if (curCell && curPrice > 0) curCell.textContent = formatPrice5(curPrice);
+
+                const pnlVal = document.getElementById(`posPnlVal_${id}`);
+                if (pnlVal) {
+                    pnlVal.textContent = formatPnl5(unPnl);
+                    pnlVal.className = `text-sm font-black ${unPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`;
+                }
+
+                const roiVal = document.getElementById(`posRoiVal_${id}`);
+                if (roiVal && margin > 0) {
+                    const roi = (unPnl / margin) * 100;
+                    roiVal.textContent = `${roi >= 0 ? '+' : ''}${roi.toFixed(2)}%`;
+                    roiVal.className = `text-3xs px-1.5 py-0.2 rounded font-extrabold ${roi >= 0 ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'}`;
+                }
+
+                const slCell = document.getElementById(`posSl_${id}`);
+                if (slCell) {
+                    const sl = Number(pos.stopLoss ?? pos.StopLoss ?? 0);
+                    slCell.textContent = sl > 0 ? formatPrice5(sl) : '--';
+                }
+
+                const tpCell = document.getElementById(`posTp_${id}`);
+                if (tpCell) {
+                    const tp = Number(pos.takeProfit ?? pos.TakeProfit ?? 0);
+                    tpCell.textContent = tp > 0 ? formatPrice5(tp) : '--';
+                }
+            });
+
+            const openBadge = document.getElementById('openCountBadge');
+            if (openBadge) openBadge.textContent = currentOpen.length;
+            const closedBadge = document.getElementById('closedCountBadge');
+            if (closedBadge && data.closedPositions) closedBadge.textContent = data.closedPositions.length;
+
         } catch (err) {
-            console.debug('Price sync polling idle:', err);
+            console.debug('Trade live status polling idle:', err);
         }
-    }, 3000);
+    }
+
+    setInterval(pollLiveTradeStatus, 3000);
 
     function getActiveReferencePrice() {
         if (currentOrderTab === 'limit') {
@@ -1749,7 +1951,12 @@
                 const data = await res.json();
                 if (data.success) {
                     showToast('success', data.message || 'Position closed successfully.');
-                    setTimeout(() => window.location.reload(), 700);
+                    const row = document.getElementById(`posRow_${posId}`);
+                    if (row) {
+                        row.classList.add('bg-rose-50', 'dark:bg-rose-950/20');
+                        setTimeout(() => row.remove(), 250);
+                    }
+                    pollLiveTradeStatus(true);
                 } else {
                     showToast('error', data.error || 'Failed to close position.');
                 }
@@ -1776,13 +1983,95 @@
                 const data = await res.json();
                 if (data.success) {
                     showToast('success', data.message || 'Pending order cancelled.');
-                    setTimeout(() => window.location.reload(), 700);
+                    const row = document.getElementById(`ordRow_${ordId}`);
+                    if (row) {
+                        row.classList.add('bg-rose-50', 'dark:bg-rose-950/20');
+                        setTimeout(() => row.remove(), 250);
+                    }
+                    pollLiveTradeStatus(true);
                 } else {
                     showToast('error', data.error || 'Failed to cancel order.');
                 }
             }
         } catch (err) {
             console.error('Failed to cancel order:', err);
+        }
+    }
+
+    // ── Modify Position Modal Logic ──────────────────────────────────────────
+    function openModifyModal(id, symbol, side, entry, current, sl, tp) {
+        document.getElementById('modifyPosId').value = id;
+        document.getElementById('modifyPosSymbol').value = symbol;
+        document.getElementById('modifyModalSymbol').textContent = symbol;
+        document.getElementById('modifyModalSideBadge').textContent = `${side} Position`;
+        document.getElementById('modifyModalPrices').textContent = `${formatPrice5(entry)} / ${formatPrice5(current)}`;
+        document.getElementById('modifyPosCurrentPrice').value = current;
+        document.getElementById('modifyPosSide').value = side;
+
+        const slInput = document.getElementById('modifyPosSlInput');
+        const tpInput = document.getElementById('modifyPosTpInput');
+        slInput.value = (sl && Number(sl) > 0) ? Number(sl).toFixed(5) : '';
+        tpInput.value = (tp && Number(tp) > 0) ? Number(tp).toFixed(5) : '';
+
+        const slHint = document.getElementById('modifySlHint');
+        const tpHint = document.getElementById('modifyTpHint');
+        if (String(side).toLowerCase().includes('buy')) {
+            slHint.textContent = `Must be strictly BELOW current price (${formatPrice5(current)}).`;
+            tpHint.textContent = `Must be strictly ABOVE current price (${formatPrice5(current)}).`;
+        } else {
+            slHint.textContent = `Must be strictly ABOVE current price (${formatPrice5(current)}).`;
+            tpHint.textContent = `Must be strictly BELOW current price (${formatPrice5(current)}).`;
+        }
+
+        document.getElementById('modifyPositionModal').classList.remove('hidden');
+    }
+
+    function closeModifyModal() {
+        document.getElementById('modifyPositionModal').classList.add('hidden');
+    }
+
+    async function submitModifyPosition(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnSaveModifyPosition');
+        const posId = document.getElementById('modifyPosId').value;
+        const sym = document.getElementById('modifyPosSymbol').value;
+        const sl = document.getElementById('modifyPosSlInput').value;
+        const tp = document.getElementById('modifyPosTpInput').value;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+        try {
+            const fd = new FormData();
+            fd.append('positionId', posId);
+            fd.append('symbol', sym);
+            fd.append('stopLoss', sl);
+            fd.append('takeProfit', tp);
+            fd.append('sourcePage', 'trade');
+
+            const res = await fetch('/Trading/Trading/ModifyPosition', {
+                method: 'POST',
+                body: fd,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showToast('success', data.message || 'Position stops updated successfully!');
+                closeModifyModal();
+                const slCell = document.getElementById(`posSl_${posId}`);
+                if (slCell) slCell.textContent = (sl && parseFloat(sl) > 0) ? formatPrice5(sl) : '--';
+                const tpCell = document.getElementById(`posTp_${posId}`);
+                if (tpCell) tpCell.textContent = (tp && parseFloat(tp) > 0) ? formatPrice5(tp) : '--';
+                pollLiveTradeStatus(true);
+            } else {
+                showToast('error', data.error || 'Failed to update position.');
+            }
+        } catch (err) {
+            showToast('error', err.message || 'Network error updating position.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Save Protection</span>';
         }
     }
 

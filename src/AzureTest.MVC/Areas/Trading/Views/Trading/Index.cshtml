@@ -29,6 +29,25 @@
         assetClass == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Stock ||
         assetClass == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Index ||
         assetClass == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Future;
+
+    string FormatPrice5(decimal? price, bool showDollar = true)
+    {
+        if (!price.HasValue || price.Value <= 0m) return "--";
+        var str = price.Value.ToString("#,##0.00000", System.Globalization.CultureInfo.InvariantCulture);
+        return showDollar ? $"${str}" : str;
+    }
+
+    string FormatPnl5(decimal pnl)
+    {
+        var sign = pnl >= 0 ? "+" : "-";
+        var str = Math.Abs(pnl).ToString("#,##0.00000", System.Globalization.CultureInfo.InvariantCulture);
+        return $"{sign}${str}";
+    }
+
+    string FormatQty5(decimal qty)
+    {
+        return qty.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture);
+    }
 }
 
 <div class="space-y-6 pb-12 font-sans">
@@ -131,7 +150,7 @@
                                     <!-- Right: Current Price & 24h Change -->
                                     <div class="text-right shrink-0">
                                         <div class="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white tracking-tight">
-                                            $@item.Price.ToString(item.Price < 0.01m ? "N6" : item.Price < 1m ? "N4" : "N2")
+                                            @FormatPrice5(item.Price)
                                         </div>
                                         <div class="inline-flex items-center gap-1 text-3xs font-extrabold @(item.ChangePercent24h >= 0 ? "text-emerald-500" : "text-rose-500")">
                                             <i class="fa-solid @(item.ChangePercent24h >= 0 ? "fa-arrow-trend-up" : "fa-arrow-trend-down") text-4xs"></i>
@@ -209,38 +228,38 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
                     <span class="text-3xs font-extrabold uppercase text-slate-400 tracking-wider block">Paper Cash Balance</span>
-                    <div class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
-                        $@account.CashBalance.ToString("N2")
+                    <div class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1" id="idxKpiCash">
+                        @FormatPrice5(account.CashBalance)
                     </div>
                     <span class="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-1 block">Liquid Capital</span>
                 </div>
 
                 <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
                     <span class="text-3xs font-extrabold uppercase text-slate-400 tracking-wider block">Total Net Equity</span>
-                    <div class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
-                        $@account.Equity.ToString("N2")
+                    <div class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1" id="idxKpiEquity">
+                        @FormatPrice5(account.Equity)
                     </div>
-                    <span class="text-3xs font-bold @(account.Equity >= account.CashBalance ? "text-emerald-500" : "text-rose-500") mt-1 block">
+                    <span class="text-3xs font-bold @(account.Equity >= account.CashBalance ? "text-emerald-500" : "text-rose-500") mt-1 block" id="idxKpiEquityStatus">
                         @(account.Equity >= account.CashBalance ? "In Profit" : "In Drawdown")
                     </span>
                 </div>
 
                 <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
                     <span class="text-3xs font-extrabold uppercase text-slate-400 tracking-wider block">Used Margin</span>
-                    <div class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
-                        $@account.MarginUsed.ToString("N2")
+                    <div class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1" id="idxKpiMargin">
+                        @FormatPrice5(account.MarginUsed)
                     </div>
-                    <span class="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-1 block">
-                        Free: $@account.FreeMargin.ToString("N2")
+                    <span class="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-1 block" id="idxKpiFree">
+                        Free: @FormatPrice5(account.FreeMargin)
                     </span>
                 </div>
 
                 <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
                     <span class="text-3xs font-extrabold uppercase text-slate-400 tracking-wider block">Realized Total PnL</span>
-                    <div class="text-lg sm:text-xl font-black @(account.RealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500") mt-1">
-                        @(account.RealizedPnl >= 0 ? "+" : "")$@account.RealizedPnl.ToString("N2")
+                    <div class="text-lg sm:text-xl font-black @(account.RealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500") mt-1" id="idxKpiPnl">
+                        @FormatPnl5(account.RealizedPnl)
                     </div>
-                    <span class="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-1 block">
+                    <span class="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-1 block" id="idxKpiOpenCount">
                         Open Trades: @Model.OpenPositions.Count
                     </span>
                 </div>
@@ -252,12 +271,13 @@
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-briefcase text-brand-500"></i>
                         <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">What I Have (Open Positions)</h3>
-                        <span class="px-2 py-0.5 rounded-full text-3xs font-extrabold bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400">
+                        <span class="px-2 py-0.5 rounded-full text-3xs font-extrabold bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400" id="idxOpenPositionsBadge">
                             @Model.OpenPositions.Count Active
                         </span>
                     </div>
                 </div>
 
+                <div id="indexOpenPositionsContainer">
                 @if (Model.OpenPositions.Count > 0)
                 {
                     <div class="overflow-x-auto">
@@ -269,15 +289,17 @@
                                     <th class="p-3">Quantity</th>
                                     <th class="p-3">Entry Price</th>
                                     <th class="p-3">Mark Price</th>
+                                    <th class="p-3">Stop Loss</th>
+                                    <th class="p-3">Take Profit</th>
                                     <th class="p-3">Margin</th>
                                     <th class="p-3">Unrealized PnL</th>
                                     <th class="p-3 pr-5 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800" id="indexOpenPositionsBody">
                                 @foreach (var pos in Model.OpenPositions)
                                 {
-                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors pos-row-idx" id="posRowIdx_@pos.Id" data-pos-id="@pos.Id" data-symbol="@pos.Symbol">
                                         <td class="p-3 pl-5 font-black text-slate-900 dark:text-white">
                                             <div class="flex items-center gap-1.5 flex-wrap">
                                                 <span>@pos.Symbol</span>
@@ -304,32 +326,40 @@
                                             </span>
                                         </td>
                                         <td class="p-3 font-mono font-bold text-slate-800 dark:text-slate-200">
-                                            @pos.Quantity.ToString("N4")
+                                            @FormatQty5(pos.Quantity)
                                         </td>
                                         <td class="p-3 font-mono text-slate-600 dark:text-slate-300">
-                                            $@pos.EntryPrice.ToString("N2")
+                                            @FormatPrice5(pos.EntryPrice)
                                         </td>
-                                        <td class="p-3 font-mono font-black text-slate-900 dark:text-white">
-                                            $@pos.CurrentPrice.ToString("N2")
+                                        <td class="p-3 font-mono font-black text-slate-900 dark:text-white" id="idxPosPrice_@pos.Id">
+                                            @FormatPrice5(pos.CurrentPrice)
+                                        </td>
+                                        <td class="p-3 font-mono text-3xs text-slate-500" id="idxPosSl_@pos.Id">
+                                            @(pos.StopLoss.HasValue && pos.StopLoss > 0 ? FormatPrice5(pos.StopLoss.Value) : "--")
+                                        </td>
+                                        <td class="p-3 font-mono text-3xs text-slate-500" id="idxPosTp_@pos.Id">
+                                            @(pos.TakeProfit.HasValue && pos.TakeProfit > 0 ? FormatPrice5(pos.TakeProfit.Value) : "--")
                                         </td>
                                         <td class="p-3 font-mono text-slate-600 dark:text-slate-300">
-                                            $@pos.InitialMargin.ToString("N2")
+                                            @FormatPrice5(pos.InitialMargin)
                                         </td>
-                                        <td class="p-3 font-mono font-black @(pos.UnrealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500")">
-                                            @(pos.UnrealizedPnl >= 0 ? "+" : "")$@pos.UnrealizedPnl.ToString("N2")
+                                        <td class="p-3 font-mono font-black" id="idxPosPnl_@pos.Id">
+                                            <span class="@(pos.UnrealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                                @FormatPnl5(pos.UnrealizedPnl)
+                                            </span>
                                         </td>
-                                        <td class="p-3 pr-5 text-right space-x-2 whitespace-nowrap">
+                                        <td class="p-3 pr-5 text-right space-x-1.5 whitespace-nowrap">
                                             <a asp-action="Trade" asp-route-symbol="@pos.Symbol" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-3xs hover:bg-slate-200 transition-colors">
                                                 Chart
                                             </a>
-                                            <form asp-action="ClosePosition" method="post" class="inline">
-                                                <input type="hidden" name="positionId" value="@pos.Id" />
-                                                <input type="hidden" name="symbol" value="@pos.Symbol" />
-                                                <input type="hidden" name="sourcePage" value="index" />
-                                                <button type="submit" class="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-white font-bold text-3xs transition-colors border border-rose-500/20">
-                                                    Close
-                                                </button>
-                                            </form>
+                                            <button type="button" onclick="openModifyModal('@pos.Id', '@pos.Symbol', '@pos.Side', '@pos.EntryPrice', '@pos.CurrentPrice', '@(pos.StopLoss ?? 0)', '@(pos.TakeProfit ?? 0)')"
+                                                    class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold text-3xs transition-colors border border-indigo-200 dark:border-indigo-800/40" title="Edit Stop Loss & Take Profit">
+                                                <i class="fa-solid fa-pen-to-square mr-1"></i>Edit
+                                            </button>
+                                            <button type="button" onclick="ajaxClosePositionIndex('@pos.Id', '@pos.Symbol')"
+                                                    class="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500 text-rose-600 hover:text-white font-bold text-3xs transition-colors border border-rose-500/20">
+                                                Close
+                                            </button>
                                         </td>
                                     </tr>
                                 }
@@ -345,6 +375,7 @@
                         <p class="text-3xs text-slate-400 mt-1">Select an asset from the Watchlist or Search bar to place your first paper trade.</p>
                     </div>
                 }
+                </div>
             </div>
 
             <!-- "What I Have": Outstanding Pending Orders -->
@@ -405,9 +436,9 @@
                                                 @order.Side
                                             </span>
                                         </td>
-                                        <td class="p-3 font-mono font-bold">@order.Quantity.ToString("N4")</td>
+                                        <td class="p-3 font-mono font-bold">@FormatQty5(order.Quantity)</td>
                                         <td class="p-3 font-mono font-bold text-slate-900 dark:text-white">
-                                            $@((order.Price ?? order.TriggerPrice ?? 0m).ToString("N2"))
+                                            @FormatPrice5(order.Price ?? order.TriggerPrice ?? 0m)
                                         </td>
                                         <td class="p-3 text-3xs text-slate-500 font-bold">@order.TimeInForce</td>
                                         <td class="p-3 pr-5 text-right">
@@ -435,65 +466,64 @@
             </div>
 
             <!-- "What I Have": Recent Closed Positions History -->
-            @if (Model.ClosedPositions.Count > 0)
-            {
-                <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-                    <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-clock text-slate-400"></i>
-                            <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Closed Trades History</h3>
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-slate-50/80 dark:bg-slate-800/50 text-slate-400 uppercase text-3xs font-black">
-                                <tr>
-                                    <th class="p-3 pl-5">Asset</th>
-                                    <th class="p-3">Side</th>
-                                    <th class="p-3">Entry Price</th>
-                                    <th class="p-3">Exit Price</th>
-                                    <th class="p-3">Realized PnL</th>
-                                    <th class="p-3 pr-5 text-right">Closed At</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                                @foreach (var c in Model.ClosedPositions.Take(10))
-                                {
-                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                                        <td class="p-3 pl-5 font-black text-slate-800 dark:text-slate-200">
-                                            <div class="flex items-center gap-1.5 flex-wrap">
-                                                <span>@c.Symbol</span>
-                                                <span class="px-1.5 py-0.5 rounded text-3xs font-extrabold uppercase @GetAssetBadgeClass(c.AssetClass)">
-                                                    @GetAssetDisplayName(c.AssetClass)
-                                                </span>
-                                                @if (IsSimulatedFeed(c.AssetClass))
-                                                {
-                                                    <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Simulate</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Live API</span>
-                                                }
-                                            </div>
-                                            <p class="text-3xs text-slate-400 truncate font-normal">@c.AssetName</p>
-                                        </td>
-                                        <td class="p-3 text-3xs font-extrabold @(c.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy ? "text-emerald-500" : "text-rose-500")">@c.Side</td>
-                                        <td class="p-3 font-mono">$@c.EntryPrice.ToString("N2")</td>
-                                        <td class="p-3 font-mono">$@((c.ClosePrice ?? c.CurrentPrice).ToString("N2"))</td>
-                                        <td class="p-3 font-mono font-black @(c.RealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500")">
-                                            @(c.RealizedPnl >= 0 ? "+" : "")$@c.RealizedPnl.ToString("N2")
-                                        </td>
-                                        <td class="p-3 pr-5 text-right text-3xs text-slate-400">
-                                            @(c.ClosedAtUtc?.ToString("MMM dd, HH:mm") ?? "N/A")
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+            <div id="indexClosedPositionsContainer" class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden @(Model.ClosedPositions.Count == 0 ? "hidden" : "")">
+                <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-clock text-slate-400"></i>
+                        <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Closed Trades History</h3>
                     </div>
                 </div>
-            }
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50/80 dark:bg-slate-800/50 text-slate-400 uppercase text-3xs font-black">
+                            <tr>
+                                <th class="p-3 pl-5">Asset</th>
+                                <th class="p-3">Side</th>
+                                <th class="p-3">Entry Price</th>
+                                <th class="p-3">Exit Price</th>
+                                <th class="p-3">Realized PnL</th>
+                                <th class="p-3 pr-5 text-right">Closed At</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800" id="indexClosedPositionsBody">
+                            @foreach (var c in Model.ClosedPositions.Take(10))
+                            {
+                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                    <td class="p-3 pl-5 font-black text-slate-800 dark:text-slate-200">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span>@c.Symbol</span>
+                                            <span class="px-1.5 py-0.5 rounded text-3xs font-extrabold uppercase @GetAssetBadgeClass(c.AssetClass)">
+                                                @GetAssetDisplayName(c.AssetClass)
+                                            </span>
+                                            @if (IsSimulatedFeed(c.AssetClass))
+                                            {
+                                                <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Simulate</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-4xs uppercase px-1.5 py-0.5 rounded font-black tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Live API</span>
+                                            }
+                                        </div>
+                                        <p class="text-3xs text-slate-400 truncate font-normal">@c.AssetName</p>
+                                    </td>
+                                    <td class="p-3 text-3xs font-extrabold @(c.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy ? "text-emerald-500" : "text-rose-500")">@c.Side</td>
+                                    <td class="p-3 font-mono">@FormatPrice5(c.EntryPrice)</td>
+                                    <td class="p-3 font-mono">@FormatPrice5(c.ClosePrice ?? c.CurrentPrice)</td>
+                                    <td class="p-3 font-mono font-black">
+                                        <span class="@(c.RealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                            @FormatPnl5(c.RealizedPnl)
+                                        </span>
+                                    </td>
+                                    <td class="p-3 pr-5 text-right text-3xs text-slate-400">
+                                        @(c.ClosedAtUtc?.ToString("MMM dd, HH:mm") ?? "N/A")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -578,6 +608,73 @@
                 <span>Execute Batch</span>
             </button>
         </div>
+    </div>
+</div>
+
+<!-- Modify Position Modal (Edit Stop Loss & Take Profit) -->
+<div id="modifyPositionModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-in">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square text-brand-500"></i>
+                <span>Modify Position Protection (TP / SL)</span>
+            </h3>
+            <button type="button" onclick="closeModifyModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs">
+            <div>
+                <span class="text-3xs uppercase font-extrabold text-slate-400 block" id="modifyModalSideBadge">Long Position</span>
+                <span class="text-sm font-black text-slate-900 dark:text-white font-mono" id="modifyModalSymbol">BTCUSDT</span>
+            </div>
+            <div class="text-right">
+                <span class="text-3xs uppercase font-extrabold text-slate-400 block">Entry / Current Price</span>
+                <span class="text-xs font-mono font-bold text-slate-700 dark:text-slate-300" id="modifyModalPrices">$0.00000 / $0.00000</span>
+            </div>
+        </div>
+
+        <form id="modifyPositionForm" onsubmit="submitModifyPosition(event)" class="space-y-4">
+            <input type="hidden" id="modifyPosId" name="positionId" />
+            <input type="hidden" id="modifyPosSymbol" name="symbol" />
+            <input type="hidden" id="modifyPosSide" />
+            <input type="hidden" id="modifyPosCurrentPrice" />
+
+            <!-- Stop Loss -->
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                        <span>Stop Loss (SL)</span>
+                    </label>
+                    <button type="button" onclick="document.getElementById('modifyPosSlInput').value = ''" class="text-3xs text-rose-500 hover:underline font-bold">Clear SL</button>
+                </div>
+                <input type="text" inputmode="decimal" id="modifyPosSlInput" name="stopLoss" placeholder="Leave blank to remove Stop Loss"
+                       class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-mono font-bold focus:border-brand-500 focus:outline-none" />
+                <p class="text-4xs text-slate-400 mt-1" id="modifySlHint">Price to automatically close trade and prevent loss.</p>
+            </div>
+
+            <!-- Take Profit -->
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span>Take Profit (TP)</span>
+                    </label>
+                    <button type="button" onclick="document.getElementById('modifyPosTpInput').value = ''" class="text-3xs text-emerald-500 hover:underline font-bold">Clear TP</button>
+                </div>
+                <input type="text" inputmode="decimal" id="modifyPosTpInput" name="takeProfit" placeholder="Leave blank to remove Take Profit"
+                       class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-mono font-bold focus:border-brand-500 focus:outline-none" />
+                <p class="text-4xs text-slate-400 mt-1" id="modifyTpHint">Price to automatically close trade and lock in profit.</p>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+                <button type="button" onclick="closeModifyModal()" class="w-1/2 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 transition-colors">Cancel</button>
+                <button type="submit" id="btnSaveModifyPosition" class="w-1/2 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Save Protection</span>
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -869,5 +966,239 @@
             console.error('Watchlist toggle failed:', err);
         }
     }
+
+    // Toast Alert Helper
+    function showToast(type, msg) {
+        let container = document.getElementById('dynamicAlertContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'dynamicAlertContainer';
+            container.className = 'fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none';
+            document.body.appendChild(container);
+        }
+        const isSuccess = type === 'success';
+        const isInfo = type === 'info';
+        const el = document.createElement('div');
+        el.className = `p-4 rounded-2xl pointer-events-auto shadow-xl transition-all transform animate-scale-in border ${
+            isSuccess ? 'bg-emerald-50 dark:bg-emerald-950/80 border-emerald-500/30 text-emerald-800 dark:text-emerald-200' :
+            isInfo ? 'bg-indigo-50 dark:bg-indigo-950/80 border-indigo-500/30 text-indigo-800 dark:text-indigo-200' :
+            'bg-rose-50 dark:bg-rose-950/80 border-rose-500/30 text-rose-800 dark:text-rose-200'
+        }`;
+        el.innerHTML = `
+            <div class="flex items-center gap-3">
+                <i class="fa-solid ${isSuccess ? 'fa-circle-check text-emerald-500' : isInfo ? 'fa-circle-info text-indigo-500' : 'fa-circle-exclamation text-rose-500'} text-lg"></i>
+                <div class="text-xs font-bold">${msg}</div>
+            </div>
+        `;
+        container.appendChild(el);
+        setTimeout(() => {
+            el.classList.add('opacity-0', 'translate-x-4');
+            setTimeout(() => el.remove(), 400);
+        }, 4000);
+    }
+
+    function formatPrice5(val) {
+        const n = Number(val);
+        if (isNaN(n) || n <= 0) return '--';
+        return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
+    }
+
+    function formatPnl5(val) {
+        const n = Number(val);
+        if (isNaN(n)) return '$0.00000';
+        const sign = n >= 0 ? '+' : '-';
+        const abs = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
+        return `${sign}$${abs}`;
+    }
+
+    // Modify Position Modal logic
+    function openModifyModal(id, symbol, side, entry, current, sl, tp, trail) {
+        document.getElementById('modifyPosId').value = id;
+        document.getElementById('modifyPosSymbol').value = symbol;
+        document.getElementById('modifyModalSymbol').textContent = symbol;
+        document.getElementById('modifyModalSideBadge').textContent = `${side} Position`;
+        document.getElementById('modifyModalPrices').textContent = `${formatPrice5(entry)} / ${formatPrice5(current)}`;
+        document.getElementById('modifyPosCurrentPrice').value = current;
+        document.getElementById('modifyPosSide').value = side;
+
+        const slInput = document.getElementById('modifyPosSlInput');
+        const tpInput = document.getElementById('modifyPosTpInput');
+        slInput.value = (sl && Number(sl) > 0) ? Number(sl).toFixed(5) : '';
+        tpInput.value = (tp && Number(tp) > 0) ? Number(tp).toFixed(5) : '';
+
+        const slHint = document.getElementById('modifySlHint');
+        const tpHint = document.getElementById('modifyTpHint');
+        if (String(side).toLowerCase().includes('buy')) {
+            slHint.textContent = `Must be strictly BELOW current price (${formatPrice5(current)}).`;
+            tpHint.textContent = `Must be strictly ABOVE current price (${formatPrice5(current)}).`;
+        } else {
+            slHint.textContent = `Must be strictly ABOVE current price (${formatPrice5(current)}).`;
+            tpHint.textContent = `Must be strictly BELOW current price (${formatPrice5(current)}).`;
+        }
+
+        document.getElementById('modifyPositionModal').classList.remove('hidden');
+    }
+
+    function closeModifyModal() {
+        document.getElementById('modifyPositionModal').classList.add('hidden');
+    }
+
+    async function submitModifyPosition(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btnSaveModifyPosition');
+        const posId = document.getElementById('modifyPosId').value;
+        const sym = document.getElementById('modifyPosSymbol').value;
+        const sl = document.getElementById('modifyPosSlInput').value;
+        const tp = document.getElementById('modifyPosTpInput').value;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+        try {
+            const fd = new FormData();
+            fd.append('positionId', posId);
+            fd.append('symbol', sym);
+            fd.append('stopLoss', sl);
+            fd.append('takeProfit', tp);
+            fd.append('sourcePage', 'index');
+
+            const res = await fetch('/Trading/Trading/ModifyPosition', {
+                method: 'POST',
+                body: fd,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showToast('success', data.message || 'Position stops updated successfully!');
+                closeModifyModal();
+                const slCell = document.getElementById(`idxPosSl_${posId}`) || document.getElementById(`posSl_${posId}`);
+                if (slCell) slCell.textContent = (sl && parseFloat(sl) > 0) ? formatPrice5(sl) : '--';
+                const tpCell = document.getElementById(`idxPosTp_${posId}`) || document.getElementById(`posTp_${posId}`);
+                if (tpCell) tpCell.textContent = (tp && parseFloat(tp) > 0) ? formatPrice5(tp) : '--';
+            } else {
+                showToast('error', data.error || 'Failed to update position.');
+            }
+        } catch (err) {
+            showToast('error', err.message || 'Network error updating position.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Save Protection</span>';
+        }
+    }
+
+    // AJAX Close Position
+    async function ajaxClosePositionIndex(posId, sym) {
+        try {
+            const fd = new FormData();
+            fd.append('positionId', posId);
+            fd.append('symbol', sym);
+            fd.append('sourcePage', 'index');
+
+            const res = await fetch('/Trading/Trading/ClosePosition', {
+                method: 'POST',
+                body: fd,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showToast('success', data.message || 'Position closed successfully.');
+                const row = document.getElementById(`posRowIdx_${posId}`);
+                if (row) row.remove();
+                pollLiveIndexStatus(true);
+            } else {
+                showToast('error', data.error || 'Failed to close position.');
+            }
+        } catch (err) {
+            showToast('error', 'Error closing position: ' + err.message);
+        }
+    }
+
+    // Live status polling (no reload needed to see closed trades or price updates)
+    let knownOpenIndexPosIds = new Set(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OpenPositions.Select(p => p.Id.ToString()))));
+
+    async function pollLiveIndexStatus(immediate = false) {
+        try {
+            const res = await fetch('/Trading/Trading/LiveStatus?symbol=BTCUSDT', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data || !data.success) return;
+
+            // 1. Update Account KPIs
+            if (data.account) {
+                const acc = data.account;
+                const cashEl = document.getElementById('idxKpiCash');
+                if (cashEl) cashEl.textContent = formatPrice5(acc.cashBalance ?? acc.CashBalance);
+                const eqEl = document.getElementById('idxKpiEquity');
+                if (eqEl) eqEl.textContent = formatPrice5(acc.equity ?? acc.Equity);
+                const mgEl = document.getElementById('idxKpiMargin');
+                if (mgEl) mgEl.textContent = formatPrice5(acc.marginUsed ?? acc.MarginUsed);
+                const freeEl = document.getElementById('idxKpiFree');
+                if (freeEl) freeEl.textContent = 'Free: ' + formatPrice5(acc.freeMargin ?? acc.FreeMargin);
+                const pnlEl = document.getElementById('idxKpiPnl');
+                if (pnlEl) {
+                    const pnlVal = Number(acc.realizedPnl ?? acc.RealizedPnl ?? 0);
+                    pnlEl.textContent = formatPnl5(pnlVal);
+                    pnlEl.className = `text-lg sm:text-xl font-black mt-1 ${pnlVal >= 0 ? 'text-emerald-500' : 'text-rose-500'}`;
+                }
+            }
+
+            // 2. Track Closed Positions automatically
+            const currentOpen = data.openPositions || [];
+            const currentOpenIds = new Set(currentOpen.map(p => String(p.id ?? p.Id)));
+
+            knownOpenIndexPosIds.forEach(id => {
+                if (!currentOpenIds.has(String(id))) {
+                    const row = document.getElementById(`posRowIdx_${id}`);
+                    if (row) {
+                        const sym = row.getAttribute('data-symbol') || 'Asset';
+                        row.remove();
+                        showToast('info', `Position ${sym} closed (Stop Loss / Take Profit executed).`);
+                    }
+                }
+            });
+
+            knownOpenIndexPosIds = currentOpenIds;
+
+            // Update badge counts
+            const badge = document.getElementById('idxOpenPositionsBadge');
+            if (badge) badge.textContent = `${currentOpen.length} Active`;
+            const countKpi = document.getElementById('idxKpiOpenCount');
+            if (countKpi) countKpi.textContent = `Open Trades: ${currentOpen.length}`;
+
+            // Update mark prices and PnL for active positions
+            currentOpen.forEach(pos => {
+                const id = pos.id ?? pos.Id;
+                const curPrice = Number(pos.currentPrice ?? pos.CurrentPrice ?? 0);
+                const unPnl = Number(pos.unrealizedPnl ?? pos.UnrealizedPnl ?? 0);
+
+                const priceEl = document.getElementById(`idxPosPrice_${id}`);
+                if (priceEl && curPrice > 0) priceEl.textContent = formatPrice5(curPrice);
+
+                const pnlEl = document.getElementById(`idxPosPnl_${id}`);
+                if (pnlEl) {
+                    pnlEl.innerHTML = `<span class="${unPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}">${formatPnl5(unPnl)}</span>`;
+                }
+            });
+
+            // If empty open positions
+            const container = document.getElementById('indexOpenPositionsContainer');
+            if (container && currentOpen.length === 0 && !container.querySelector('.text-slate-400')) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-slate-400">
+                        <i class="fa-solid fa-folder-open text-3xl text-slate-300 dark:text-slate-700 mb-2"></i>
+                        <p class="text-xs font-bold text-slate-700 dark:text-slate-300">No Open Positions</p>
+                        <p class="text-3xs text-slate-400 mt-1">Select an asset from the Watchlist or Search bar to place your first paper trade.</p>
+                    </div>`;
+            }
+        } catch (e) {
+            console.debug('Index live status poll error:', e);
+        }
+    }
+
+    setInterval(pollLiveIndexStatus, 3500);
 </script>
 }

@@ -5,6 +5,7 @@ using AzureTest.Application.Messaging;
 using AzureTest.Application.Trading.Commands.CancelTradingOrder;
 using AzureTest.Application.Trading.Commands.CloseTradingPosition;
 using AzureTest.Application.Trading.Commands.ExecuteTradingJsonBatch;
+using AzureTest.Application.Trading.Commands.ModifyTradingPosition;
 using AzureTest.Application.Trading.Commands.PlaceTradingOrder;
 using AzureTest.Application.Trading.Commands.ResetTradingAccountBalance;
 using AzureTest.Application.Trading.Commands.SyncTradingPrices;
@@ -32,6 +33,7 @@ public static class TradingServiceRegistration
         // Command Handlers
         services.AddScoped<ICommandHandler<PlaceTradingOrderCommand, Result<Guid>>, PlaceTradingOrderCommandHandler>();
         services.AddScoped<ICommandHandler<CloseTradingPositionCommand, Result<Guid>>, CloseTradingPositionCommandHandler>();
+        services.AddScoped<ICommandHandler<ModifyTradingPositionCommand, Result<Guid>>, ModifyTradingPositionCommandHandler>();
         services.AddScoped<ICommandHandler<CancelTradingOrderCommand, Result<Guid>>, CancelTradingOrderCommandHandler>();
         services.AddScoped<ICommandHandler<ResetTradingAccountBalanceCommand, Result<Guid>>, ResetTradingAccountBalanceCommandHandler>();
         services.AddScoped<ICommandHandler<ToggleTradingWatchlistCommand, Result<bool>>, ToggleTradingWatchlistCommandHandler>();
@@ -41,6 +43,7 @@ public static class TradingServiceRegistration
         // Command Validators
         services.AddScoped<IValidator<PlaceTradingOrderCommand>, PlaceTradingOrderCommandValidator>();
         services.AddScoped<IValidator<CloseTradingPositionCommand>, CloseTradingPositionCommandValidator>();
+        services.AddScoped<IValidator<ModifyTradingPositionCommand>, ModifyTradingPositionCommandValidator>();
         services.AddScoped<IValidator<CancelTradingOrderCommand>, CancelTradingOrderCommandValidator>();
         services.AddScoped<IValidator<ResetTradingAccountBalanceCommand>, ResetTradingAccountBalanceCommandValidator>();
         services.AddScoped<IValidator<ToggleTradingWatchlistCommand>, ToggleTradingWatchlistCommandValidator>();

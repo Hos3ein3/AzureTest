@@ -8,8 +8,10 @@ using AzureTest.Application.Trading;
 using AzureTest.Application.Trading.Commands.CancelTradingOrder;
 using AzureTest.Application.Trading.Commands.CloseTradingPosition;
 using AzureTest.Application.Trading.Commands.ExecuteTradingJsonBatch;
+using AzureTest.Application.Trading.Commands.ModifyTradingPosition;
 using AzureTest.Application.Trading.Commands.PlaceTradingOrder;
 using AzureTest.Application.Trading.Commands.ResetTradingAccountBalance;
+using AzureTest.Application.Trading.Commands.SyncTradingPrices;
 using AzureTest.Application.Trading.Commands.ToggleTradingWatchlist;
 using AzureTest.Application.Trading.Queries.GetTradingDashboard;
 using AzureTest.Application.Trading.Queries.GetTradingQuotes;
@@ -87,7 +89,7 @@ public class TradingController : Controller
         {
             try
             {
-                await _commands.SyncPricesAsync(new AzureTest.Application.Trading.Commands.SyncTradingPrices.SyncTradingPricesCommand(), ct);
+                await _commands.SyncPricesAsync(new SyncTradingPricesCommand(), ct);
             }
             catch
             {
@@ -96,6 +98,40 @@ public class TradingController : Controller
         }
 
         return Json(quote);
+    }
+
+    [HttpGet]
+    [DisplayName("Live Positions and Account Status")]
+    [Description("Fetch active open positions, closed positions, pending orders, and account balance for live auto-updating terminal tables.")]
+    public async Task<IActionResult> LiveStatus(string? symbol = "BTCUSDT", CancellationToken ct = default)
+    {
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            try
+            {
+                await _commands.SyncPricesAsync(new SyncTradingPricesCommand(), ct);
+            }
+            catch
+            {
+                // Background price sync best-effort during live status polling
+            }
+        }
+
+        var result = await _queries.GetDashboardAsync(
+            new GetTradingDashboardQuery(_currentUser.Id, _currentUser.TenantId, symbol ?? "BTCUSDT"), ct);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        var dto = result.Value;
+        return Json(new {
+            success = true,
+            account = dto.Account,
+            openPositions = dto.OpenPositions,
+            closedPositions = dto.ClosedPositions,
+            pendingOrders = dto.PendingOrders,
+            selectedQuote = dto.SelectedQuote
+        });
     }
 
     [HttpGet]
@@ -235,6 +271,69 @@ public class TradingController : Controller
     }
 
     [HttpPost]
+    [DisplayName("Modify Position Stops")]
+    [Description("Update Stop Loss and Take Profit levels on an active open position.")]
+    public async Task<IActionResult> ModifyPosition(
+        Guid positionId,
+        decimal? stopLoss,
+        decimal? takeProfit,
+        decimal? trailingStopDistance,
+        string? multipleTakeProfitsJson,
+        string? symbol,
+        string? sourcePage = "trade",
+        CancellationToken ct = default)
+    {
+        bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
+
+        if (Request.HasFormContentType)
+        {
+            if (Request.Form.TryGetValue("stopLoss", out var slVal))
+            {
+                var s = slVal.ToString().Trim().Replace(',', '.');
+                if (decimal.TryParse(s, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedSl))
+                    stopLoss = parsedSl > 0 ? parsedSl : null;
+                else if (string.IsNullOrWhiteSpace(s))
+                    stopLoss = null;
+            }
+            if (Request.Form.TryGetValue("takeProfit", out var tpVal))
+            {
+                var s = tpVal.ToString().Trim().Replace(',', '.');
+                if (decimal.TryParse(s, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedTp))
+                    takeProfit = parsedTp > 0 ? parsedTp : null;
+                else if (string.IsNullOrWhiteSpace(s))
+                    takeProfit = null;
+            }
+            if (Request.Form.TryGetValue("trailingStopDistance", out var trailVal) && !string.IsNullOrWhiteSpace(trailVal))
+            {
+                var s = trailVal.ToString().Trim().Replace(',', '.');
+                if (decimal.TryParse(s, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedTrail))
+                    trailingStopDistance = parsedTrail > 0 ? parsedTrail : null;
+                else if (string.IsNullOrWhiteSpace(s))
+                    trailingStopDistance = null;
+            }
+        }
+
+        var command = new ModifyTradingPositionCommand(positionId, _currentUser.Id, _currentUser.TenantId, stopLoss, takeProfit, trailingStopDistance, multipleTakeProfitsJson);
+        var result = await _commands.ModifyPositionAsync(command, ct);
+
+        if (result.IsSuccess)
+        {
+            if (isAjax) return Json(new { success = true, message = "Position protection stops updated successfully." });
+            TempData["SuccessMessage"] = "Position protection stops updated successfully.";
+        }
+        else
+        {
+            if (isAjax) return Json(new { success = false, error = result.Error });
+            TempData["ErrorMessage"] = result.Error;
+        }
+
+        if (string.Equals(sourcePage, "trade", StringComparison.OrdinalIgnoreCase))
+            return RedirectToAction(nameof(Trade), new { symbol = symbol ?? "BTCUSDT" });
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
     [DisplayName("Cancel Order")]
     [Description("Cancel an outstanding pending Limit or Stop order.")]
     public async Task<IActionResult> CancelOrder(Guid orderId, string? symbol, string? sourcePage = "index", CancellationToken ct = default)
@@ -260,6 +359,8 @@ public class TradingController : Controller
 
         return RedirectToAction(nameof(Index));
     }
+
+
 
     [HttpPost]
     [DisplayName("Reset Balance")]

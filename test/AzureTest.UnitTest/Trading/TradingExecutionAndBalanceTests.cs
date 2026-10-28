@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Data.Trading;
 using AzureTest.Application.Trading.Commands.CloseTradingPosition;
+using AzureTest.Application.Trading.Commands.ModifyTradingPosition;
 using AzureTest.Application.Trading.Commands.PlaceTradingOrder;
 using AzureTest.Application.Trading.Commands.SyncTradingPrices;
 using AzureTest.Application.Trading.Services;
@@ -459,5 +460,124 @@ public class TradingExecutionAndBalanceTests
 
         var result3 = await handler.HandleAsync(cmd3, CancellationToken.None);
         result3.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ModifyTradingPosition_Long_ValidStops_UpdatesSuccessfully()
+    {
+        // Arrange
+        var position = TradingPosition.Open(
+            accountId: Guid.NewGuid(),
+            userId: _userId,
+            tenantId: _tenantId,
+            symbol: "XANUSDT",
+            assetName: "XAN / USDT",
+            assetClass: AssetClass.Crypto,
+            side: TradingOrderSide.Buy,
+            quantity: 1000m,
+            entryPrice: 0.108m,
+            leverage: 10,
+            stopLoss: 0.105m,
+            takeProfit: 0.115m);
+
+        _mockPositions.Setup(p => p.GetByIdAsync(position.Id)).ReturnsAsync(position);
+        _mockMarketData
+            .Setup(m => m.GetCurrentPriceAsync("XANUSDT", It.IsAny<decimal>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0.110m);
+
+        var handler = new ModifyTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        var cmd = new ModifyTradingPositionCommand(
+            PositionId: position.Id,
+            UserId: _userId,
+            TenantId: _tenantId,
+            StopLoss: 0.106m,
+            TakeProfit: 0.120m);
+
+        // Act
+        var result = await handler.HandleAsync(cmd, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        position.StopLoss.Should().Be(0.106m);
+        position.TakeProfit.Should().Be(0.120m);
+        _mockUow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ModifyTradingPosition_Long_InvalidStopLossAboveMarket_ReturnsFailure()
+    {
+        // Arrange
+        var position = TradingPosition.Open(
+            accountId: Guid.NewGuid(),
+            userId: _userId,
+            tenantId: _tenantId,
+            symbol: "XANUSDT",
+            assetName: "XAN / USDT",
+            assetClass: AssetClass.Crypto,
+            side: TradingOrderSide.Buy,
+            quantity: 1000m,
+            entryPrice: 0.108m,
+            leverage: 10);
+
+        _mockPositions.Setup(p => p.GetByIdAsync(position.Id)).ReturnsAsync(position);
+        _mockMarketData
+            .Setup(m => m.GetCurrentPriceAsync("XANUSDT", It.IsAny<decimal>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0.110m);
+
+        var handler = new ModifyTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        // Attempting to set SL higher than current price (0.112 > 0.110)
+        var cmd = new ModifyTradingPositionCommand(
+            PositionId: position.Id,
+            UserId: _userId,
+            TenantId: _tenantId,
+            StopLoss: 0.112m);
+
+        // Act
+        var result = await handler.HandleAsync(cmd, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("must be strictly below current market price");
+    }
+
+    [Fact]
+    public async Task ModifyTradingPosition_Short_AllowsClearingStops()
+    {
+        // Arrange: Short position with initial SL and TP
+        var position = TradingPosition.Open(
+            accountId: Guid.NewGuid(),
+            userId: _userId,
+            tenantId: _tenantId,
+            symbol: "XANUSDT",
+            assetName: "XAN / USDT",
+            assetClass: AssetClass.Crypto,
+            side: TradingOrderSide.Sell,
+            quantity: 1000m,
+            entryPrice: 0.108m,
+            leverage: 10,
+            stopLoss: 0.115m,
+            takeProfit: 0.100m);
+
+        _mockPositions.Setup(p => p.GetByIdAsync(position.Id)).ReturnsAsync(position);
+        _mockMarketData
+            .Setup(m => m.GetCurrentPriceAsync("XANUSDT", It.IsAny<decimal>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0.105m);
+
+        var handler = new ModifyTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        // Passing 0 or null removes the stops
+        var cmd = new ModifyTradingPositionCommand(
+            PositionId: position.Id,
+            UserId: _userId,
+            TenantId: _tenantId,
+            StopLoss: 0m,
+            TakeProfit: null);
+
+        // Act
+        var result = await handler.HandleAsync(cmd, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        position.StopLoss.Should().BeNull();
+        position.TakeProfit.Should().BeNull();
     }
 }
