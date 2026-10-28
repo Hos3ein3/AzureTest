@@ -13,5 +13,6 @@ public sealed record TradingQuoteDto(
     decimal Low24h,
     decimal Volume24h,
     bool IsWatchlisted,
-    bool IsSimulated = false
+    bool IsSimulated = false,
+    string FeedSource = "binance"
 );

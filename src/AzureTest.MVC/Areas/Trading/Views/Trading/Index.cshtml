@@ -1,6 +1,17 @@
 @model AzureTest.Contracts.DTOs.Trading.TradingDashboardDto
 @{
     ViewData["Title"] = "Universal Paper Trading Hub";
+    var pageHeader = new PageHeaderModel
+    {
+        Title = "Universal Paper Trading Hub",
+        Subtitle = "Universal Paper Trading Hub",
+        Icon = "fa-solid fa-arrow-trend-up",
+        Breadcrumbs = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Paper Trading Hub", Url.Action("Index", "Trading",new {area=""}),active:true),
+            
+        }
+    };
     var account = Model.Account;
 }
 
@@ -50,6 +61,7 @@
     }
 }
 
+<partial name="UiComponents/_PageHeader" model="pageHeader" />
 <div class="space-y-6 pb-12 font-sans">
     <!-- Top Action Bar -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">

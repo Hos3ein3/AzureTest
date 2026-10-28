@@ -234,7 +234,41 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                 }
             });
 
-            // 3. For DEX tokens (from DexScreener), query DexScreener live API for fresh real-world pricing
+            // 3. For MEXC tokens, query MEXC live API for fresh real-world pricing
+            var mexcTasks = DynamicCatalog.Values
+                .Where(d => d.FeedSource == "mexc")
+                .Select(async m =>
+                {
+                    try
+                    {
+                        var res = await _http.GetAsync($"https://api.mexc.com/api/v3/ticker/24hr?symbol={m.Symbol}", ct);
+                        if (res.IsSuccessStatusCode)
+                        {
+                            var json = await res.Content.ReadAsStringAsync(ct);
+                            using var doc = JsonDocument.Parse(json);
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("lastPrice", out var lpProp) &&
+                                decimal.TryParse(lpProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var newPrice) &&
+                                newPrice > 0)
+                            {
+                                decimal change = decimal.TryParse(root.GetProperty("priceChange").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var cVal) ? cVal : 0m;
+                                decimal pct = decimal.TryParse(root.GetProperty("priceChangePercent").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pVal) ? pVal * 100m : 0m;
+                                decimal high = decimal.TryParse(root.GetProperty("highPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var hVal) ? hVal : newPrice;
+                                decimal low = decimal.TryParse(root.GetProperty("lowPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var lVal) ? lVal : newPrice;
+                                decimal vol = decimal.TryParse(root.GetProperty("volume").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var vVal) ? vVal : m.Volume;
+
+                                LiveCache[m.Symbol] = new LiveQuoteState(newPrice, change, pct, high, low, vol, IsSimulated: false);
+                                DynamicCatalog[m.Symbol] = m with { BasePrice = newPrice, ChangePercent = pct, High = high, Low = low, Volume = vol };
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "TradingMarketDataService: Failed to update live MEXC quote for {Symbol}.", m.Symbol);
+                    }
+                });
+
+            // 4. For DEX tokens (from DexScreener), query DexScreener live API for fresh real-world pricing
             var dexTasks = DynamicCatalog.Values
                 .Where(d => d.FeedSource == "dexscreener")
                 .Select(async d =>
@@ -288,7 +322,7 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                     }
                 });
 
-            // 4. For Simulated assets (Stocks, Indices, Futures), apply continuous realistic micro-ticks (random walk +-0.03%)
+            // 5. For Simulated assets (Stocks, Indices, Futures), apply continuous realistic micro-ticks (random walk +-0.03%)
             var random = Random.Shared;
             foreach (var s in Catalog.Where(c => c.IsSimulated).Concat(DynamicCatalog.Values.Where(d => d.IsSimulated)))
             {
@@ -313,7 +347,7 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                 }
             }
 
-            await Task.WhenAll(cryptoTasks.Concat(forexTasks).Concat(dexTasks));
+            await Task.WhenAll(cryptoTasks.Concat(forexTasks).Concat(mexcTasks).Concat(dexTasks));
             _lastRefreshUtc = DateTime.UtcNow;
         }
         finally
@@ -428,13 +462,63 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                             low,
                             vol,
                             watchlistedSymbols.Contains(binanceSym),
-                            IsSimulated: false);
+                            IsSimulated: false,
+                            FeedSource: "binance");
                     }
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogDebug(ex, "Binance live search query failed for {Query}", cleanQ);
+            }
+
+            // 3.5 Live search via MEXC Public 24hr Ticker API (for tokens not listed on Binance, e.g. AGTUSDT)
+            var targetSym = cleanQ.EndsWith("USDT") ? cleanQ : cleanQ + "USDT";
+            if (!results.ContainsKey(targetSym))
+            {
+                try
+                {
+                    var mexcRes = await _http.GetAsync($"https://api.mexc.com/api/v3/ticker/24hr?symbol={targetSym}", ct);
+                    if (mexcRes.IsSuccessStatusCode)
+                    {
+                        var json = await mexcRes.Content.ReadAsStringAsync(ct);
+                        using var doc = JsonDocument.Parse(json);
+                        var root = doc.RootElement;
+                        if (root.TryGetProperty("lastPrice", out var lpProp) &&
+                            decimal.TryParse(lpProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var price) &&
+                            price > 0)
+                        {
+                            decimal change = decimal.TryParse(root.GetProperty("priceChange").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var cVal) ? cVal : 0m;
+                            decimal pct = decimal.TryParse(root.GetProperty("priceChangePercent").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pVal) ? pVal * 100m : 0m;
+                            decimal high = decimal.TryParse(root.GetProperty("highPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var hVal) ? hVal : price * 1.05m;
+                            decimal low = decimal.TryParse(root.GetProperty("lowPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var lVal) ? lVal : price * 0.95m;
+                            decimal vol = decimal.TryParse(root.GetProperty("volume").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var vVal) ? vVal : 100000m;
+
+                            var assetBase = targetSym.EndsWith("USDT") ? targetSym.Substring(0, targetSym.Length - 4) : targetSym;
+                            var item = new TradingCatalogItem(targetSym, $"{assetBase} / Tether USD", AssetClass.Crypto, price, pct, high, low, vol, IsSimulated: false, FeedSource: "mexc");
+                            DynamicCatalog[targetSym] = item;
+                            LiveCache[targetSym] = new LiveQuoteState(price, change, pct, high, low, vol, IsSimulated: false);
+
+                            results[targetSym] = new TradingQuoteDto(
+                                targetSym,
+                                item.Name,
+                                AssetClass.Crypto,
+                                price,
+                                change,
+                                pct,
+                                high,
+                                low,
+                                vol,
+                                watchlistedSymbols.Contains(targetSym),
+                                IsSimulated: false,
+                                FeedSource: "mexc");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "MEXC live search query failed for {Query}", targetSym);
+                }
             }
 
             // 4. Live search via DexScreener for DEX tokens (e.g. BLESS, BRETT, PEPE, AERO, etc.)
@@ -552,7 +636,8 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                     live.Low,
                     live.Volume,
                     watchlistedSymbols.Contains(c.Symbol),
-                    live.IsSimulated
+                    live.IsSimulated,
+                    c.FeedSource
                 );
             }
 
@@ -567,7 +652,8 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                 c.Low,
                 c.Volume,
                 watchlistedSymbols.Contains(c.Symbol),
-                c.IsSimulated
+                c.IsSimulated,
+                c.FeedSource
             );
         }).ToList();
     }
@@ -594,7 +680,8 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                 live.Low,
                 live.Volume,
                 watchlistedSymbols.Contains(item.Symbol),
-                live.IsSimulated
+                live.IsSimulated,
+                item.FeedSource
             );
         }
 
@@ -609,7 +696,8 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
             item.Low,
             item.Volume,
             watchlistedSymbols.Contains(item.Symbol),
-            item.IsSimulated
+            item.IsSimulated,
+            item.FeedSource
         );
     }
 

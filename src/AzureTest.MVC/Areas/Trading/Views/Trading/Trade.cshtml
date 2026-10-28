@@ -2,6 +2,18 @@
 @{
     var selected = Model.SelectedQuote;
     ViewData["Title"] = $"{selected.Symbol} - Trade & Pro Chart";
+    var pageHeader = new PageHeaderModel
+    {
+        Title = $"{selected.Symbol} - Trade & Pro Chart",
+        Subtitle = "Universal Paper Trading Hub",
+        Icon = "fa-solid fa-arrow-trend-up",
+        Breadcrumbs = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Paper Trading Hub", Url.Action("Index", "Trading",new {area=""})),
+            new BreadcrumbItem($"{selected.Symbol} - Trade & Pro Chart",active:true)
+            
+        }
+    };
     var account = Model.Account;
     var openForSymbol = Model.OpenPositions.Where(p => p.Symbol.Equals(selected.Symbol, StringComparison.OrdinalIgnoreCase)).ToList();
     var pendingForSymbol = Model.PendingOrders.Where(o => o.Symbol.Equals(selected.Symbol, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -86,6 +98,7 @@
     }
 }
 
+<partial name="UiComponents/_PageHeader" model="pageHeader" />
 <div class="space-y-6 pb-12 font-sans">
     <!-- Dynamic Alert Toasts / Notification Container -->
     <div id="dynamicAlertContainer" class="space-y-3">
@@ -1062,6 +1075,7 @@
 <script>
     const symbol = "@selected.Symbol";
     const selectedAssetClass = @((int)selected.AssetClass);
+    const feedSource = "@selected.FeedSource";
     let basePrice = @selected.Price;
     let cashBalance = @account.CashBalance;
     let freeMargin = @account.FreeMargin;
@@ -1069,10 +1083,10 @@
     let currentOrderTab = 'market';
     let isBuzzwordsMode = false;
     let isSymbolWatchlisted = @(selected.IsWatchlisted ? "true" : "false");
-    let currentSizeMode = 'units'; // 'units', 'margin', 'percent', 'total'
+    let currentSizeMode = 'percent'; // Default to '% Balance'
     let currentCalculatedUnits = 1.0;
     let currentCalculatedMargin = 0;
-    let currentCalculatedPercent = 0;
+    let currentCalculatedPercent = 10.0;
     let currentCalculatedTotal = 0;
     let tpEnabled = true;
     let slEnabled = true;
@@ -1081,27 +1095,36 @@
     let currentChartEngine = 'tradingview'; // 'tradingview' or 'canvas'
     let tvWidget = null;
 
-    // Toast Alert Helper
+    // Execution Notice & Feedback Alert Helper (Renders directly under Buy/Sell buttons)
     function showToast(type, msg) {
-        const c = document.getElementById('dynamicAlertContainer');
+        const c = document.getElementById('executionNoticeContainer') || document.getElementById('dynamicAlertContainer');
         if (!c) return;
         const isSuccess = type === 'success';
+        const isInfo = type === 'info';
+        const bgClass = isSuccess
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800 dark:text-emerald-200'
+            : (isInfo ? 'bg-brand-500/10 border-brand-500/30 text-brand-800 dark:text-brand-200' : 'bg-rose-500/10 border-rose-500/30 text-rose-800 dark:text-rose-200');
+        const iconClass = isSuccess ? 'fa-circle-check text-emerald-500' : (isInfo ? 'fa-circle-info text-brand-500' : 'fa-circle-exclamation text-rose-500');
+        const titleText = isSuccess ? 'Order Executed' : (isInfo ? 'Market Notice' : 'Execution Notice');
+
         const el = document.createElement('div');
-        el.className = `p-4 rounded-2xl ${isSuccess ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300'} border flex items-center justify-between shadow-xs transition-all`;
+        el.className = `p-4 rounded-2xl ${bgClass} border flex items-center justify-between shadow-xs transition-all animate-fade-in`;
         el.innerHTML = `
             <div class="flex items-center gap-3">
-                <i class="fa-solid ${isSuccess ? 'fa-circle-check text-emerald-500' : 'fa-circle-exclamation text-rose-500'} text-lg"></i>
+                <i class="fa-solid ${iconClass} text-lg shrink-0"></i>
                 <div>
-                    <strong class="font-bold text-xs uppercase tracking-wider">${isSuccess ? 'Success' : 'Execution Notice'}</strong>
-                    <p class="text-xs ${isSuccess ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} mt-0.5">${msg}</p>
+                    <strong class="font-bold text-xs uppercase tracking-wider">${titleText}</strong>
+                    <p class="text-xs mt-0.5 font-medium">${msg}</p>
                 </div>
             </div>
-            <button type="button" onclick="this.parentElement.remove()" class="${isSuccess ? 'text-emerald-500' : 'text-rose-500'} hover:opacity-75">
+            <button type="button" onclick="this.parentElement.remove()" class="hover:opacity-75 ml-2">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         `;
-        c.prepend(el);
-        setTimeout(() => el.remove(), 7000);
+        c.innerHTML = '';
+        c.appendChild(el);
+        try { el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_) {}
+        setTimeout(() => { if (el.parentElement) el.remove(); }, 8500);
     }
 
     // Dynamic Price Formatting Helpers
@@ -1221,6 +1244,9 @@
                     if (limitHint) limitHint.textContent = formatPrice(newPrice, false);
                     const stopHint = document.getElementById('stopMarketHint');
                     if (stopHint) stopHint.textContent = formatPrice(newPrice, false);
+
+                    const exitPriceEl = document.getElementById('exitHeaderCurrentPrice');
+                    if (exitPriceEl) exitPriceEl.textContent = formatPrice5(newPrice);
 
                     recalculateAllSizeAndMargin();
                 }
@@ -1349,6 +1375,23 @@
     function setStopToMarket() {
         document.getElementById('orderTriggerPriceInput').value = formatPriceInput(basePrice);
         recalculateAllSizeAndMargin();
+    }
+
+    async function refreshProtectionPrices(e) {
+        if (e) e.preventDefault();
+        const icon = document.getElementById('btnRefreshProtectionIcon');
+        if (icon) icon.classList.add('fa-spin');
+        try {
+            await pollLiveTradeStatus(true);
+            const refP = getActiveReferencePrice();
+            const el = document.getElementById('exitHeaderCurrentPrice');
+            if (el) el.textContent = formatPrice5(refP);
+            showToast('info', `Protection price reference synced to ${formatPrice5(refP)}`);
+        } catch (err) {
+            console.error('Failed to sync protection price:', err);
+        } finally {
+            if (icon) setTimeout(() => icon.classList.remove('fa-spin'), 400);
+        }
     }
 
     async function toggleTradeWatchlist(sym, name, cls) {
@@ -1855,9 +1898,14 @@
         currentSide = side;
         document.getElementById('formOrderSide').value = side;
 
-        const qty = parseFloat((document.getElementById('orderQuantityInput').value || '').trim().replace(',', '.')) || 0;
+        recalculateAllSizeAndMargin();
+        let qty = parseFloat((document.getElementById('orderQuantityInput').value || '').trim().replace(',', '.')) || 0;
+        if (qty <= 0 && currentCalculatedUnits > 0) {
+            qty = currentCalculatedUnits;
+            document.getElementById('orderQuantityInput').value = qty > 1 ? qty.toFixed(4) : qty.toFixed(6);
+        }
         if (qty <= 0) {
-            showToast('error', 'Order quantity must be greater than 0. Please enter a valid trade size or adjust the slider.');
+            showToast('error', 'Order quantity must be greater than 0. Please select an order size (% Balance or Units).');
             return;
         }
 
@@ -1870,11 +1918,11 @@
             const rawTp = (document.getElementById('orderTakeProfitInput').value || '').trim().replace(',', '.');
             const tp = parseFloat(rawTp) || 0;
             if (side === 1 && tp > 0 && tp <= checkPrice) {
-                showToast('error', `For Buy (Long) orders, Take Profit (${formatPrice(tp)}) must be set strictly ABOVE the entry price (${formatPrice(checkPrice)}).`);
+                showToast('error', `For Buy (Long) orders, Take Profit (${formatPrice5(tp)}) must be set strictly ABOVE the entry price (${formatPrice5(checkPrice)}).`);
                 return;
             }
             if (side === 2 && tp > 0 && tp >= checkPrice) {
-                showToast('error', `For Sell (Short) orders, Take Profit (${formatPrice(tp)}) must be set strictly BELOW the entry price (${formatPrice(checkPrice)}).`);
+                showToast('error', `For Sell (Short) orders, Take Profit (${formatPrice5(tp)}) must be set strictly BELOW the entry price (${formatPrice5(checkPrice)}).`);
                 return;
             }
         }
@@ -1886,11 +1934,11 @@
             const rawSl = (document.getElementById('orderStopLossInput').value || '').trim().replace(',', '.');
             const sl = parseFloat(rawSl) || 0;
             if (side === 1 && sl > 0 && sl >= checkPrice) {
-                showToast('error', `For Buy (Long) orders, Stop Loss (${formatPrice(sl)}) must be set strictly BELOW the entry price (${formatPrice(checkPrice)}).`);
+                showToast('error', `For Buy (Long) orders, Stop Loss (${formatPrice5(sl)}) must be set strictly BELOW the entry price (${formatPrice5(checkPrice)}).`);
                 return;
             }
             if (side === 2 && sl > 0 && sl <= checkPrice) {
-                showToast('error', `For Sell (Short) orders, Stop Loss (${formatPrice(sl)}) must be set strictly ABOVE the entry price (${formatPrice(checkPrice)}).`);
+                showToast('error', `For Sell (Short) orders, Stop Loss (${formatPrice5(sl)}) must be set strictly ABOVE the entry price (${formatPrice5(checkPrice)}).`);
                 return;
             }
         }
@@ -2120,9 +2168,11 @@
     }
 
     // ── 8. Chart Engine (Official TradingView Pro Widget & Interactive Canvas) ──
-    function getTradingViewSymbol(sym, assetClass) {
+    function getTradingViewSymbol(sym, assetClass, feed = '') {
         const s = (sym || '').toUpperCase();
         if (assetClass === 1) { // Crypto
+            if (feed === 'mexc' || s === 'AGTUSDT') return 'MEXC:' + s;
+            if (feed === 'dexscreener') return s;
             if (s.endsWith('USDT')) return 'BINANCE:' + s;
             return 'BINANCE:' + s + 'USDT';
         } else if (assetClass === 2) { // Forex
@@ -2152,7 +2202,7 @@
         if (!container) return;
         container.innerHTML = '';
 
-        const tvSymbol = getTradingViewSymbol(symbol, selectedAssetClass);
+        const tvSymbol = getTradingViewSymbol(symbol, selectedAssetClass, feedSource);
 
         if (typeof TradingView !== 'undefined') {
             try {
@@ -2526,7 +2576,7 @@
 
     // Initial Startup
     document.addEventListener('DOMContentLoaded', () => {
-        recalculateAllSizeAndMargin();
+        setTradeSizeMode('percent');
         initTradingViewWidget();
     });
 </script>
