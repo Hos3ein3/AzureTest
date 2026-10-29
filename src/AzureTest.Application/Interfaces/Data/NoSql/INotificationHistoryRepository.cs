@@ -11,4 +11,6 @@ public interface INotificationHistoryRepository : IDocumentRepository<Notificati
     Task<IReadOnlyList<NotificationHistoryDocument>> GetByUserAsync(Guid userId, bool? unreadOnly = null, int limit = 50, CancellationToken ct = default);
     Task<long> GetUnreadCountAsync(Guid userId, CancellationToken ct = default);
     Task<long> DeleteReadOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default);
+    Task<long> DeleteByUserAndDateRangeAsync(Guid userId, DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default);
+    Task<bool> DeleteByIdForUserAsync(Guid id, Guid userId, CancellationToken ct = default);
 }

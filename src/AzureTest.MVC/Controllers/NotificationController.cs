@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Notifications;
 using AzureTest.Application.Notifications.Commands.MarkNotificationAsRead;
@@ -28,19 +29,22 @@ public class NotificationController : Controller
     private readonly IWebPushService _webPushService;
     private readonly IAppNotificationService _notificationService;
     private readonly ICurrentUser _currentUser;
+    private readonly INotificationHistoryRepository _notificationHistory;
 
     public NotificationController(
         INotificationCommandUnit commands,
         INotificationQueryUnit queries,
         IWebPushService webPushService,
         IAppNotificationService notificationService,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        INotificationHistoryRepository notificationHistory)
     {
         _commands = commands ?? throw new ArgumentNullException(nameof(commands));
         _queries = queries ?? throw new ArgumentNullException(nameof(queries));
         _webPushService = webPushService ?? throw new ArgumentNullException(nameof(webPushService));
         _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
         _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
+        _notificationHistory = notificationHistory ?? throw new ArgumentNullException(nameof(notificationHistory));
     }
 
     [HttpGet]
@@ -196,5 +200,60 @@ public class NotificationController : Controller
             cancellationToken);
 
         return Ok(new { success = true, message = "Test notification sent successfully via SignalR and WebPush." });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Delete Notification")]
+    [Description("Delete a single notification owned by current user.")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUser.Id;
+        if (userId == Guid.Empty)
+            return Unauthorized(new { success = false, error = "User is not authenticated." });
+
+        var success = await _notificationHistory.DeleteByIdForUserAsync(id, userId, cancellationToken);
+        
+        var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                     Request.Headers["Accept"].ToString().Contains("application/json");
+
+        if (isAjax)
+        {
+            return Ok(new { success });
+        }
+
+        if (success)
+            TempData["Success"] = "Notification deleted successfully.";
+        else
+            TempData["Error"] = "Notification could not be deleted.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Delete Notifications by Date Range")]
+    [Description("Delete notifications within a date range for current user.")]
+    public async Task<IActionResult> DeleteByDateRange(DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUser.Id;
+        if (userId == Guid.Empty)
+            return Unauthorized(new { success = false, error = "User is not authenticated." });
+
+        DateTime? fromUtc = fromDate.HasValue ? DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Utc) : null;
+        DateTime? toUtc = toDate.HasValue ? DateTime.SpecifyKind(toDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc) : null;
+
+        var deleted = await _notificationHistory.DeleteByUserAndDateRangeAsync(userId, fromUtc, toUtc, cancellationToken);
+
+        var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                     Request.Headers["Accept"].ToString().Contains("application/json");
+
+        if (isAjax)
+        {
+            return Ok(new { success = true, deletedCount = deleted });
+        }
+
+        TempData["Success"] = $"{deleted} notification(s) deleted within specified date range.";
+        return RedirectToAction(nameof(Index));
     }
 }

@@ -22,4 +22,6 @@ public interface IOutboxRepository
     Task<OutboxMessage?> GetByIdAsync(Guid id, CancellationToken ct = default);
     void Add(OutboxMessage message);
     void Update(OutboxMessage message);
+    Task<int> DeleteByDateRangeAsync(DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default);
+    Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
 }

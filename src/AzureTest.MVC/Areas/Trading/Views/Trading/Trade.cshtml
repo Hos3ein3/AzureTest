@@ -803,6 +803,9 @@
                     <span id="sellBtnLabel">Sell (Short Position)</span>
                 </button>
             </div>
+
+            <!-- Execution Notice & Feedback Alert Container (renders directly under Buy/Sell buttons) -->
+            <div id="executionNoticeContainer" class="space-y-3 mt-4"></div>
         </form>
     </div>
 
@@ -2682,7 +2685,7 @@
     function getTradingViewSymbol(sym, assetClass, feed = '') {
         const s = (sym || '').toUpperCase();
         if (assetClass === 1) { // Crypto
-            if (feed === 'mexc' || s === 'AGTUSDT') return 'MEXC:' + s;
+            if (feed === 'mexc' || s === 'AGTUSDT' || s === 'BLESSUSDT') return 'MEXC:' + s;
             if (feed === 'dexscreener') return s;
             if (s.endsWith('USDT')) return 'BINANCE:' + s;
             return 'BINANCE:' + s + 'USDT';

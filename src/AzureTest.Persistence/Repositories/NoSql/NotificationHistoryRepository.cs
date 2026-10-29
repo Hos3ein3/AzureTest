@@ -54,4 +54,33 @@ public class NotificationHistoryRepository : DocumentRepository<NotificationHist
         var result = await _collection.DeleteManyAsync(filter, ct);
         return result.DeletedCount;
     }
+
+    public async Task<long> DeleteByUserAndDateRangeAsync(Guid userId, DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default)
+    {
+        var filterBuilder = Builders<NotificationHistoryDocument>.Filter;
+        var filter = filterBuilder.Eq(x => x.UserId, userId);
+
+        if (fromUtc.HasValue)
+        {
+            filter &= filterBuilder.Gte(x => x.CreatedAt, fromUtc.Value);
+        }
+
+        if (toUtc.HasValue)
+        {
+            filter &= filterBuilder.Lte(x => x.CreatedAt, toUtc.Value);
+        }
+
+        var result = await _collection.DeleteManyAsync(filter, ct);
+        return result.DeletedCount;
+    }
+
+    public async Task<bool> DeleteByIdForUserAsync(Guid id, Guid userId, CancellationToken ct = default)
+    {
+        var filter = Builders<NotificationHistoryDocument>.Filter.And(
+            Builders<NotificationHistoryDocument>.Filter.Eq(x => x.Id, id),
+            Builders<NotificationHistoryDocument>.Filter.Eq(x => x.UserId, userId)
+        );
+        var result = await _collection.DeleteOneAsync(filter, ct);
+        return result.DeletedCount > 0;
+    }
 }

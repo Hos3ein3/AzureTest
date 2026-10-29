@@ -22,14 +22,21 @@
 <partial name="UiComponents/_PageHeader" model="headerModel" />
 
 <!-- Navigation Tabs -->
-<div class="flex items-center gap-2 mb-6 border-b border-slate-200/80 pb-3">
-    <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors">
-        <i class="fa-solid fa-paper-plane text-2xs"></i> Outbox Messages
-    </a>
-    <a asp-action="Inbox" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-brand-500 text-white shadow-2xs">
-        <i class="fa-solid fa-inbox text-2xs"></i> Inbox Messages
-        <span class="ml-1 px-2 py-0.5 rounded-full text-3xs font-extrabold bg-white/20 text-white">@Model.TotalCount</span>
-    </a>
+<div class="flex items-center justify-between gap-2 mb-6 border-b border-slate-200/80 pb-3 flex-wrap">
+    <div class="flex items-center gap-2">
+        <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors">
+            <i class="fa-solid fa-paper-plane text-2xs"></i> Outbox Messages
+        </a>
+        <a asp-action="Inbox" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-brand-500 text-white shadow-2xs">
+            <i class="fa-solid fa-inbox text-2xs"></i> Inbox Messages
+            <span class="ml-1 px-2 py-0.5 rounded-full text-3xs font-extrabold bg-white/20 text-white">@Model.TotalCount</span>
+        </a>
+    </div>
+    <div>
+        <button type="button" onclick="openDeleteInboxRangeModal()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-colors shadow-2xs">
+            <i class="fa-solid fa-trash-can text-3xs"></i> Delete by Date Range
+        </button>
+    </div>
 </div>
 
 <!-- Overview Metric Cards -->
@@ -161,7 +168,8 @@
                         <th scope="col" class="px-4 py-3.5">Handler Name</th>
                         <th scope="col" class="px-4 py-3.5">Received (UTC)</th>
                         <th scope="col" class="px-4 py-3.5">Processed (UTC)</th>
-                        <th scope="col" class="px-4 py-3.5 text-right">Status</th>
+                        <th scope="col" class="px-4 py-3.5">Status</th>
+                        <th scope="col" class="px-4 py-3.5 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -187,10 +195,18 @@
                             <td class="px-4 py-3.5 font-mono text-slate-600 whitespace-nowrap text-2xs">
                                 @msg.ProcessedOnUtc.ToString("yyyy-MM-dd HH:mm:ss")
                             </td>
-                            <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                            <td class="px-4 py-3.5 whitespace-nowrap">
                                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
                                     <i class="fa-solid fa-circle-check text-3xs"></i> Processed
                                 </span>
+                            </td>
+                            <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                <form asp-action="DeleteInbox" asp-route-id="@msg.Id" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this Inbox record?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Delete Inbox Record">
+                                        <i class="fa-solid fa-trash text-3xs"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     }
@@ -221,3 +237,107 @@
         }
     }
 </div>
+
+<!-- Delete Inbox by Date Range Modal -->
+<div id="deleteInboxRangeModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-rose-50/50">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-trash-can"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Delete Inbox Messages</h3>
+                    <p class="text-2xs text-slate-500">Delete deduplicated inbox records by date range</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeDeleteInboxRangeModal()" class="w-7 h-7 rounded-lg hover:bg-slate-200/60 text-slate-400 hover:text-slate-600 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form asp-action="DeleteInboxByDateRange" method="post" class="p-5 space-y-4" onsubmit="return confirm('Are you sure you want to permanently delete Inbox records in this date range?');">
+            @Html.AntiForgeryToken()
+
+            <!-- Date Presets -->
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-3xs">
+                    <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Quick Presets</span>
+                    <button type="button" onclick="setInboxToPresent()" class="text-brand-600 hover:text-brand-700 font-bold hover:underline">
+                        Set To: Present (Now)
+                    </button>
+                </div>
+                <div class="flex flex-wrap gap-1.5 text-3xs">
+                    <button type="button" onclick="setInboxDatePreset(0)" class="px-2 py-0.5 rounded-lg bg-slate-100 border border-slate-200 hover:border-brand-500 hover:bg-slate-200 font-semibold text-slate-700 transition-colors">Today (Present)</button>
+                    <button type="button" onclick="setInboxDatePreset(7)" class="px-2 py-0.5 rounded-lg bg-slate-100 border border-slate-200 hover:border-brand-500 hover:bg-slate-200 font-semibold text-slate-700 transition-colors">Last 7 Days</button>
+                    <button type="button" onclick="setInboxDatePreset(30)" class="px-2 py-0.5 rounded-lg bg-slate-100 border border-slate-200 hover:border-brand-500 hover:bg-slate-200 font-semibold text-slate-700 transition-colors">Last 30 Days</button>
+                    <button type="button" onclick="setInboxDateOlderThan(30)" class="px-2 py-0.5 rounded-lg bg-slate-100 border border-slate-200 hover:border-brand-500 hover:bg-slate-200 font-semibold text-slate-700 transition-colors">Older than 30d</button>
+                    <button type="button" onclick="setInboxAllToPresent()" class="px-2 py-0.5 rounded-lg bg-slate-100 border border-slate-200 hover:border-brand-500 hover:bg-slate-200 font-semibold text-slate-700 transition-colors">All Time to Present</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 text-2xs">
+                <div>
+                    <label class="block font-semibold text-slate-500 mb-1">From Date (UTC)</label>
+                    <input type="date" id="inboxFromDate" name="fromDate" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-rose-500" />
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block font-semibold text-slate-500">To Date (UTC)</label>
+                        <button type="button" onclick="setInboxToPresent()" class="text-[10px] text-brand-600 hover:text-brand-700 font-bold hover:underline">
+                            Present
+                        </button>
+                    </div>
+                    <input type="date" id="inboxToDate" name="toDate" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-rose-500" />
+                </div>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeDeleteInboxRangeModal()" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition-colors shadow-2xs">
+                    Delete in Range
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openDeleteInboxRangeModal() {
+        document.getElementById('deleteInboxRangeModal')?.classList.remove('hidden');
+    }
+
+    function closeDeleteInboxRangeModal() {
+        document.getElementById('deleteInboxRangeModal')?.classList.add('hidden');
+    }
+
+    function setInboxDatePreset(days) {
+        const to = new Date();
+        const from = new Date();
+        from.setDate(to.getDate() - days);
+        document.getElementById('inboxFromDate').value = from.toISOString().split('T')[0];
+        document.getElementById('inboxToDate').value = to.toISOString().split('T')[0];
+    }
+
+    function setInboxDateOlderThan(days) {
+        const to = new Date();
+        to.setDate(to.getDate() - days);
+        const from = new Date('2020-01-01');
+        document.getElementById('inboxFromDate').value = from.toISOString().split('T')[0];
+        document.getElementById('inboxToDate').value = to.toISOString().split('T')[0];
+    }
+
+    function setInboxToPresent() {
+        const to = new Date();
+        document.getElementById('inboxToDate').value = to.toISOString().split('T')[0];
+    }
+
+    function setInboxAllToPresent() {
+        const to = new Date();
+        const from = new Date('2020-01-01');
+        document.getElementById('inboxFromDate').value = from.toISOString().split('T')[0];
+        document.getElementById('inboxToDate').value = to.toISOString().split('T')[0];
+    }
+</script>

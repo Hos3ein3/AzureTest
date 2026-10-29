@@ -170,4 +170,62 @@ public class OutboxAdminController : Controller
         TempData["Success"] = $"Outbox message {id} reset for background re-dispatch.";
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpPost("Delete")]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Delete Outbox Message")]
+    [Description("Delete a specific transactional Outbox message.")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var deleted = await _uow.OutboxMessages.DeleteAsync(id, cancellationToken);
+        if (deleted)
+            TempData["Success"] = "Outbox message deleted successfully.";
+        else
+            TempData["Error"] = "Outbox message could not be found or deleted.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost("DeleteByDateRange")]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Delete Outbox Messages by Date Range")]
+    [Description("Delete transactional Outbox messages within a specified date range.")]
+    public async Task<IActionResult> DeleteByDateRange(DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken)
+    {
+        DateTime? fromUtc = fromDate.HasValue ? DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Utc) : null;
+        DateTime? toUtc = toDate.HasValue ? DateTime.SpecifyKind(toDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc) : null;
+
+        var count = await _uow.OutboxMessages.DeleteByDateRangeAsync(fromUtc, toUtc, cancellationToken);
+        TempData["Success"] = $"{count} Outbox message(s) deleted within the specified timeframe.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost("Inbox/Delete")]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Delete Inbox Message")]
+    [Description("Delete a specific deduplicated Inbox message.")]
+    public async Task<IActionResult> DeleteInbox(Guid id, CancellationToken cancellationToken)
+    {
+        var deleted = await _uow.InboxMessages.DeleteAsync(id, cancellationToken);
+        if (deleted)
+            TempData["Success"] = "Inbox message deleted successfully.";
+        else
+            TempData["Error"] = "Inbox message could not be found or deleted.";
+
+        return RedirectToAction(nameof(Inbox));
+    }
+
+    [HttpPost("Inbox/DeleteByDateRange")]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Delete Inbox Messages by Date Range")]
+    [Description("Delete deduplicated Inbox messages within a specified date range.")]
+    public async Task<IActionResult> DeleteInboxByDateRange(DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken)
+    {
+        DateTime? fromUtc = fromDate.HasValue ? DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Utc) : null;
+        DateTime? toUtc = toDate.HasValue ? DateTime.SpecifyKind(toDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc) : null;
+
+        var count = await _uow.InboxMessages.DeleteByDateRangeAsync(fromUtc, toUtc, cancellationToken);
+        TempData["Success"] = $"{count} Inbox message(s) deleted within the specified timeframe.";
+        return RedirectToAction(nameof(Inbox));
+    }
 }

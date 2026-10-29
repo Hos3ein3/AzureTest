@@ -501,8 +501,14 @@
 
                                 <!-- 10. Realized PnL & ROI -->
                                 <td class="py-3 px-3">
-                                    <div class="font-black text-sm @roiColor">
-                                        @(t.RealizedPnl >= 0 ? "+" : "")$@t.RealizedPnl.ToString("#,##0.00")
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="font-black text-sm @roiColor">
+                                            @(t.RealizedPnl >= 0 ? "+" : "")$@t.RealizedPnl.ToString("#,##0.00")
+                                        </div>
+                                        <button type="button" onclick="showPnlCalculationModal('@t.Id')" title="View Calculation Breakdown &amp; Explanation"
+                                                class="w-5 h-5 rounded-full bg-slate-100 hover:bg-brand-50 text-slate-400 hover:text-brand-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:hover:text-brand-400 transition-colors inline-flex items-center justify-center shrink-0">
+                                            <i class="fa-solid fa-circle-exclamation text-xs"></i>
+                                        </button>
                                     </div>
                                     <div class="text-3xs font-black @roiColor">
                                         @(t.RoiPercentage >= 0 ? "+" : "")@t.RoiPercentage.ToString("0.00")% ROI
@@ -523,7 +529,7 @@
 
                                 <!-- 12. Receipt Action -->
                                 <td class="py-3 px-3 sm:px-4 text-right">
-                                    <button type="button" onclick="showTradeReceipt(@System.Text.Json.JsonSerializer.Serialize(t))"
+                                    <button type="button" onclick="showTradeReceiptById('@t.Id')"
                                             class="px-2.5 py-1 text-3xs font-black rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 transition-colors inline-flex items-center gap-1 shadow-2xs">
                                         <i class="fa-solid fa-receipt"></i>
                                         <span>Receipt</span>
@@ -660,13 +666,196 @@
     </div>
 </div>
 
+<!-- Realized PnL Calculation & Math Breakdown Modal -->
+<div id="tradeCalculationModal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <!-- Modal Header -->
+        <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center text-lg font-black">
+                    <i class="fa-solid fa-calculator"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white" id="calcModalTitle">Realized PnL Breakdown</h3>
+                    <p class="text-3xs text-slate-400 font-mono" id="calcModalTicketId">Ticket ID: --</p>
+                </div>
+            </div>
+            <button type="button" onclick="closePnlCalculationModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+            <!-- PnL Hero Card -->
+            <div id="calcModalHeroCard" class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <div class="text-3xs uppercase font-black tracking-wider text-slate-400">Net Realized Profit / Loss</div>
+                    <div class="text-2xl font-black mt-0.5" id="calcModalPnlDisplay">$0.00</div>
+                </div>
+                <div class="text-right">
+                    <span id="calcModalBadge" class="px-2.5 py-1 rounded-lg text-3xs font-black uppercase bg-emerald-500 text-white">WIN</span>
+                    <div class="text-3xs font-black text-slate-500 dark:text-slate-400 mt-1" id="calcModalRoiDisplay">0.00% ROI</div>
+                </div>
+            </div>
+
+            <!-- Mathematical Formula Box -->
+            <div class="p-3.5 rounded-2xl bg-brand-50/50 dark:bg-brand-950/30 border border-brand-200/60 dark:border-brand-800/40 space-y-1.5">
+                <div class="flex items-center gap-1.5 text-brand-600 dark:text-brand-400 text-3xs font-black uppercase tracking-wider">
+                    <i class="fa-solid fa-square-root-variable"></i>
+                    <span id="calcFormulaName">Execution Formula</span>
+                </div>
+                <div class="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 break-all" id="calcFormulaMath">
+                    --
+                </div>
+            </div>
+
+            <!-- Trade Audit Matrix -->
+            <div class="p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800/60 space-y-2.5 text-xs">
+                <div class="text-3xs font-black uppercase tracking-wider text-slate-400 mb-2">Trade Calculation Parameters</div>
+                
+                <div class="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-800">
+                    <span class="text-slate-500">Entry Price</span>
+                    <span class="font-mono font-bold text-slate-800 dark:text-slate-200" id="calcEntryPrice">--</span>
+                </div>
+                <div class="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-800">
+                    <span class="text-slate-500">Exit / Close Price</span>
+                    <span class="font-mono font-bold text-slate-800 dark:text-slate-200" id="calcExitPrice">--</span>
+                </div>
+                <div class="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-800">
+                    <span class="text-slate-500">Price Move per Unit</span>
+                    <span class="font-mono font-black" id="calcPriceDiff">--</span>
+                </div>
+                <div class="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-800">
+                    <span class="text-slate-500">Executed Units (Quantity)</span>
+                    <span class="font-mono font-bold text-slate-800 dark:text-slate-200" id="calcQuantity">--</span>
+                </div>
+                <div class="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-800">
+                    <span class="text-slate-500">Leverage</span>
+                    <span class="font-mono font-bold text-slate-800 dark:text-slate-200" id="calcLeverage">--</span>
+                </div>
+                <div class="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-800">
+                    <span class="text-slate-500">Total Position Notional</span>
+                    <span class="font-mono font-bold text-slate-800 dark:text-slate-200" id="calcNotional">--</span>
+                </div>
+                <div class="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-800">
+                    <span class="text-slate-500">Initial Margin Allocated</span>
+                    <span class="font-mono font-bold text-slate-800 dark:text-slate-200" id="calcInitialMargin">--</span>
+                </div>
+                <div class="flex justify-between items-center py-1 text-emerald-600 dark:text-emerald-400 font-bold">
+                    <span>Collateral Returned to Balance</span>
+                    <span class="font-mono font-black" id="calcReturnedCollateral">--</span>
+                </div>
+            </div>
+
+            <!-- Clear Explanation Box -->
+            <div class="p-3.5 rounded-2xl bg-slate-100/70 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-3xs text-slate-600 dark:text-slate-300 leading-relaxed" id="calcExplanationText">
+                --
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-center justify-between">
+            <span class="text-3xs text-slate-400">AzureTest Trade Calculation Engine</span>
+            <button type="button" onclick="closePnlCalculationModal()" class="px-4 py-2 text-xs font-black rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 transition-colors">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
+    const allTradeHistoryItems = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(trades));
+
     function quickFilterTable() {
         const val = (document.getElementById('tableQuickSearch').value || '').toLowerCase().trim();
         const rows = document.querySelectorAll('#historyDataTable tbody tr.trade-row');
         rows.forEach(r => {
             const sym = r.getAttribute('data-symbol') || '';
+            const name = r.getAttribute('data-name') || '';
+            const side = r.getAttribute('data-side') || '';
+            const outcome = r.getAttribute('data-outcome') || '';
+            const txt = (r.innerText || '').toLowerCase();
+            if (!val || sym.includes(val) || name.includes(val) || side.includes(val) || outcome.includes(val) || txt.includes(val)) {
+                r.style.display = '';
+            } else {
+                r.style.display = 'none';
+            }
+        });
+    }
+
+    function showTradeReceiptById(id) {
+        const t = allTradeHistoryItems.find(x => String(x.Id || x.id) === String(id));
+        if (!t) return;
+        showTradeReceipt(t);
+    }
+
+    function showPnlCalculationModal(id) {
+        const t = allTradeHistoryItems.find(x => String(x.Id || x.id) === String(id));
+        if (!t) return;
+        const isBuy = t.Side === 1 || t.Side === 'Buy';
+        const entryP = Number(t.EntryPrice || 0);
+        const closeP = Number(t.ClosePrice || t.CurrentPrice || 0);
+        const qty = Number(t.Quantity || 0);
+        const lev = Number(t.Leverage || 1);
+        const initMargin = Number(t.InitialMargin || 0);
+        const pnl = Number(t.RealizedPnl || 0);
+        const roi = Number(t.RoiPercentage || 0);
+        const notional = qty * entryP;
+        const isWin = pnl >= 0;
+        const isLiquidated = t.Status === 3 || t.Status === 'Liquidated' || t.OutcomeBadge === 'LIQUIDATED';
+
+        const priceDiff = isBuy ? (closeP - entryP) : (entryP - closeP);
+        const returnedCollateral = Math.max(0, initMargin + pnl);
+
+        document.getElementById('calcModalTitle').innerText = `${t.Symbol} (${t.AssetName || t.Symbol})`;
+        document.getElementById('calcModalTicketId').innerText = `Ticket #${t.Id} • ${isBuy ? 'Long (Buy)' : 'Short (Sell)'} • ${lev}x Leverage`;
+        
+        // Result hero banner
+        const pnlEl = document.getElementById('calcModalPnlDisplay');
+        pnlEl.innerText = `${pnl >= 0 ? '+' : ''}$${pnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+        pnlEl.className = `text-2xl font-black ${isWin ? 'text-emerald-500' : 'text-rose-500'}`;
+
+        const roiEl = document.getElementById('calcModalRoiDisplay');
+        roiEl.innerText = `${roi >= 0 ? '+' : ''}${roi.toFixed(2)}% ROI`;
+
+        const badgeEl = document.getElementById('calcModalBadge');
+        badgeEl.innerText = t.OutcomeBadge || (isWin ? 'WIN' : 'LOSS');
+        badgeEl.className = `px-2.5 py-1 rounded-lg text-3xs font-black uppercase ${isWin ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`;
+
+        // Formula elements
+        document.getElementById('calcFormulaName').innerText = isBuy ? 'Long Formula: (Exit Price - Entry Price) × Quantity' : 'Short Formula: (Entry Price - Exit Price) × Quantity';
+        document.getElementById('calcFormulaMath').innerText = isBuy 
+            ? `($${closeP.toFixed(4)} - $${entryP.toFixed(4)}) × ${qty.toFixed(6)} Units = ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(4)}`
+            : `($${entryP.toFixed(4)} - $${closeP.toFixed(4)}) × ${qty.toFixed(6)} Units = ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(4)}`;
+
+        // Inputs breakdown
+        document.getElementById('calcEntryPrice').innerText = '$' + entryP.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+        document.getElementById('calcExitPrice').innerText = '$' + closeP.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+        document.getElementById('calcPriceDiff').innerText = `${priceDiff >= 0 ? '+' : ''}$${priceDiff.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })} per unit`;
+        document.getElementById('calcQuantity').innerText = qty.toLocaleString('en-US', { maximumFractionDigits: 6 }) + ' Units';
+        document.getElementById('calcLeverage').innerText = `${lev}x`;
+        document.getElementById('calcNotional').innerText = '$' + notional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('calcInitialMargin').innerText = '$' + initMargin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('calcReturnedCollateral').innerText = '$' + returnedCollateral.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        // Explanation text
+        const explEl = document.getElementById('calcExplanationText');
+        if (isLiquidated) {
+            explEl.innerHTML = `<span class="text-rose-600 font-bold">Liquidation:</span> Price touched the liquidation threshold. The entire position initial margin of $${initMargin.toFixed(2)} was absorbed by the liquidation mechanism.`;
+        } else if (pnl < 0) {
+            explEl.innerHTML = `<strong>Why didn't you lose all margin?</strong> Because you closed before liquidation! Your initial margin ($${initMargin.toFixed(2)}) was collateral. Only the realized loss (-$${Math.abs(pnl).toFixed(2)}) was deducted. The remaining <span class="text-emerald-600 font-bold">$${returnedCollateral.toFixed(2)}</span> of collateral was unlocked and returned to your cash balance.`;
+        } else {
+            explEl.innerHTML = `<strong>Profitable Trade:</strong> Your full initial margin of $${initMargin.toFixed(2)} plus your profit of <span class="text-emerald-600 font-bold">+$${pnl.toFixed(2)}</span> was credited back to your account cash balance ($${returnedCollateral.toFixed(2)} total returned).`;
+        }
+
+        document.getElementById('tradeCalculationModal').classList.remove('hidden');
+    }
+
+    function closePnlCalculationModal() {
+        document.getElementById('tradeCalculationModal').classList.add('hidden');
+    }
             const name = r.getAttribute('data-name') || '';
             const side = r.getAttribute('data-side') || '';
             const outcome = r.getAttribute('data-outcome') || '';

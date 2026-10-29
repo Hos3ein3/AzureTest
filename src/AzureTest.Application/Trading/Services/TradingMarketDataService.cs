@@ -221,6 +221,42 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
         }
     }
 
+    private static void UpdateLiveCacheFromMexcElement(JsonElement root, string sym)
+    {
+        if (root.TryGetProperty("lastPrice", out var lpProp) &&
+            decimal.TryParse(lpProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var price) &&
+            price > 0)
+        {
+            decimal change = root.TryGetProperty("priceChange", out var cProp) && decimal.TryParse(cProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var cVal) ? cVal : 0m;
+            decimal pct = root.TryGetProperty("priceChangePercent", out var pProp) && decimal.TryParse(pProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pVal) ? pVal * 100m : 0m;
+            decimal high = root.TryGetProperty("highPrice", out var hProp) && decimal.TryParse(hProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var hVal) ? hVal : price * 1.05m;
+            decimal low = root.TryGetProperty("lowPrice", out var lProp) && decimal.TryParse(lProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var lVal) ? lVal : price * 0.95m;
+            decimal vol = root.TryGetProperty("volume", out var vProp) && decimal.TryParse(vProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var vVal) ? vVal : 100000m;
+
+            var assetBase = sym.EndsWith("USDT") ? sym.Substring(0, sym.Length - 4) : sym;
+            DynamicCatalog[sym] = new TradingCatalogItem(sym, $"{assetBase} / Tether USD", AssetClass.Crypto, price, pct, high, low, vol, IsSimulated: false, FeedSource: "mexc");
+            LiveCache[sym] = new LiveQuoteState(price, change, pct, high, low, vol, IsSimulated: false);
+        }
+    }
+
+    private async Task RefreshMexcSymbolAsync(string sym, CancellationToken ct = default)
+    {
+        try
+        {
+            var res = await _http.GetAsync($"https://api.mexc.com/api/v3/ticker/24hr?symbol={sym}", ct);
+            if (res.IsSuccessStatusCode)
+            {
+                var json = await res.Content.ReadAsStringAsync(ct);
+                using var doc = JsonDocument.Parse(json);
+                UpdateLiveCacheFromMexcElement(doc.RootElement, sym);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed refreshing MEXC ticker for {Symbol}", sym);
+        }
+    }
+
     public async Task RefreshSymbolsDataAsync(IEnumerable<string> symbols, CancellationToken ct = default)
     {
         var symbolList = (symbols ?? Enumerable.Empty<string>())
@@ -253,56 +289,90 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
 
         if (cryptoSymbols.Count > 0)
         {
-            tasks.Add(Task.Run(async () =>
+            var mexcSymbols = new List<string>();
+            var binanceSymbols = new List<string>();
+
+            foreach (var sym in cryptoSymbols)
             {
-                try
+                if ((DynamicCatalog.TryGetValue(sym, out var catItem) && catItem.FeedSource == "mexc") ||
+                    sym.Equals("BLESSUSDT", StringComparison.OrdinalIgnoreCase) ||
+                    sym.Equals("AGTUSDT", StringComparison.OrdinalIgnoreCase))
                 {
-                    string url;
-                    if (cryptoSymbols.Count == 1)
-                    {
-                        url = $"https://api.binance.com/api/v3/ticker/24hr?symbol={cryptoSymbols[0]}";
-                    }
-                    else
-                    {
-                        var symbolsJson = JsonSerializer.Serialize(cryptoSymbols);
-                        url = $"https://api.binance.com/api/v3/ticker/24hr?symbols={Uri.EscapeDataString(symbolsJson)}";
-                    }
+                    mexcSymbols.Add(sym);
+                }
+                else
+                {
+                    binanceSymbols.Add(sym);
+                }
+            }
 
-                    var res = await SendWithRetryAsync(
-                        _http,
-                        () => new HttpRequestMessage(HttpMethod.Get, url),
-                        _logger,
-                        maxRetries: 3,
-                        ct: ct);
+            if (mexcSymbols.Count > 0)
+            {
+                tasks.AddRange(mexcSymbols.Select(m => RefreshMexcSymbolAsync(m, ct)));
+            }
 
-                    if (res != null && res.IsSuccessStatusCode)
+            if (binanceSymbols.Count > 0)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    try
                     {
-                        var json = await res.Content.ReadAsStringAsync(ct);
-                        res.Dispose();
-                        using var doc = JsonDocument.Parse(json);
-
-                        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                        string url;
+                        if (binanceSymbols.Count == 1)
                         {
-                            foreach (var el in doc.RootElement.EnumerateArray())
+                            url = $"https://api.binance.com/api/v3/ticker/24hr?symbol={binanceSymbols[0]}";
+                        }
+                        else
+                        {
+                            var symbolsJson = JsonSerializer.Serialize(binanceSymbols);
+                            url = $"https://api.binance.com/api/v3/ticker/24hr?symbols={Uri.EscapeDataString(symbolsJson)}";
+                        }
+
+                        var res = await SendWithRetryAsync(
+                            _http,
+                            () => new HttpRequestMessage(HttpMethod.Get, url),
+                            _logger,
+                            maxRetries: 2,
+                            ct: ct);
+
+                        if (res != null && res.IsSuccessStatusCode)
+                        {
+                            var json = await res.Content.ReadAsStringAsync(ct);
+                            res.Dispose();
+                            using var doc = JsonDocument.Parse(json);
+
+                            if (doc.RootElement.ValueKind == JsonValueKind.Array)
                             {
-                                UpdateLiveCacheFromBinanceElement(el);
+                                foreach (var el in doc.RootElement.EnumerateArray())
+                                {
+                                    UpdateLiveCacheFromBinanceElement(el);
+                                }
+                            }
+                            else if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                            {
+                                UpdateLiveCacheFromBinanceElement(doc.RootElement);
                             }
                         }
-                        else if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                        else
                         {
-                            UpdateLiveCacheFromBinanceElement(doc.RootElement);
+                            res?.Dispose();
+                            // Fallback to MEXC for individual symbols if Binance batch or single ticker failed
+                            foreach (var s in binanceSymbols)
+                            {
+                                await RefreshMexcSymbolAsync(s, ct);
+                            }
                         }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        res?.Dispose();
+                        _logger.LogWarning(ex, "TradingMarketDataService: Resilient fetch failed for {Count} active crypto symbols. Attempting MEXC fallback.", binanceSymbols.Count);
+                        foreach (var s in binanceSymbols)
+                        {
+                            await RefreshMexcSymbolAsync(s, ct);
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "TradingMarketDataService: Resilient fetch failed for {Count} active crypto symbols.", cryptoSymbols.Count);
-                }
-            }, ct));
+                }, ct));
+            }
         }
 
         if (forexSymbols.Count > 0)
@@ -356,7 +426,14 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
             }
 
             var binanceCryptoItems = Catalog.Where(c => c.AssetClass == AssetClass.Crypto)
-                .Concat(DynamicCatalog.Values.Where(d => d.AssetClass == AssetClass.Crypto && !d.IsSimulated && d.FeedSource == "binance"));
+                .Concat(DynamicCatalog.Values.Where(d => d.AssetClass == AssetClass.Crypto && !d.IsSimulated && (d.FeedSource == "binance" || string.IsNullOrEmpty(d.FeedSource))));
+
+            var mexcCryptoItems = DynamicCatalog.Values.Where(d => d.AssetClass == AssetClass.Crypto && !d.IsSimulated && d.FeedSource == "mexc")
+                .Select(d => d.Symbol)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var mexcTasks = mexcCryptoItems.Select(m => RefreshMexcSymbolAsync(m, ct));
 
             // 1. Fetch Real-World Crypto prices via Binance Public API in a single high-efficiency batch call with retry resilience
             var cryptoBatchTask = Task.Run(async () =>
@@ -474,7 +551,7 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                 }
             }
 
-            await Task.WhenAll(new[] { cryptoBatchTask }.Concat(forexTasks));
+            await Task.WhenAll(new[] { cryptoBatchTask }.Concat(forexTasks).Concat(mexcTasks));
             _lastRefreshUtc = DateTime.UtcNow;
         }
         finally
@@ -492,24 +569,28 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
     public async Task<TradingQuoteDto?> GetQuoteAsync(string symbol, HashSet<string>? watchlistedSymbols = null, CancellationToken ct = default)
     {
         watchlistedSymbols ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var cleanSym = (symbol ?? string.Empty).Trim().ToUpperInvariant();
 
-        if (DateTime.UtcNow - _lastRefreshUtc > CacheExpiry)
+        if (DynamicCatalog.TryGetValue(cleanSym, out var dynQuote) && dynQuote.FeedSource == "mexc")
+        {
+            await RefreshMexcSymbolAsync(cleanSym, ct);
+        }
+        else if (DateTime.UtcNow - _lastRefreshUtc > CacheExpiry)
         {
             await RefreshRealWorldDataAsync(ct);
         }
 
-        var quote = GetQuote(symbol, watchlistedSymbols);
+        var quote = GetQuote(cleanSym, watchlistedSymbols);
         if (quote != null) return quote;
 
-        // Dynamic lookup via Binance and DexScreener if symbol is not yet in Catalog
-        var results = await SearchAssetsAsync(symbol, watchlistedSymbols, ct);
-        var match = results.FirstOrDefault(r => r.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase))
+        // Dynamic lookup via Binance, MEXC, and DexScreener if symbol is not yet in Catalog
+        var results = await SearchAssetsAsync(cleanSym, watchlistedSymbols, ct);
+        var match = results.FirstOrDefault(r => r.Symbol.Equals(cleanSym, StringComparison.OrdinalIgnoreCase))
                     ?? results.FirstOrDefault();
 
         if (match != null) return match;
 
         // Resilient fallback for any requested asset name
-        var cleanSym = symbol.Trim().ToUpperInvariant();
         var price = 10.00m;
         var item = new TradingCatalogItem(cleanSym, $"{cleanSym} Paper Asset", AssetClass.Crypto, price, 0m, price * 1.02m, price * 0.98m, 100000m, IsSimulated: true, FeedSource: "simulated");
         DynamicCatalog[cleanSym] = item;
@@ -529,35 +610,77 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
         // Direct resilient Binance ticker fetch if crypto symbol
         if (!cleanSym.Contains('/') && !Catalog.Any(c => c.Symbol.Equals(cleanSym, StringComparison.OrdinalIgnoreCase) && c.IsSimulated))
         {
+            var isMexc = (DynamicCatalog.TryGetValue(cleanSym, out var dc) && dc.FeedSource == "mexc") ||
+                         cleanSym.Equals("BLESSUSDT", StringComparison.OrdinalIgnoreCase) ||
+                         cleanSym.Equals("AGTUSDT", StringComparison.OrdinalIgnoreCase);
+
+            if (!isMexc)
+            {
+                try
+                {
+                    var res = await SendWithRetryAsync(
+                        _http,
+                        () => new HttpRequestMessage(HttpMethod.Get, $"https://api.binance.com/api/v3/ticker/price?symbol={cleanSym}"),
+                        _logger,
+                        maxRetries: 2,
+                        ct: ct);
+
+                    if (res != null && res.IsSuccessStatusCode)
+                    {
+                        var json = await res.Content.ReadAsStringAsync(ct);
+                        res.Dispose();
+                        using var doc = JsonDocument.Parse(json);
+                        if (doc.RootElement.TryGetProperty("price", out var pProp) &&
+                            decimal.TryParse(pProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var p) && p > 0)
+                        {
+                            if (LiveCache.TryGetValue(cleanSym, out var existing))
+                            {
+                                LiveCache[cleanSym] = existing with { Price = p };
+                            }
+                            else
+                            {
+                                LiveCache[cleanSym] = new LiveQuoteState(p, 0m, 0m, p * 1.05m, p * 0.95m, 100000m, IsSimulated: false);
+                            }
+                            return p;
+                        }
+                    }
+                    else
+                    {
+                        res?.Dispose();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "GetCurrentPriceAsync: Resilient fetch failed for {Symbol}.", cleanSym);
+                }
+            }
+
+            // Fallback / Direct MEXC price check
             try
             {
-                var res = await SendWithRetryAsync(
-                    _http,
-                    () => new HttpRequestMessage(HttpMethod.Get, $"https://api.binance.com/api/v3/ticker/price?symbol={cleanSym}"),
-                    _logger,
-                    maxRetries: 3,
-                    ct: ct);
-
-                if (res != null && res.IsSuccessStatusCode)
+                var mexcRes = await _http.GetAsync($"https://api.mexc.com/api/v3/ticker/price?symbol={cleanSym}", ct);
+                if (mexcRes.IsSuccessStatusCode)
                 {
-                    var json = await res.Content.ReadAsStringAsync(ct);
-                    res.Dispose();
+                    var json = await mexcRes.Content.ReadAsStringAsync(ct);
                     using var doc = JsonDocument.Parse(json);
                     if (doc.RootElement.TryGetProperty("price", out var pProp) &&
                         decimal.TryParse(pProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var p) && p > 0)
                     {
-                        LiveCache[cleanSym] = new LiveQuoteState(p, 0m, 0m, p * 1.05m, p * 0.95m, 100000m, IsSimulated: false);
+                        if (LiveCache.TryGetValue(cleanSym, out var existing))
+                        {
+                            LiveCache[cleanSym] = existing with { Price = p };
+                        }
+                        else
+                        {
+                            LiveCache[cleanSym] = new LiveQuoteState(p, 0m, 0m, p * 1.05m, p * 0.95m, 100000m, IsSimulated: false);
+                        }
                         return p;
                     }
-                }
-                else
-                {
-                    res?.Dispose();
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "GetCurrentPriceAsync: Resilient fetch failed for {Symbol}.", cleanSym);
+                _logger.LogDebug(ex, "GetCurrentPriceAsync: MEXC check failed for {Symbol}.", cleanSym);
             }
         }
 

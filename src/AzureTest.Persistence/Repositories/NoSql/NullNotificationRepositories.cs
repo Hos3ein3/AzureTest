@@ -17,6 +17,12 @@ public class NullNotificationHistoryRepository : NullDocumentRepository<Notifica
 
     public Task<long> DeleteReadOlderThanAsync(DateTime cutoffUtc, CancellationToken ct = default) =>
         Task.FromResult(0L);
+
+    public Task<long> DeleteByUserAndDateRangeAsync(Guid userId, DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default) =>
+        Task.FromResult(0L);
+
+    public Task<bool> DeleteByIdForUserAsync(Guid id, Guid userId, CancellationToken ct = default) =>
+        Task.FromResult(true);
 }
 
 public class NullPushSubscriptionRepository : NullDocumentRepository<PushSubscriptionDocument>, IPushSubscriptionRepository

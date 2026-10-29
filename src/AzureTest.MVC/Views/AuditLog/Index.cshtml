@@ -1,6 +1,7 @@
 @model AzureTest.MVC.ViewModels.AuditLogs.AuditLogListViewModel
 @{
     ViewData["Title"] = "System Audit Trail";
+    var isAdmin = Model.IsAdmin || User.IsInRole("Admin");
 
     var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
     {
@@ -14,7 +15,7 @@
         Title = "Security Audit Trail",
         Subtitle = "Immutable security logs tracking command mutations and query executions.",
         Icon = "fa-solid fa-clock-rotate-left",
-        Badge = Model.IsAdmin ? "Global Scope" : "Tenant Scope",
+        Badge = isAdmin ? "Global Scope" : "Tenant Scope",
         Breadcrumbs = breadcrumbs
     };
 }
@@ -40,7 +41,7 @@
 <!-- Status Scope Bar -->
 <div class="flex flex-wrap items-center justify-between gap-3 mb-6 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
     <div class="flex flex-wrap items-center gap-2">
-        @if (Model.IsAdmin)
+        @if (isAdmin)
         {
             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-2xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
                 <i class="fa-solid fa-shield-halved text-indigo-600"></i> Admin Global Scope
@@ -62,10 +63,10 @@
     </div>
 
     <div class="flex items-center gap-3">
-        @if (Model.IsAdmin)
+        @if (isAdmin)
         {
-            <button type="button" onclick="openPurgeAuditModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-2xs font-bold transition-colors">
-                <i class="fa-solid fa-trash-can text-3xs"></i> Manage / Purge Logs
+            <button type="button" onclick="openPurgeAuditModal()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs transition-colors">
+                <i class="fa-solid fa-trash-can text-3xs"></i> Delete Logs (From - To)
             </button>
         }
         <div class="text-2xs text-slate-400 font-medium font-mono">
@@ -228,7 +229,7 @@
                                     <span class="text-slate-300">-</span>
                                 }
                             </td>
-                            @if (Model.IsAdmin)
+                            @if (isAdmin)
                             {
                                 <td class="px-4 py-3.5 text-right whitespace-nowrap">
                                     <form asp-action="Delete" asp-route-id="@log.Id" method="post" class="inline" onsubmit="return confirm('Delete this audit log record?');">
@@ -266,7 +267,7 @@
     }
 </div>
 
-@if (Model.IsAdmin)
+@if (isAdmin)
 {
     <!-- Purge / Batch Delete Modal -->
     <div id="purgeAuditModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
@@ -277,8 +278,8 @@
                         <i class="fa-solid fa-trash-can"></i>
                     </div>
                     <div>
-                        <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Purge Audit Logs</h3>
-                        <p class="text-2xs text-slate-500">Delete specific audit records, by user, by timeframe, or purge all</p>
+                        <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Delete / Purge Audit Logs</h3>
+                        <p class="text-2xs text-slate-500">Delete audit records by date range, by user, or purge all</p>
                     </div>
                 </div>
                 <button type="button" onclick="closePurgeAuditModal()" class="w-7 h-7 rounded-lg hover:bg-slate-200/60 text-slate-400 hover:text-slate-600 flex items-center justify-center text-xs">
@@ -288,24 +289,35 @@
 
             <div class="p-6 space-y-6">
                 <!-- Option 1: Delete by Date Range -->
-                <form asp-action="DeleteByDateRange" method="post" class="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3" onsubmit="return confirm('Delete all audit logs within this timeframe?');">
+                <form asp-action="DeleteByDateRange" method="post" class="p-4 rounded-2xl border border-rose-200/80 bg-rose-50/30 space-y-3" onsubmit="return confirm('Delete all audit logs within this timeframe?');">
                     @Html.AntiForgeryToken()
-                    <div class="flex items-center gap-2 text-xs font-bold text-slate-800">
-                        <i class="fa-regular fa-calendar-days text-brand-600"></i>
-                        <span>Delete by Date Range (From - To)</span>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-xs font-bold text-slate-800">
+                            <i class="fa-regular fa-calendar-days text-rose-600"></i>
+                            <span>Delete by Date Range (From - To)</span>
+                        </div>
+                        <span class="text-4xs uppercase font-extrabold text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full">Date Filter</span>
                     </div>
+
+                    <!-- Date Presets -->
+                    <div class="flex flex-wrap gap-1.5 text-3xs">
+                        <button type="button" onclick="setAuditDateRangePreset(7)" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:border-brand-500 font-semibold">Last 7 Days</button>
+                        <button type="button" onclick="setAuditDateRangePreset(30)" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:border-brand-500 font-semibold">Last 30 Days</button>
+                        <button type="button" onclick="setAuditDateRangeOlderThan(90)" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:border-brand-500 font-semibold">Older than 90d</button>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-3 text-2xs">
                         <div>
                             <label class="block font-semibold text-slate-500 mb-1">From Date (UTC)</label>
-                            <input type="date" name="fromDate" required class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                            <input type="date" id="auditFromDate" name="fromDate" required class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-rose-500" />
                         </div>
                         <div>
                             <label class="block font-semibold text-slate-500 mb-1">To Date (UTC)</label>
-                            <input type="date" name="toDate" required class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                            <input type="date" id="auditToDate" name="toDate" required class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-rose-500" />
                         </div>
                     </div>
-                    <button type="submit" class="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-2xs font-bold transition-colors">
-                        Delete Range Records
+                    <button type="submit" class="w-full py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-2xs font-bold transition-colors shadow-2xs">
+                        Delete Logs in Range
                     </button>
                 </form>
 
@@ -348,6 +360,20 @@
         }
         function closePurgeAuditModal() {
             document.getElementById('purgeAuditModal').classList.add('hidden');
+        }
+        function setAuditDateRangePreset(days) {
+            const to = new Date();
+            const from = new Date();
+            from.setDate(to.getDate() - days);
+            document.getElementById('auditFromDate').value = from.toISOString().split('T')[0];
+            document.getElementById('auditToDate').value = to.toISOString().split('T')[0];
+        }
+        function setAuditDateRangeOlderThan(days) {
+            const to = new Date();
+            to.setDate(to.getDate() - days);
+            const from = new Date('2020-01-01');
+            document.getElementById('auditFromDate').value = from.toISOString().split('T')[0];
+            document.getElementById('auditToDate').value = to.toISOString().split('T')[0];
         }
     </script>
 }

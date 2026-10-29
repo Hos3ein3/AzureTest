@@ -19,4 +19,6 @@ public interface IInboxRepository
         CancellationToken ct = default);
     Task<InboxMessage?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task AddAsync(InboxMessage message, CancellationToken ct = default);
+    Task<int> DeleteByDateRangeAsync(DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default);
+    Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
 }

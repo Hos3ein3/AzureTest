@@ -106,4 +106,24 @@ public sealed class OutboxRepository : IOutboxRepository
     {
         _context.OutboxMessages.Update(message);
     }
+
+    public async Task<int> DeleteByDateRangeAsync(DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default)
+    {
+        var query = _context.OutboxMessages.AsQueryable();
+        if (fromUtc.HasValue)
+        {
+            query = query.Where(m => m.OccurredOnUtc >= fromUtc.Value);
+        }
+        if (toUtc.HasValue)
+        {
+            query = query.Where(m => m.OccurredOnUtc <= toUtc.Value);
+        }
+        return await query.ExecuteDeleteAsync(ct);
+    }
+
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        var deleted = await _context.OutboxMessages.Where(m => m.Id == id).ExecuteDeleteAsync(ct);
+        return deleted > 0;
+    }
 }

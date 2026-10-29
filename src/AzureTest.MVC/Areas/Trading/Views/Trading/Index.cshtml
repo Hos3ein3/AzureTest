@@ -1175,7 +1175,7 @@
                 searchDropdown.innerHTML = `
                     <div class="p-6 text-center text-xs text-slate-400">
                         <i class="fa-solid fa-spinner fa-spin text-xl mb-1 text-brand-500"></i>
-                        <p class="font-bold">Searching Binance & DEX live feeds for "${query}"...</p>
+                        <p class="font-bold">Searching Binance, MEXC & live feeds for "${query}"...</p>
                     </div>
                 `;
             } else {
@@ -1214,9 +1214,20 @@
             const assetClassNames = { 1: 'Crypto', 2: 'Forex', 3: 'Stock', 4: 'Indices', 5: 'Futures' };
             const typeLabel = assetClassNames[assetClass] || 'Crypto';
             const isSim = (assetClass === 3 || assetClass === 4 || assetClass === 5 || item.IsSimulated || item.isSimulated);
-            const feedBadge = isSim
-                ? `<span class="px-1.5 py-0.5 rounded text-4xs font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Simulate</span>`
-                : `<span class="px-1.5 py-0.5 rounded text-4xs font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Live API</span>`;
+            const feedSrc = (item.FeedSource || item.feedSource || '').toLowerCase();
+            
+            let feedBadge = '';
+            if (isSim || feedSrc === 'simulated') {
+                feedBadge = `<span class="px-1.5 py-0.5 rounded text-4xs font-black uppercase tracking-wider bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20 inline-flex items-center gap-1"><i class="fa-solid fa-gamepad text-3xs"></i> Simulated</span>`;
+            } else if (feedSrc === 'mexc' || sym === 'BLESSUSDT' || sym === 'AGTUSDT') {
+                feedBadge = `<span class="px-1.5 py-0.5 rounded text-4xs font-black uppercase tracking-wider bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 inline-flex items-center gap-1"><i class="fa-solid fa-chart-line text-3xs"></i> MEXC API</span>`;
+            } else if (feedSrc === 'dexscreener') {
+                feedBadge = `<span class="px-1.5 py-0.5 rounded text-4xs font-black uppercase tracking-wider bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 inline-flex items-center gap-1"><i class="fa-solid fa-cubes text-3xs"></i> DexScreener</span>`;
+            } else if (feedSrc === 'forex' || assetClass === 2) {
+                feedBadge = `<span class="px-1.5 py-0.5 rounded text-4xs font-black uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 inline-flex items-center gap-1"><i class="fa-solid fa-landmark text-3xs"></i> ECB / Forex</span>`;
+            } else {
+                feedBadge = `<span class="px-1.5 py-0.5 rounded text-4xs font-black uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 inline-flex items-center gap-1"><i class="fa-solid fa-bolt text-3xs"></i> Binance API</span>`;
+            }
 
             const priceFmt = price < 0.01 ? price.toFixed(6) : price < 1 ? price.toFixed(4) : price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

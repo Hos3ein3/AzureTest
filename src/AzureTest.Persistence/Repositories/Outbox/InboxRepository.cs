@@ -84,4 +84,24 @@ public sealed class InboxRepository : IInboxRepository
     {
         await _context.InboxMessages.AddAsync(message, ct);
     }
+
+    public async Task<int> DeleteByDateRangeAsync(DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default)
+    {
+        var query = _context.InboxMessages.AsQueryable();
+        if (fromUtc.HasValue)
+        {
+            query = query.Where(m => m.ReceivedOnUtc >= fromUtc.Value);
+        }
+        if (toUtc.HasValue)
+        {
+            query = query.Where(m => m.ReceivedOnUtc <= toUtc.Value);
+        }
+        return await query.ExecuteDeleteAsync(ct);
+    }
+
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        var deleted = await _context.InboxMessages.Where(m => m.Id == id).ExecuteDeleteAsync(ct);
+        return deleted > 0;
+    }
 }
