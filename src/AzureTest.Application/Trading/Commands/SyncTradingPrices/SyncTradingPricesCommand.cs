@@ -24,11 +24,16 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
 {
     private readonly IUnitOfWork _uow;
     private readonly ITradingMarketDataService _marketData;
+    private readonly AzureTest.Application.Interfaces.Services.IAppNotificationService? _notificationService;
 
-    public SyncTradingPricesCommandHandler(IUnitOfWork uow, ITradingMarketDataService marketData)
+    public SyncTradingPricesCommandHandler(
+        IUnitOfWork uow,
+        ITradingMarketDataService marketData,
+        AzureTest.Application.Interfaces.Services.IAppNotificationService? notificationService = null)
     {
         _uow = uow;
         _marketData = marketData;
+        _notificationService = notificationService;
     }
 
     public async Task<Result<int>> HandleAsync(SyncTradingPricesCommand cmd, CancellationToken ct)
@@ -89,6 +94,20 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
                     account.ApplyRealizedPnl(pos.RealizedPnl, pos.InitialMargin);
                 }
                 actionsExecuted++;
+
+                if (_notificationService != null)
+                {
+                    var triggerReason = (pos.TakeProfit.HasValue && closePrice == pos.TakeProfit.Value) ? "Take Profit" : "Stop Loss";
+                    var pnlSign = pos.RealizedPnl >= 0 ? "+" : "";
+                    _ = _notificationService.SendNotificationAsync(
+                        pos.UserId,
+                        pos.TenantId,
+                        $"Paper Trade Closed ({triggerReason}): {pos.Symbol}",
+                        $"Triggered {triggerReason} at ${closePrice:N2}. Realized PnL: {pnlSign}${pos.RealizedPnl:N2}.",
+                        type: "Trade",
+                        actionUrl: "/Trading",
+                        ct: ct);
+                }
             }
         }
 
@@ -144,6 +163,19 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
                         order.Fill();
                         _uow.TradingPositions.Add(position);
                         actionsExecuted++;
+
+                        if (_notificationService != null)
+                        {
+                            var sideText = order.Side == TradingOrderSide.Buy ? "Buy (Long)" : "Sell (Short)";
+                            _ = _notificationService.SendNotificationAsync(
+                                order.UserId,
+                                order.TenantId,
+                                $"Paper Order Filled: {order.Symbol}",
+                                $"Pending order filled: {sideText} {order.Quantity:G29} {order.Symbol} @ ${marketPrice:N2}.",
+                                type: "Trade",
+                                actionUrl: "/Trading",
+                                ct: ct);
+                        }
                     }
                 }
             }

@@ -50,5 +50,8 @@ public interface INoSqlUnitOfWork : IDisposable
     IFollowedPersonRepository FollowedPeople { get; }
     ICustomMediaListRepository CustomMediaLists { get; }
 
+    INotificationHistoryRepository NotificationHistories { get; }
+    IPushSubscriptionRepository PushSubscriptions { get; }
+
     Task<bool> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

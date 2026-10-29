@@ -283,15 +283,30 @@
                 </div>
                 <!-- Notification Bell -->
                 <div class="relative" id="notificationDropdownContainer">
-                    <button id="notificationBtn" onclick="document.getElementById('notificationDropdown').classList.toggle('hidden')" class="text-slate-400 hover:text-brand-500 transition-colors relative">
+                    <button id="notificationBtn" onclick="document.getElementById('notificationDropdown').classList.toggle('hidden')" class="text-slate-400 hover:text-brand-500 transition-colors relative" title="Notifications">
                         <i class="fa-regular fa-bell text-lg"></i>
                         <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center hidden">0</span>
                     </button>
                     <!-- Dropdown -->
-                    <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-50 flex flex-col">
-                        <div class="p-3 border-b border-slate-100 dark:border-slate-700 font-semibold text-slate-700 dark:text-slate-200">Notifications</div>
-                        <div id="notificationList" class="max-h-64 overflow-y-auto p-2 space-y-1">
-                            <div class="text-sm text-slate-500 dark:text-slate-400 text-center py-4" id="noNotifications">No new notifications</div>
+                    <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 flex flex-col">
+                        <div class="p-3 border-b border-slate-100 dark:border-slate-700 font-semibold text-slate-700 dark:text-slate-200 flex items-center justify-between">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-bell text-brand-600 text-xs"></i>
+                                <span>Notifications</span>
+                            </span>
+                            <button type="button" onclick="markAllNotificationsAsRead()" class="text-3xs text-brand-600 hover:text-brand-700 font-medium hover:underline">
+                                Mark all as read
+                            </button>
+                        </div>
+                        <div id="notificationList" class="max-h-80 overflow-y-auto p-2 space-y-1 divide-y divide-slate-50 dark:divide-slate-700/50">
+                            <div class="text-sm text-slate-500 dark:text-slate-400 text-center py-6" id="noNotifications">No new notifications</div>
+                        </div>
+                        <div class="p-2.5 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-3xs text-slate-400 bg-slate-50/50 dark:bg-slate-800/50 rounded-b-xl">
+                            <span>Push alerts enabled</span>
+                            <button type="button" onclick="registerWebPushSubscription()" class="text-brand-600 hover:underline inline-flex items-center gap-1 font-medium">
+                                <i class="fa-solid fa-bell-ring"></i>
+                                <span>Sync Web Push</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1005,47 +1020,225 @@
         let unreadCount = 0;
         const connection = new signalR.HubConnectionBuilder()
             .withUrl("/notificationHub")
+            .withAutomaticReconnect()
             .build();
 
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function updateBadgeCount(count) {
+            unreadCount = Math.max(0, count);
+            const badge = document.getElementById('notificationBadge');
+            const fBadge = document.getElementById('floatingNotificationBadge');
+            if (badge) {
+                badge.innerText = unreadCount;
+                badge.classList.toggle('hidden', unreadCount === 0);
+            }
+            if (fBadge) {
+                fBadge.innerText = unreadCount;
+                fBadge.classList.toggle('hidden', unreadCount === 0);
+            }
+        }
+
+        function renderNotificationItem(n, prepend = false) {
+            const list = document.getElementById('notificationList');
+            if (!list) return;
+
+            document.getElementById('noNotifications')?.remove();
+            document.getElementById('floatingNoNotifications')?.remove();
+
+            const item = document.createElement('div');
+            const isRead = n.isRead === true;
+            const unreadBg = isRead ? "bg-white dark:bg-slate-800" : "bg-brand-50/70 dark:bg-brand-950/30";
+            item.className = `p-2.5 rounded-xl ${unreadBg} hover:bg-slate-50 dark:hover:bg-slate-750 text-xs transition-colors cursor-pointer flex items-start gap-3 relative`;
+            
+            let iconClass = "fa-solid fa-bell text-brand-600 bg-brand-100/60 dark:bg-brand-900/40";
+            if (n.type === "Trade") {
+                iconClass = "fa-solid fa-chart-line text-emerald-600 bg-emerald-100/60 dark:bg-emerald-900/40";
+            } else if (n.type === "Ticket") {
+                iconClass = "fa-solid fa-life-ring text-purple-600 bg-purple-100/60 dark:bg-purple-900/40";
+            } else if (n.type === "Security") {
+                iconClass = "fa-solid fa-shield-halved text-amber-600 bg-amber-100/60 dark:bg-amber-900/40";
+            }
+
+            const iconParts = iconClass.split(' ');
+            const faIcon = iconParts.slice(0, 3).join(' ');
+            const bgClass = iconParts.slice(3).join(' ');
+
+            item.innerHTML = `
+                <div class="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center ${bgClass}">
+                    <i class="${faIcon} text-xs"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-1">
+                        <p class="font-bold text-slate-800 dark:text-slate-100 truncate text-xs">${escapeHtml(n.title)}</p>
+                        <span class="text-3xs text-slate-400 shrink-0">${n.timeAgo || 'Just now'}</span>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-300 text-2xs mt-0.5 line-clamp-2 leading-relaxed">${escapeHtml(n.message)}</p>
+                </div>
+                ${!isRead ? '<span class="unread-dot w-2 h-2 rounded-full bg-brand-500 shrink-0 mt-1.5 ring-2 ring-white dark:ring-slate-800"></span>' : ''}
+            `;
+
+            item.onclick = async () => {
+                if (!n.isRead) {
+                    try {
+                        await fetch('/Notification/MarkAsRead', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ notificationId: n.id })
+                        });
+                        n.isRead = true;
+                        item.classList.remove('bg-brand-50/70', 'dark:bg-brand-950/30');
+                        item.querySelector('.unread-dot')?.remove();
+                        updateBadgeCount(unreadCount - 1);
+                    } catch (e) {
+                        console.error('Failed to mark read', e);
+                    }
+                }
+                if (n.actionUrl) {
+                    window.location.href = n.actionUrl;
+                }
+            };
+
+            if (prepend) {
+                list.prepend(item);
+            } else {
+                list.appendChild(item);
+            }
+        }
+
+        async function loadUserNotifications() {
+            try {
+                const res = await fetch('/Notification/GetUserNotifications?limit=30');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data && data.success && data.notifications) {
+                    const list = document.getElementById('notificationList');
+                    if (list) list.innerHTML = '';
+                    updateBadgeCount(data.unreadCount || 0);
+
+                    if (data.notifications.length === 0) {
+                        if (list) list.innerHTML = '<div class="text-sm text-slate-500 dark:text-slate-400 text-center py-6" id="noNotifications">No new notifications</div>';
+                    } else {
+                        data.notifications.forEach(n => renderNotificationItem(n, false));
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to load user notifications', err);
+            }
+        }
+
+        window.markAllNotificationsAsRead = async function() {
+            try {
+                await fetch('/Notification/MarkAsRead', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                updateBadgeCount(0);
+                document.querySelectorAll('#notificationList > div').forEach(div => {
+                    div.classList.remove('bg-brand-50/70', 'dark:bg-brand-950/30');
+                    div.querySelector('.unread-dot')?.remove();
+                });
+            } catch (err) {
+                console.error('Failed to mark all as read', err);
+            }
+        };
+
+        window.registerWebPushSubscription = async function() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                alert('WebPush is not supported on this browser.');
+                return;
+            }
+
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                alert('Push notification permission was denied in your browser settings.');
+                return;
+            }
+
+            try {
+                const keyRes = await fetch('/Notification/GetVapidPublicKey');
+                const keyData = await keyRes.json();
+                if (!keyData.publicKey) {
+                    alert('Unable to retrieve VAPID public key.');
+                    return;
+                }
+
+                const reg = await navigator.serviceWorker.ready;
+                let sub = await reg.pushManager.getSubscription();
+                if (!sub) {
+                    const convertedKey = urlBase64ToUint8Array(keyData.publicKey);
+                    sub = await reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: convertedKey
+                    });
+                }
+
+                const subJson = sub.toJSON();
+                const res = await fetch('/Notification/SubscribePush', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        endpoint: subJson.endpoint,
+                        p256dh: subJson.keys?.p256dh,
+                        auth: subJson.keys?.auth
+                    })
+                });
+
+                if (res.ok) {
+                    alert('WebPush subscribed successfully! You will receive live trade alerts on this device.');
+                }
+            } catch (err) {
+                console.warn('WebPush setup error', err);
+                alert('WebPush subscription error: ' + (err.message || err));
+            }
+        };
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        // Live Realtime SignalR Notification Handler
+        connection.on("ReceiveNotification", (notification) => {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.play().catch(() => {});
+
+            updateBadgeCount(unreadCount + 1);
+            renderNotificationItem(notification, true);
+
+            if (window.sendLocalNotification) {
+                window.sendLocalNotification(notification.title, { body: notification.message });
+            }
+        });
+
         connection.on("ReceiveTicketNotification", (title, message) => {
-            // Play sound
             const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
             audio.play().catch(e => console.log("Audio play blocked by browser", e));
 
-            // Update UI
-            document.getElementById('noNotifications')?.remove();
-            document.getElementById('floatingNoNotifications')?.remove();
-            unreadCount++;
+            updateBadgeCount(unreadCount + 1);
 
-            const badge = document.getElementById('notificationBadge');
-            if (badge) {
-                badge.innerText = unreadCount;
-                badge.classList.remove('hidden');
-            }
-
-            const fBadge = document.getElementById('floatingNotificationBadge');
-            if (fBadge) {
-                fBadge.innerText = unreadCount;
-                fBadge.classList.remove('hidden');
-            }
-
-            const list = document.getElementById('notificationList');
-            if (list) {
-                const item = document.createElement('div');
-                item.className = "p-2 rounded bg-blue-50 dark:bg-blue-900/30 text-sm border-l-4 border-blue-500 mb-1 cursor-pointer";
-                item.innerHTML = `<p class="font-semibold text-blue-700 dark:text-blue-300">${title}</p><p class="text-slate-600 dark:text-slate-400 text-xs">${message}</p>`;
-                item.onclick = () => { window.location.href = '/Ticket'; };
-                list.prepend(item);
-            }
-
-            const fList = document.getElementById('floatingNotificationList');
-            if (fList) {
-                const fItem = document.createElement('div');
-                fItem.className = "p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-sm border-l-4 border-blue-500 mb-1.5 cursor-pointer hover:bg-blue-100 transition-colors";
-                fItem.innerHTML = `<p class="font-semibold text-blue-700 dark:text-blue-300 text-xs">${title}</p><p class="text-slate-600 dark:text-slate-400 text-[11px] mt-0.5">${message}</p>`;
-                fItem.onclick = () => { window.location.href = '/Ticket'; };
-                fList.prepend(fItem);
-            }
+            const n = {
+                id: null,
+                title: title,
+                message: message,
+                type: 'Ticket',
+                isRead: false,
+                timeAgo: 'Just now',
+                actionUrl: '/Ticket'
+            };
+            renderNotificationItem(n, true);
         });
 
         connection.on("UpdateOnlineUsersCount", (count) => {
@@ -1059,7 +1252,14 @@
             }
         });
 
-        connection.start().catch(err => console.error(err.toString()));
+        connection.start()
+            .then(() => {
+                loadUserNotifications();
+            })
+            .catch(err => {
+                console.error('SignalR NotificationHub connection failed:', err);
+                loadUserNotifications();
+            });
 
         // Toggle Floating Notification Dropdown
         function toggleFloatingNotificationDropdown(e) {

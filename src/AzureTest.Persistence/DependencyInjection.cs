@@ -130,6 +130,8 @@ public static class DependencyInjection
             services.AddScoped<IWatchItemRepository, WatchItemRepository>();
             services.AddScoped<IFollowedPersonRepository, FollowedPersonRepository>();
             services.AddScoped<ICustomMediaListRepository, CustomMediaListRepository>();
+            services.AddScoped<INotificationHistoryRepository, NotificationHistoryRepository>();
+            services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
             services.AddScoped<INoSqlUnitOfWork, NoSqlUnitOfWork>();
             services.AddScoped<AzureTest.Persistence.Seeding.CompanyDataSeeder>();
         }
@@ -146,6 +148,8 @@ public static class DependencyInjection
             services.AddScoped<IWatchItemRepository, NullWatchItemRepository>();
             services.AddScoped<IFollowedPersonRepository, NullFollowedPersonRepository>();
             services.AddScoped<ICustomMediaListRepository, NullCustomMediaListRepository>();
+            services.AddScoped<INotificationHistoryRepository, NullNotificationHistoryRepository>();
+            services.AddScoped<IPushSubscriptionRepository, NullPushSubscriptionRepository>();
         }
 
         return services;

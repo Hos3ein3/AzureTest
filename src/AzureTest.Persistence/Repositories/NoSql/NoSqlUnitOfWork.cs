@@ -122,6 +122,12 @@ public class NoSqlUnitOfWork : INoSqlUnitOfWork
     private ICustomMediaListRepository? _customMediaLists;
     public ICustomMediaListRepository CustomMediaLists => _customMediaLists ??= new CustomMediaListRepository(_database);
 
+    private INotificationHistoryRepository? _notificationHistories;
+    public INotificationHistoryRepository NotificationHistories => _notificationHistories ??= new NotificationHistoryRepository(_database);
+
+    private IPushSubscriptionRepository? _pushSubscriptions;
+    public IPushSubscriptionRepository PushSubscriptions => _pushSubscriptions ??= new PushSubscriptionRepository(_database);
+
     public void Dispose()
     {
         _session?.Dispose();

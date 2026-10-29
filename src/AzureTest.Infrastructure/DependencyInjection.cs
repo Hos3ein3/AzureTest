@@ -75,6 +75,11 @@ public static class DependencyInjection
         services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<ITenantBackfillJob, AzureTest.Infrastructure.Jobs.TenantBackfillJob>();
         services.AddScoped<ITradingPriceSyncJob, AzureTest.Infrastructure.Jobs.TradingPriceSyncJob>();
+        services.AddScoped<ICleanupReadNotificationsJob, AzureTest.Infrastructure.Jobs.CleanupReadNotificationsJob>();
+
+        services.Configure<AzureTest.Infrastructure.Configuration.WebPushSettings>(configuration.GetSection(AzureTest.Infrastructure.Configuration.WebPushSettings.SectionName));
+        services.AddScoped<IWebPushService, AzureTest.Infrastructure.Services.WebPushService>();
+        services.AddScoped<IAppNotificationService, AzureTest.Infrastructure.Services.AppNotificationService>();
         services.AddScoped<AzureTest.Application.Interfaces.Services.IValidationService, AzureTest.Infrastructure.Services.ValidationService>();
         services.AddSingleton<AzureTest.Application.Interfaces.Services.ISampleNoteStore, AzureTest.Infrastructure.Services.SampleNoteStore>();
         services.AddTransient<AzureTest.Infrastructure.Seeding.IdentityDataSeeder>();

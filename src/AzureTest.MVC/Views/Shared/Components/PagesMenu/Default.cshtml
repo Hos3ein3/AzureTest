@@ -30,7 +30,15 @@
         <ul class="mt-1 space-y-1 pl-6 pr-2">
             @if(Model != null && Model.Any())
             {
-                foreach(var pageItem in Model)
+                <li class="pb-1 border-b border-slate-100 dark:border-slate-800/60 mb-1">
+                    <a href="@Url.Action("Index2", "Pages")"
+                       class="nav-item-link flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-950/40 transition-colors"
+                       title="View all articles in cards">
+                        <i class="fa-solid fa-shapes mr-1.5 text-2xs text-brand-500 shrink-0"></i>
+                        <span>Browse All Articles</span>
+                    </a>
+                </li>
+                @foreach(var pageItem in Model)
                 {
                     var isRead = userId != Guid.Empty && pageItem.ReadBy != null && pageItem.ReadBy.Contains(userId);
                     <li>

@@ -24,6 +24,11 @@ public class NotificationHub : Hub
 
         _userTracker.UserConnected(Context.ConnectionId, userId, userName);
 
+        if (!string.IsNullOrEmpty(userId))
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId.ToLowerInvariant()}");
+        }
+
         var onlineCount = _userTracker.GetOnlineUsersCount();
         await Clients.All.SendAsync("UpdateOnlineUsersCount", onlineCount);
 

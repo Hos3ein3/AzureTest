@@ -85,6 +85,7 @@ public static class MvcServiceRegistration
         services.AddProblemDetails();
         services.AddSignalR();
         services.AddSingleton<IUserTracker, UserTracker>();
+        services.AddScoped<INotificationHubDispatcher, AzureTest.MVC.Hubs.NotificationHubDispatcher>();
 
         // ── 5. Forwarded Headers ──────────────────────────────────────────────────
         services.Configure<ForwardedHeadersOptions>(o =>

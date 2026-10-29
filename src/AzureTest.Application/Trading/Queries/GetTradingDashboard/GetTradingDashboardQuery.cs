@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Abstractions;
 using AzureTest.Application.Interfaces.Data;
+using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
 using AzureTest.Application.Trading.Services;
 using AzureTest.Contracts.DTOs.Trading;
@@ -38,22 +39,32 @@ public sealed class GetTradingDashboardQueryHandler : IQueryHandler<GetTradingDa
 {
     private readonly IUnitOfWork _uow;
     private readonly ITradingMarketDataService _marketData;
+    private readonly ITenantProvider _tenantProvider;
 
-    public GetTradingDashboardQueryHandler(IUnitOfWork uow, ITradingMarketDataService marketData)
+    public GetTradingDashboardQueryHandler(
+        IUnitOfWork uow,
+        ITradingMarketDataService marketData,
+        ITenantProvider tenantProvider)
     {
         _uow = uow;
         _marketData = marketData;
+        _tenantProvider = tenantProvider;
     }
 
     public async Task<Result<TradingDashboardDto>> HandleAsync(GetTradingDashboardQuery q, CancellationToken ct)
     {
+        var isReadOnlyImpersonation = _tenantProvider.IsAdminImpersonating && !_tenantProvider.AllowImpersonationWrites;
+
         var accounts = await _uow.TradingAccounts.GetAllAsync();
         var account = accounts.FirstOrDefault(a => a.UserId == q.UserId && (q.TenantId == Guid.Empty || a.TenantId == q.TenantId));
         if (account == null)
         {
             account = TradingAccount.Create(q.UserId, q.TenantId, "Primary Paper Trading Account");
-            _uow.TradingAccounts.Add(account);
-            await _uow.SaveChangesAsync(ct);
+            if (!isReadOnlyImpersonation)
+            {
+                _uow.TradingAccounts.Add(account);
+                await _uow.SaveChangesAsync(ct);
+            }
         }
 
         var allPositions = (await _uow.TradingPositions.GetAllAsync())

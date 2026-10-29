@@ -14,7 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="MailKit"  />
+      <PackageReference Include="MailKit" />
         <PackageReference Include="AspNetCore.HealthChecks.Npgsql" />
         <PackageReference Include="AspNetCore.HealthChecks.MongoDb" />
         <PackageReference Include="AspNetCore.HealthChecks.Redis" />
@@ -52,6 +52,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
         <PackageReference Include="Google.Apis.Auth.AspNetCore3" />
         <PackageReference Include="TMDbLib" />
+        <PackageReference Include="WebPush" />
     </ItemGroup>
 
 </Project>

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AzureTest.Application.Abstractions;
 using AzureTest.Application.Crypto.Services;
 using AzureTest.Application.Interfaces.Data;
+using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.Crypto;
 using AzureTest.Domain.Entities.Crypto;
@@ -27,27 +28,35 @@ public sealed class GetCryptoTradeTerminalQueryHandler : IQueryHandler<GetCrypto
     private readonly IUnitOfWork _uow;
     private readonly ICryptoMarketDataService _marketData;
     private readonly ICryptoSmartExecutionService _smartExecution;
+    private readonly ITenantProvider _tenantProvider;
 
     public GetCryptoTradeTerminalQueryHandler(
         IUnitOfWork uow, 
         ICryptoMarketDataService marketData,
-        ICryptoSmartExecutionService smartExecution)
+        ICryptoSmartExecutionService smartExecution,
+        ITenantProvider tenantProvider)
     {
         _uow = uow;
         _marketData = marketData;
         _smartExecution = smartExecution;
+        _tenantProvider = tenantProvider;
     }
 
     public async Task<Result<TradeTerminalDashboardDto>> HandleAsync(GetCryptoTradeTerminalQuery query, CancellationToken ct)
     {
+        var isReadOnlyImpersonation = _tenantProvider.IsAdminImpersonating && !_tenantProvider.AllowImpersonationWrites;
+
         // 1. Get or create primary paper account
         var accounts = await _uow.CryptoAccounts.FindAsync(a => a.UserId == query.UserId);
         var account = accounts.FirstOrDefault();
         if (account == null)
         {
-            account = CryptoAccount.Create(query.UserId, Guid.Empty, "Primary Paper Trading", "USDT", CryptoTradingMode.PaperTrading);
-            _uow.CryptoAccounts.Add(account);
-            await _uow.SaveChangesAsync(ct);
+            account = CryptoAccount.Create(query.UserId, _tenantProvider.CurrentTenantId, "Primary Paper Trading", "USDT", CryptoTradingMode.PaperTrading);
+            if (!isReadOnlyImpersonation)
+            {
+                _uow.CryptoAccounts.Add(account);
+                await _uow.SaveChangesAsync(ct);
+            }
         }
 
         // 2. Fetch live coin list & current price for selected symbol
@@ -71,7 +80,10 @@ public sealed class GetCryptoTradeTerminalQueryHandler : IQueryHandler<GetCrypto
         }
 
         account.UpdateBalance(cashDelta: 0m, marginUsed: totalMarginUsed, unrealizedPnl: totalUnrealizedPnl);
-        await _uow.SaveChangesAsync(ct);
+        if (!isReadOnlyImpersonation)
+        {
+            await _uow.SaveChangesAsync(ct);
+        }
 
         var positionDtos = positions.Select(p => new CryptoPositionDto(
             p.Id,

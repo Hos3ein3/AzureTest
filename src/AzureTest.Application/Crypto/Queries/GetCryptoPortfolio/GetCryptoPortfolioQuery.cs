@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AzureTest.Application.Abstractions;
 using AzureTest.Application.Crypto.Services;
 using AzureTest.Application.Interfaces.Data;
+using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
 using AzureTest.Contracts.DTOs.Crypto;
 using AzureTest.Domain.Entities.Crypto;
@@ -27,17 +28,32 @@ public sealed class GetCryptoPortfolioQueryHandler : IQueryHandler<GetCryptoPort
 {
     private readonly IUnitOfWork _uow;
     private readonly ICryptoMarketDataService _marketData;
+    private readonly ITenantProvider _tenantProvider;
 
-    public GetCryptoPortfolioQueryHandler(IUnitOfWork uow, ICryptoMarketDataService marketData)
+    public GetCryptoPortfolioQueryHandler(
+        IUnitOfWork uow,
+        ICryptoMarketDataService marketData,
+        ITenantProvider tenantProvider)
     {
         _uow = uow;
         _marketData = marketData;
+        _tenantProvider = tenantProvider;
     }
 
     public async Task<Result<(CryptoAccountDto Account, IReadOnlyList<CryptoPositionDto> OpenPositions, IReadOnlyList<CryptoPositionDto> ClosedTrades, IReadOnlyList<CryptoJournalEntryDto> JournalEntries, CryptoPerformanceAnalyticsDto Analytics)>> HandleAsync(GetCryptoPortfolioQuery query, CancellationToken ct)
     {
+        var isReadOnlyImpersonation = _tenantProvider.IsAdminImpersonating && !_tenantProvider.AllowImpersonationWrites;
         var accounts = await _uow.CryptoAccounts.FindAsync(a => a.UserId == query.UserId);
-        var account = accounts.FirstOrDefault() ?? CryptoAccount.Create(query.UserId, Guid.Empty, "Primary Trading Account", "USDT", CryptoTradingMode.PaperTrading);
+        var account = accounts.FirstOrDefault();
+        if (account == null)
+        {
+            account = CryptoAccount.Create(query.UserId, _tenantProvider.CurrentTenantId, "Primary Trading Account", "USDT", CryptoTradingMode.PaperTrading);
+            if (!isReadOnlyImpersonation)
+            {
+                _uow.CryptoAccounts.Add(account);
+                await _uow.SaveChangesAsync(ct);
+            }
+        }
 
         var allPositions = (await _uow.CryptoPositions.FindAsync(p => p.AccountId == account.Id)).ToList();
         var openPositions = allPositions.Where(p => p.Status == CryptoPositionStatus.Open).ToList();
@@ -52,7 +68,10 @@ public sealed class GetCryptoPortfolioQueryHandler : IQueryHandler<GetCryptoPort
         }
 
         account.UpdateBalance(0m, openPositions.Sum(p => p.InitialMargin), totalUnrealizedPnl);
-        await _uow.SaveChangesAsync(ct);
+        if (!isReadOnlyImpersonation)
+        {
+            await _uow.SaveChangesAsync(ct);
+        }
 
         var openDtos = openPositions.Select(p => new CryptoPositionDto(
             p.Id, p.AccountId, p.Symbol, p.Side, p.Quantity, p.EntryPrice, p.CurrentPrice, p.ClosePrice, p.Leverage,

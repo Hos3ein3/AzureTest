@@ -128,6 +128,13 @@ public static class DependencyInjection
         services.AddScoped<AzureTest.Application.Pomodoro.IPomodoroCommandUnit, AzureTest.Application.Pomodoro.PomodoroCommandUnit>();
         services.AddScoped<AzureTest.Application.Pomodoro.IPomodoroQueryUnit, AzureTest.Application.Pomodoro.PomodoroQueryUnit>();
 
+        // Notifications
+        services.AddScoped<AzureTest.Application.Notifications.INotificationCommandUnit, AzureTest.Application.Notifications.NotificationCommandUnit>();
+        services.AddScoped<AzureTest.Application.Notifications.INotificationQueryUnit, AzureTest.Application.Notifications.NotificationQueryUnit>();
+        services.AddScoped<ICommandHandler<AzureTest.Application.Notifications.Commands.MarkNotificationAsRead.MarkNotificationAsReadCommand, Result<int>>, AzureTest.Application.Notifications.Commands.MarkNotificationAsRead.MarkNotificationAsReadCommandHandler>();
+        services.AddScoped<ICommandHandler<AzureTest.Application.Notifications.Commands.SubscribeWebPush.SubscribeWebPushCommand, Result>, AzureTest.Application.Notifications.Commands.SubscribeWebPush.SubscribeWebPushCommandHandler>();
+        services.AddScoped<IQueryHandler<AzureTest.Application.Notifications.Queries.GetUserNotifications.GetUserNotificationsQuery, Result<System.Collections.Generic.IReadOnlyList<AzureTest.Contracts.DTOs.Notifications.NotificationDto>>>, AzureTest.Application.Notifications.Queries.GetUserNotifications.GetUserNotificationsQueryHandler>();
+
         // Football Fantasy
         services.AddScoped<AzureTest.Application.FootballFantasy.IFootballFantasyQueryUnit, AzureTest.Application.FootballFantasy.FootballFantasyQueryUnit>();
         services.AddScoped<AzureTest.Application.FootballFantasy.IFootballFantasyCommandUnit, AzureTest.Application.FootballFantasy.FootballFantasyCommandUnit>();

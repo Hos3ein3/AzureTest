@@ -210,6 +210,11 @@ if (builder.Configuration.GetValue<bool>("FeatureManagement:EnableHangfire"))
             "paper-trading-price-sl-tp-monitor",
             job => job.ExecuteAsync(CancellationToken.None),
             Cron.Minutely());
+
+        recurringJobManager?.AddOrUpdate<ICleanupReadNotificationsJob>(
+            "cleanup-read-notifications-10days",
+            job => job.ExecuteAsync(CancellationToken.None),
+            Cron.Daily(3));
     }
     catch (Exception ex)
     {

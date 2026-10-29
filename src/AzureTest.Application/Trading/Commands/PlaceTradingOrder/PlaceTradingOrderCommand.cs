@@ -117,11 +117,16 @@ public sealed class PlaceTradingOrderCommandHandler : ICommandHandler<PlaceTradi
 {
     private readonly IUnitOfWork _uow;
     private readonly ITradingMarketDataService _marketData;
+    private readonly AzureTest.Application.Interfaces.Services.IAppNotificationService? _notificationService;
 
-    public PlaceTradingOrderCommandHandler(IUnitOfWork uow, ITradingMarketDataService marketData)
+    public PlaceTradingOrderCommandHandler(
+        IUnitOfWork uow,
+        ITradingMarketDataService marketData,
+        AzureTest.Application.Interfaces.Services.IAppNotificationService? notificationService = null)
     {
         _uow = uow;
         _marketData = marketData;
+        _notificationService = notificationService;
     }
 
     public async Task<Result<Guid>> HandleAsync(PlaceTradingOrderCommand cmd, CancellationToken ct)
@@ -271,6 +276,22 @@ public sealed class PlaceTradingOrderCommandHandler : ICommandHandler<PlaceTradi
             _uow.TradingOrders.Add(order);
 
             await _uow.SaveChangesAsync(ct);
+
+            if (_notificationService != null)
+            {
+                var sideText = cmd.Side == TradingOrderSide.Buy ? "Buy (Long)" : "Sell (Short)";
+                var title = $"Paper Trade Opened: {cmd.Symbol}";
+                var message = $"Opened {sideText} position for {cmd.Quantity:G29} {cmd.Symbol} @ ${marketPrice:N2} ({cmd.Leverage}x leverage).";
+                await _notificationService.SendNotificationAsync(
+                    cmd.UserId,
+                    cmd.TenantId,
+                    title,
+                    message,
+                    type: "Trade",
+                    actionUrl: "/Trading",
+                    ct: ct);
+            }
+
             return Result<Guid>.Success(position.Id);
         }
         else
