@@ -519,9 +519,10 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
         const isDark = document.documentElement.classList.contains('dark');
         const gridColor = isDark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(148, 163, 184, 0.12)';
         const textColor = isDark ? '#94a3b8' : '#64748b';
@@ -668,8 +669,8 @@
                     labels: ['Gross Gains', 'Gross Losses', 'Net PnL'],
                     datasets: [{
                         label: 'Dollars ($)',
-                        data: [@totalGains, -@totalLosses, @netPnl],
-                        backgroundColor: ['#10b981', '#f43f5e', @(netPnl >= 0 ? "'#3b82f6'" : "'#f43f5e'")],
+                        data: [@totalGains.ToString(System.Globalization.CultureInfo.InvariantCulture), -@totalLosses.ToString(System.Globalization.CultureInfo.InvariantCulture), @netPnl.ToString(System.Globalization.CultureInfo.InvariantCulture)],
+                        backgroundColor: ['#10b981', '#f43f5e', @Html.Raw(netPnl >= 0 ? "'#3b82f6'" : "'#f43f5e'")],
                         borderRadius: 8
                     }]
                 },
@@ -955,3 +956,4 @@
         }
     });
 </script>
+}
