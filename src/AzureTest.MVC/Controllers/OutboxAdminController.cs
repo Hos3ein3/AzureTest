@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AzureTest.MVC.Controllers;
 
-[Authorize(Roles = "Admin")]
+[Authorize]
 [DisplayName("Outbox & Inbox")]
 [Description("Administrative monitoring of transactional Outbox and Inbox messages.")]
 [Route("OutboxAdmin")]
