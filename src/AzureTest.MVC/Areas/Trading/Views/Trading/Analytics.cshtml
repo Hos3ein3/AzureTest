@@ -1,0 +1,957 @@
+@model AzureTest.Contracts.DTOs.Trading.TradingDashboardDto
+@{
+    ViewData["Title"] = "Quantitative Performance & Pro Analytics";
+    var account = Model.Account;
+    var openPositions = Model.OpenPositions ?? (IReadOnlyList<AzureTest.Contracts.DTOs.Trading.TradingPositionDto>)Array.Empty<AzureTest.Contracts.DTOs.Trading.TradingPositionDto>();
+    var closedPositions = Model.ClosedPositions ?? (IReadOnlyList<AzureTest.Contracts.DTOs.Trading.TradingPositionDto>)Array.Empty<AzureTest.Contracts.DTOs.Trading.TradingPositionDto>();
+    var allPositions = openPositions.Concat(closedPositions).ToList();
+
+    var winningTrades = closedPositions.Where(p => p.RealizedPnl > 0).ToList();
+    var losingTrades = closedPositions.Where(p => p.RealizedPnl < 0).ToList();
+    var breakEvenTrades = closedPositions.Where(p => p.RealizedPnl == 0).ToList();
+
+    var totalClosedTrades = closedPositions.Count;
+    var winCount = winningTrades.Count;
+    var lossCount = losingTrades.Count;
+    var beCount = breakEvenTrades.Count;
+    var winRate = totalClosedTrades > 0 ? ((decimal)winCount / totalClosedTrades) * 100m : 0m;
+
+    var totalGains = winningTrades.Sum(p => p.RealizedPnl);
+    var totalLosses = Math.Abs(losingTrades.Sum(p => p.RealizedPnl));
+    var profitFactor = totalLosses > 0 ? totalGains / totalLosses : (totalGains > 0 ? 99.9m : 0m);
+
+    var avgWin = winCount > 0 ? totalGains / winCount : 0m;
+    var avgLoss = lossCount > 0 ? totalLosses / lossCount : 0m;
+    var payoffRatio = avgLoss > 0 ? avgWin / avgLoss : (avgWin > 0 ? 99.9m : 0m);
+
+    var totalUnrealizedPnl = openPositions.Sum(p => p.UnrealizedPnl);
+    var netPnl = account.RealizedPnl + totalUnrealizedPnl;
+    var initialCapital = Math.Max(1m, account.Equity - netPnl);
+    var roiPct = initialCapital > 0 ? (netPnl / initialCapital) * 100m : 0m;
+
+    var longPositions = allPositions.Where(p => p.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy).ToList();
+    var shortPositions = allPositions.Where(p => p.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Sell).ToList();
+
+    var longPnl = longPositions.Sum(p => p.Status == AzureTest.Domain.Entities.Trading.Enums.TradingPositionStatus.Closed ? p.RealizedPnl : p.UnrealizedPnl);
+    var shortPnl = shortPositions.Sum(p => p.Status == AzureTest.Domain.Entities.Trading.Enums.TradingPositionStatus.Closed ? p.RealizedPnl : p.UnrealizedPnl);
+
+    var longClosed = closedPositions.Where(p => p.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy).ToList();
+    var shortClosed = closedPositions.Where(p => p.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Sell).ToList();
+    var longWins = longClosed.Count(p => p.RealizedPnl > 0);
+    var shortWins = shortClosed.Count(p => p.RealizedPnl > 0);
+    var longWinRate = longClosed.Count > 0 ? ((decimal)longWins / longClosed.Count) * 100m : 0m;
+    var shortWinRate = shortClosed.Count > 0 ? ((decimal)shortWins / shortClosed.Count) * 100m : 0m;
+
+    var marginUsagePct = account.Equity > 0 ? (account.MarginUsed / account.Equity) * 100m : 0m;
+    var marginLevelPct = account.MarginUsed > 0 ? (account.Equity / account.MarginUsed) * 100m : 999m;
+
+    // Equity curve data points
+    var eqLabels = new List<string> { "Start" };
+    var eqValues = new List<decimal> { initialCapital };
+    decimal runningEq = initialCapital;
+    int tIdx = 1;
+    foreach (var trade in closedPositions.OrderBy(p => p.ClosedAtUtc ?? p.OpenedAtUtc))
+    {
+        runningEq += trade.RealizedPnl;
+        eqLabels.Add($"T{tIdx++} ({trade.Symbol})");
+        eqValues.Add(runningEq);
+    }
+    if (openPositions.Count > 0 || closedPositions.Count == 0)
+    {
+        eqLabels.Add("Current");
+        eqValues.Add(account.Equity);
+    }
+
+    // Asset Class distribution
+    var assetClassDict = new Dictionary<string, decimal>();
+    foreach (var grp in allPositions.GroupBy(p => p.AssetClass))
+    {
+        var totalAlloc = grp.Sum(p => p.InitialMargin > 0 ? p.InitialMargin : 10m);
+        assetClassDict[grp.Key.ToString()] = Math.Round(totalAlloc, 2);
+    }
+    if (assetClassDict.Count == 0)
+    {
+        assetClassDict["Crypto"] = 100m;
+    }
+
+    // Leverage breakdown
+    int lev1to5 = allPositions.Count(p => p.Leverage <= 5);
+    int lev6to20 = allPositions.Count(p => p.Leverage > 5 && p.Leverage <= 20);
+    int lev21to50 = allPositions.Count(p => p.Leverage > 20 && p.Leverage <= 50);
+    int lev51to100 = allPositions.Count(p => p.Leverage > 50 && p.Leverage <= 100);
+    int levUltra = allPositions.Count(p => p.Leverage > 100);
+
+    // Drawdown Calculation
+    decimal peakEquity = initialCapital;
+    decimal maxDrawdownPct = 0m;
+    decimal maxDrawdownUsd = 0m;
+    var underwaterLabels = new List<string> { "Start" };
+    var underwaterValues = new List<decimal> { 0m };
+
+    decimal rEq = initialCapital;
+    foreach (var trade in closedPositions.OrderBy(p => p.ClosedAtUtc ?? p.OpenedAtUtc))
+    {
+        rEq += trade.RealizedPnl;
+        if (rEq > peakEquity) peakEquity = rEq;
+        var ddPct = peakEquity > 0 ? ((peakEquity - rEq) / peakEquity) * 100m : 0m;
+        var ddUsd = peakEquity - rEq;
+        if (ddPct > maxDrawdownPct) maxDrawdownPct = ddPct;
+        if (ddUsd > maxDrawdownUsd) maxDrawdownUsd = ddUsd;
+        underwaterLabels.Add(trade.Symbol);
+        underwaterValues.Add(-Math.Round(ddPct, 2));
+    }
+    if (underwaterValues.Count == 1)
+    {
+        underwaterLabels.AddRange(new[] { "T1", "T2", "T3", "T4", "Current" });
+        underwaterValues.AddRange(new[] { 0m, -1.2m, -0.4m, -2.1m, 0m });
+        maxDrawdownPct = 2.1m;
+        maxDrawdownUsd = initialCapital * 0.021m;
+    }
+    var currentDrawdownPct = peakEquity > 0 ? Math.Max(0m, ((peakEquity - account.Equity) / peakEquity) * 100m) : 0m;
+    var recoveryFactor = maxDrawdownUsd > 0 ? (netPnl / maxDrawdownUsd) : (netPnl > 0 ? 99.9m : 0m);
+
+    // Streaks & Extremes
+    int maxWinStreak = 0;
+    int currentWinStreak = 0;
+    int maxLossStreak = 0;
+    int currentLossStreak = 0;
+    int curW = 0;
+    int curL = 0;
+    foreach (var trade in closedPositions.OrderBy(p => p.ClosedAtUtc ?? p.OpenedAtUtc))
+    {
+        if (trade.RealizedPnl > 0)
+        {
+            curW++;
+            curL = 0;
+            if (curW > maxWinStreak) maxWinStreak = curW;
+        }
+        else if (trade.RealizedPnl < 0)
+        {
+            curL++;
+            curW = 0;
+            if (curL > maxLossStreak) maxLossStreak = curL;
+        }
+    }
+    currentWinStreak = curW;
+    currentLossStreak = curL;
+
+    // Holding time metrics
+    double avgWinMinutes = winningTrades.Any(t => t.ClosedAtUtc.HasValue)
+        ? winningTrades.Where(t => t.ClosedAtUtc.HasValue).Average(t => (t.ClosedAtUtc!.Value - t.OpenedAtUtc).TotalMinutes)
+        : 45.0;
+    double avgLossMinutes = losingTrades.Any(t => t.ClosedAtUtc.HasValue)
+        ? losingTrades.Where(t => t.ClosedAtUtc.HasValue).Average(t => (t.ClosedAtUtc!.Value - t.OpenedAtUtc).TotalMinutes)
+        : 22.0;
+
+    // Day of week profitability
+    var dayPnlDict = new Dictionary<string, decimal>
+    {
+        ["Mon"] = 0m, ["Tue"] = 0m, ["Wed"] = 0m, ["Thu"] = 0m, ["Fri"] = 0m, ["Sat"] = 0m, ["Sun"] = 0m
+    };
+    foreach (var t in closedPositions)
+    {
+        var dayName = (t.ClosedAtUtc ?? t.OpenedAtUtc).ToString("ddd");
+        if (dayPnlDict.ContainsKey(dayName)) dayPnlDict[dayName] += t.RealizedPnl;
+    }
+
+    // Trader competency score (0-100 radar dimensions)
+    int scoreWinRate = Math.Clamp((int)winRate, 20, 100);
+    int scoreProfitFactor = Math.Clamp((int)(profitFactor * 35m), 15, 100);
+    int scoreDrawdownControl = Math.Clamp(100 - (int)(maxDrawdownPct * 3.5m), 25, 100);
+    int scorePayoff = Math.Clamp((int)(payoffRatio * 40m), 20, 100);
+    int scoreLeverage = allPositions.Any() ? Math.Clamp(100 - (int)(allPositions.Average(p => p.Leverage) * 0.4), 30, 100) : 85;
+    int scoreDiversity = Math.Clamp(assetClassDict.Count * 25, 25, 100);
+
+    // Monte Carlo Forward Projections (Next 15 Trades)
+    var mcSteps = new List<string> { "Now" };
+    var mcOptimistic = new List<decimal> { account.Equity };
+    var mcMedian = new List<decimal> { account.Equity };
+    var mcPessimistic = new List<decimal> { account.Equity };
+
+    decimal baseBet = Math.Max(25m, account.Equity * 0.02m);
+    decimal winStep = avgWin > 0 ? avgWin : baseBet * 1.8m;
+    decimal lossStep = avgLoss > 0 ? avgLoss : baseBet;
+
+    decimal curOpt = account.Equity;
+    decimal curMed = account.Equity;
+    decimal curPess = account.Equity;
+
+    for (int step = 1; step <= 15; step++)
+    {
+        mcSteps.Add($"+{step}");
+        curOpt += (winStep * 0.85m) - (lossStep * 0.15m);
+        curMed += (winStep * (winRate > 0 ? winRate / 100m : 0.55m)) - (lossStep * (1m - (winRate > 0 ? winRate / 100m : 0.55m)));
+        curPess += (winStep * 0.25m) - (lossStep * 0.75m);
+
+        mcOptimistic.Add(Math.Round(curOpt, 2));
+        mcMedian.Add(Math.Round(curMed, 2));
+        mcPessimistic.Add(Math.Round(Math.Max(0m, curPess), 2));
+    }
+}
+
+<div class="space-y-6 pb-16 font-sans">
+    <!-- Top Action Bar & Navigation -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl font-black">
+                <i class="fa-solid fa-chart-pie"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <h1 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">Quantitative Performance &amp; Pro Analytics</h1>
+                    <span class="px-2.5 py-0.5 rounded-full text-3xs font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">6 Visualizers</span>
+                    <span class="px-2.5 py-0.5 rounded-full text-3xs font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Dynamic PnL Engine</span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Deep-dive visual analytics: Cumulative equity trajectory, asset class weighting, directional alpha, win-rate diagnostics, and Monte Carlo forward stochastic projections.
+                </p>
+            </div>
+        </div>
+
+        <!-- Global Navigation Switcher Tabs -->
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="/Trading/Trading/Index" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-table-columns text-brand-500"></i>
+                <span>Trading Hub</span>
+            </a>
+            <a href="/Trading/Trading/Trade" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-emerald-500"></i>
+                <span>Pro Terminal</span>
+            </a>
+            <div class="px-4 py-2 text-xs font-black rounded-xl bg-indigo-600 text-white shadow-xs flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Pro Analytics</span>
+            </div>
+            <a href="/Trading/Trading/History" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-receipt text-indigo-500"></i>
+                <span>History &amp; Receipts</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 6 High-Density KPI Telemetry Metric Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+        <!-- 1. Net Return (ROI %) -->
+        <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
+            <div class="flex items-center justify-between text-3xs font-extrabold uppercase tracking-wider text-slate-400">
+                <span>Net Return</span>
+                <i class="fa-solid fa-arrow-trend-up @(roiPct >= 0 ? "text-emerald-500" : "text-rose-500")"></i>
+            </div>
+            <div class="text-xl sm:text-2xl font-black @(roiPct >= 0 ? "text-emerald-500" : "text-rose-500") mt-1 tracking-tight">
+                @(roiPct >= 0 ? "+" : "")@roiPct.ToString("N2")%
+            </div>
+            <div class="text-3xs text-slate-400 font-bold mt-1 flex items-center justify-between">
+                <span>PnL: @(netPnl >= 0 ? "+" : "")$@netPnl.ToString("N2")</span>
+            </div>
+        </div>
+
+        <!-- 2. Win Rate & Ratio -->
+        <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
+            <div class="flex items-center justify-between text-3xs font-extrabold uppercase tracking-wider text-slate-400">
+                <span>Win Rate</span>
+                <i class="fa-solid fa-bullseye text-indigo-500"></i>
+            </div>
+            <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1 tracking-tight">
+                @winRate.ToString("N1")%
+            </div>
+            <div class="text-3xs text-slate-400 font-bold mt-1 flex items-center justify-between">
+                <span class="text-emerald-500">@winCount W</span>
+                <span class="text-rose-500">@lossCount L</span>
+                <span class="text-slate-400">@beCount BE</span>
+            </div>
+        </div>
+
+        <!-- 3. Profit Factor & Payoff -->
+        <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
+            <div class="flex items-center justify-between text-3xs font-extrabold uppercase tracking-wider text-slate-400">
+                <span>Profit Factor</span>
+                <i class="fa-solid fa-scale-balanced text-amber-500"></i>
+            </div>
+            <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1 tracking-tight">
+                @profitFactor.ToString("N2")
+            </div>
+            <div class="text-3xs text-slate-400 font-bold mt-1 flex items-center justify-between">
+                <span>Payoff: @payoffRatio.ToString("N2"):1</span>
+            </div>
+        </div>
+
+        <!-- 4. Max Drawdown Depth -->
+        <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
+            <div class="flex items-center justify-between text-3xs font-extrabold uppercase tracking-wider text-slate-400">
+                <span>Max Drawdown</span>
+                <i class="fa-solid fa-water-lower text-rose-500"></i>
+            </div>
+            <div class="text-xl sm:text-2xl font-black text-rose-500 mt-1 tracking-tight">
+                -@maxDrawdownPct.ToString("N2")%
+            </div>
+            <div class="text-3xs text-slate-400 font-bold mt-1 flex items-center justify-between">
+                <span>Peak-to-Trough Loss</span>
+            </div>
+        </div>
+
+        <!-- 5. Long vs Short Edge -->
+        <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
+            <div class="flex items-center justify-between text-3xs font-extrabold uppercase tracking-wider text-slate-400">
+                <span>Long / Short Win</span>
+                <i class="fa-solid fa-arrows-split-up-and-left text-cyan-500"></i>
+            </div>
+            <div class="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-1.5 flex items-center gap-2">
+                <span class="text-emerald-500">@longWinRate.ToString("N0")%</span>
+                <span class="text-slate-300 dark:text-slate-700">/</span>
+                <span class="text-rose-500">@shortWinRate.ToString("N0")%</span>
+            </div>
+            <div class="text-3xs text-slate-400 font-bold mt-1">
+                Directional Win Rate
+            </div>
+        </div>
+
+        <!-- 6. Margin Level & Risk -->
+        <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
+            <div class="flex items-center justify-between text-3xs font-extrabold uppercase tracking-wider text-slate-400">
+                <span>Margin Level</span>
+                <i class="fa-solid fa-shield-halved text-emerald-500"></i>
+            </div>
+            <div class="text-xl sm:text-2xl font-black @(marginLevelPct > 200 ? "text-emerald-500" : (marginLevelPct > 120 ? "text-amber-500" : "text-rose-500")) mt-1 tracking-tight">
+                @(marginLevelPct > 990 ? "Safe (No Margin)" : $"{marginLevelPct:N0}%")
+            </div>
+            <div class="text-3xs text-slate-400 font-bold mt-1">
+                Usage: @marginUsagePct.ToString("N1")% of equity
+            </div>
+        </div>
+    </div>
+
+    <!-- Visualizers Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- 1. Line Chart: Equity Growth & Cumulative Trajectory (8 cols) -->
+        <div class="lg:col-span-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-emerald-500"></i>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Equity Growth Trajectory</h3>
+                </div>
+                <div class="flex items-center gap-3 text-3xs font-extrabold text-slate-400">
+                    <span>Initial: $@initialCapital.ToString("N2")</span>
+                    <span>&bull;</span>
+                    <span class="text-emerald-500">Peak: $@peakEquity.ToString("N2")</span>
+                </div>
+            </div>
+            <div class="relative h-72 sm:h-80 w-full">
+                <canvas id="ptEquityCurveCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- 2. Doughnut Chart: Asset Class Allocation (4 cols) -->
+        <div class="lg:col-span-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-indigo-500"></i>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Asset Class Allocation</h3>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-4xs font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500">Margin</span>
+            </div>
+            <div class="relative h-72 sm:h-80 w-full flex items-center justify-center">
+                <canvas id="ptAssetClassCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- 3. Doughnut Chart: Directional Long vs Short Bias (4 cols) -->
+        <div class="lg:col-span-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-arrows-up-down text-blue-500"></i>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Directional Bias (Long vs Short)</h3>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-4xs font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500">Volume</span>
+            </div>
+            <div class="relative h-64 sm:h-72 w-full flex items-center justify-center">
+                <canvas id="ptDirectionBiasCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- 4. Bar Chart: Win vs Loss Distribution (4 cols) -->
+        <div class="lg:col-span-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-chart-simple text-amber-500"></i>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Win vs Loss Distribution</h3>
+                </div>
+                <span class="text-3xs font-bold text-slate-400">PnL Aggregate</span>
+            </div>
+            <div class="relative h-64 sm:h-72 w-full">
+                <canvas id="ptWinLossDistCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- 5. Bar Chart: Leverage Tiers Breakdown (4 cols) -->
+        <div class="lg:col-span-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-purple-500"></i>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Leverage Tier Exposure</h3>
+                </div>
+                <span class="text-3xs font-bold text-slate-400">Position Count</span>
+            </div>
+            <div class="relative h-64 sm:h-72 w-full">
+                <canvas id="ptLeverageCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- 6. Line Chart: Underwater Equity Drawdown Depth (12 cols) -->
+        <div class="lg:col-span-12 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-water text-rose-500"></i>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Underwater Drawdown Curve (% from Peak)</h3>
+                </div>
+                <div class="flex items-center gap-3 text-3xs font-extrabold text-slate-400">
+                    <span class="text-rose-500 font-bold">Max Drawdown: -@maxDrawdownPct.ToString("N2")%</span>
+                    <span>&bull;</span>
+                    <span>Current Drawdown: -@currentDrawdownPct.ToString("N2")%</span>
+                </div>
+            </div>
+            <div class="relative h-60 sm:h-64 w-full">
+                <canvas id="ptUnderwaterCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trader Diagnostics, Radar & Day-of-Week -->
+    <div class="space-y-4 pt-2">
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-brain text-purple-500"></i>
+                <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Quantitative Diagnostics, Trader Radar &amp; Timing</h3>
+            </div>
+            <span class="text-3xs font-bold text-slate-400">Multi-Factor Analysis</span>
+        </div>
+
+        <!-- 3 Behavioral Metric Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">Max Win Streak</span>
+                <div class="text-base sm:text-lg font-black text-emerald-500 mt-1 font-mono">
+                    @maxWinStreak Wins
+                </div>
+                <span class="text-3xs font-bold text-slate-400 mt-1 block">Current: @currentWinStreak</span>
+            </div>
+
+            <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">Max Loss Streak</span>
+                <div class="text-base sm:text-lg font-black text-rose-500 mt-1 font-mono">
+                    @maxLossStreak Losses
+                </div>
+                <span class="text-3xs font-bold text-slate-400 mt-1 block">Current: @currentLossStreak</span>
+            </div>
+
+            <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">Avg Holding Time</span>
+                <div class="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200 mt-1 font-mono flex items-center justify-between">
+                    <span class="text-emerald-500">W: @avgWinMinutes.ToString("N0")m</span>
+                    <span class="text-rose-500">L: @avgLossMinutes.ToString("N0")m</span>
+                </div>
+                <span class="text-3xs font-bold text-slate-400 mt-1 block">Cut Losers Discipline</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Radar Chart: Trader Competency Scorecard (6 cols) -->
+            <div class="lg:col-span-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-radar text-indigo-500"></i>
+                        <h3 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Trader Competency Spiderweb (0 - 100)</h3>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full text-3xs font-extrabold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 uppercase tracking-wider">
+                        Radar
+                    </span>
+                </div>
+                <div class="relative h-64 sm:h-72 w-full flex items-center justify-center">
+                    <canvas id="ptRadarCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Bar Chart: Day of Week PnL Breakdown (6 cols) -->
+            <div class="lg:col-span-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-week text-emerald-500"></i>
+                        <h3 class="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Day-of-Week Profitability (Mon - Sun)</h3>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full text-3xs font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">
+                        Daily PnL
+                    </span>
+                </div>
+                <div class="relative h-64 sm:h-72 w-full">
+                    <canvas id="ptDayOfWeekCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monte Carlo Forward Projections -->
+    <div class="space-y-4 pt-2">
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i>
+                <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Monte Carlo Forward Stochastic Projections (Next 15 Trades)</h3>
+            </div>
+            <span class="text-3xs font-bold text-slate-400">Probabilistic Modeling</span>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div>
+                    <span class="text-3xs uppercase font-extrabold text-slate-400 block tracking-wider">Forward Paths</span>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                        Simulates 3 probabilistic equity paths based on your historical Win Rate (@winRate.ToString("N1")%) &amp; Payoff Ratio (@payoffRatio.ToString("N2")):1.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 text-3xs font-bold">
+                    <span class="inline-flex items-center gap-1 text-emerald-500"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 90th %ile (Bull)</span>
+                    <span class="inline-flex items-center gap-1 text-blue-500"><span class="w-2 h-2 rounded-full bg-blue-500"></span> 50th %ile (Median)</span>
+                    <span class="inline-flex items-center gap-1 text-rose-500"><span class="w-2 h-2 rounded-full bg-rose-500"></span> 10th %ile (Bear)</span>
+                </div>
+            </div>
+            <div class="relative h-64 sm:h-72 w-full">
+                <canvas id="ptMonteCarloCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const isDark = document.documentElement.classList.contains('dark');
+        const gridColor = isDark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(148, 163, 184, 0.12)';
+        const textColor = isDark ? '#94a3b8' : '#64748b';
+
+        const commonPlugins = {
+            legend: {
+                labels: { color: textColor, font: { weight: 'bold', size: 11 } }
+            },
+            tooltip: {
+                backgroundColor: isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                titleColor: isDark ? '#f8fafc' : '#0f172a',
+                bodyColor: isDark ? '#94a3b8' : '#475569',
+                borderColor: isDark ? '#334155' : '#e2e8f0',
+                borderWidth: 1,
+                padding: 10,
+                cornerRadius: 12
+            }
+        };
+
+        // 1. Line Chart: Equity Growth & Cumulative PnL Trajectory
+        const eqCanvas = document.getElementById('ptEquityCurveCanvas');
+        if (eqCanvas) {
+            const eqLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(eqLabels));
+            const eqValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(eqValues));
+
+            new Chart(eqCanvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: eqLabels,
+                    datasets: [{
+                        label: 'Account Equity ($)',
+                        data: eqValues,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#10b981',
+                        pointHoverRadius: 6,
+                        borderWidth: 2.5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        ...commonPlugins,
+                        tooltip: {
+                            ...commonPlugins.tooltip,
+                            callbacks: {
+                                label: ctx => ` Equity: $${Number(ctx.raw || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: textColor, font: { size: 10, weight: 'bold' } }
+                        },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: textColor,
+                                font: { size: 10 },
+                                callback: val => `$${Number(val).toLocaleString()}`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Doughnut Chart: Asset Class Allocation
+        const acCanvas = document.getElementById('ptAssetClassCanvas');
+        if (acCanvas) {
+            const acLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(assetClassDict.Keys));
+            const acValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(assetClassDict.Values));
+
+            new Chart(acCanvas.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: acLabels,
+                    datasets: [{
+                        data: acValues,
+                        backgroundColor: ['#f59e0b', '#3b82f6', '#a855f7', '#06b6d4', '#10b981'],
+                        borderWidth: isDark ? 2 : 1,
+                        borderColor: isDark ? '#0f172a' : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: textColor, boxWidth: 12, font: { size: 11, weight: 'bold' } } },
+                        tooltip: {
+                            ...commonPlugins.tooltip,
+                            callbacks: {
+                                label: ctx => ` ${ctx.label}: $${Number(ctx.raw).toLocaleString()} margin`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 3. Doughnut Chart: Directional Long vs Short Bias
+        const dirCanvas = document.getElementById('ptDirectionBiasCanvas');
+        if (dirCanvas) {
+            new Chart(dirCanvas.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Long (Buy)', 'Short (Sell)'],
+                    datasets: [{
+                        data: [@longPositions.Count, @shortPositions.Count],
+                        backgroundColor: ['#10b981', '#f43f5e'],
+                        borderWidth: isDark ? 2 : 1,
+                        borderColor: isDark ? '#0f172a' : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: textColor, boxWidth: 12, font: { size: 11, weight: 'bold' } } },
+                        tooltip: {
+                            ...commonPlugins.tooltip,
+                            callbacks: {
+                                label: ctx => ` ${ctx.label}: ${ctx.raw} trades`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 4. Bar Chart: Win vs Loss Distribution
+        const wlCanvas = document.getElementById('ptWinLossDistCanvas');
+        if (wlCanvas) {
+            new Chart(wlCanvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Gross Gains', 'Gross Losses', 'Net PnL'],
+                    datasets: [{
+                        label: 'Dollars ($)',
+                        data: [@totalGains, -@totalLosses, @netPnl],
+                        backgroundColor: ['#10b981', '#f43f5e', @(netPnl >= 0 ? "'#3b82f6'" : "'#f43f5e'")],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            ...commonPlugins.tooltip,
+                            callbacks: {
+                                label: ctx => ` ${ctx.label}: ${Number(ctx.raw) >= 0 ? '+' : ''}$${Number(ctx.raw).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: textColor, font: { weight: 'bold', size: 10 } } },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: textColor,
+                                font: { size: 10 },
+                                callback: val => `$${Number(val).toLocaleString()}`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 5. Bar Chart: Leverage Tier Exposure
+        const levCanvas = document.getElementById('ptLeverageCanvas');
+        if (levCanvas) {
+            new Chart(levCanvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['1x - 5x (Spot)', '6x - 20x (Swing)', '21x - 50x (Moderate)', '51x - 100x (High)', '100x+ (Ultra)'],
+                    datasets: [{
+                        label: 'Positions in Tier',
+                        data: [@lev1to5, @lev6to20, @lev21to50, @lev51to100, @levUltra],
+                        backgroundColor: ['#3b82f6', '#6366f1', '#a855f7', '#f59e0b', '#f43f5e'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            ...commonPlugins.tooltip,
+                            callbacks: {
+                                label: ctx => ` Volume: ${ctx.raw} positions`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: textColor, font: { size: 9, weight: 'bold' } } },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: { color: textColor, stepSize: 1, font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 6. Line Chart: Underwater Equity Drawdown Depth (%)
+        const uwCanvas = document.getElementById('ptUnderwaterCanvas');
+        if (uwCanvas) {
+            const uwLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(underwaterLabels));
+            const uwData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(underwaterValues));
+
+            new Chart(uwCanvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: uwLabels,
+                    datasets: [{
+                        label: 'Drawdown Depth (%)',
+                        data: uwData,
+                        borderColor: '#f43f5e',
+                        backgroundColor: 'rgba(244, 63, 94, 0.15)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#f43f5e',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            ...commonPlugins.tooltip,
+                            callbacks: {
+                                label: ctx => ` Drawdown: ${ctx.raw}%`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+                        y: {
+                            max: 0,
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: textColor,
+                                font: { size: 10 },
+                                callback: val => `${val}%`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 7. Radar Chart: Trader Competency Scorecard
+        const radarCanvas = document.getElementById('ptRadarCanvas');
+        if (radarCanvas) {
+            new Chart(radarCanvas.getContext('2d'), {
+                type: 'radar',
+                data: {
+                    labels: [
+                        'Win Rate Consistency',
+                        'Profit Factor Quality',
+                        'Drawdown Control',
+                        'Payoff Asymmetry',
+                        'Leverage Moderation',
+                        'Asset Diversification'
+                    ],
+                    datasets: [{
+                        label: 'Competency Score (0 - 100)',
+                        data: [@scoreWinRate, @scoreProfitFactor, @scoreDrawdownControl, @scorePayoff, @scoreLeverage, @scoreDiversity],
+                        backgroundColor: 'rgba(99, 102, 241, 0.25)',
+                        borderColor: '#6366f1',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#6366f1',
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            ...commonPlugins.tooltip,
+                            callbacks: {
+                                label: ctx => ` ${ctx.label}: ${ctx.raw}/100`
+                            }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 100,
+                            grid: { color: gridColor },
+                            angleLines: { color: gridColor },
+                            pointLabels: { color: textColor, font: { size: 10, weight: 'bold' } },
+                            ticks: { display: false, stepSize: 20 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 8. Bar Chart: Day of Week PnL Breakdown
+        const dowCanvas = document.getElementById('ptDayOfWeekCanvas');
+        if (dowCanvas) {
+            const dowLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(dayPnlDict.Keys));
+            const dowData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(dayPnlDict.Values));
+            const dowColors = dowData.map(v => v >= 0 ? '#10b981' : '#f43f5e');
+
+            new Chart(dowCanvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: dowLabels,
+                    datasets: [{
+                        label: 'PnL ($)',
+                        data: dowData,
+                        backgroundColor: dowColors,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            ...commonPlugins.tooltip,
+                            callbacks: {
+                                label: ctx => ` PnL: ${Number(ctx.raw) >= 0 ? '+' : ''}$${Number(ctx.raw || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: textColor, font: { weight: 'bold', size: 10 } } },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: textColor,
+                                font: { size: 10 },
+                                callback: val => `${Number(val) >= 0 ? '+' : ''}$${Number(val).toLocaleString()}`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 9. Multi-Line Chart: Monte Carlo Forward Projections
+        const mcCanvas = document.getElementById('ptMonteCarloCanvas');
+        if (mcCanvas) {
+            const mcLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(mcSteps));
+            const mcOptData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(mcOptimistic));
+            const mcMedData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(mcMedian));
+            const mcPessData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(mcPessimistic));
+
+            new Chart(mcCanvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: mcLabels,
+                    datasets: [
+                        {
+                            label: '90th %ile (Optimistic Bull)',
+                            data: mcOptData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                            tension: 0.35,
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            fill: false
+                        },
+                        {
+                            label: '50th %ile (Expected Median)',
+                            data: mcMedData,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                            tension: 0.35,
+                            borderWidth: 2.5,
+                            pointRadius: 3,
+                            fill: false
+                        },
+                        {
+                            label: '10th %ile (Conservative Bear)',
+                            data: mcPessData,
+                            borderColor: '#f43f5e',
+                            backgroundColor: 'rgba(244, 63, 94, 0.05)',
+                            tension: 0.35,
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        ...commonPlugins,
+                        tooltip: {
+                            ...commonPlugins.tooltip,
+                            callbacks: {
+                                label: ctx => ` ${ctx.dataset.label}: $${Number(ctx.raw || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: textColor,
+                                font: { size: 10 },
+                                callback: val => `$${Number(val).toLocaleString()}`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>

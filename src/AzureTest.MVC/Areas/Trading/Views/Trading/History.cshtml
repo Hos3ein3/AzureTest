@@ -53,6 +53,17 @@
         return $"{Math.Max(1, d.Seconds)}s";
     }
 
+    string GetRelativeTime(DateTime? dt)
+    {
+        if (!dt.HasValue) return "--";
+        var diff = DateTime.UtcNow - dt.Value;
+        if (diff.TotalSeconds < 60) return "Just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 30) return $"{(int)diff.TotalDays}d ago";
+        return dt.Value.ToString("yyyy-MM-dd");
+    }
+
     sealed record MultiTpLevelItem(decimal Price, decimal Percentage);
 
     List<MultiTpLevelItem> ParseMultiTp(string? json)
@@ -117,6 +128,10 @@
             <a href="/Trading/Trading/Trade" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-2">
                 <i class="fa-solid fa-chart-line text-emerald-500"></i>
                 <span>Pro Terminal</span>
+            </a>
+            <a href="/Trading/Trading/Analytics" class="px-4 py-2 text-xs font-bold rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800/40 transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-purple-500"></i>
+                <span>Pro Analytics</span>
             </a>
             <div class="px-4 py-2 text-xs font-black rounded-xl bg-indigo-600 text-white shadow-xs flex items-center gap-2">
                 <i class="fa-solid fa-receipt"></i>
@@ -315,12 +330,17 @@
                             <th class="py-3 px-3">Type</th>
                             <th class="py-3 px-3">Units (Qty)</th>
                             <th class="py-3 px-3">Margin &amp; Lev</th>
-                            <th class="py-3 px-3">% Balance</th>
-                            <th class="py-3 px-3">Entry &rarr; Exit Price</th>
-                            <th class="py-3 px-3">TP &amp; SL Levels</th>
+                            <th class="py-3 px-3">% Bal</th>
+                            <th class="py-3 px-3">Entry Price</th>
+                            <th class="py-3 px-3.5 bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-x border-amber-500/20 font-black">
+                                <i class="fa-solid fa-flag-checkered mr-1"></i>Price Closed With
+                            </th>
+                            <th class="py-3 px-3.5 bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border-r border-indigo-500/20 font-black">
+                                <i class="fa-solid fa-calendar-check mr-1"></i>Closed When
+                            </th>
+                            <th class="py-3 px-3">TP &amp; SL</th>
                             <th class="py-3 px-3">Realized PnL</th>
                             <th class="py-3 px-3">Outcome</th>
-                            <th class="py-3 px-3">Duration</th>
                             <th class="py-3 px-3 sm:px-4 text-right">Receipt</th>
                         </tr>
                     </thead>
@@ -408,19 +428,41 @@
                                     </div>
                                 </td>
 
-                                <!-- 6. Entry vs Exit Price -->
+                                <!-- 6. Entry Price -->
                                 <td class="py-3 px-3">
-                                    <div class="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-300">
-                                        <span>@FormatPrice(t.EntryPrice)</span>
-                                        <span class="text-slate-400">&rarr;</span>
-                                        <span class="font-black text-slate-900 dark:text-white">@FormatPrice(t.ClosePrice)</span>
+                                    <div class="font-bold text-slate-700 dark:text-slate-300">
+                                        @FormatPrice(t.EntryPrice)
                                     </div>
-                                    <div class="text-3xs font-extrabold @(priceDiff >= 0 ? "text-emerald-500" : "text-rose-500")">
-                                        @(priceDiff >= 0 ? "+" : "")@priceDiffPct.ToString("0.00")%
+                                    <div class="text-3xs text-slate-400">
+                                        Open Price
                                     </div>
                                 </td>
 
-                                <!-- 7. TP & SL Levels -->
+                                <!-- 7. Price Trade Closed With (Prominently Highlighted) -->
+                                <td class="py-3 px-3.5 bg-amber-500/5 dark:bg-amber-500/10 border-x border-amber-500/10">
+                                    <div class="font-black text-sm text-slate-900 dark:text-white flex items-center gap-1">
+                                        <span>@FormatPrice(t.ClosePrice ?? t.CurrentPrice)</span>
+                                    </div>
+                                    <div class="text-3xs font-extrabold @(priceDiff >= 0 ? "text-emerald-500" : "text-rose-500") flex items-center gap-1">
+                                        <span>@(priceDiff >= 0 ? "+" : "")@priceDiffPct.ToString("0.00")%</span>
+                                        <span class="text-slate-400 font-normal">vs Entry</span>
+                                    </div>
+                                </td>
+
+                                <!-- 8. Closed When (Prominently Highlighted UTC & Relative) -->
+                                <td class="py-3 px-3.5 bg-indigo-500/5 dark:bg-indigo-500/10 border-r border-indigo-500/10">
+                                    <div class="font-black text-slate-900 dark:text-white text-xs">
+                                        @(t.ClosedAtUtc?.ToString("MMM dd, yyyy HH:mm:ss") ?? "--") <span class="text-3xs font-bold text-slate-400">UTC</span>
+                                    </div>
+                                    <div class="text-3xs flex items-center gap-1.5 mt-0.5">
+                                        <span class="px-1.5 py-0.2 rounded font-black bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                                            @GetRelativeTime(t.ClosedAtUtc)
+                                        </span>
+                                        <span class="text-slate-400 text-4xs">Held @FormatDuration(t.Duration)</span>
+                                    </div>
+                                </td>
+
+                                <!-- 9. TP & SL Levels -->
                                 <td class="py-3 px-3">
                                     <div class="space-y-0.5 text-3xs">
                                         @if (t.TakeProfit.HasValue)
@@ -457,7 +499,7 @@
                                     </div>
                                 </td>
 
-                                <!-- 8. Realized PnL & ROI -->
+                                <!-- 10. Realized PnL & ROI -->
                                 <td class="py-3 px-3">
                                     <div class="font-black text-sm @roiColor">
                                         @(t.RealizedPnl >= 0 ? "+" : "")$@t.RealizedPnl.ToString("#,##0.00")
@@ -467,7 +509,7 @@
                                     </div>
                                 </td>
 
-                                <!-- 9. Outcome Badge -->
+                                <!-- 11. Outcome Badge -->
                                 <td class="py-3 px-3">
                                     <div class="space-y-0.5">
                                         <span class="inline-block px-2 py-0.5 rounded-md text-4xs font-black uppercase tracking-wider @outcomeBg">
@@ -479,17 +521,7 @@
                                     </div>
                                 </td>
 
-                                <!-- 10. Duration -->
-                                <td class="py-3 px-3">
-                                    <div class="font-bold text-slate-700 dark:text-slate-300">
-                                        @FormatDuration(t.Duration)
-                                    </div>
-                                    <div class="text-4xs text-slate-400">
-                                        @(t.ClosedAtUtc?.ToString("MMM dd HH:mm") ?? t.OpenedAtUtc.ToString("MMM dd HH:mm"))
-                                    </div>
-                                </td>
-
-                                <!-- 11. Receipt Action -->
+                                <!-- 12. Receipt Action -->
                                 <td class="py-3 px-3 sm:px-4 text-right">
                                     <button type="button" onclick="showTradeReceipt(@System.Text.Json.JsonSerializer.Serialize(t))"
                                             class="px-2.5 py-1 text-3xs font-black rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 transition-colors inline-flex items-center gap-1 shadow-2xs">
@@ -536,6 +568,26 @@
                 <div class="text-right">
                     <span id="modalOutcomeBadge" class="px-2.5 py-1 rounded-lg text-3xs font-black uppercase">WIN</span>
                     <div class="text-3xs font-extrabold text-slate-400 mt-0.5" id="modalRoiPct">0.00% ROI</div>
+                </div>
+            </div>
+
+            <!-- Top Hero Card: Price Trade Closed With & Closed When -->
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 grid grid-cols-1 sm:grid-cols-2 gap-3.5 shadow-2xs">
+                <div class="space-y-0.5">
+                    <div class="text-4xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-flag-checkered text-xs"></i>
+                        <span>Price Trade Closed With</span>
+                    </div>
+                    <div class="text-xl font-black text-slate-900 dark:text-white" id="modalHeroExitPrice">--</div>
+                    <div class="text-3xs font-black" id="modalHeroExitDiff">--</div>
+                </div>
+                <div class="space-y-0.5 border-t sm:border-t-0 sm:border-l border-slate-200 dark:border-slate-700/60 pt-2.5 sm:pt-0 sm:pl-3.5">
+                    <div class="text-4xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-calendar-check text-xs"></i>
+                        <span>Closed When</span>
+                    </div>
+                    <div class="text-xs font-black text-slate-900 dark:text-white" id="modalHeroClosedWhen">--</div>
+                    <div class="text-3xs font-extrabold text-indigo-600 dark:text-indigo-400 mt-0.5" id="modalHeroClosedRelative">--</div>
                 </div>
             </div>
 
@@ -651,6 +703,40 @@
 
         document.getElementById('modalRoiPct').innerText = (Number(t.RoiPercentage || 0) >= 0 ? '+' : '') + 
             Number(t.RoiPercentage || 0).toFixed(2) + '% ROI';
+
+        // Price Trade Closed With & Closed When - Hero Highlights
+        const closeP = (t.ClosePrice !== null && t.ClosePrice !== undefined) ? Number(t.ClosePrice) : ((t.CurrentPrice !== null && t.CurrentPrice !== undefined) ? Number(t.CurrentPrice) : null);
+        const entryP = Number(t.EntryPrice || 0);
+
+        if (closeP !== null && closeP > 0) {
+            document.getElementById('modalHeroExitPrice').innerText = '$' + closeP.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+            const pDiff = closeP - entryP;
+            const pDiffPct = entryP > 0 ? (pDiff / entryP) * 100 : 0;
+            const diffEl = document.getElementById('modalHeroExitDiff');
+            diffEl.innerText = `${pDiff >= 0 ? '+' : ''}${pDiffPct.toFixed(2)}% vs Entry ($${entryP.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })})`;
+            diffEl.className = `text-3xs font-black ${pDiff >= 0 ? 'text-emerald-500' : 'text-rose-500'}`;
+        } else {
+            document.getElementById('modalHeroExitPrice').innerText = '--';
+            const diffEl = document.getElementById('modalHeroExitDiff');
+            diffEl.innerText = 'Closed Price Unavailable';
+            diffEl.className = 'text-3xs font-bold text-slate-400';
+        }
+
+        if (t.ClosedAtUtc) {
+            const cDate = new Date(t.ClosedAtUtc);
+            document.getElementById('modalHeroClosedWhen').innerText = cDate.toUTCString();
+            const diffMs = Date.now() - cDate.getTime();
+            const diffSec = Math.max(0, Math.floor(diffMs / 1000));
+            let rel = '';
+            if (diffSec < 60) rel = 'Just now';
+            else if (diffSec < 3600) rel = `${Math.floor(diffSec / 60)}m ago`;
+            else if (diffSec < 86400) rel = `${Math.floor(diffSec / 3600)}h ago`;
+            else rel = `${Math.floor(diffSec / 86400)}d ago`;
+            document.getElementById('modalHeroClosedRelative').innerText = `${rel} (Holding period logged)`;
+        } else {
+            document.getElementById('modalHeroClosedWhen').innerText = '--';
+            document.getElementById('modalHeroClosedRelative').innerText = '--';
+        }
 
         // Grid values
         document.getElementById('modalSideText').innerText = isBuy ? 'Long (Buy)' : 'Short (Sell)';

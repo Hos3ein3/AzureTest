@@ -75,6 +75,16 @@ public class TradingController : Controller
         return View(result.Value);
     }
 
+    [DisplayName("Quantitative Performance & Pro Analytics")]
+    [Description("Deep-dive trader telemetry, cumulative equity trajectory, Monte Carlo forward projections, day-of-week PnL, trader competency radar, and risk diagnostics.")]
+    public async Task<IActionResult> Analytics(CancellationToken ct = default)
+    {
+        var result = await _queries.GetDashboardAsync(
+            new GetTradingDashboardQuery(_currentUser.Id, _currentUser.TenantId, "BTCUSDT"), ct);
+
+        return View(result.Value);
+    }
+
     [DisplayName("Trade History & Receipts")]
     [Description("Comprehensive trade history ledger showing closed positions, executed prices, margin used, PnL, leverage, and full receipts.")]
     public async Task<IActionResult> History(
