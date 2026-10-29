@@ -21,6 +21,7 @@ public interface ITradingMarketDataService
     Task<TradingQuoteDto?> GetQuoteAsync(string symbol, HashSet<string>? watchlistedSymbols = null, CancellationToken ct = default);
     Task<decimal> GetCurrentPriceAsync(string symbol, decimal fallback = 100m, CancellationToken ct = default);
     Task RefreshRealWorldDataAsync(CancellationToken ct = default);
+    Task RefreshSymbolsDataAsync(IEnumerable<string> symbols, CancellationToken ct = default);
     Task<IReadOnlyList<TradingQuoteDto>> SearchAssetsAsync(string query, HashSet<string>? watchlistedSymbols = null, CancellationToken ct = default);
 
     IReadOnlyList<TradingQuoteDto> GetAllQuotes(HashSet<string>? watchlistedSymbols = null);
@@ -69,7 +70,7 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
         // Cryptocurrencies (Real-World Live Feed via Binance Public API)
         new("BTCUSDT", "Bitcoin", AssetClass.Crypto, 67450.00m, 2.45m, 68100.00m, 65890.00m, 2450000000m),
         new("ETHUSDT", "Ethereum", AssetClass.Crypto, 3520.50m, 1.80m, 3560.00m, 3440.00m, 1200000000m),
-        new("SOLUSDT", "Solana", AssetClass.Crypto, 182.40m, 5.60m, 185.90m, 171.50m, 850000000m),
+        new("SOLUSDT", "Solana", AssetClass.Crypto, 102.50m, 2.80m, 106.50m, 99.20m, 850000000m),
         new("BNBUSDT", "BNB Chain", AssetClass.Crypto, 594.80m, -0.40m, 602.00m, 588.00m, 420000000m),
         new("XRPUSDT", "Ripple XRP", AssetClass.Crypto, 0.5840m, 3.20m, 0.5980m, 0.5620m, 380000000m),
         new("DOGEUSDT", "Dogecoin", AssetClass.Crypto, 0.1420m, 6.80m, 0.1490m, 0.1310m, 290000000m),
@@ -156,6 +157,185 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
         }
     }
 
+    private static async Task<HttpResponseMessage?> SendWithRetryAsync(
+        HttpClient http,
+        Func<HttpRequestMessage> requestFactory,
+        ILogger logger,
+        int maxRetries = 3,
+        CancellationToken ct = default)
+    {
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                using var request = requestFactory();
+                var response = await http.SendAsync(request, ct);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return response;
+                }
+
+                if ((int)response.StatusCode == 429 || (int)response.StatusCode >= 500)
+                {
+                    var delayMs = (int)(Math.Pow(2, attempt) * 150) + Random.Shared.Next(50, 150);
+                    logger.LogWarning("HTTP call to {Uri} failed with status {StatusCode}. Attempt {Attempt}/{MaxRetries}, retrying in {DelayMs}ms.",
+                        response.RequestMessage?.RequestUri, response.StatusCode, attempt, maxRetries, delayMs);
+                    response.Dispose();
+
+                    if (attempt < maxRetries)
+                    {
+                        await Task.Delay(delayMs, ct);
+                        continue;
+                    }
+                }
+
+                return response;
+            }
+            catch (Exception ex) when (attempt < maxRetries && !ct.IsCancellationRequested)
+            {
+                var delayMs = (int)(Math.Pow(2, attempt) * 150) + Random.Shared.Next(50, 150);
+                logger.LogWarning(ex, "HTTP request failed on attempt {Attempt}/{MaxRetries}. Retrying in {DelayMs}ms.", attempt, maxRetries, delayMs);
+                await Task.Delay(delayMs, ct);
+            }
+        }
+
+        return null;
+    }
+
+    private static void UpdateLiveCacheFromBinanceElement(JsonElement el)
+    {
+        if (el.TryGetProperty("symbol", out var sProp) &&
+            el.TryGetProperty("lastPrice", out var lpProp) &&
+            decimal.TryParse(lpProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var price) &&
+            price > 0)
+        {
+            var sym = sProp.GetString() ?? string.Empty;
+            decimal change = decimal.TryParse(el.GetProperty("priceChange").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var cVal) ? cVal : 0m;
+            decimal pct = decimal.TryParse(el.GetProperty("priceChangePercent").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pVal) ? pVal : 0m;
+            decimal high = decimal.TryParse(el.GetProperty("highPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var hVal) ? hVal : price * 1.05m;
+            decimal low = decimal.TryParse(el.GetProperty("lowPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var lVal) ? lVal : price * 0.95m;
+            decimal vol = decimal.TryParse(el.GetProperty("volume").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var vVal) ? vVal : 100000m;
+
+            LiveCache[sym] = new LiveQuoteState(price, change, pct, high, low, vol, IsSimulated: false);
+        }
+    }
+
+    public async Task RefreshSymbolsDataAsync(IEnumerable<string> symbols, CancellationToken ct = default)
+    {
+        var symbolList = (symbols ?? Enumerable.Empty<string>())
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s.Trim().ToUpperInvariant())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (symbolList.Count == 0)
+        {
+            return;
+        }
+
+        var cryptoSymbols = new List<string>();
+        var forexSymbols = new List<string>();
+
+        foreach (var sym in symbolList)
+        {
+            if (Catalog.Any(c => c.Symbol.Equals(sym, StringComparison.OrdinalIgnoreCase) && c.AssetClass == AssetClass.Forex) || sym.Contains('/'))
+            {
+                forexSymbols.Add(sym);
+            }
+            else if (!Catalog.Any(c => c.Symbol.Equals(sym, StringComparison.OrdinalIgnoreCase) && c.IsSimulated))
+            {
+                cryptoSymbols.Add(sym);
+            }
+        }
+
+        var tasks = new List<Task>();
+
+        if (cryptoSymbols.Count > 0)
+        {
+            tasks.Add(Task.Run(async () =>
+            {
+                try
+                {
+                    string url;
+                    if (cryptoSymbols.Count == 1)
+                    {
+                        url = $"https://api.binance.com/api/v3/ticker/24hr?symbol={cryptoSymbols[0]}";
+                    }
+                    else
+                    {
+                        var symbolsJson = JsonSerializer.Serialize(cryptoSymbols);
+                        url = $"https://api.binance.com/api/v3/ticker/24hr?symbols={Uri.EscapeDataString(symbolsJson)}";
+                    }
+
+                    var res = await SendWithRetryAsync(
+                        _http,
+                        () => new HttpRequestMessage(HttpMethod.Get, url),
+                        _logger,
+                        maxRetries: 3,
+                        ct: ct);
+
+                    if (res != null && res.IsSuccessStatusCode)
+                    {
+                        var json = await res.Content.ReadAsStringAsync(ct);
+                        res.Dispose();
+                        using var doc = JsonDocument.Parse(json);
+
+                        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var el in doc.RootElement.EnumerateArray())
+                            {
+                                UpdateLiveCacheFromBinanceElement(el);
+                            }
+                        }
+                        else if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                        {
+                            UpdateLiveCacheFromBinanceElement(doc.RootElement);
+                        }
+                    }
+                    else
+                    {
+                        res?.Dispose();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "TradingMarketDataService: Resilient fetch failed for {Count} active crypto symbols.", cryptoSymbols.Count);
+                }
+            }, ct));
+        }
+
+        if (forexSymbols.Count > 0)
+        {
+            tasks.AddRange(forexSymbols.Select(async f =>
+            {
+                try
+                {
+                    var quote = await _forexMarketData.GetQuoteAsync(f, ct);
+                    if (quote != null && quote.Bid > 0)
+                    {
+                        var change = quote.Bid * (quote.ChangePercent / 100m);
+                        LiveCache[f] = new LiveQuoteState(
+                            quote.Bid,
+                            change,
+                            quote.ChangePercent,
+                            quote.High24h,
+                            quote.Low24h,
+                            1000000m,
+                            IsSimulated: false
+                        );
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to refresh forex rate for {Symbol}", f);
+                }
+            }));
+        }
+
+        await Task.WhenAll(tasks);
+    }
+
     public async Task RefreshRealWorldDataAsync(CancellationToken ct = default)
     {
         if (DateTime.UtcNow - _lastRefreshUtc < CacheExpiry && !LiveCache.IsEmpty)
@@ -178,35 +358,70 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
             var binanceCryptoItems = Catalog.Where(c => c.AssetClass == AssetClass.Crypto)
                 .Concat(DynamicCatalog.Values.Where(d => d.AssetClass == AssetClass.Crypto && !d.IsSimulated && d.FeedSource == "binance"));
 
-            // 1. Fetch Real-World Crypto prices via Binance Public API
-            var cryptoTasks = binanceCryptoItems.Select(async c =>
+            // 1. Fetch Real-World Crypto prices via Binance Public API in a single high-efficiency batch call with retry resilience
+            var cryptoBatchTask = Task.Run(async () =>
             {
+                var cryptoList = binanceCryptoItems.ToList();
                 try
                 {
-                    var livePrice = await _cryptoMarketData.GetCurrentPriceAsync(c.Symbol, ct);
-                    if (livePrice > 0)
-                    {
-                        var delta = livePrice - c.BasePrice;
-                        var pct = c.BasePrice > 0 ? Math.Round((delta / c.BasePrice) * 100m, 2) : 0m;
-                        var high = Math.Max(c.High, livePrice);
-                        var low = Math.Min(c.Low, livePrice);
+                    var res = await SendWithRetryAsync(
+                        _http,
+                        () => new HttpRequestMessage(HttpMethod.Get, "https://api.binance.com/api/v3/ticker/24hr"),
+                        _logger,
+                        maxRetries: 3,
+                        ct: ct);
 
-                        LiveCache[c.Symbol] = new LiveQuoteState(
-                            livePrice,
-                            delta,
-                            pct,
-                            high,
-                            low,
-                            c.Volume,
-                            IsSimulated: false
-                        );
+                    if (res != null && res.IsSuccessStatusCode)
+                    {
+                        var json = await res.Content.ReadAsStringAsync(ct);
+                        res.Dispose();
+                        using var doc = JsonDocument.Parse(json);
+                        var tickerMap = new Dictionary<string, (decimal price, decimal change, decimal pct, decimal high, decimal low, decimal vol)>(StringComparer.OrdinalIgnoreCase);
+
+                        foreach (var el in doc.RootElement.EnumerateArray())
+                        {
+                            if (el.TryGetProperty("symbol", out var sProp) &&
+                                el.TryGetProperty("lastPrice", out var lpProp) &&
+                                decimal.TryParse(lpProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var price) &&
+                                price > 0)
+                            {
+                                var sym = sProp.GetString() ?? string.Empty;
+                                decimal change = decimal.TryParse(el.GetProperty("priceChange").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var cVal) ? cVal : 0m;
+                                decimal pct = decimal.TryParse(el.GetProperty("priceChangePercent").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pVal) ? pVal : 0m;
+                                decimal high = decimal.TryParse(el.GetProperty("highPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var hVal) ? hVal : price * 1.05m;
+                                decimal low = decimal.TryParse(el.GetProperty("lowPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var lVal) ? lVal : price * 0.95m;
+                                decimal vol = decimal.TryParse(el.GetProperty("volume").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var vVal) ? vVal : 100000m;
+
+                                tickerMap[sym] = (price, change, pct, high, low, vol);
+                            }
+                        }
+
+                        foreach (var c in cryptoList)
+                        {
+                            if (tickerMap.TryGetValue(c.Symbol, out var t))
+                            {
+                                LiveCache[c.Symbol] = new LiveQuoteState(
+                                    t.price,
+                                    t.change,
+                                    t.pct,
+                                    t.high,
+                                    t.low,
+                                    t.vol,
+                                    IsSimulated: false
+                                );
+                            }
+                        }
+                    }
+                    else
+                    {
+                        res?.Dispose();
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "TradingMarketDataService: Failed to update live Binance crypto price for {Symbol}.", c.Symbol);
+                    _logger.LogWarning(ex, "TradingMarketDataService: Batch update from Binance failed. Keeping existing live cache.");
                 }
-            });
+            }, ct);
 
             // 2. Fetch Real-World Forex rates via Frankfurter (European Central Bank)
             var forexTasks = Catalog.Where(c => c.AssetClass == AssetClass.Forex).Select(async f =>
@@ -234,108 +449,7 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                 }
             });
 
-            // 3. For MEXC tokens, query MEXC live API for fresh real-world pricing
-            var mexcTasks = DynamicCatalog.Values
-                .Where(d => d.FeedSource == "mexc")
-                .Select(async m =>
-                {
-                    try
-                    {
-                        var res = await _http.GetAsync($"https://api.mexc.com/api/v3/ticker/24hr?symbol={m.Symbol}", ct);
-                        if (res.IsSuccessStatusCode)
-                        {
-                            var json = await res.Content.ReadAsStringAsync(ct);
-                            using var doc = JsonDocument.Parse(json);
-                            var root = doc.RootElement;
-                            if (root.TryGetProperty("lastPrice", out var lpProp) &&
-                                decimal.TryParse(lpProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var newPrice) &&
-                                newPrice > 0)
-                            {
-                                decimal change = decimal.TryParse(root.GetProperty("priceChange").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var cVal) ? cVal : 0m;
-                                decimal pct = decimal.TryParse(root.GetProperty("priceChangePercent").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pVal) ? pVal * 100m : 0m;
-                                decimal high = decimal.TryParse(root.GetProperty("highPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var hVal) ? hVal : newPrice;
-                                decimal low = decimal.TryParse(root.GetProperty("lowPrice").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var lVal) ? lVal : newPrice;
-                                decimal vol = decimal.TryParse(root.GetProperty("volume").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var vVal) ? vVal : m.Volume;
-
-                                LiveCache[m.Symbol] = new LiveQuoteState(newPrice, change, pct, high, low, vol, IsSimulated: false);
-                                DynamicCatalog[m.Symbol] = m with { BasePrice = newPrice, ChangePercent = pct, High = high, Low = low, Volume = vol };
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "TradingMarketDataService: Failed to update live MEXC quote for {Symbol}.", m.Symbol);
-                    }
-                });
-
-            // 4. For DEX tokens (from DexScreener), query DexScreener live API for fresh real-world pricing
-            var dexTasks = DynamicCatalog.Values
-                .Where(d => d.FeedSource == "dexscreener")
-                .Select(async d =>
-                {
-                    try
-                    {
-                        var cleanToken = d.Symbol.Replace("USDT", "").Replace("USD", "").Trim();
-                        var res = await _http.GetAsync($"https://api.dexscreener.com/latest/dex/search?q={cleanToken}", ct);
-                        if (res.IsSuccessStatusCode)
-                        {
-                            var json = await res.Content.ReadAsStringAsync(ct);
-                            using var doc = JsonDocument.Parse(json);
-                            if (doc.RootElement.TryGetProperty("pairs", out var pairs) && pairs.ValueKind == JsonValueKind.Array)
-                            {
-                                var bestPair = pairs.EnumerateArray()
-                                    .Where(p =>
-                                        p.TryGetProperty("baseToken", out var bt) &&
-                                        bt.TryGetProperty("symbol", out var sym) &&
-                                        sym.GetString()?.Equals(cleanToken, StringComparison.OrdinalIgnoreCase) == true &&
-                                        p.TryGetProperty("priceUsd", out var pu) &&
-                                        decimal.TryParse(pu.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pr) &&
-                                        pr > 0)
-                                    .OrderByDescending(p =>
-                                    {
-                                        if (p.TryGetProperty("liquidity", out var liq) &&
-                                            liq.TryGetProperty("usd", out var usdProp) &&
-                                            usdProp.ValueKind == JsonValueKind.Number)
-                                        {
-                                            return usdProp.GetDecimal();
-                                        }
-                                        return 0m;
-                                    })
-                                    .FirstOrDefault();
-
-                                if (bestPair.ValueKind != JsonValueKind.Undefined &&
-                                    decimal.TryParse(bestPair.GetProperty("priceUsd").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var newPrice) &&
-                                    newPrice > 0)
-                                {
-                                    decimal pct = 0m;
-                                    if (bestPair.TryGetProperty("priceChange", out var pc) && pc.TryGetProperty("h24", out var h24Prop) && h24Prop.ValueKind == JsonValueKind.Number)
-                                    {
-                                        pct = h24Prop.GetDecimal();
-                                    }
-
-                                    decimal vol = d.Volume;
-                                    if (bestPair.TryGetProperty("volume", out var volProp) && volProp.TryGetProperty("h24", out var v24) && v24.ValueKind == JsonValueKind.Number)
-                                    {
-                                        vol = v24.GetDecimal();
-                                    }
-
-                                    decimal high = Math.Max(newPrice, newPrice * 1.05m);
-                                    decimal low = Math.Min(newPrice, newPrice * 0.95m);
-                                    decimal change = newPrice * (pct / 100m);
-
-                                    LiveCache[d.Symbol] = new LiveQuoteState(newPrice, change, pct, high, low, vol, IsSimulated: false);
-                                    DynamicCatalog[d.Symbol] = d with { BasePrice = newPrice, ChangePercent = pct, High = high, Low = low, Volume = vol };
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "TradingMarketDataService: Failed to update DexScreener live quote for {Symbol}.", d.Symbol);
-                    }
-                });
-
-            // 5. For Simulated assets (Stocks, Indices, Futures), apply continuous realistic micro-ticks (random walk +-0.03%)
+            // 3. For Simulated assets (Stocks, Indices, Futures), apply continuous realistic micro-ticks (random walk +-0.03%)
             var random = Random.Shared;
             foreach (var s in Catalog.Where(c => c.IsSimulated).Concat(DynamicCatalog.Values.Where(d => d.IsSimulated)))
             {
@@ -360,7 +474,7 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                 }
             }
 
-            await Task.WhenAll(cryptoTasks.Concat(forexTasks).Concat(mexcTasks).Concat(dexTasks));
+            await Task.WhenAll(new[] { cryptoBatchTask }.Concat(forexTasks));
             _lastRefreshUtc = DateTime.UtcNow;
         }
         finally
@@ -410,6 +524,41 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
         if (LiveCache.TryGetValue(cleanSym, out var live) && live.Price > 0)
         {
             return live.Price;
+        }
+
+        // Direct resilient Binance ticker fetch if crypto symbol
+        if (!cleanSym.Contains('/') && !Catalog.Any(c => c.Symbol.Equals(cleanSym, StringComparison.OrdinalIgnoreCase) && c.IsSimulated))
+        {
+            try
+            {
+                var res = await SendWithRetryAsync(
+                    _http,
+                    () => new HttpRequestMessage(HttpMethod.Get, $"https://api.binance.com/api/v3/ticker/price?symbol={cleanSym}"),
+                    _logger,
+                    maxRetries: 3,
+                    ct: ct);
+
+                if (res != null && res.IsSuccessStatusCode)
+                {
+                    var json = await res.Content.ReadAsStringAsync(ct);
+                    res.Dispose();
+                    using var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("price", out var pProp) &&
+                        decimal.TryParse(pProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var p) && p > 0)
+                    {
+                        LiveCache[cleanSym] = new LiveQuoteState(p, 0m, 0m, p * 1.05m, p * 0.95m, 100000m, IsSimulated: false);
+                        return p;
+                    }
+                }
+                else
+                {
+                    res?.Dispose();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "GetCurrentPriceAsync: Resilient fetch failed for {Symbol}.", cleanSym);
+            }
         }
 
         var quote = await GetQuoteAsync(cleanSym, null, ct);
@@ -548,97 +697,7 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
             }
         }
 
-        // 4. Live search via DexScreener for DEX-native tokens (ONLY if NOT resolved by Binance, MEXC or Catalog)
-        if (!results.ContainsKey(targetSym) && !Catalog.Any(c => c.Symbol.Equals(targetSym, StringComparison.OrdinalIgnoreCase)))
-        {
-            try
-            {
-                var rawSearch = cleanQ.EndsWith("USDT") ? cleanQ.Substring(0, cleanQ.Length - 4) : cleanQ;
-                var dexRes = await _http.GetAsync($"https://api.dexscreener.com/latest/dex/search?q={Uri.EscapeDataString(rawSearch)}", ct);
-                if (dexRes.IsSuccessStatusCode)
-                {
-                    var dexJson = await dexRes.Content.ReadAsStringAsync(ct);
-                    using var doc = JsonDocument.Parse(dexJson);
-                    if (doc.RootElement.TryGetProperty("pairs", out var pairs) && pairs.ValueKind == JsonValueKind.Array)
-                    {
-                        // Order pairs by liquidity USD descending to pick the primary/most liquid legitimate pair
-                        var validPairs = pairs.EnumerateArray()
-                            .Where(p => p.TryGetProperty("baseToken", out var bt) &&
-                                        !string.IsNullOrWhiteSpace(bt.GetProperty("symbol").GetString()) &&
-                                        p.TryGetProperty("priceUsd", out var pu) &&
-                                        decimal.TryParse(pu.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var pr) &&
-                                        pr > 0)
-                            .OrderByDescending(p =>
-                            {
-                                if (p.TryGetProperty("liquidity", out var liq) &&
-                                    liq.TryGetProperty("usd", out var usdProp) &&
-                                    usdProp.ValueKind == JsonValueKind.Number)
-                                {
-                                    return usdProp.GetDecimal();
-                                }
-                                return 0m;
-                            })
-                            .Take(4);
-
-                        foreach (var pair in validPairs)
-                        {
-                            var baseToken = pair.GetProperty("baseToken");
-                            var baseSym = baseToken.GetProperty("symbol").GetString() ?? "";
-                            var baseName = baseToken.GetProperty("name").GetString() ?? baseSym;
-                            var pairSym = baseSym.ToUpperInvariant();
-                            if (!pairSym.EndsWith("USDT")) pairSym += "USDT";
-
-                            // STRICT RULE: Never overwrite Tier-1 (Binance), Tier-2 (MEXC), or static Catalog items with DEX tokens
-                            if (Catalog.Any(c => c.Symbol.Equals(pairSym, StringComparison.OrdinalIgnoreCase))) continue;
-                            if (DynamicCatalog.TryGetValue(pairSym, out var existingItem) && existingItem.FeedSource is "binance" or "mexc") continue;
-                            if (results.ContainsKey(pairSym)) continue;
-
-                            decimal price = decimal.Parse(pair.GetProperty("priceUsd").GetString()!, CultureInfo.InvariantCulture);
-
-                            decimal pct = 0m;
-                            if (pair.TryGetProperty("priceChange", out var pc) && pc.TryGetProperty("h24", out var h24Prop) && h24Prop.ValueKind == JsonValueKind.Number)
-                            {
-                                pct = h24Prop.GetDecimal();
-                            }
-
-                            decimal vol = 100000m;
-                            if (pair.TryGetProperty("volume", out var volProp) && volProp.TryGetProperty("h24", out var v24) && v24.ValueKind == JsonValueKind.Number)
-                            {
-                                vol = v24.GetDecimal();
-                            }
-
-                            decimal high = price * 1.05m;
-                            decimal low = price * 0.95m;
-                            decimal change = price * (pct / 100m);
-
-                            var item = new TradingCatalogItem(pairSym, baseName, AssetClass.Crypto, price, pct, high, low, vol, IsSimulated: false, FeedSource: "dexscreener");
-                            DynamicCatalog[pairSym] = item;
-                            LiveCache[pairSym] = new LiveQuoteState(price, change, pct, high, low, vol, IsSimulated: false);
-
-                            results[pairSym] = new TradingQuoteDto(
-                                pairSym,
-                                baseName,
-                                AssetClass.Crypto,
-                                price,
-                                change,
-                                pct,
-                                high,
-                                low,
-                                vol,
-                                watchlistedSymbols.Contains(pairSym),
-                                IsSimulated: false,
-                                FeedSource: "dexscreener");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "DexScreener live search failed for {Query}", cleanQ);
-            }
-        }
-
-        // 5. If still no match and query looks like a ticker, generate simulated instrument
+        // 4. If still no match and query looks like a ticker, generate simulated instrument
         if (results.Count == 0 && cleanQ.Length >= 2 && cleanQ.Length <= 12)
         {
             var sym = cleanQ.EndsWith("USDT") ? cleanQ : cleanQ + "USDT";

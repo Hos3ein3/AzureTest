@@ -8,6 +8,7 @@ using AzureTest.Application.Messaging;
 using AzureTest.Application.Trading.Services;
 using AzureTest.Domain.Entities.Trading.Enums;
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 
 namespace AzureTest.Application.Trading.Commands.SyncTradingPrices;
 
@@ -25,25 +26,44 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
     private readonly IUnitOfWork _uow;
     private readonly ITradingMarketDataService _marketData;
     private readonly AzureTest.Application.Interfaces.Services.IAppNotificationService? _notificationService;
+    private readonly Microsoft.Extensions.Logging.ILogger<SyncTradingPricesCommandHandler> _logger;
 
     public SyncTradingPricesCommandHandler(
         IUnitOfWork uow,
         ITradingMarketDataService marketData,
-        AzureTest.Application.Interfaces.Services.IAppNotificationService? notificationService = null)
+        AzureTest.Application.Interfaces.Services.IAppNotificationService? notificationService = null,
+        Microsoft.Extensions.Logging.ILogger<SyncTradingPricesCommandHandler>? logger = null)
     {
         _uow = uow;
         _marketData = marketData;
         _notificationService = notificationService;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<SyncTradingPricesCommandHandler>.Instance;
     }
 
     public async Task<Result<int>> HandleAsync(SyncTradingPricesCommand cmd, CancellationToken ct)
     {
-        // 1. Refresh live real-world data from Binance (Crypto) and Frankfurter ECB (Forex)
-        await _marketData.RefreshRealWorldDataAsync(ct);
-
+        // 1. Check for open positions and pending orders first
         var positions = (await _uow.TradingPositions.GetAllAsync())
             .Where(p => p.Status == TradingPositionStatus.Open)
             .ToList();
+
+        var pendingOrders = (await _uow.TradingOrders.GetAllAsync())
+            .Where(o => o.Status == TradingOrderStatus.Pending)
+            .ToList();
+
+        // If there are no open positions and no pending orders, no external network fetch is needed!
+        if (positions.Count == 0 && pendingOrders.Count == 0)
+        {
+            return Result<int>.Success(0);
+        }
+
+        // Only fetch market data for the EXACT active symbols that have open positions or pending orders!
+        var activeSymbols = positions.Select(p => p.Symbol)
+            .Concat(pendingOrders.Select(o => o.Symbol))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        await _marketData.RefreshSymbolsDataAsync(activeSymbols, ct);
 
         int actionsExecuted = 0;
 
@@ -53,10 +73,19 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
             pos.UpdateCurrentPrice(currentPrice);
 
             bool shouldClose = false;
+            bool isLiquidated = false;
             decimal closePrice = currentPrice;
 
+            // Check Liquidation Trigger (floating loss consumed 100% of initial margin)
+            if (pos.UnrealizedPnl <= -pos.InitialMargin)
+            {
+                shouldClose = true;
+                isLiquidated = true;
+                closePrice = currentPrice;
+            }
+
             // Check Stop Loss Trigger
-            if (pos.StopLoss.HasValue && pos.StopLoss.Value > 0)
+            if (!shouldClose && pos.StopLoss.HasValue && pos.StopLoss.Value > 0)
             {
                 if (pos.Side == TradingOrderSide.Buy && currentPrice <= pos.StopLoss.Value)
                 {
@@ -87,7 +116,15 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
 
             if (shouldClose)
             {
-                pos.Close(closePrice);
+                if (isLiquidated)
+                {
+                    pos.Liquidate(closePrice);
+                }
+                else
+                {
+                    pos.Close(closePrice);
+                }
+
                 var account = await _uow.TradingAccounts.GetByIdAsync(pos.AccountId);
                 if (account != null)
                 {
@@ -95,13 +132,20 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
                 }
                 actionsExecuted++;
 
+                var triggerReason = isLiquidated ? "Liquidation" : ((pos.TakeProfit.HasValue && closePrice == pos.TakeProfit.Value) ? "Take Profit" : "Stop Loss");
+                var formattedClosePrice = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPrice(closePrice);
+                var formattedPnl = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPnl(pos.RealizedPnl);
+
+                _logger.LogInformation(
+                    "Paper Trade Closed by Background Sync/Hangfire: PositionId={PositionId}, Symbol={Symbol}, Side={Side}, Qty={Quantity}, EntryPrice={EntryPrice}, ExitPrice={ExitPrice}, RealizedPnl={RealizedPnl}, Reason={Reason}, ClosedAt={ClosedAtUtc}",
+                    pos.Id, pos.Symbol, pos.Side, pos.Quantity, pos.EntryPrice, closePrice, pos.RealizedPnl, triggerReason, pos.ClosedAtUtc);
+
                 if (_notificationService != null)
                 {
-                    var triggerReason = (pos.TakeProfit.HasValue && closePrice == pos.TakeProfit.Value) ? "Take Profit" : "Stop Loss";
-                    var formattedClosePrice = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPrice(closePrice);
-                    var formattedPnl = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPnl(pos.RealizedPnl);
-                    var title = $"Paper Trade Closed ({triggerReason}): {pos.Symbol}";
-                    var message = $"Triggered {triggerReason} at {formattedClosePrice}. Realized PnL: {formattedPnl}.";
+                    var title = isLiquidated ? $"Paper Trade Liquidated: {pos.Symbol}" : $"Paper Trade Closed ({triggerReason}): {pos.Symbol}";
+                    var message = isLiquidated
+                        ? $"Position liquidated at {formattedClosePrice}. Loss: {formattedPnl}."
+                        : $"Triggered {triggerReason} at {formattedClosePrice}. Realized PnL: {formattedPnl}.";
 
                     var metadata = new Dictionary<string, string>
                     {
@@ -128,10 +172,6 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
         }
 
         // Check Pending Orders for Trigger / Fill
-        var pendingOrders = (await _uow.TradingOrders.GetAllAsync())
-            .Where(o => o.Status == TradingOrderStatus.Pending)
-            .ToList();
-
         foreach (var order in pendingOrders)
         {
             var marketPrice = await _marketData.GetCurrentPriceAsync(order.Symbol, 100m, ct);

@@ -170,9 +170,13 @@
 
     <!-- Top Asset Bar & Navigation -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 sm:gap-3">
             <a asp-action="Index" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center transition-colors shrink-0" title="Back to Watchlist & Portfolio">
                 <i class="fa-solid fa-arrow-left text-xs sm:text-sm"></i>
+            </a>
+            <a href="/Trading/Trading/History" class="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/40 text-3xs sm:text-xs font-black flex items-center gap-1.5 transition-colors shrink-0" title="View Full Trade Receipts & History">
+                <i class="fa-solid fa-receipt"></i>
+                <span class="hidden sm:inline">History</span>
             </a>
 
             <div class="min-w-0">
@@ -1051,6 +1055,13 @@
 
         <!-- TAB 3: Closed Trades & Profit/Loss History -->
         <div id="holdingPanelClosed" class="hidden space-y-4">
+            <div class="flex items-center justify-between pb-1">
+                <div class="text-3xs font-black text-slate-400 uppercase tracking-wider">Recently Closed Trades</div>
+                <a href="/Trading/Trading/History" class="px-3 py-1.5 text-3xs font-black rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/40 transition-colors flex items-center gap-1 shadow-2xs">
+                    <i class="fa-solid fa-receipt"></i>
+                    <span>Open Full Receipts Ledger &rarr;</span>
+                </a>
+            </div>
             @if (Model.ClosedPositions.Count == 0)
             {
                 <div class="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-1" id="emptyClosedState">
@@ -1422,10 +1433,27 @@
                 }
             }
 
-            // 2. Update Account balances
+            // 2. Update Account balances & live card displays
             if (data.account) {
                 cashBalance = Number(data.account.cashBalance ?? data.account.CashBalance);
                 freeMargin = Number(data.account.freeMargin ?? data.account.FreeMargin);
+                const marginUsed = Number(data.account.marginUsed ?? data.account.MarginUsed ?? 0);
+                const equity = Number(data.account.equity ?? data.account.Equity ?? 0);
+
+                const topAvail = document.getElementById('topAvailableMarginDisplay');
+                if (topAvail) topAvail.textContent = `$${freeMargin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+                const availCard = document.getElementById('availMarginCardDisplay');
+                if (availCard) availCard.textContent = `$${freeMargin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+                const cashCard = document.getElementById('cashBalanceCardDisplay');
+                if (cashCard) cashCard.textContent = `$${cashBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+                const marginCard = document.getElementById('marginUsedCardDisplay');
+                if (marginCard) marginCard.textContent = `$${marginUsed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+                const eqCard = document.getElementById('equityCardDisplay');
+                if (eqCard) eqCard.textContent = `$${equity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             }
 
             // 3. Update Portfolio Terminal Open Positions (Mark Price, PnL, ROI, SL/TP)
@@ -1785,12 +1813,19 @@
         currentCalculatedPercent = balancePct;
         currentCalculatedTotal = total;
 
-        // Keep hidden quantity field in sync
-        document.getElementById('orderQuantityInput').value = units > 0 ? (units > 1 ? units.toFixed(4) : units.toFixed(6)) : '0';
+        // Keep hidden quantity field in sync (up to 6 decimals for crypto precision)
+        if (units > 0 && units < 0.000001) {
+            units = 0.000001;
+        }
+        let qtyStr = units > 0 ? units.toFixed(6) : '0';
+        if (qtyStr.includes('.')) {
+            qtyStr = qtyStr.replace(/\.?0+$/, '');
+        }
+        document.getElementById('orderQuantityInput').value = qtyStr || '0';
 
         // Update live bottom conversions strip
-        const unitsStr = units > 1 ? units.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : units.toFixed(6);
-        document.getElementById('calcUnitsDisplay').innerHTML = `${unitsStr} <span class="text-3xs font-bold text-slate-400">${symbol}</span>`;
+        const unitsDisplayStr = units > 0 ? (units >= 1 ? units.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : units.toFixed(6)) : '0.00';
+        document.getElementById('calcUnitsDisplay').innerHTML = `${unitsDisplayStr} <span class="text-3xs font-bold text-slate-400">${symbol}</span>`;
         document.getElementById('calcMarginDisplay').textContent = `$${margin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         document.getElementById('calcBalancePctDisplay').textContent = `${balancePct.toFixed(2)}%`;
         document.getElementById('calcTotalValueDisplay').textContent = `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -1996,6 +2031,8 @@
     function calculateRiskRewardOutputs() {
         const refPrice = getActiveReferencePrice();
         const units = currentCalculatedUnits;
+        const lev = parseInt(document.getElementById('orderLeverageInput').value) || 1;
+        const margin = currentCalculatedMargin > 0 ? currentCalculatedMargin : ((units * refPrice) / lev);
 
         if (tpEnabled) {
             const container = document.getElementById('tpLevelsContainer');
@@ -2004,7 +2041,6 @@
 
             if (tpSummary && units > 0 && refPrice > 0) {
                 let totalRewardUsd = 0;
-                let weightedPctSum = 0;
 
                 if (rows.length > 1) {
                     rows.forEach(r => {
@@ -2016,7 +2052,6 @@
                             const levelUnits = units * (pct / 100);
                             const diff = Math.abs(p - refPrice);
                             totalRewardUsd += diff * levelUnits;
-                            weightedPctSum += ((diff / refPrice) * 100) * (pct / 100);
                         }
                     });
                 } else {
@@ -2025,11 +2060,11 @@
                     if (tp > 0) {
                         const diff = Math.abs(tp - refPrice);
                         totalRewardUsd = diff * units;
-                        weightedPctSum = (diff / refPrice) * 100;
                     }
                 }
 
-                tpSummary.textContent = `+$${totalRewardUsd.toFixed(2)} (+${weightedPctSum.toFixed(2)}%)`;
+                const roiPct = margin > 0 ? (totalRewardUsd / margin) * 100 : 0;
+                tpSummary.textContent = `+$${totalRewardUsd.toFixed(2)} (+${roiPct.toFixed(1)}% ROI)`;
             }
         }
 
@@ -2039,8 +2074,8 @@
             const slSummary = document.getElementById('slRiskSummary');
             if (sl > 0 && units > 0 && refPrice > 0) {
                 const riskUsd = Math.abs(refPrice - sl) * units;
-                const riskPct = ((Math.abs(refPrice - sl) / refPrice) * 100);
-                slSummary.textContent = `-$${riskUsd.toFixed(2)} (-${riskPct.toFixed(2)}%)`;
+                const riskRoiPct = margin > 0 ? (riskUsd / margin) * 100 : 0;
+                slSummary.textContent = `-$${riskUsd.toFixed(2)} (-${riskRoiPct.toFixed(1)}% Risk)`;
             }
         }
     }
@@ -2146,8 +2181,9 @@
         recalculateAllSizeAndMargin();
         let qty = parseFloat((document.getElementById('orderQuantityInput').value || '').trim().replace(',', '.')) || 0;
         if (qty <= 0 && currentCalculatedUnits > 0) {
-            qty = currentCalculatedUnits;
-            document.getElementById('orderQuantityInput').value = qty > 1 ? qty.toFixed(4) : qty.toFixed(6);
+            qty = Math.max(0.000001, currentCalculatedUnits);
+            let s = qty.toFixed(6).replace(/\.?0+$/, '');
+            document.getElementById('orderQuantityInput').value = s;
         }
         if (qty <= 0) {
             showToast('error', 'Order quantity must be greater than 0. Please select an order size (% Balance or Units).');

@@ -381,38 +381,95 @@ public class CryptoMarketDataService : ICryptoMarketDataService
         });
     }
 
+    private static readonly ConcurrentDictionary<string, decimal> LastKnownLivePrices = new(StringComparer.OrdinalIgnoreCase);
+
+    private static async Task<HttpResponseMessage?> SendWithRetryAsync(
+        HttpClient http,
+        Func<HttpRequestMessage> requestFactory,
+        ILogger logger,
+        int maxRetries = 3,
+        CancellationToken ct = default)
+    {
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                using var request = requestFactory();
+                var response = await http.SendAsync(request, ct);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return response;
+                }
+
+                // If rate limited (429) or transient server error (5xx), retry with exponential backoff & jitter
+                if ((int)response.StatusCode == 429 || (int)response.StatusCode >= 500)
+                {
+                    var delayMs = (int)(Math.Pow(2, attempt) * 150) + Random.Shared.Next(50, 150);
+                    logger.LogWarning("HTTP call to {Uri} failed with status {StatusCode}. Attempt {Attempt}/{MaxRetries}, retrying in {DelayMs}ms.",
+                        response.RequestMessage?.RequestUri, response.StatusCode, attempt, maxRetries, delayMs);
+                    response.Dispose();
+
+                    if (attempt < maxRetries)
+                    {
+                        await Task.Delay(delayMs, ct);
+                        continue;
+                    }
+                }
+
+                return response;
+            }
+            catch (Exception ex) when (attempt < maxRetries && !ct.IsCancellationRequested)
+            {
+                var delayMs = (int)(Math.Pow(2, attempt) * 150) + Random.Shared.Next(50, 150);
+                logger.LogWarning(ex, "HTTP request failed on attempt {Attempt}/{MaxRetries}. Retrying in {DelayMs}ms.", attempt, maxRetries, delayMs);
+                await Task.Delay(delayMs, ct);
+            }
+        }
+
+        return null;
+    }
+
     public async Task<decimal> GetCurrentPriceAsync(string symbol, CancellationToken ct = default)
     {
         var clean = NormalizeBinanceSymbol(symbol);
         try
         {
-            var res = await _http.GetAsync($"https://api.binance.com/api/v3/ticker/price?symbol={clean}", ct);
-            if (res.IsSuccessStatusCode)
+            var res = await SendWithRetryAsync(
+                _http,
+                () => new HttpRequestMessage(HttpMethod.Get, $"https://api.binance.com/api/v3/ticker/price?symbol={clean}"),
+                _logger,
+                maxRetries: 3,
+                ct: ct);
+
+            if (res != null && res.IsSuccessStatusCode)
             {
                 var json = await res.Content.ReadAsStringAsync(ct);
+                res.Dispose();
                 using var doc = JsonDocument.Parse(json);
-                return decimal.Parse(doc.RootElement.GetProperty("price").GetString()!, CultureInfo.InvariantCulture);
+                if (doc.RootElement.TryGetProperty("price", out var pProp) &&
+                    decimal.TryParse(pProp.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var p) && p > 0)
+                {
+                    LastKnownLivePrices[clean] = p;
+                    return p;
+                }
+            }
+            else
+            {
+                res?.Dispose();
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Fallback to static reference map
+            _logger.LogWarning(ex, "Failed to fetch live price for {Symbol} after retries.", clean);
         }
 
-        return clean switch
+        if (LastKnownLivePrices.TryGetValue(clean, out var cachedPrice) && cachedPrice > 0)
         {
-            "BTCUSDT" => 67500m,
-            "ETHUSDT" => 2700m,
-            "SOLUSDT" => 165m,
-            "BNBUSDT" => 590m,
-            "XRPUSDT" => 0.54m,
-            "DOGEUSDT" => 0.14m,
-            "ADAUSDT" => 0.35m,
-            "AVAXUSDT" => 28m,
-            "LINKUSDT" => 11.5m,
-            "SUIUSDT" => 2.10m,
-            _ => 0m
-        };
+            return cachedPrice;
+        }
+
+        return 0m;
     }
 
     // ── Internal Helpers ────────────────────────────────────────────────────────
@@ -524,15 +581,10 @@ public class CryptoMarketDataService : ICryptoMarketDataService
 
     private static List<CryptoCandleDto> GenerateRealisticCandles(string symbol, CryptoTimeframe timeframe, int count)
     {
-        decimal basePrice = symbol switch
-        {
-            "BTCUSDT" => 67500m,
-            "ETHUSDT" => 2700m,
-            "SOLUSDT" => 165m,
-            "BNBUSDT" => 590m,
-            "XRPUSDT" => 0.54m,
-            _ => 100m
-        };
+        var clean = NormalizeBinanceSymbol(symbol);
+        decimal basePrice = LastKnownLivePrices.TryGetValue(clean, out var lp) && lp > 0
+            ? lp
+            : (LastKnownLivePrices.TryGetValue(symbol, out var lp2) && lp2 > 0 ? lp2 : 100m);
 
         var list = new List<CryptoCandleDto>();
         var span = timeframe switch
@@ -820,7 +872,8 @@ public class CryptoMarketDataService : ICryptoMarketDataService
     public async Task<CryptoCrossExchangePremiumDto> GetCrossExchangePremiumsAsync(string symbol, CancellationToken ct = default)
     {
         decimal binancePrice = await GetCurrentPriceAsync(symbol, ct);
-        if (binancePrice <= 0) binancePrice = 67450m;
+        if (binancePrice <= 0 && LastKnownLivePrices.TryGetValue(symbol, out var lp)) binancePrice = lp;
+        if (binancePrice <= 0) binancePrice = 100m;
 
         decimal coinbasePrice = Math.Round(binancePrice * 1.00085m, 2);
         decimal krakenPrice = Math.Round(binancePrice * 0.99975m, 2);

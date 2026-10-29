@@ -174,4 +174,93 @@ public class TradingMarketDataReliabilityTests
         quote.Should().NotBeNull();
         quote!.Price.Should().Be(0.044600m);
     }
+
+    [Fact]
+    public async Task RefreshSymbolsDataAsync_OnlyRequestsSpecifiedOpenSymbols_NotAllCryptos()
+    {
+        // Arrange
+        var mockCrypto = new Mock<ICryptoMarketDataService>();
+        var mockForex = new Mock<IForexMarketDataService>();
+
+        var requestedUris = new List<string>();
+        var mockHandler = new MockHttpHandler();
+        mockHandler.Handler = req =>
+        {
+            var uri = req.RequestUri?.ToString() ?? "";
+            requestedUris.Add(uri);
+
+            if (uri.Contains("SOLUSDT"))
+            {
+                var json = """
+                {
+                    "symbol": "SOLUSDT",
+                    "priceChange": "1.50000000",
+                    "priceChangePercent": "1.450",
+                    "lastPrice": "103.50000000",
+                    "highPrice": "105.00000000",
+                    "lowPrice": "99.00000000",
+                    "volume": "100000.00000000"
+                }
+                """;
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        };
+
+        var service = new TradingMarketDataService(
+            mockCrypto.Object,
+            mockForex.Object,
+            NullLogger<TradingMarketDataService>.Instance,
+            new HttpClient(mockHandler));
+
+        // Act: Refresh only SOLUSDT (the single open position)
+        await service.RefreshSymbolsDataAsync(new[] { "SOLUSDT" });
+        var price = await service.GetCurrentPriceAsync("SOLUSDT");
+
+        // Assert
+        price.Should().Be(103.50000000m);
+        requestedUris.Should().ContainSingle();
+        requestedUris[0].Should().Contain("symbol=SOLUSDT");
+        requestedUris[0].Should().NotContain("BTCUSDT", "Should only query the open position symbol");
+    }
+
+    [Fact]
+    public async Task CryptoMarketDataService_GetCurrentPriceAsync_RetriesOnRateLimit_AndPreservesLastKnownPrice()
+    {
+        // Arrange
+        int callCount = 0;
+        var mockHandler = new MockHttpHandler();
+        mockHandler.Handler = req =>
+        {
+            callCount++;
+            if (callCount == 1)
+            {
+                // First call: transient 429 rate limit
+                return new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+            }
+
+            // Second call: succeeds with real live price
+            var json = """{"symbol": "SOLUSDT", "price": "102.85"}""";
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+        };
+
+        var cryptoService = new CryptoMarketDataService(
+            new HttpClient(mockHandler),
+            NullLogger<CryptoMarketDataService>.Instance);
+
+        // Act
+        var price = await cryptoService.GetCurrentPriceAsync("SOLUSDT");
+
+        // Assert
+        callCount.Should().Be(2, "Should retry and succeed on second attempt after rate limit");
+        price.Should().Be(102.85m);
+        price.Should().NotBe(165m, "Should NEVER return the old hardcoded 165m value");
+    }
 }

@@ -86,6 +86,12 @@ public sealed class TradingAccount : AggregateRoot, IAudit, ISoftDelete, ITenant
         Equity = Math.Max(Rules.MinBalance, CashBalance + unrealizedPnlDelta);
     }
 
+    public void Recalculate(decimal activeMarginUsed, decimal totalUnrealizedPnl)
+    {
+        MarginUsed = Math.Max(Rules.MinBalance, activeMarginUsed);
+        Equity = Math.Max(Rules.MinBalance, CashBalance + totalUnrealizedPnl);
+    }
+
     public void ApplyRealizedPnl(decimal profitOrLoss, decimal releasedMargin)
     {
         CashBalance = Math.Max(Rules.MinBalance, CashBalance + profitOrLoss);

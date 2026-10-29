@@ -11,6 +11,7 @@ using AzureTest.Application.Trading.Commands.ResetTradingAccountBalance;
 using AzureTest.Application.Trading.Commands.SyncTradingPrices;
 using AzureTest.Application.Trading.Commands.ToggleTradingWatchlist;
 using AzureTest.Application.Trading.Queries.GetTradingDashboard;
+using AzureTest.Application.Trading.Queries.GetTradingHistory;
 using AzureTest.Application.Trading.Queries.GetTradingQuotes;
 using AzureTest.Application.Trading.Services;
 using AzureTest.Contracts.DTOs.Trading;
@@ -53,6 +54,7 @@ public static class TradingServiceRegistration
         // Query Handlers
         services.AddScoped<IQueryHandler<GetTradingDashboardQuery, Result<TradingDashboardDto>>, GetTradingDashboardQueryHandler>();
         services.AddScoped<IQueryHandler<GetTradingQuotesQuery, Result<IReadOnlyList<TradingQuoteDto>>>, GetTradingQuotesQueryHandler>();
+        services.AddScoped<IQueryHandler<GetTradingHistoryQuery, Result<TradingHistoryDto>>, GetTradingHistoryQueryHandler>();
 
         // Units
         services.AddScoped<ITradingCommandUnit, TradingCommandUnit>();

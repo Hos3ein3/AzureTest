@@ -75,6 +75,27 @@ public class TradingController : Controller
         return View(result.Value);
     }
 
+    [DisplayName("Trade History & Receipts")]
+    [Description("Comprehensive trade history ledger showing closed positions, executed prices, margin used, PnL, leverage, and full receipts.")]
+    public async Task<IActionResult> History(
+        string? search = null,
+        TradingOrderSide? side = null,
+        AssetClass? assetClass = null,
+        string? outcome = null,
+        CancellationToken ct = default)
+    {
+        var result = await _queries.GetHistoryAsync(
+            new AzureTest.Application.Trading.Queries.GetTradingHistory.GetTradingHistoryQuery(
+                _currentUser.Id,
+                _currentUser.TenantId,
+                search,
+                side,
+                assetClass,
+                outcome), ct);
+
+        return View(result.Value);
+    }
+
     [HttpGet]
     [AllowAnonymous]
     [DisplayName("Single Asset Live Quote")]

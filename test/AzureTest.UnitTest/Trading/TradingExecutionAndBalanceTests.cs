@@ -829,4 +829,189 @@ public class TradingExecutionAndBalanceTests
         account.RealizedPnl.Should().Be(7m);
         account.CashBalance.Should().Be(1007m);
     }
+
+    [Fact]
+    public async Task BtcPosition_WithNineDollarMargin_DeductsMargin_And_OnLoss_ReleasesMarginAndDecreasesCashBalance()
+    {
+        // Scenario reported by user: User puts $9 margin on BTC (price ~$65,000)
+        // At 10x leverage, notional = $90, quantity = 90 / 65,000 = 0.001385 BTC
+        var initialCash = 1000m;
+        var account = TradingAccount.Create(_userId, _tenantId, "Paper Trading", "USD", initialCash);
+        _mockAccounts.Setup(a => a.GetAllAsync()).ReturnsAsync(new List<TradingAccount> { account });
+        _mockAccounts.Setup(a => a.GetByIdAsync(account.Id)).ReturnsAsync(account);
+
+        var btcPrice = 65000m;
+        _mockMarketData
+            .Setup(m => m.GetCurrentPriceAsync("BTCUSDT", It.IsAny<decimal>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(btcPrice);
+
+        TradingPosition? openedPosition = null;
+        _mockPositions.Setup(p => p.Add(It.IsAny<TradingPosition>()))
+            .Callback<TradingPosition>(p => openedPosition = p);
+
+        var placeHandler = new PlaceTradingOrderCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        // User inputs $9 margin at 10x leverage => quantity is 0.001385 BTC
+        var cmd = new PlaceTradingOrderCommand(
+            UserId: _userId,
+            TenantId: _tenantId,
+            Symbol: "BTCUSDT",
+            AssetName: "Bitcoin",
+            AssetClass: AssetClass.Crypto,
+            Side: TradingOrderSide.Buy,
+            OrderType: TradingOrderType.Market,
+            Quantity: 0.001385m,
+            Leverage: 10);
+
+        var placeResult = await placeHandler.HandleAsync(cmd, CancellationToken.None);
+        placeResult.IsSuccess.Should().BeTrue();
+        openedPosition.Should().NotBeNull();
+
+        // Initial Margin is approximately $9.00
+        var expectedMargin = (0.001385m * btcPrice) / 10m; // ~9.0025
+        openedPosition!.InitialMargin.Should().BeApproximately(expectedMargin, 0.01m);
+
+        // MarginUsed is deducted (locked)
+        account.MarginUsed.Should().BeApproximately(expectedMargin, 0.01m);
+        account.FreeMargin.Should().BeApproximately(initialCash - expectedMargin, 0.01m);
+        account.CashBalance.Should().Be(initialCash);
+
+        // Now user closes position with a loss (price drops from 65,000 to 60,000)
+        _mockPositions.Setup(p => p.GetByIdAsync(openedPosition.Id)).ReturnsAsync(openedPosition);
+        var closePrice = 60000m;
+        var closeHandler = new CloseTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        var closeCmd = new CloseTradingPositionCommand(openedPosition.Id, _userId, _tenantId, closePrice);
+
+        var closeResult = await closeHandler.HandleAsync(closeCmd, CancellationToken.None);
+        closeResult.IsSuccess.Should().BeTrue();
+
+        // Loss = (60,000 - 65,000) * 0.001385 = -6.925
+        var expectedLoss = (closePrice - btcPrice) * 0.001385m;
+        openedPosition.RealizedPnl.Should().BeApproximately(expectedLoss, 0.01m);
+        openedPosition.Status.Should().Be(TradingPositionStatus.Closed);
+
+        // Account MarginUsed must be completely released (0)
+        account.MarginUsed.Should().Be(0m);
+        // CashBalance must decrease by the exact loss amount
+        account.CashBalance.Should().BeApproximately(initialCash + expectedLoss, 0.01m);
+        account.FreeMargin.Should().Be(account.CashBalance);
+        account.RealizedPnl.Should().BeApproximately(expectedLoss, 0.01m);
+    }
+
+    [Fact]
+    public void BtcPosition_LeverageCalculation_CorrectlyScalesNotionalAndMargin()
+    {
+        var entryPrice = 70000m;
+        var quantity = 0.1m; // 0.1 BTC = $7,000 notional
+
+        // 1x leverage => margin = $7,000
+        var pos1x = TradingPosition.Open(Guid.NewGuid(), _userId, _tenantId, "BTCUSDT", "Bitcoin", AssetClass.Crypto, TradingOrderSide.Buy, quantity, entryPrice, leverage: 1);
+        pos1x.InitialMargin.Should().Be(7000m);
+
+        // 10x leverage => margin = $700
+        var pos10x = TradingPosition.Open(Guid.NewGuid(), _userId, _tenantId, "BTCUSDT", "Bitcoin", AssetClass.Crypto, TradingOrderSide.Buy, quantity, entryPrice, leverage: 10);
+        pos10x.InitialMargin.Should().Be(700m);
+
+        // 50x leverage => margin = $140
+        var pos50x = TradingPosition.Open(Guid.NewGuid(), _userId, _tenantId, "BTCUSDT", "Bitcoin", AssetClass.Crypto, TradingOrderSide.Buy, quantity, entryPrice, leverage: 50);
+        pos50x.InitialMargin.Should().Be(140m);
+
+        // 100x leverage => margin = $70
+        var pos100x = TradingPosition.Open(Guid.NewGuid(), _userId, _tenantId, "BTCUSDT", "Bitcoin", AssetClass.Crypto, TradingOrderSide.Buy, quantity, entryPrice, leverage: 100);
+        pos100x.InitialMargin.Should().Be(70m);
+    }
+
+    [Fact]
+    public void ShortPosition_ProfitAndLoss_CalculatesCorrectlyForBothDirections()
+    {
+        var entryPrice = 65000m;
+        var quantity = 0.01m; // notional = 650
+
+        // Short position
+        var pos = TradingPosition.Open(Guid.NewGuid(), _userId, _tenantId, "BTCUSDT", "Bitcoin", AssetClass.Crypto, TradingOrderSide.Sell, quantity, entryPrice, leverage: 10);
+        pos.InitialMargin.Should().Be(65m);
+
+        // Case A: Price drops to 60,000 (Short makes profit!)
+        pos.UpdateCurrentPrice(60000m);
+        // PnL = (65,000 - 60,000) * 0.01 = +50.00
+        pos.UnrealizedPnl.Should().Be(50m);
+
+        // Case B: Price rises to 68,000 (Short takes a loss)
+        pos.UpdateCurrentPrice(68000m);
+        // PnL = (65,000 - 68,000) * 0.01 = -30.00
+        pos.UnrealizedPnl.Should().Be(-30m);
+    }
+
+    [Fact]
+    public void Position_LossIsCappedAtInitialMargin_InIsolatedMarginTrading()
+    {
+        var entryPrice = 50000m;
+        var quantity = 0.01m; // notional = 500
+        // Leverage = 50x => InitialMargin = 500 / 50 = $10.00
+        var pos = TradingPosition.Open(Guid.NewGuid(), _userId, _tenantId, "BTCUSDT", "Bitcoin", AssetClass.Crypto, TradingOrderSide.Buy, quantity, entryPrice, leverage: 50);
+        pos.InitialMargin.Should().Be(10m);
+
+        // Price crashes to 20,000 (unclamped loss would be (20,000 - 50,000) * 0.01 = -300)
+        pos.Close(20000m);
+
+        // In isolated margin trading, maximum loss is 100% of InitialMargin ($10)
+        pos.RealizedPnl.Should().Be(-10m);
+        pos.Status.Should().Be(TradingPositionStatus.Closed);
+    }
+
+    [Fact]
+    public async Task SyncPrices_LiquidatesPosition_WhenLossReachesOrExceedsInitialMargin()
+    {
+        var account = TradingAccount.Create(_userId, _tenantId, "Paper Trading", "USD", 5000m);
+        var entryPrice = 60000m;
+        var quantity = 0.01m; // notional = 600
+        // Leverage = 20x => InitialMargin = 600 / 20 = $30.00
+        var pos = TradingPosition.Open(account.Id, _userId, _tenantId, "BTCUSDT", "Bitcoin", AssetClass.Crypto, TradingOrderSide.Buy, quantity, entryPrice, leverage: 20);
+        account.DeductMargin(pos.InitialMargin);
+
+        _mockPositions.Setup(p => p.GetAllAsync()).ReturnsAsync(new List<TradingPosition> { pos });
+        _mockAccounts.Setup(a => a.GetByIdAsync(account.Id)).ReturnsAsync(account);
+        _mockOrders.Setup(o => o.GetAllAsync()).ReturnsAsync(new List<TradingOrder>());
+
+        // Price drops to 55,000 => loss = (55,000 - 60,000) * 0.01 = -50. Loss exceeds margin ($30)!
+        _mockMarketData
+            .Setup(m => m.GetCurrentPriceAsync("BTCUSDT", It.IsAny<decimal>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(55000m);
+
+        var handler = new SyncTradingPricesCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        var result = await handler.HandleAsync(new SyncTradingPricesCommand(), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(1);
+
+        // Position is marked Liquidated
+        pos.Status.Should().Be(TradingPositionStatus.Liquidated);
+        // Realized loss capped at InitialMargin ($30)
+        pos.RealizedPnl.Should().Be(-30m);
+
+        // Margin is fully released back to account
+        account.MarginUsed.Should().Be(0m);
+        // Account CashBalance decreased by $30 (from 5000 to 4970)
+        account.CashBalance.Should().Be(4970m);
+        account.FreeMargin.Should().Be(4970m);
+        account.RealizedPnl.Should().Be(-30m);
+    }
+
+    [Fact]
+    public void TradingAccount_Recalculate_ReconcilesMarginUsedAndEquityAccurately()
+    {
+        var account = TradingAccount.Create(_userId, _tenantId, "Paper Trading", "USD", 5000m);
+
+        // Simulate 2 open positions with active margins $15 and $25, and total floating PnL +$40
+        account.Recalculate(activeMarginUsed: 40m, totalUnrealizedPnl: 40m);
+
+        account.MarginUsed.Should().Be(40m);
+        account.Equity.Should().Be(5040m); // CashBalance (5000) + Unrealized (40)
+        account.FreeMargin.Should().Be(5000m); // Equity (5040) - MarginUsed (40)
+
+        // When all positions close:
+        account.Recalculate(activeMarginUsed: 0m, totalUnrealizedPnl: 0m);
+        account.MarginUsed.Should().Be(0m);
+        account.Equity.Should().Be(5000m);
+        account.FreeMargin.Should().Be(5000m);
+    }
 }

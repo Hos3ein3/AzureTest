@@ -1,0 +1,728 @@
+@model AzureTest.Contracts.DTOs.Trading.TradingHistoryDto
+@{
+    ViewData["Title"] = "Trade History & Receipts";
+    var account = Model.Account;
+    var summary = Model.Summary;
+    var trades = Model.Trades;
+}
+
+@functions {
+    string GetAssetBadgeClass(AzureTest.Domain.Entities.Trading.Enums.AssetClass assetClass) => assetClass switch
+    {
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Crypto => "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Forex => "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Stock => "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Index => "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20",
+        AzureTest.Domain.Entities.Trading.Enums.AssetClass.Future => "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
+        _ => "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+    };
+
+    string FormatPrice(decimal? price, bool showDollar = true)
+    {
+        if (!price.HasValue || price.Value <= 0m) return "--";
+        var p = price.Value;
+        string formatted;
+        if (p < 0.0001m)
+            formatted = p.ToString("0.00000000", System.Globalization.CultureInfo.InvariantCulture);
+        else if (p < 0.01m)
+            formatted = p.ToString("0.000000", System.Globalization.CultureInfo.InvariantCulture);
+        else if (p < 1.0m)
+            formatted = p.ToString("0.0000#", System.Globalization.CultureInfo.InvariantCulture);
+        else if (p < 10.0m)
+            formatted = p.ToString("0.00##", System.Globalization.CultureInfo.InvariantCulture);
+        else
+            formatted = p.ToString("#,##0.00##", System.Globalization.CultureInfo.InvariantCulture);
+
+        return showDollar ? $"${formatted}" : formatted;
+    }
+
+    string FormatQuantity(decimal qty)
+    {
+        if (qty >= 1000m) return qty.ToString("#,##0.00", System.Globalization.CultureInfo.InvariantCulture);
+        if (qty >= 1m) return qty.ToString("0.0000", System.Globalization.CultureInfo.InvariantCulture);
+        return qty.ToString("0.000000", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    string FormatDuration(TimeSpan? duration)
+    {
+        if (!duration.HasValue) return "--";
+        var d = duration.Value;
+        if (d.TotalDays >= 1) return $"{(int)d.TotalDays}d {d.Hours}h {d.Minutes}m";
+        if (d.TotalHours >= 1) return $"{d.Hours}h {d.Minutes}m {d.Seconds}s";
+        if (d.TotalMinutes >= 1) return $"{d.Minutes}m {d.Seconds}s";
+        return $"{Math.Max(1, d.Seconds)}s";
+    }
+
+    sealed record MultiTpLevelItem(decimal Price, decimal Percentage);
+
+    List<MultiTpLevelItem> ParseMultiTp(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return new();
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array) return new();
+            var list = new List<MultiTpLevelItem>();
+            foreach (var el in doc.RootElement.EnumerateArray())
+            {
+                decimal p = 0m;
+                decimal pct = 0m;
+                if (el.TryGetProperty("price", out var pProp) || el.TryGetProperty("Price", out pProp))
+                {
+                    if (pProp.ValueKind == System.Text.Json.JsonValueKind.Number) p = pProp.GetDecimal();
+                    else if (pProp.ValueKind == System.Text.Json.JsonValueKind.String && decimal.TryParse(pProp.GetString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedP)) p = parsedP;
+                }
+                if (el.TryGetProperty("percentage", out var pctProp) || el.TryGetProperty("Percentage", out pctProp))
+                {
+                    if (pctProp.ValueKind == System.Text.Json.JsonValueKind.Number) pct = pctProp.GetDecimal();
+                    else if (pctProp.ValueKind == System.Text.Json.JsonValueKind.String && decimal.TryParse(pctProp.GetString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedPct)) pct = parsedPct;
+                }
+                if (p > 0) list.Add(new(p, pct));
+            }
+            return list;
+        }
+        catch
+        {
+            return new();
+        }
+    }
+}
+
+<div class="space-y-6 pb-16 font-sans">
+    <!-- Top Header & Navigation -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl font-black">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">Trade History &amp; Receipts</h1>
+                    <span class="px-2.5 py-0.5 rounded-full text-3xs font-extrabold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 uppercase tracking-wide">
+                        Audit Ledger
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Comprehensive audit log of every closed position, executed exit prices, allocated balances, units, and risk analytics.
+                </p>
+            </div>
+        </div>
+
+        <!-- Quick View Switcher Tabs -->
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="/Trading/Trading/Index" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-brand-500"></i>
+                <span>Trading Hub</span>
+            </a>
+            <a href="/Trading/Trading/Trade" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-emerald-500"></i>
+                <span>Pro Terminal</span>
+            </a>
+            <div class="px-4 py-2 text-xs font-black rounded-xl bg-indigo-600 text-white shadow-xs flex items-center gap-2">
+                <i class="fa-solid fa-receipt"></i>
+                <span>History &amp; Receipts</span>
+            </div>
+            <button type="button" onclick="exportHistoryCsv()" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 transition-colors flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-800/40">
+                <i class="fa-solid fa-file-csv"></i>
+                <span>Export CSV</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- KPI Summary Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+        <!-- 1. Whole Balance -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
+            <div class="text-3xs font-black tracking-widest text-slate-400 uppercase">Whole Account Balance</div>
+            <div class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
+                $@account.CashBalance.ToString("#,##0.00")
+            </div>
+            <div class="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
+                <span>Equity: $@account.Equity.ToString("#,##0.00")</span>
+            </div>
+            <div class="absolute -right-2 -bottom-2 text-slate-100 dark:text-slate-800/40 text-4xl -z-0 pointer-events-none">
+                <i class="fa-solid fa-wallet"></i>
+            </div>
+        </div>
+
+        <!-- 2. Net Realized PnL -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
+            <div class="text-3xs font-black tracking-widest text-slate-400 uppercase">Net Realized PnL</div>
+            <div class="text-lg sm:text-xl font-black @(summary.NetRealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500") mt-1">
+                @(summary.NetRealizedPnl >= 0 ? "+" : "")$@summary.NetRealizedPnl.ToString("#,##0.00")
+            </div>
+            <div class="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                Profit: <span class="text-emerald-500">+$@summary.TotalRealizedProfit.ToString("#,##0.00")</span>
+            </div>
+            <div class="absolute -right-2 -bottom-2 text-slate-100 dark:text-slate-800/40 text-4xl -z-0 pointer-events-none">
+                <i class="fa-solid fa-scale-balanced"></i>
+            </div>
+        </div>
+
+        <!-- 3. Win Rate -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
+            <div class="text-3xs font-black tracking-widest text-slate-400 uppercase">Win Rate</div>
+            <div class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
+                @summary.WinRatePercentage.ToString("0.0")%
+            </div>
+            <div class="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                <span class="text-emerald-500">@summary.WinningTrades W</span> &bull; 
+                <span class="text-rose-500">@summary.LosingTrades L</span> &bull; 
+                <span class="text-slate-400">@summary.BreakEvenTrades BE</span>
+            </div>
+            <div class="absolute -right-2 -bottom-2 text-slate-100 dark:text-slate-800/40 text-4xl -z-0 pointer-events-none">
+                <i class="fa-solid fa-bullseye"></i>
+            </div>
+        </div>
+
+        <!-- 4. Profit Factor -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
+            <div class="text-3xs font-black tracking-widest text-slate-400 uppercase">Profit Factor</div>
+            <div class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
+                @summary.ProfitFactor.ToString("0.00")
+            </div>
+            <div class="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                Payoff Ratio: @summary.PayoffRatio.ToString("0.00")
+            </div>
+            <div class="absolute -right-2 -bottom-2 text-slate-100 dark:text-slate-800/40 text-4xl -z-0 pointer-events-none">
+                <i class="fa-solid fa-chart-simple"></i>
+            </div>
+        </div>
+
+        <!-- 5. Largest Win / Loss -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
+            <div class="text-3xs font-black tracking-widest text-slate-400 uppercase">Extremes (Win / Loss)</div>
+            <div class="text-sm font-black text-emerald-500 mt-1">
+                +$@summary.LargestWin.ToString("#,##0.00")
+            </div>
+            <div class="text-xs font-black text-rose-500 mt-0.5">
+                $@summary.LargestLoss.ToString("#,##0.00")
+            </div>
+            <div class="absolute -right-2 -bottom-2 text-slate-100 dark:text-slate-800/40 text-4xl -z-0 pointer-events-none">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+        </div>
+
+        <!-- 6. Total Closed Volume -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden">
+            <div class="text-3xs font-black tracking-widest text-slate-400 uppercase">Total Closed Volume</div>
+            <div class="text-lg sm:text-xl font-black text-slate-900 dark:text-white mt-1">
+                $@summary.TotalVolumeNotional.ToString("#,##0.00")
+            </div>
+            <div class="text-3xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                Across @summary.TotalTrades closed trades
+            </div>
+            <div class="absolute -right-2 -bottom-2 text-slate-100 dark:text-slate-800/40 text-4xl -z-0 pointer-events-none">
+                <i class="fa-solid fa-money-bill-transfer"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters & Search Toolbar -->
+    <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+        <form method="get" action="/Trading/Trading/History" id="historyFilterForm" class="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+            <!-- Search Text -->
+            <div class="relative flex-1">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" name="search" id="filterSearchInput" value="@Model.SearchFilter"
+                       placeholder="Filter by symbol or asset name (e.g. BTC, ETH, SOL, EUR/USD)..."
+                       class="w-full pl-9 pr-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <!-- Side Filter -->
+                <select name="side" onchange="this.form.submit()" class="px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none">
+                    <option value="">All Sides (Long &amp; Short)</option>
+                    <option value="1" selected="@(Model.SideFilter == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy)">Long (Buy)</option>
+                    <option value="2" selected="@(Model.SideFilter == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Sell)">Short (Sell)</option>
+                </select>
+
+                <!-- Asset Class Filter -->
+                <select name="assetClass" onchange="this.form.submit()" class="px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none">
+                    <option value="">All Asset Classes</option>
+                    <option value="1" selected="@(Model.AssetClassFilter == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Crypto)">Crypto (Binance Live)</option>
+                    <option value="2" selected="@(Model.AssetClassFilter == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Forex)">Forex (TwelveData Live)</option>
+                    <option value="3" selected="@(Model.AssetClassFilter == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Stock)">Stocks</option>
+                    <option value="4" selected="@(Model.AssetClassFilter == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Index)">Indices</option>
+                    <option value="5" selected="@(Model.AssetClassFilter == AzureTest.Domain.Entities.Trading.Enums.AssetClass.Future)">Futures</option>
+                </select>
+
+                <!-- Outcome Filter -->
+                <select name="outcome" onchange="this.form.submit()" class="px-3 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none">
+                    <option value="">All Outcomes</option>
+                    <option value="win" selected="@(Model.OutcomeFilter == "win")">Winning Trades (Win)</option>
+                    <option value="loss" selected="@(Model.OutcomeFilter == "loss")">Losing Trades (Loss)</option>
+                    <option value="breakeven" selected="@(Model.OutcomeFilter == "breakeven")">Break-Even (BE)</option>
+                    <option value="liquidated" selected="@(Model.OutcomeFilter == "liquidated")">Liquidated</option>
+                </select>
+
+                <!-- Reset Filters Button -->
+                <a href="/Trading/Trading/History" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-1.5" title="Clear all filters">
+                    <i class="fa-solid fa-filter-circle-xmark"></i>
+                    <span>Reset</span>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Trades History Ledger Table Card -->
+    <div class="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+                <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-indigo-500"></i>
+                    <span>Executed Trades Ledger</span>
+                    <span class="px-2 py-0.5 rounded-full text-3xs font-black bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                        @trades.Count Record@(trades.Count == 1 ? "" : "s")
+                    </span>
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Real-time execution log showing whole balance, margin allocated, units, leverage, TP/SL, and close prices.
+                </p>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input type="text" id="tableQuickSearch" onkeyup="quickFilterTable()" placeholder="Quick filter rows..."
+                       class="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none" />
+            </div>
+        </div>
+
+        @if (trades.Count == 0)
+        {
+            <div class="p-12 text-center">
+                <div class="w-16 h-16 mx-auto rounded-3xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-2xl text-slate-400 mb-3">
+                    <i class="fa-solid fa-inbox"></i>
+                </div>
+                <h4 class="text-sm font-black text-slate-800 dark:text-slate-200">No Closed Trades Found</h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
+                    No executed trades match your selected filters or no trades have been closed yet. Open a position in the Pro Terminal to begin trading.
+                </p>
+                <div class="mt-4">
+                    <a href="/Trading/Trading/Trade" class="inline-flex items-center gap-2 px-4 py-2 text-xs font-black rounded-xl bg-indigo-600 text-white shadow-xs hover:bg-indigo-700 transition-colors">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Go to Pro Terminal</span>
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs" id="historyDataTable">
+                    <thead>
+                        <tr class="bg-slate-50/70 dark:bg-slate-800/40 text-slate-400 dark:text-slate-400 text-3xs font-black uppercase tracking-wider border-b border-slate-200/80 dark:border-slate-800">
+                            <th class="py-3 px-3 sm:px-4">Trade / Asset</th>
+                            <th class="py-3 px-3">Type</th>
+                            <th class="py-3 px-3">Units (Qty)</th>
+                            <th class="py-3 px-3">Margin &amp; Lev</th>
+                            <th class="py-3 px-3">% Balance</th>
+                            <th class="py-3 px-3">Entry &rarr; Exit Price</th>
+                            <th class="py-3 px-3">TP &amp; SL Levels</th>
+                            <th class="py-3 px-3">Realized PnL</th>
+                            <th class="py-3 px-3">Outcome</th>
+                            <th class="py-3 px-3">Duration</th>
+                            <th class="py-3 px-3 sm:px-4 text-right">Receipt</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                        @foreach (var t in trades)
+                        {
+                            var isBuy = t.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy;
+                            var multiTps = ParseMultiTp(t.MultipleTakeProfitsJson);
+                            var priceDiff = (t.ClosePrice ?? t.CurrentPrice) - t.EntryPrice;
+                            var priceDiffPct = t.EntryPrice > 0 ? (priceDiff / t.EntryPrice) * 100m : 0m;
+                            var roiColor = t.RealizedPnl > 0 ? "text-emerald-500" : (t.RealizedPnl < 0 ? "text-rose-500" : "text-slate-400");
+                            var outcomeBg = t.Status == AzureTest.Domain.Entities.Trading.Enums.TradingPositionStatus.Liquidated
+                                ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+                                : (t.RealizedPnl > 0 
+                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" 
+                                    : (t.RealizedPnl < 0 
+                                        ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20" 
+                                        : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"));
+
+                            <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors trade-row"
+                                data-symbol="@t.Symbol.ToLowerInvariant()"
+                                data-name="@t.AssetName.ToLowerInvariant()"
+                                data-side="@(isBuy ? "long" : "short")"
+                                data-outcome="@t.OutcomeBadge.ToLowerInvariant()">
+                                <!-- 1. Trade / Asset -->
+                                <td class="py-3 px-3 sm:px-4">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 @(isBuy ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500")">
+                                            <i class="fa-solid @(isBuy ? "fa-arrow-trend-up" : "fa-arrow-trend-down")"></i>
+                                        </div>
+                                        <div>
+                                            <div class="flex items-center gap-1.5">
+                                                <a href="/Trading/Trading/Trade?symbol=@t.Symbol" class="font-black text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                                    @t.Symbol
+                                                </a>
+                                                <span class="px-1.5 py-0.2 rounded text-4xs font-black @GetAssetBadgeClass(t.AssetClass)">
+                                                    @t.AssetClass
+                                                </span>
+                                            </div>
+                                            <div class="text-3xs text-slate-400 truncate max-w-[120px]">
+                                                @t.AssetName
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- 2. Type -->
+                                <td class="py-3 px-3">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-3xs font-black uppercase tracking-wider @(isBuy ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20")">
+                                        <i class="fa-solid @(isBuy ? "fa-circle-chevron-up" : "fa-circle-chevron-down") text-4xs"></i>
+                                        <span>@(isBuy ? "Long (Buy)" : "Short (Sell)")</span>
+                                    </span>
+                                </td>
+
+                                <!-- 3. Units & Notional -->
+                                <td class="py-3 px-3">
+                                    <div class="font-black text-slate-900 dark:text-white">
+                                        @FormatQuantity(t.Quantity)
+                                    </div>
+                                    <div class="text-3xs text-slate-400">
+                                        Notional: $@t.NotionalValue.ToString("#,##0.00")
+                                    </div>
+                                </td>
+
+                                <!-- 4. Selected Margin & Leverage -->
+                                <td class="py-3 px-3">
+                                    <div class="font-black text-slate-900 dark:text-white flex items-center gap-1">
+                                        <span>$@t.InitialMargin.ToString("#,##0.00")</span>
+                                        <span class="px-1.5 py-0.2 rounded-md text-3xs font-extrabold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                                            @t.Leverage&times;
+                                        </span>
+                                    </div>
+                                    <div class="text-3xs text-slate-400">
+                                        Isolated Margin
+                                    </div>
+                                </td>
+
+                                <!-- 5. % Balance -->
+                                <td class="py-3 px-3">
+                                    <div class="font-black text-slate-900 dark:text-white">
+                                        @t.BalancePercentage.ToString("0.0")%
+                                    </div>
+                                    <div class="text-3xs text-slate-400">
+                                        of whole bal
+                                    </div>
+                                </td>
+
+                                <!-- 6. Entry vs Exit Price -->
+                                <td class="py-3 px-3">
+                                    <div class="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-300">
+                                        <span>@FormatPrice(t.EntryPrice)</span>
+                                        <span class="text-slate-400">&rarr;</span>
+                                        <span class="font-black text-slate-900 dark:text-white">@FormatPrice(t.ClosePrice)</span>
+                                    </div>
+                                    <div class="text-3xs font-extrabold @(priceDiff >= 0 ? "text-emerald-500" : "text-rose-500")">
+                                        @(priceDiff >= 0 ? "+" : "")@priceDiffPct.ToString("0.00")%
+                                    </div>
+                                </td>
+
+                                <!-- 7. TP & SL Levels -->
+                                <td class="py-3 px-3">
+                                    <div class="space-y-0.5 text-3xs">
+                                        @if (t.TakeProfit.HasValue)
+                                        {
+                                            <div class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+                                                <span class="font-black">TP:</span>
+                                                <span>@FormatPrice(t.TakeProfit.Value)</span>
+                                                @if (multiTps.Count > 0)
+                                                {
+                                                    <span class="px-1 rounded bg-emerald-500/20 text-emerald-500 text-4xs font-black">@multiTps.Count TPs</span>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-slate-400">TP: --</div>
+                                        }
+
+                                        @if (t.StopLoss.HasValue)
+                                        {
+                                            <div class="flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold">
+                                                <span class="font-black">SL:</span>
+                                                <span>@FormatPrice(t.StopLoss.Value)</span>
+                                                @if (t.TrailingStopDistance.HasValue)
+                                                {
+                                                    <span class="px-1 rounded bg-rose-500/20 text-rose-500 text-4xs font-black">Trail</span>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-slate-400">SL: --</div>
+                                        }
+                                    </div>
+                                </td>
+
+                                <!-- 8. Realized PnL & ROI -->
+                                <td class="py-3 px-3">
+                                    <div class="font-black text-sm @roiColor">
+                                        @(t.RealizedPnl >= 0 ? "+" : "")$@t.RealizedPnl.ToString("#,##0.00")
+                                    </div>
+                                    <div class="text-3xs font-black @roiColor">
+                                        @(t.RoiPercentage >= 0 ? "+" : "")@t.RoiPercentage.ToString("0.00")% ROI
+                                    </div>
+                                </td>
+
+                                <!-- 9. Outcome Badge -->
+                                <td class="py-3 px-3">
+                                    <div class="space-y-0.5">
+                                        <span class="inline-block px-2 py-0.5 rounded-md text-4xs font-black uppercase tracking-wider @outcomeBg">
+                                            @t.OutcomeBadge
+                                        </span>
+                                        <div class="text-4xs text-slate-400 uppercase font-bold tracking-tight">
+                                            @t.CloseReasonBadge
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- 10. Duration -->
+                                <td class="py-3 px-3">
+                                    <div class="font-bold text-slate-700 dark:text-slate-300">
+                                        @FormatDuration(t.Duration)
+                                    </div>
+                                    <div class="text-4xs text-slate-400">
+                                        @(t.ClosedAtUtc?.ToString("MMM dd HH:mm") ?? t.OpenedAtUtc.ToString("MMM dd HH:mm"))
+                                    </div>
+                                </td>
+
+                                <!-- 11. Receipt Action -->
+                                <td class="py-3 px-3 sm:px-4 text-right">
+                                    <button type="button" onclick="showTradeReceipt(@System.Text.Json.JsonSerializer.Serialize(t))"
+                                            class="px-2.5 py-1 text-3xs font-black rounded-lg bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 transition-colors inline-flex items-center gap-1 shadow-2xs">
+                                        <i class="fa-solid fa-receipt"></i>
+                                        <span>Receipt</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Trade Receipt Breakdown Modal -->
+<div id="tradeReceiptModal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <!-- Modal Header -->
+        <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg font-black" id="modalIcon">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-black text-slate-900 dark:text-white" id="modalTradeTitle">Trade Execution Receipt</h3>
+                    <p class="text-3xs text-slate-400 font-mono" id="modalTicketId">Ticket ID: --</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeTradeReceiptModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Modal Body Receipt Card -->
+        <div class="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+            <!-- Top Outcome Banner -->
+            <div id="modalOutcomeBanner" class="p-3.5 rounded-2xl flex items-center justify-between">
+                <div>
+                    <div class="text-3xs uppercase font-black tracking-wider text-slate-400">Trade Result</div>
+                    <div class="text-base font-black" id="modalRealizedPnl">$0.00</div>
+                </div>
+                <div class="text-right">
+                    <span id="modalOutcomeBadge" class="px-2.5 py-1 rounded-lg text-3xs font-black uppercase">WIN</span>
+                    <div class="text-3xs font-extrabold text-slate-400 mt-0.5" id="modalRoiPct">0.00% ROI</div>
+                </div>
+            </div>
+
+            <!-- Detailed Grid Breakdown -->
+            <div class="grid grid-cols-2 gap-2 text-xs font-medium">
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <div class="text-4xs font-black uppercase tracking-wider text-slate-400">Order Side &amp; Type</div>
+                    <div class="font-black text-slate-900 dark:text-white mt-0.5" id="modalSideText">--</div>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <div class="text-4xs font-black uppercase tracking-wider text-slate-400">Units / Quantity</div>
+                    <div class="font-black text-slate-900 dark:text-white mt-0.5" id="modalUnitsText">--</div>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <div class="text-4xs font-black uppercase tracking-wider text-slate-400">Selected Margin</div>
+                    <div class="font-black text-slate-900 dark:text-white mt-0.5" id="modalMarginText">--</div>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <div class="text-4xs font-black uppercase tracking-wider text-slate-400">Selected Leverage</div>
+                    <div class="font-black text-slate-900 dark:text-white mt-0.5" id="modalLeverageText">--</div>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <div class="text-4xs font-black uppercase tracking-wider text-slate-400">Whole Account Balance</div>
+                    <div class="font-black text-slate-900 dark:text-white mt-0.5" id="modalWholeBalanceText">--</div>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <div class="text-4xs font-black uppercase tracking-wider text-slate-400">% Balance Allocated</div>
+                    <div class="font-black text-slate-900 dark:text-white mt-0.5" id="modalBalancePctText">--</div>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <div class="text-4xs font-black uppercase tracking-wider text-slate-400">Entry Execution Price</div>
+                    <div class="font-black text-slate-900 dark:text-white mt-0.5" id="modalEntryPriceText">--</div>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <div class="text-4xs font-black uppercase tracking-wider text-slate-400">Exit Price (Last Price)</div>
+                    <div class="font-black text-slate-900 dark:text-white mt-0.5" id="modalExitPriceText">--</div>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <div class="text-4xs font-black uppercase tracking-wider text-slate-400">Take Profit Level</div>
+                    <div class="font-black text-slate-900 dark:text-white mt-0.5" id="modalTpText">--</div>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <div class="text-4xs font-black uppercase tracking-wider text-slate-400">Stop Loss Level</div>
+                    <div class="font-black text-slate-900 dark:text-white mt-0.5" id="modalSlText">--</div>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <div class="text-4xs font-black uppercase tracking-wider text-slate-400">Opened At (UTC)</div>
+                    <div class="font-bold text-slate-700 dark:text-slate-300 mt-0.5" id="modalOpenedText">--</div>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                    <div class="text-4xs font-black uppercase tracking-wider text-slate-400">Closed At (UTC)</div>
+                    <div class="font-bold text-slate-700 dark:text-slate-300 mt-0.5" id="modalClosedText">--</div>
+                </div>
+            </div>
+
+            <!-- Multi TP Breakdown Container (hidden if none) -->
+            <div id="modalMultiTpBox" class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hidden">
+                <div class="text-4xs font-black uppercase tracking-wider text-slate-400 mb-1.5">Multi-Target Take Profits</div>
+                <div id="modalMultiTpList" class="space-y-1"></div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-center justify-between">
+            <span class="text-3xs text-slate-400">Executed on AzureTest Paper Trading Engine</span>
+            <button type="button" onclick="closeTradeReceiptModal()" class="px-4 py-2 text-xs font-black rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 transition-colors">
+                Done
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function quickFilterTable() {
+        const val = (document.getElementById('tableQuickSearch').value || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('#historyDataTable tbody tr.trade-row');
+        rows.forEach(r => {
+            const sym = r.getAttribute('data-symbol') || '';
+            const name = r.getAttribute('data-name') || '';
+            const side = r.getAttribute('data-side') || '';
+            const outcome = r.getAttribute('data-outcome') || '';
+            const txt = (r.innerText || '').toLowerCase();
+            if (!val || sym.includes(val) || name.includes(val) || side.includes(val) || outcome.includes(val) || txt.includes(val)) {
+                r.style.display = '';
+            } else {
+                r.style.display = 'none';
+            }
+        });
+    }
+
+    function showTradeReceipt(t) {
+        if (!t) return;
+        const modal = document.getElementById('tradeReceiptModal');
+        const isBuy = t.Side === 1 || t.Side === 'Buy';
+
+        document.getElementById('modalTradeTitle').innerText = `${t.Symbol} (${t.AssetName})`;
+        document.getElementById('modalTicketId').innerText = `Ticket #${t.Id}`;
+
+        // Outcome Banner
+        const pnl = Number(t.RealizedPnl || 0);
+        const pnlEl = document.getElementById('modalRealizedPnl');
+        pnlEl.innerText = (pnl >= 0 ? '+' : '') + '$' + pnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        pnlEl.className = 'text-base font-black ' + (pnl >= 0 ? 'text-emerald-500' : 'text-rose-500');
+
+        const banner = document.getElementById('modalOutcomeBanner');
+        banner.className = 'p-3.5 rounded-2xl flex items-center justify-between ' + 
+            (pnl >= 0 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-rose-500/10 border border-rose-500/20');
+
+        const badge = document.getElementById('modalOutcomeBadge');
+        badge.innerText = t.OutcomeBadge || (pnl >= 0 ? 'WIN' : 'LOSS');
+        badge.className = 'px-2.5 py-1 rounded-lg text-3xs font-black uppercase ' +
+            (pnl >= 0 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white');
+
+        document.getElementById('modalRoiPct').innerText = (Number(t.RoiPercentage || 0) >= 0 ? '+' : '') + 
+            Number(t.RoiPercentage || 0).toFixed(2) + '% ROI';
+
+        // Grid values
+        document.getElementById('modalSideText').innerText = isBuy ? 'Long (Buy)' : 'Short (Sell)';
+        document.getElementById('modalUnitsText').innerText = Number(t.Quantity || 0).toLocaleString('en-US', { maximumFractionDigits: 6 }) + ' Units';
+        document.getElementById('modalMarginText').innerText = '$' + Number(t.InitialMargin || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('modalLeverageText').innerText = (t.Leverage || 1) + 'x Leverage';
+        document.getElementById('modalWholeBalanceText').innerText = '$' + Number(t.WholeAccountBalance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('modalBalancePctText').innerText = Number(t.BalancePercentage || 0).toFixed(1) + '% of Whole Balance';
+        document.getElementById('modalEntryPriceText').innerText = '$' + Number(t.EntryPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+        document.getElementById('modalExitPriceText').innerText = t.ClosePrice ? ('$' + Number(t.ClosePrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })) : '--';
+        document.getElementById('modalTpText').innerText = t.TakeProfit ? ('$' + Number(t.TakeProfit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })) : 'None';
+        document.getElementById('modalSlText').innerText = t.StopLoss ? ('$' + Number(t.StopLoss).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })) : 'None';
+
+        document.getElementById('modalOpenedText').innerText = t.OpenedAtUtc ? new Date(t.OpenedAtUtc).toUTCString() : '--';
+        document.getElementById('modalClosedText').innerText = t.ClosedAtUtc ? new Date(t.ClosedAtUtc).toUTCString() : '--';
+
+        // Multi-TP handling
+        const multiBox = document.getElementById('modalMultiTpBox');
+        const multiList = document.getElementById('modalMultiTpList');
+        multiList.innerHTML = '';
+        if (t.MultipleTakeProfitsJson) {
+            try {
+                const arr = JSON.parse(t.MultipleTakeProfitsJson);
+                if (Array.isArray(arr) && arr.length > 0) {
+                    multiBox.classList.remove('hidden');
+                    arr.forEach((item, idx) => {
+                        const row = document.createElement('div');
+                        row.className = 'flex items-center justify-between text-3xs font-bold';
+                        row.innerHTML = `<span class="text-slate-500">TP ${idx + 1} (${item.Percentage || item.percentage}% qty):</span><span class="text-emerald-500 font-black">$${Number(item.Price || item.price).toFixed(4)}</span>`;
+                        multiList.appendChild(row);
+                    });
+                } else {
+                    multiBox.classList.add('hidden');
+                }
+            } catch {
+                multiBox.classList.add('hidden');
+            }
+        } else {
+            multiBox.classList.add('hidden');
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    function closeTradeReceiptModal() {
+        document.getElementById('tradeReceiptModal').classList.add('hidden');
+    }
+
+    function exportHistoryCsv() {
+        const rows = document.querySelectorAll('#historyDataTable tbody tr.trade-row');
+        if (!rows.length) {
+            alert('No trade history available to export.');
+            return;
+        }
+
+        let csv = 'TicketId,Symbol,Side,Units,Margin,Leverage,BalancePct,EntryPrice,ExitPrice,TakeProfit,StopLoss,RealizedPnl,RoiPct,Outcome,CloseReason,OpenedAt,ClosedAt\n';
+
+        @foreach (var t in trades)
+        {
+            var isBuy = t.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy;
+            <text>
+            csv += `"${t.Id}","${t.Symbol}","@(isBuy ? "Long" : "Short")",${t.Quantity},${t.InitialMargin},${t.Leverage},${t.BalancePercentage},${t.EntryPrice},@(t.ClosePrice.HasValue ? t.ClosePrice.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "0"),@(t.TakeProfit.HasValue ? t.TakeProfit.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""),@(t.StopLoss.HasValue ? t.StopLoss.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""),${t.RealizedPnl},${t.RoiPercentage},"${t.OutcomeBadge}","${t.CloseReasonBadge}","${t.OpenedAtUtc:O}","@(t.ClosedAtUtc?.ToString("O") ?? "")"\n`;
+            </text>
+        }
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `TradeHistory_Export_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+</script>

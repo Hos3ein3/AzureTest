@@ -72,17 +72,28 @@ public sealed class GetTradingDashboardQueryHandler : IQueryHandler<GetTradingDa
             .OrderByDescending(p => p.OpenedAtUtc)
             .ToList();
 
-        // Update current prices and unrealized pnl for open positions
-        await _marketData.RefreshRealWorldDataAsync(ct);
+        var openPositionsList = allPositions.Where(p => p.Status == TradingPositionStatus.Open).ToList();
+        var selectedSymbol = string.IsNullOrWhiteSpace(q.SelectedSymbol) ? "BTCUSDT" : q.SelectedSymbol.Trim().ToUpperInvariant();
+
+        // Refresh market data specifically for open position symbols and the active terminal symbol
+        var activeSymbols = openPositionsList.Select(p => p.Symbol)
+            .Append(selectedSymbol)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        await _marketData.RefreshSymbolsDataAsync(activeSymbols, ct);
+
         decimal totalUnrealizedPnl = 0m;
-        foreach (var pos in allPositions.Where(p => p.Status == TradingPositionStatus.Open))
+        decimal totalActiveMargin = 0m;
+        foreach (var pos in openPositionsList)
         {
             var curPrice = await _marketData.GetCurrentPriceAsync(pos.Symbol, pos.CurrentPrice, ct);
             pos.UpdateCurrentPrice(curPrice);
             totalUnrealizedPnl += pos.UnrealizedPnl;
+            totalActiveMargin += pos.InitialMargin;
         }
 
-        account.AdjustMarginAndEquity(0, totalUnrealizedPnl);
+        account.Recalculate(totalActiveMargin, totalUnrealizedPnl);
 
         var openPositions = allPositions
             .Where(p => p.Status == TradingPositionStatus.Open)
@@ -91,7 +102,8 @@ public sealed class GetTradingDashboardQueryHandler : IQueryHandler<GetTradingDa
 
         var closedPositions = allPositions
             .Where(p => p.Status == TradingPositionStatus.Closed || p.Status == TradingPositionStatus.Liquidated)
-            .Take(25)
+            .OrderByDescending(p => p.ClosedAtUtc ?? p.OpenedAtUtc)
+            .Take(50)
             .Select(GetTradingDashboardQuery.Mapping.ToDto)
             .ToList();
 
@@ -111,7 +123,6 @@ public sealed class GetTradingDashboardQueryHandler : IQueryHandler<GetTradingDa
 
         var quotes = await _marketData.GetAllQuotesAsync(watchlistedSymbols, ct);
 
-        var selectedSymbol = string.IsNullOrWhiteSpace(q.SelectedSymbol) ? "BTCUSDT" : q.SelectedSymbol.Trim().ToUpperInvariant();
         var selectedQuote = quotes.FirstOrDefault(x => x.Symbol.Equals(selectedSymbol, StringComparison.OrdinalIgnoreCase));
         if (selectedQuote == null)
         {

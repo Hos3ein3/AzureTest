@@ -212,12 +212,19 @@ public sealed class TradingPosition : AggregateRoot, IAudit, ISoftDelete, ITenan
             RealizedPnl = (EntryPrice - closePrice) * Quantity;
         }
 
+        // In isolated paper trading, loss cannot exceed the allocated initial margin
+        if (RealizedPnl < -InitialMargin)
+        {
+            RealizedPnl = -InitialMargin;
+        }
+
         UnrealizedPnl = Rules.ZeroValue;
     }
 
     public void Liquidate(decimal liquidationPrice)
     {
         Close(liquidationPrice);
+        RealizedPnl = -InitialMargin;
         Status = TradingPositionStatus.Liquidated;
     }
 }

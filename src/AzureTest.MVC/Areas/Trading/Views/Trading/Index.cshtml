@@ -358,7 +358,15 @@
         </div>
 
         <!-- Global Action Buttons -->
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="/Trading/Trading/Trade" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-emerald-500"></i>
+                <span>Pro Terminal</span>
+            </a>
+            <a href="/Trading/Trading/History" class="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 transition-colors flex items-center gap-2 border border-indigo-200 dark:border-indigo-800/40">
+                <i class="fa-solid fa-receipt"></i>
+                <span>History &amp; Receipts</span>
+            </a>
             <button type="button" onclick="openResetModal()" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-2">
                 <i class="fa-solid fa-rotate-right text-brand-500"></i>
                 <span>Set / Reset Balance</span>
@@ -788,6 +796,10 @@
                         <i class="fa-solid fa-clock text-slate-400"></i>
                         <h3 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Closed Trades History</h3>
                     </div>
+                    <a href="/Trading/Trading/History" class="px-3 py-1.5 text-xs font-black rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/40 transition-colors flex items-center gap-1.5 shadow-2xs">
+                        <i class="fa-solid fa-receipt"></i>
+                        <span>Full History &amp; Receipts &rarr;</span>
+                    </a>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -803,14 +815,21 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800" id="indexClosedPositionsBody">
-                            @foreach (var c in Model.ClosedPositions.Take(10))
+                            @foreach (var c in Model.ClosedPositions.Take(15))
                             {
-                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                var isWin = c.RealizedPnl >= 0;
+                                var isLiquidated = c.Status == AzureTest.Domain.Entities.Trading.Enums.TradingPositionStatus.Liquidated;
+                                var triggerText = isLiquidated ? "LIQUIDATED" : (isWin ? "TAKE PROFIT" : "STOP LOSS");
+                                var triggerClass = isLiquidated
+                                    ? "bg-rose-600/10 text-rose-600 border-rose-600/30"
+                                    : (isWin ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" : "bg-rose-500/10 text-rose-500 border-rose-500/30");
+
+                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                                     <td class="p-3 pl-5 font-black text-slate-800 dark:text-slate-200">
                                         <div class="flex items-center gap-1.5 flex-wrap">
                                             <span>@c.Symbol</span>
-                                            <span class="px-1.5 py-0.5 rounded text-3xs font-extrabold uppercase @GetAssetBadgeClass(c.AssetClass)">
-                                                @GetAssetDisplayName(c.AssetClass)
+                                            <span class="px-1.5 py-0.5 rounded text-4xs font-black uppercase border @triggerClass">
+                                                @triggerText
                                             </span>
                                             @if (IsSimulatedFeed(c.AssetClass))
                                             {
@@ -824,15 +843,15 @@
                                         <p class="text-3xs text-slate-400 truncate font-normal">@c.AssetName</p>
                                     </td>
                                     <td class="p-3 text-3xs font-extrabold @(c.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy ? "text-emerald-500" : "text-rose-500")">@c.Side</td>
-                                    <td class="p-3 font-mono">@FormatPrice5(c.EntryPrice)</td>
-                                    <td class="p-3 font-mono">@FormatPrice5(c.ClosePrice ?? c.CurrentPrice)</td>
+                                    <td class="p-3 font-mono text-slate-500 dark:text-slate-400">@FormatPrice5(c.EntryPrice)</td>
+                                    <td class="p-3 font-mono font-bold text-slate-900 dark:text-white">@FormatPrice5(c.ClosePrice ?? c.CurrentPrice)</td>
                                     <td class="p-3 font-mono font-black">
                                         <span class="@(c.RealizedPnl >= 0 ? "text-emerald-500" : "text-rose-500")">
                                             @FormatPnl5(c.RealizedPnl)
                                         </span>
                                     </td>
                                     <td class="p-3 pr-5 text-right text-3xs text-slate-400">
-                                        @(c.ClosedAtUtc?.ToString("MMM dd, HH:mm") ?? "N/A")
+                                        @(c.ClosedAtUtc?.ToString("MMM dd, HH:mm:ss") ?? "N/A")
                                     </td>
                                 </tr>
                             }
@@ -2774,6 +2793,58 @@
             if (badge) badge.textContent = `${currentOpen.length} Active`;
             const countKpi = document.getElementById('idxKpiOpenCount');
             if (countKpi) countKpi.textContent = `Open Trades: ${currentOpen.length}`;
+
+            // Update Closed Positions History Table
+            const closedList = data.closedPositions || [];
+            const closedContainer = document.getElementById('indexClosedPositionsContainer');
+            const closedBody = document.getElementById('indexClosedPositionsBody');
+            if (closedContainer && closedBody && closedList.length > 0) {
+                closedContainer.classList.remove('hidden');
+                let closedHtml = '';
+                closedList.slice(0, 15).forEach(c => {
+                    const isWin = Number(c.realizedPnl ?? c.RealizedPnl ?? 0) >= 0;
+                    const pnlVal = Number(c.realizedPnl ?? c.RealizedPnl ?? 0);
+                    const exitPrice = Number(c.closePrice ?? c.ClosePrice ?? c.currentPrice ?? c.CurrentPrice ?? 0);
+                    const entryPrice = Number(c.entryPrice ?? c.EntryPrice ?? 0);
+                    const isLiquidated = (c.status ?? c.Status) == 2;
+                    const side = c.side ?? c.Side;
+                    const sideText = (side == 1 || String(side).toLowerCase().includes('buy')) ? 'Buy' : 'Sell';
+                    const sideClass = sideText === 'Buy' ? 'text-emerald-500' : 'text-rose-500';
+                    const triggerText = isLiquidated ? 'LIQUIDATED' : (isWin ? 'TAKE PROFIT' : 'STOP LOSS');
+                    const triggerClass = isLiquidated
+                        ? 'bg-rose-600/10 text-rose-600 border-rose-600/30'
+                        : (isWin ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' : 'bg-rose-500/10 text-rose-500 border-rose-500/30');
+
+                    const closedAt = c.closedAtUtc ?? c.ClosedAtUtc;
+                    const closedTimeStr = closedAt ? new Date(closedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Recently';
+
+                    closedHtml += `
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                            <td class="p-3 pl-5 font-black text-slate-800 dark:text-slate-200">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span>${c.symbol ?? c.Symbol}</span>
+                                    <span class="px-1.5 py-0.5 rounded text-4xs font-black uppercase border ${triggerClass}">
+                                        ${triggerText}
+                                    </span>
+                                </div>
+                                <p class="text-3xs text-slate-400 truncate font-normal">${c.assetName ?? c.AssetName ?? ''}</p>
+                            </td>
+                            <td class="p-3 text-3xs font-extrabold ${sideClass}">${sideText}</td>
+                            <td class="p-3 font-mono text-slate-500 dark:text-slate-400">${formatPrice5(entryPrice)}</td>
+                            <td class="p-3 font-mono font-bold text-slate-900 dark:text-white">${formatPrice5(exitPrice)}</td>
+                            <td class="p-3 font-mono font-black">
+                                <span class="${isWin ? 'text-emerald-500' : 'text-rose-500'}">
+                                    ${formatPnl5(pnlVal)}
+                                </span>
+                            </td>
+                            <td class="p-3 pr-5 text-right text-3xs text-slate-400">
+                                ${closedTimeStr}
+                            </td>
+                        </tr>
+                    `;
+                });
+                closedBody.innerHTML = closedHtml;
+            }
 
             // Update mark prices and PnL for active positions
             currentOpen.forEach(pos => {
