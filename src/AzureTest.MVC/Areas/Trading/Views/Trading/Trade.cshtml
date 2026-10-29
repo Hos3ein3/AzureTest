@@ -445,6 +445,18 @@
             </div>
         </div>
 
+        <!-- Trade Direction / Side Selector (Long vs Short) -->
+        <div class="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700">
+            <button type="button" onclick="setOrderSide(1)" id="sideTabLong" class="py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 bg-emerald-500 text-white shadow-xs">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+                <span id="sideTabLongText">Long (Buy)</span>
+            </button>
+            <button type="button" onclick="setOrderSide(2)" id="sideTabShort" class="py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:bg-slate-200 dark:hover:bg-slate-700">
+                <i class="fa-solid fa-arrow-trend-down"></i>
+                <span id="sideTabShortText">Short (Sell)</span>
+            </button>
+        </div>
+
         <!-- UIComponent Group Tab: Market | Limit | Stop -->
         <div class="flex items-center gap-1.5 sm:gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 overflow-x-auto">
             <button type="button" onclick="setOrderTab('market')" id="tabMarket" class="order-type-tab px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs font-black bg-brand-500 text-white shadow-xs transition-all shrink-0">
@@ -2035,7 +2047,63 @@
         }
     }
 
-    // ── 5. UIComponent iOS Terminology Switch ────────────────────────────────
+    // ── 5. UIComponent iOS Terminology Switch & Side Control ────────────────
+    function updateSideSpecificLabels() {
+        const tpLabels = document.querySelectorAll('.term-tp-label');
+        const slLabels = document.querySelectorAll('.term-sl-label');
+        if (currentSide === 1) {
+            tpLabels.forEach(el => el.textContent = isBuzzwordsMode ? "Take Profit Target (Higher)" : "Profit Goal (Sell when up)");
+            slLabels.forEach(el => el.textContent = isBuzzwordsMode ? "Stop Loss Threshold (Lower)" : "Safety Stop (Sell if down)");
+        } else {
+            tpLabels.forEach(el => el.textContent = isBuzzwordsMode ? "Take Profit Target (Lower)" : "Profit Goal (Buy back when down)");
+            slLabels.forEach(el => el.textContent = isBuzzwordsMode ? "Stop Loss Threshold (Higher)" : "Safety Stop (Buy back if up)");
+        }
+    }
+
+    function setOrderSide(side, flipTpSl = true) {
+        currentSide = side;
+        const sideInput = document.getElementById('formOrderSide');
+        if (sideInput) sideInput.value = side;
+
+        const tabLong = document.getElementById('sideTabLong');
+        const tabShort = document.getElementById('sideTabShort');
+
+        if (side === 1) {
+            if (tabLong) {
+                tabLong.className = "py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 bg-emerald-500 text-white shadow-xs";
+            }
+            if (tabShort) {
+                tabShort.className = "py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:bg-slate-200 dark:hover:bg-slate-700";
+            }
+        } else {
+            if (tabLong) {
+                tabLong.className = "py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-emerald-500 hover:bg-slate-200 dark:hover:bg-slate-700";
+            }
+            if (tabShort) {
+                tabShort.className = "py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 bg-rose-500 text-white shadow-xs";
+            }
+        }
+
+        updateSideSpecificLabels();
+
+        if (flipTpSl) {
+            const refPrice = getActiveReferencePrice();
+            const tpInput = document.getElementById('orderTakeProfitInput');
+            const slInput = document.getElementById('orderStopLossInput');
+            if (refPrice > 0) {
+                if (side === 1) {
+                    if (tpInput) tpInput.value = formatPriceInput(refPrice * 1.05);
+                    if (slInput) slInput.value = formatPriceInput(refPrice * 0.97);
+                } else {
+                    if (tpInput) tpInput.value = formatPriceInput(refPrice * 0.95);
+                    if (slInput) slInput.value = formatPriceInput(refPrice * 1.03);
+                }
+            }
+            onTpLevelChange();
+            calculateRiskRewardOutputs();
+        }
+    }
+
     function toggleTerminology(isBuzzwords) {
         isBuzzwordsMode = isBuzzwords;
         const modeTitle = document.getElementById('modeTitleLabel');
@@ -2049,8 +2117,6 @@
             document.querySelectorAll('.term-price-label').forEach(el => el.textContent = "Limit Execution Price ($)");
             document.querySelectorAll('.term-trigger-label').forEach(el => el.textContent = "Stop Trigger Activation ($)");
             document.querySelectorAll('.term-tif-label').forEach(el => el.textContent = "Time in Force (TIF)");
-            document.querySelectorAll('.term-tp-label').forEach(el => el.textContent = "Take Profit Target");
-            document.querySelectorAll('.term-sl-label').forEach(el => el.textContent = "Stop Loss Threshold");
             document.querySelectorAll('.term-exit-header').forEach(el => el.textContent = "Risk-to-Reward & Protective Stops");
             document.getElementById('buyBtnLabel').textContent = "Long (Buy Position)";
             document.getElementById('sellBtnLabel').textContent = "Short (Sell Position)";
@@ -2062,16 +2128,18 @@
             document.querySelectorAll('.term-price-label').forEach(el => el.textContent = "Desired Purchase Price ($)");
             document.querySelectorAll('.term-trigger-label').forEach(el => el.textContent = "Trigger Price ($)");
             document.querySelectorAll('.term-tif-label').forEach(el => el.textContent = "How Long Order Stays Open");
-            document.querySelectorAll('.term-tp-label').forEach(el => el.textContent = "Profit Goal (Sell when up)");
-            document.querySelectorAll('.term-sl-label').forEach(el => el.textContent = "Safety Stop (Sell if down)");
             document.querySelectorAll('.term-exit-header').forEach(el => el.textContent = "Target Profit & Loss Protection");
             document.getElementById('buyBtnLabel').textContent = "Buy (Long Position)";
             document.getElementById('sellBtnLabel').textContent = "Sell (Short Position)";
         }
+        updateSideSpecificLabels();
     }
 
     // ── 6. Client-Side Validation & AJAX Order Placement ───────────────────
     async function submitOrder(side) {
+        if (currentSide !== side) {
+            setOrderSide(side, false);
+        }
         currentSide = side;
         document.getElementById('formOrderSide').value = side;
 

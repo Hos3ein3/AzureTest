@@ -1,0 +1,298 @@
+@model AzureTest.MVC.Models.HomeDashboardViewModel
+@{
+    var t = Model.TradingAnalytics;
+}
+
+<!-- Universal Paper Trading Analytics Widget -->
+<div class="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 flex flex-col justify-between hover:border-slate-300 transition-all col-span-1 lg:col-span-12">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0">
+                <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base font-bold text-slate-900 tracking-tight">Paper Trading Analytics & Execution</h3>
+                    <span class="px-2 py-0.5 rounded-full text-3xs font-bold uppercase bg-emerald-100 text-emerald-700">Multi-Asset</span>
+                </div>
+                <p class="text-xs text-slate-500">Real-time simulation, portfolio equity, win rate & position telemetry</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/TradingDashboard" class="text-xs font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
+                Trading Terminal &rarr;
+            </a>
+            <a href="/PaperTrading" class="text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition">
+                Order Placement
+            </a>
+        </div>
+    </div>
+
+    @if (t != null)
+    {
+        <!-- Trading Key Performance Indicators -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 my-5">
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Account Equity</p>
+                <p class="text-xl font-extrabold text-slate-900 mt-1">$@t.Equity.ToString("N2")</p>
+                <span class="text-3xs text-slate-400">Cash: $@t.CashBalance.ToString("N2")</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Realized PnL</p>
+                <p class="text-xl font-extrabold mt-1 @(t.RealizedPnl >= 0 ? "text-emerald-600" : "text-rose-600")">
+                    @(t.RealizedPnl >= 0 ? "+" : "")$@t.RealizedPnl.ToString("N2")
+                </p>
+                <span class="text-3xs text-slate-400">Best: +$@t.BestTradePnl.ToString("N2")</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Floating PnL</p>
+                <p class="text-xl font-extrabold mt-1 @(t.UnrealizedPnl >= 0 ? "text-emerald-600" : "text-rose-600")">
+                    @(t.UnrealizedPnl >= 0 ? "+" : "")$@t.UnrealizedPnl.ToString("N2")
+                </p>
+                <span class="text-3xs text-slate-400">@t.OpenPositionsCount active positions</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Win Rate</p>
+                <p class="text-xl font-extrabold text-brand-600 mt-1">@t.WinRatePercent.ToString("0.0")%</p>
+                <span class="text-3xs text-slate-400">PF: @t.ProfitFactor.ToString("0.00")</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Margin Used</p>
+                <p class="text-xl font-extrabold text-slate-800 mt-1">$@t.MarginUsed.ToString("N2")</p>
+                <span class="text-3xs text-slate-400">Free: $@t.FreeMargin.ToString("N2")</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Margin Level</p>
+                <p class="text-xl font-extrabold mt-1 @(t.MarginLevelPercent > 200 ? "text-emerald-600" : (t.MarginLevelPercent > 120 ? "text-amber-600" : "text-rose-600"))">
+                    @(t.MarginLevelPercent >= 999 ? "Safe (Infinity)" : t.MarginLevelPercent.ToString("0.0") + "%")
+                </p>
+                <span class="text-3xs text-slate-400">Health index</span>
+            </div>
+        </div>
+
+        <!-- Margin Utilization & Directional Bias Telemetry Bars -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+            <!-- Margin Health Bar -->
+            <div class="bg-slate-50/70 rounded-xl p-3.5 border border-slate-100">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="font-semibold text-slate-600 text-2xs uppercase tracking-wider">Margin Utilization</span>
+                    <span class="font-bold text-slate-800 font-mono">@t.MarginUsedPercent.ToString("0.0")%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex">
+                    <div class="bg-emerald-500 h-2" style="width: @(Math.Min(100, t.MarginUsedPercent))%"></div>
+                </div>
+                <div class="flex items-center justify-between mt-2 text-3xs text-slate-500">
+                    <span>Used: $@t.MarginUsed.ToString("N0")</span>
+                    <span>Free: $@t.FreeMargin.ToString("N0")</span>
+                </div>
+            </div>
+
+            <!-- Directional Bias Split Bar -->
+            @{
+                var totalDirectionTrades = Math.Max(1, t.LongTradesCount + t.ShortTradesCount);
+                var longPct = Math.Round((decimal)t.LongTradesCount / totalDirectionTrades * 100m, 0);
+                var shortPct = 100m - longPct;
+            }
+            <div class="bg-slate-50/70 rounded-xl p-3.5 border border-slate-100">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="font-semibold text-slate-600 text-2xs uppercase tracking-wider">Execution Bias</span>
+                    <span class="text-3xs text-slate-500">Buy @longPct% / Sell @shortPct%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex">
+                    <div class="bg-emerald-500 h-2" style="width: @longPct%"></div>
+                    <div class="bg-rose-500 h-2" style="width: @shortPct%"></div>
+                </div>
+                <div class="flex items-center justify-between mt-2 text-3xs text-slate-500">
+                    <span class="text-emerald-700 font-semibold"><i class="fa-solid fa-arrow-trend-up"></i> Long: @t.LongTradesCount</span>
+                    <span class="text-rose-700 font-semibold"><i class="fa-solid fa-arrow-trend-down"></i> Short: @t.ShortTradesCount</span>
+                </div>
+            </div>
+
+            <!-- Outcome Distribution Micro-Bar -->
+            @{
+                var totalOutcomeTrades = Math.Max(1, t.WinningTradesCount + t.LosingTradesCount + t.BreakEvenTradesCount);
+                var winPct = Math.Round((decimal)t.WinningTradesCount / totalOutcomeTrades * 100m, 0);
+                var lossPct = Math.Round((decimal)t.LosingTradesCount / totalOutcomeTrades * 100m, 0);
+                var bePct = 100m - winPct - lossPct;
+            }
+            <div class="bg-slate-50/70 rounded-xl p-3.5 border border-slate-100">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="font-semibold text-slate-600 text-2xs uppercase tracking-wider">Trade Outcomes</span>
+                    <span class="text-3xs text-slate-500">@t.ClosedPositionsCount closed</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex">
+                    <div class="bg-emerald-500 h-2" style="width: @winPct%"></div>
+                    <div class="bg-rose-500 h-2" style="width: @lossPct%"></div>
+                    <div class="bg-slate-400 h-2" style="width: @bePct%"></div>
+                </div>
+                <div class="flex items-center justify-between mt-2 text-3xs text-slate-500">
+                    <span class="text-emerald-600 font-semibold">Wins: @t.WinningTradesCount</span>
+                    <span class="text-rose-600 font-semibold">Loss: @t.LosingTradesCount</span>
+                    <span class="text-slate-500">BE: @t.BreakEvenTradesCount</span>
+                </div>
+            </div>
+
+            <!-- Risk & Trade Quality Metric -->
+            <div class="bg-slate-50/70 rounded-xl p-3.5 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs mb-1">
+                    <span class="font-semibold text-slate-600 text-2xs uppercase tracking-wider">Avg Trade PnL</span>
+                    <span class="text-xs font-bold font-mono @(t.AvgTradePnl >= 0 ? "text-emerald-600" : "text-rose-600")">
+                        @(t.AvgTradePnl >= 0 ? "+" : "")$@t.AvgTradePnl.ToString("N2")
+                    </span>
+                </div>
+                <div class="mt-2 pt-2 border-t border-slate-200/60 flex items-center justify-between text-3xs text-slate-500">
+                    <span>Worst: <strong class="text-rose-600">$@t.WorstTradePnl.ToString("N2")</strong></span>
+                    <span>Best: <strong class="text-emerald-600">+$@t.BestTradePnl.ToString("N2")</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paper Trading Charts Matrix -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5">
+            <!-- Account Equity & Trajectory Curve (Line Chart) -->
+            <div class="lg:col-span-8 bg-slate-50/50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Equity Growth & Capital Trajectory</h4>
+                    </div>
+                    <span class="text-3xs text-slate-400 font-mono">Running Balance Simulation</span>
+                </div>
+                <div class="h-60 w-full relative">
+                    <canvas id="paperTradingEquityChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Trade Win / Loss Distribution (Doughnut Chart) -->
+            <div class="lg:col-span-4 bg-slate-50/50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-brand-500 inline-block"></span>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Win / Loss Ratio</h4>
+                    </div>
+                    <span class="text-3xs text-slate-400 font-mono">@t.WinRatePercent.ToString("0.0")% Win</span>
+                </div>
+                <div class="h-60 w-full relative flex items-center justify-center">
+                    <canvas id="paperTradingWinLossChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secondary Charts: PnL by Symbol & Asset Class Allocation -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5">
+            <!-- Realized PnL by Asset Symbol (Bar Chart) -->
+            <div class="lg:col-span-7 bg-slate-50/50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">PnL Performance by Asset</h4>
+                    </div>
+                    <span class="text-3xs text-slate-400">Net Realized Gain / Loss ($)</span>
+                </div>
+                <div class="h-56 w-full relative">
+                    <canvas id="paperTradingSymbolPnlChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Asset Class Distribution (Doughnut Chart) -->
+            <div class="lg:col-span-5 bg-slate-50/50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block"></span>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Asset Class Breakdown</h4>
+                    </div>
+                    <span class="text-3xs text-slate-400">Allocation</span>
+                </div>
+                <div class="h-56 w-full relative flex items-center justify-center">
+                    <canvas id="paperTradingAssetClassChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Featured Quotes Pulse Strip -->
+        @if (t.FeaturedQuotes != null && t.FeaturedQuotes.Any())
+        {
+            <div class="mb-5 bg-slate-50/60 rounded-xl p-3 border border-slate-100">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-3xs font-bold uppercase tracking-wider text-slate-500">Live Asset Quotes & Market Feeds</span>
+                    <span class="text-3xs text-slate-400">Aggregated via Binance & Forex Feeds</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+                    @foreach (var q in t.FeaturedQuotes)
+                    {
+                        var isUp = q.ChangePercent24h >= 0;
+                        <div class="bg-white rounded-lg p-2.5 border border-slate-200/60 flex items-center justify-between">
+                            <div>
+                                <span class="font-bold text-xs text-slate-800 block">@q.Symbol</span>
+                                <span class="text-2xs text-slate-500 font-mono">$@q.Price.ToString("N2")</span>
+                            </div>
+                            <span class="text-3xs font-bold px-1.5 py-0.5 rounded @(isUp ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600")">
+                                @(isUp ? "+" : "")@q.ChangePercent24h.ToString("0.00")%
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Lower Matrix: Open Positions Quick Table -->
+        <div class="bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold text-slate-800">Active Open Positions (@t.OpenPositionsCount)</span>
+                <a href="/TradingDashboard" class="text-2xs text-brand-600 hover:underline font-semibold">View All Positions</a>
+            </div>
+            @if (t.TopOpenPositions != null && t.TopOpenPositions.Any())
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="text-3xs uppercase tracking-wider text-slate-400 border-b border-slate-200/60 pb-1.5">
+                                <th class="py-1">Symbol</th>
+                                <th class="py-1">Side</th>
+                                <th class="py-1">Leverage</th>
+                                <th class="py-1 text-right">Entry</th>
+                                <th class="py-1 text-right">Current</th>
+                                <th class="py-1 text-right">Unrealized PnL</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach (var pos in t.TopOpenPositions)
+                            {
+                                var isBuy = pos.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy;
+                                var isPosPnl = pos.UnrealizedPnl >= 0;
+                                <tr>
+                                    <td class="py-2 font-bold text-slate-800">@pos.Symbol</td>
+                                    <td class="py-2">
+                                        <span class="px-1.5 py-0.5 rounded text-3xs font-bold @(isBuy ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700")">
+                                            @(isBuy ? "BUY" : "SELL")
+                                        </span>
+                                    </td>
+                                    <td class="py-2 text-slate-600 font-mono">@pos.Leverage x</td>
+                                    <td class="py-2 text-right font-mono text-slate-600">$@pos.EntryPrice.ToString("N2")</td>
+                                    <td class="py-2 text-right font-mono text-slate-700 font-medium">$@pos.CurrentPrice.ToString("N2")</td>
+                                    <td class="py-2 text-right font-mono font-bold @(isPosPnl ? "text-emerald-600" : "text-rose-600")">
+                                        @(isPosPnl ? "+" : "")$@pos.UnrealizedPnl.ToString("N2")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="py-6 text-center text-xs text-slate-400">
+                    <i class="fa-solid fa-chart-simple text-slate-300 text-base mb-1 block"></i>
+                    No open positions. Place an order in the Trading Terminal.
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="py-8 text-center text-xs text-slate-400">
+            <i class="fa-solid fa-chart-line text-2xl text-slate-300 mb-2 block"></i>
+            Trading account data is initializing. Visit the Trading Terminal to place your first trade.
+        </div>
+    }
+</div>

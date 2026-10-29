@@ -133,6 +133,21 @@
     <div class="grid grid-cols-1 gap-6">
         @await Html.PartialAsync("Widgets/_WidgetShoppingAnalytics", Model)
     </div>
+
+    <!-- Universal Paper Trading Telemetry -->
+    <div class="grid grid-cols-1 gap-6">
+        @await Html.PartialAsync("Widgets/_WidgetPaperTradingAnalytics", Model)
+    </div>
+
+    <!-- Crypto Markets & Portfolio Analytics -->
+    <div class="grid grid-cols-1 gap-6">
+        @await Html.PartialAsync("Widgets/_WidgetCryptoTradingAnalytics", Model)
+    </div>
+
+    <!-- Forex Trading & Global Sessions Analytics -->
+    <div class="grid grid-cols-1 gap-6">
+        @await Html.PartialAsync("Widgets/_WidgetForexTradingAnalytics", Model)
+    </div>
 </div>
 
 @section Scripts {

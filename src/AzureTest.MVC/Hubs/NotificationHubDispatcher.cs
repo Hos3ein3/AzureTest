@@ -20,8 +20,6 @@ public class NotificationHubDispatcher : INotificationHubDispatcher
     {
         var groupName = $"user_{userId.ToString().ToLowerInvariant()}";
         await _hubContext.Clients.Group(groupName).SendAsync("ReceiveNotification", notification, cancellationToken: ct);
-        // Also send to default SignalR UserIdentifier in case authentication uses sub/ClaimTypes.NameIdentifier
-        await _hubContext.Clients.User(userId.ToString()).SendAsync("ReceiveNotification", notification, cancellationToken: ct);
     }
 
     public async Task SendToAllAsync(NotificationDto notification, CancellationToken ct = default)

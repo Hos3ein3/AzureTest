@@ -1,0 +1,269 @@
+@model AzureTest.MVC.Models.HomeDashboardViewModel
+@{
+    var f = Model.ForexAnalytics;
+}
+
+<!-- Forex Trading & Global Sessions Analytics Widget -->
+<div class="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 flex flex-col justify-between hover:border-slate-300 transition-all col-span-1 lg:col-span-12">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg shrink-0">
+                <i class="fa-solid fa-earth-americas"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base font-bold text-slate-900 tracking-tight">Forex Currency Markets & Risk Radar</h3>
+                    <span class="px-2 py-0.5 rounded-full text-3xs font-bold uppercase bg-blue-100 text-blue-700">FX Majors & Crosses</span>
+                </div>
+                <p class="text-xs text-slate-500">Live trading sessions, margin health, drawdown protection, win rate & currency exposure</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/Forex/ForexTradeDashboard" class="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition">
+                Forex Dashboard &rarr;
+            </a>
+            <a href="/Forex/ForexMarketOverview" class="text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition">
+                Economic Sessions
+            </a>
+            <a href="/Forex/ForexAnalysis" class="text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition">
+                Analysis & News
+            </a>
+        </div>
+    </div>
+
+    @if (f != null)
+    {
+        <!-- Forex KPIs Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 my-5">
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Account Balance</p>
+                <p class="text-xl font-extrabold text-slate-900 mt-1">$@f.Balance.ToString("N2")</p>
+                <span class="text-3xs text-slate-400">Equity: $@f.Equity.ToString("N2")</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Daily PnL</p>
+                <p class="text-xl font-extrabold mt-1 @(f.DailyPnl >= 0 ? "text-emerald-600" : "text-rose-600")">
+                    @(f.DailyPnl >= 0 ? "+" : "")$@f.DailyPnl.ToString("N2")
+                </p>
+                <span class="text-3xs text-slate-400">Peak: $@f.PeakEquity.ToString("N2")</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Daily Drawdown</p>
+                <p class="text-xl font-extrabold mt-1 @(f.DailyDrawdownPercent <= 2.5m ? "text-emerald-600" : (f.DailyDrawdownPercent <= 4.0m ? "text-amber-600" : "text-rose-600"))">
+                    @f.DailyDrawdownPercent.ToString("0.0")%
+                </p>
+                <span class="text-3xs text-slate-400">5.0% prop firm max</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">FX Win Rate</p>
+                <p class="text-xl font-extrabold text-brand-600 mt-1">@f.WinRatePercent.ToString("0.0")%</p>
+                <span class="text-3xs text-slate-400">PF: @f.ProfitFactor.ToString("0.00")</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Margin Level</p>
+                <p class="text-xl font-extrabold text-blue-600 mt-1">@f.MarginLevelPercent.ToString("0.0")%</p>
+                <span class="text-3xs text-slate-400">Free: $@f.FreeMargin.ToString("N2")</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Bias (Long / Short)</p>
+                <p class="text-xl font-extrabold text-slate-800 mt-1">@f.LongTradesCount <span class="text-xs text-slate-400 font-normal">/</span> @f.ShortTradesCount</p>
+                <span class="text-3xs text-slate-400">@f.TotalTradesCount total trades</span>
+            </div>
+        </div>
+
+        <!-- Forex Risk & Exposure Telemetry Bars -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+            <!-- Prop Firm Drawdown Safety Bar -->
+            @{
+                var ddPercentOfLimit = Math.Min(100m, (f.DailyDrawdownPercent / Math.Max(0.1m, f.DailyDrawdownLimitPercent)) * 100m);
+                var ddColor = f.DailyDrawdownPercent >= 4.0m ? "bg-rose-500" : (f.DailyDrawdownPercent >= 2.5m ? "bg-amber-500" : "bg-emerald-500");
+            }
+            <div class="bg-slate-50/70 rounded-xl p-3.5 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="font-semibold text-slate-600 text-2xs uppercase tracking-wider">Daily Drawdown Limit</span>
+                    <span class="font-bold text-2xs font-mono @(f.DailyDrawdownPercent >= 4.0m ? "text-rose-600" : "text-slate-800")">
+                        @f.DailyDrawdownPercent.ToString("0.0")% / @f.DailyDrawdownLimitPercent.ToString("0.0")%
+                    </span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex">
+                    <div class="@ddColor h-2" style="width: @ddPercentOfLimit%"></div>
+                </div>
+                <div class="flex items-center justify-between mt-2 text-3xs text-slate-500">
+                    <span>Used: @ddPercentOfLimit.ToString("0")% of daily buffer</span>
+                    <span class="font-semibold @(f.DailyDrawdownPercent >= 4.0m ? "text-rose-600" : "text-emerald-600")">
+                        @(f.DailyDrawdownPercent >= 4.0m ? "Danger" : "Safe")
+                    </span>
+                </div>
+            </div>
+
+            <!-- Margin Utilization Bar -->
+            <div class="bg-slate-50/70 rounded-xl p-3.5 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="font-semibold text-slate-600 text-2xs uppercase tracking-wider">Forex Margin Used</span>
+                    <span class="font-bold text-slate-800 font-mono">@f.MarginUsedPercent.ToString("0.0")%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex">
+                    <div class="bg-blue-500 h-2" style="width: @(Math.Min(100, f.MarginUsedPercent))%"></div>
+                </div>
+                <div class="flex items-center justify-between mt-2 text-3xs text-slate-500">
+                    <span>Level: @f.MarginLevelPercent.ToString("0.0")%</span>
+                    <span>Free: $@f.FreeMargin.ToString("N0")</span>
+                </div>
+            </div>
+
+            <!-- Directional Bias Split Bar -->
+            @{
+                var totalForexTrades = Math.Max(1, f.LongTradesCount + f.ShortTradesCount);
+                var fxLongPct = Math.Round((decimal)f.LongTradesCount / totalForexTrades * 100m, 0);
+                var fxShortPct = 100m - fxLongPct;
+            }
+            <div class="bg-slate-50/70 rounded-xl p-3.5 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="font-semibold text-slate-600 text-2xs uppercase tracking-wider">Order Direction</span>
+                    <span class="text-3xs text-slate-500">Long @fxLongPct% / Short @fxShortPct%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex">
+                    <div class="bg-emerald-500 h-2" style="width: @fxLongPct%"></div>
+                    <div class="bg-rose-500 h-2" style="width: @fxShortPct%"></div>
+                </div>
+                <div class="flex items-center justify-between mt-2 text-3xs text-slate-500">
+                    <span class="text-emerald-700 font-semibold"><i class="fa-solid fa-arrow-trend-up"></i> Long: @f.LongTradesCount</span>
+                    <span class="text-rose-700 font-semibold"><i class="fa-solid fa-arrow-trend-down"></i> Short: @f.ShortTradesCount</span>
+                </div>
+            </div>
+
+            <!-- Win/Loss Ratio Micro-Bar -->
+            @{
+                var totalClosedFx = Math.Max(1, f.WinningTradesCount + f.LosingTradesCount);
+                var fxWinPct = Math.Round((decimal)f.WinningTradesCount / totalClosedFx * 100m, 0);
+                var fxLossPct = 100m - fxWinPct;
+            }
+            <div class="bg-slate-50/70 rounded-xl p-3.5 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="font-semibold text-slate-600 text-2xs uppercase tracking-wider">Trade Win Ratio</span>
+                    <span class="font-bold text-slate-800 font-mono">@f.WinRatePercent.ToString("0.0")%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex">
+                    <div class="bg-emerald-500 h-2" style="width: @fxWinPct%"></div>
+                    <div class="bg-rose-500 h-2" style="width: @fxLossPct%"></div>
+                </div>
+                <div class="flex items-center justify-between mt-2 text-3xs text-slate-500">
+                    <span class="text-emerald-600 font-semibold">Wins: @f.WinningTradesCount</span>
+                    <span class="text-rose-600 font-semibold">Losses: @f.LosingTradesCount</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forex Charts Matrix -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5">
+            <!-- Pair Profitability Distribution (Bar Chart) -->
+            <div class="lg:col-span-7 bg-slate-50/50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Currency Pair Profitability</h4>
+                    </div>
+                    <span class="text-3xs text-slate-400 font-mono">Net Realized PnL ($)</span>
+                </div>
+                <div class="h-60 w-full relative">
+                    <canvas id="forexPairPnlChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Forex Session Equity Progression (Line Chart) -->
+            <div class="lg:col-span-5 bg-slate-50/50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block"></span>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Equity & Capital Progression</h4>
+                    </div>
+                    <span class="text-3xs text-slate-400 font-mono">Peak: $@f.PeakEquity.ToString("N0")</span>
+                </div>
+                <div class="h-60 w-full relative">
+                    <canvas id="forexEquityDrawdownChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Market Sessions & Pair Exposure -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-1">
+            <!-- Global Forex Trading Sessions Live Cards -->
+            <div class="lg:col-span-8 bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <i class="fa-regular fa-clock text-blue-500"></i> World Market Sessions Status
+                    </span>
+                    <span class="text-3xs text-slate-400">UTC Timezone Synchronization</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    @if (f.ActiveSessions != null && f.ActiveSessions.Any())
+                    {
+                        foreach (var s in f.ActiveSessions)
+                        {
+                            <div class="bg-white rounded-xl p-3 border border-slate-200/60 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <span class="font-bold text-xs text-slate-800">@s.City</span>
+                                        <span class="px-1.5 py-0.5 rounded text-3xs font-bold @(s.IsOpen ? "bg-emerald-100 text-emerald-700 animate-pulse" : "bg-slate-100 text-slate-500")">
+                                            @(s.IsOpen ? "OPEN" : "CLOSED")
+                                        </span>
+                                    </div>
+                                    <span class="text-3xs text-slate-400 block font-mono">@s.OpenUtc.ToString(@"hh\:mm") - @s.CloseUtc.ToString(@"hh\:mm") UTC</span>
+                                </div>
+                                <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-3xs">
+                                    <span class="text-slate-500">Zone: @s.TimeZone</span>
+                                    <span class="font-bold text-slate-700 truncate max-w-[90px]">@(string.IsNullOrWhiteSpace(s.ActiveOverlap) ? "Standard" : s.ActiveOverlap)</span>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-span-4 text-center py-4 text-xs text-slate-400">
+                            Global Forex Sessions (London, New York, Tokyo, Sydney) active 24/5
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Currency Pair Exposure Bars -->
+            <div class="lg:col-span-4 bg-slate-50/50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between">
+                <div>
+                    <span class="text-xs font-bold text-slate-800 block mb-3">Active Pair Exposure</span>
+                    @if (f.PairExposure != null && f.PairExposure.Any())
+                    {
+                        <div class="space-y-2">
+                            @foreach (var pair in f.PairExposure)
+                            {
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="font-bold text-slate-800 font-mono">@pair.Key</span>
+                                    <span class="text-slate-600 font-medium">@pair.Value active</span>
+                                </div>
+                                <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                    <div class="bg-blue-500 h-1.5 rounded-full" style="width: @(Math.Min(100, pair.Value * 30))%"></div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-6 text-xs text-slate-400">
+                            EUR/USD, GBP/USD, USD/JPY, AUD/USD
+                        </div>
+                    }
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between text-2xs text-slate-500">
+                    <span>Total Trades Logged:</span>
+                    <span class="font-bold text-slate-800">@f.TotalTradesCount</span>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="py-8 text-center text-xs text-slate-400">
+            <i class="fa-solid fa-earth-americas text-2xl text-slate-300 mb-2 block"></i>
+            Forex telemetry is currently initializing. Visit the Forex Dashboard to configure your pairs.
+        </div>
+    }
+</div>

@@ -319,5 +319,238 @@
                 options: barOptions
             });
         }
+
+        // ── Paper Trading Charts ───────────────────────────────────────────
+        if (document.getElementById('paperTradingEquityChart')) {
+            const ptLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TradingAnalytics?.EquityCurveHistory.Keys ?? Enumerable.Empty<string>()));
+            const ptData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TradingAnalytics?.EquityCurveHistory.Values ?? Enumerable.Empty<decimal>()));
+            new Chart(document.getElementById('paperTradingEquityChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: ptLabels,
+                    datasets: [{
+                        label: 'Equity ($)',
+                        data: ptData,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#10b981',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: false }
+                    }
+                }
+            });
+        }
+
+        if (document.getElementById('paperTradingWinLossChart')) {
+            const winCount = @(Model.TradingAnalytics?.WinningTradesCount ?? 0);
+            const lossCount = @(Model.TradingAnalytics?.LosingTradesCount ?? 0);
+            const beCount = @(Model.TradingAnalytics?.BreakEvenTradesCount ?? 0);
+            const ptWinData = (winCount === 0 && lossCount === 0 && beCount === 0) ? [1, 0, 0] : [winCount, lossCount, beCount];
+            new Chart(document.getElementById('paperTradingWinLossChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Wins', 'Losses', 'Break-Even'],
+                    datasets: [{
+                        data: ptWinData,
+                        backgroundColor: ['#10b981', '#ef4444', '#94a3b8'],
+                        borderWidth: 1
+                    }]
+                },
+                options: commonOptions
+            });
+        }
+
+        if (document.getElementById('paperTradingSymbolPnlChart')) {
+            const symLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TradingAnalytics?.PnlBySymbol.Keys ?? Enumerable.Empty<string>()));
+            const symData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TradingAnalytics?.PnlBySymbol.Values ?? Enumerable.Empty<decimal>()));
+            const symColors = symData.map(v => v >= 0 ? '#10b981' : '#ef4444');
+            new Chart(document.getElementById('paperTradingSymbolPnlChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: symLabels,
+                    datasets: [{
+                        label: 'Realized PnL ($)',
+                        data: symData,
+                        backgroundColor: symColors,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        if (document.getElementById('paperTradingAssetClassChart')) {
+            const acLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TradingAnalytics?.AssetClassDistribution.Keys ?? Enumerable.Empty<string>()));
+            const acData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TradingAnalytics?.AssetClassDistribution.Values ?? Enumerable.Empty<int>()));
+            const fallbackAcLabels = acLabels.length > 0 ? acLabels : ['Crypto', 'Forex', 'Equities', 'Commodities'];
+            const fallbackAcData = acData.length > 0 ? acData : [40, 30, 20, 10];
+            new Chart(document.getElementById('paperTradingAssetClassChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: fallbackAcLabels,
+                    datasets: [{
+                        data: fallbackAcData,
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4'],
+                        borderWidth: 1
+                    }]
+                },
+                options: commonOptions
+            });
+        }
+
+        // ── Crypto Intelligence & Portfolio Charts ─────────────────────────
+        if (document.getElementById('cryptoPnlHistoryChart')) {
+            const cPnlLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CryptoAnalytics?.CumulativePnlHistory.Keys ?? Enumerable.Empty<string>()));
+            const cPnlData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CryptoAnalytics?.CumulativePnlHistory.Values ?? Enumerable.Empty<decimal>()));
+            new Chart(document.getElementById('cryptoPnlHistoryChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: cPnlLabels,
+                    datasets: [{
+                        label: 'Realized PnL ($)',
+                        data: cPnlData,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#f59e0b',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        if (document.getElementById('cryptoAssetAllocationChart')) {
+            const cAllocLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CryptoAnalytics?.AssetAllocation.Keys ?? Enumerable.Empty<string>()));
+            const cAllocData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CryptoAnalytics?.AssetAllocation.Values ?? Enumerable.Empty<decimal>()));
+            new Chart(document.getElementById('cryptoAssetAllocationChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: cAllocLabels,
+                    datasets: [{
+                        data: cAllocData,
+                        backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#06b6d4', '#ec4899'],
+                        borderWidth: 1
+                    }]
+                },
+                options: commonOptions
+            });
+        }
+
+        if (document.getElementById('cryptoMoversBarChart')) {
+            const cMoverLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CryptoAnalytics?.TopMovers24h.Keys ?? Enumerable.Empty<string>()));
+            const cMoverData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CryptoAnalytics?.TopMovers24h.Values ?? Enumerable.Empty<decimal>()));
+            const cMoverColors = cMoverData.map(v => v >= 0 ? '#10b981' : '#ef4444');
+            new Chart(document.getElementById('cryptoMoversBarChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: cMoverLabels,
+                    datasets: [{
+                        label: '24h Change (%)',
+                        data: cMoverData,
+                        backgroundColor: cMoverColors,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { callback: function(value) { return value + '%'; } } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // ── Forex Trading & Global Sessions Charts ─────────────────────────
+        if (document.getElementById('forexPairPnlChart')) {
+            const fxPairLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ForexAnalytics?.PnlByPair.Keys ?? Enumerable.Empty<string>()));
+            const fxPairData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ForexAnalytics?.PnlByPair.Values ?? Enumerable.Empty<decimal>()));
+            const fxColors = fxPairData.map(v => v >= 0 ? '#10b981' : '#ef4444');
+            new Chart(document.getElementById('forexPairPnlChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: fxPairLabels,
+                    datasets: [{
+                        label: 'Net PnL ($)',
+                        data: fxPairData,
+                        backgroundColor: fxColors,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        if (document.getElementById('forexEquityDrawdownChart')) {
+            const fxEqLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ForexAnalytics?.EquityCurveHistory.Keys ?? Enumerable.Empty<string>()));
+            const fxEqData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ForexAnalytics?.EquityCurveHistory.Values ?? Enumerable.Empty<decimal>()));
+            new Chart(document.getElementById('forexEquityDrawdownChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: fxEqLabels,
+                    datasets: [{
+                        label: 'Equity ($)',
+                        data: fxEqData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#3b82f6',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: false }
+                    }
+                }
+            });
+        }
     });
 </script>

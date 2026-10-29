@@ -1,0 +1,256 @@
+@model AzureTest.MVC.Models.HomeDashboardViewModel
+@{
+    var c = Model.CryptoAnalytics;
+}
+
+<!-- Crypto Markets & Portfolio Analytics Widget -->
+<div class="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-6 flex flex-col justify-between hover:border-slate-300 transition-all col-span-1 lg:col-span-12">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shrink-0">
+                <i class="fa-brands fa-bitcoin"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base font-bold text-slate-900 tracking-tight">Crypto Intelligence & Portfolio Analytics</h3>
+                    <span class="px-2 py-0.5 rounded-full text-3xs font-bold uppercase bg-amber-100 text-amber-700">DeFi & CEX</span>
+                </div>
+                <p class="text-xs text-slate-500">Live derivatives, on-chain flows, Sharpe ratio, win rate & market sentiment</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/Crypto/CryptoTradeTerminal" class="text-xs font-semibold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg transition">
+                Crypto Terminal &rarr;
+            </a>
+            <a href="/Crypto/CryptoPortfolio" class="text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition">
+                Portfolio & Tax
+            </a>
+            <a href="/Crypto/CryptoMarketOverview" class="text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition">
+                Market Heatmap
+            </a>
+        </div>
+    </div>
+
+    @if (c != null)
+    {
+        <!-- Crypto KPIs Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 my-5">
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Crypto Equity</p>
+                <p class="text-xl font-extrabold text-slate-900 mt-1">$@c.Equity.ToString("N2")</p>
+                <span class="text-3xs text-slate-400">Bal: $@c.TotalBalance.ToString("N2")</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Win Rate</p>
+                <p class="text-xl font-extrabold text-emerald-600 mt-1">@c.WinRatePercent.ToString("0.0")%</p>
+                <span class="text-3xs text-slate-400">Sharpe: @c.SharpeRatio.ToString("0.00")</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Floating PnL</p>
+                <p class="text-xl font-extrabold mt-1 @(c.UnrealizedPnl >= 0 ? "text-emerald-600" : "text-rose-600")">
+                    @(c.UnrealizedPnl >= 0 ? "+" : "")$@c.UnrealizedPnl.ToString("N2")
+                </p>
+                <span class="text-3xs text-slate-400">Realized: $@c.RealizedPnl.ToString("N2")</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Fear & Greed</p>
+                <div class="flex items-center gap-1.5 mt-1">
+                    <p class="text-xl font-extrabold text-amber-600">@c.FearAndGreedIndex</p>
+                    <span class="px-1.5 py-0.5 rounded text-3xs font-bold bg-amber-100 text-amber-800">@c.FearAndGreedSentiment</span>
+                </div>
+                <span class="text-3xs text-slate-400">Market sentiment</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">BTC Dominance</p>
+                <p class="text-xl font-extrabold text-brand-600 mt-1">@c.BtcDominance.ToString("0.0")%</p>
+                <span class="text-3xs text-slate-400">Total market share</span>
+            </div>
+            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100">
+                <p class="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Margin Utilized</p>
+                <p class="text-xl font-extrabold text-slate-800 mt-1">@c.MarginUtilizationPercent.ToString("0.0")%</p>
+                <span class="text-3xs text-slate-400">Max DD: @c.MaxDrawdownPercent.ToString("0.0")%</span>
+            </div>
+        </div>
+
+        <!-- Sentiment & Exposure Telemetry Bars -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+            <!-- Fear & Greed Segmented Meter -->
+            <div class="bg-slate-50/70 rounded-xl p-3.5 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="font-semibold text-slate-600 text-2xs uppercase tracking-wider">Sentiment Index</span>
+                    <span class="font-bold text-amber-700 text-2xs">@c.FearAndGreedIndex / 100</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex gap-0.5">
+                    <div class="bg-rose-500 h-2 flex-1" title="Extreme Fear (0-24)"></div>
+                    <div class="bg-amber-400 h-2 flex-1" title="Fear (25-44)"></div>
+                    <div class="bg-slate-300 h-2 flex-1" title="Neutral (45-55)"></div>
+                    <div class="bg-emerald-400 h-2 flex-1" title="Greed (56-75)"></div>
+                    <div class="bg-emerald-600 h-2 flex-1" title="Extreme Greed (76-100)"></div>
+                </div>
+                <div class="flex items-center justify-between mt-2 text-3xs text-slate-500">
+                    <span>Fear</span>
+                    <span class="font-bold text-amber-600">@c.FearAndGreedSentiment</span>
+                    <span>Greed</span>
+                </div>
+            </div>
+
+            <!-- BTC Dominance Split Bar -->
+            @{
+                var altDominance = Math.Max(0m, 100m - c.BtcDominance);
+            }
+            <div class="bg-slate-50/70 rounded-xl p-3.5 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="font-semibold text-slate-600 text-2xs uppercase tracking-wider">Market Dominance</span>
+                    <span class="text-3xs text-slate-500">BTC @c.BtcDominance.ToString("0.0")%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex">
+                    <div class="bg-amber-500 h-2" style="width: @c.BtcDominance%"></div>
+                    <div class="bg-blue-500 h-2" style="width: @altDominance%"></div>
+                </div>
+                <div class="flex items-center justify-between mt-2 text-3xs text-slate-500">
+                    <span class="text-amber-700 font-semibold"><i class="fa-brands fa-bitcoin"></i> Bitcoin</span>
+                    <span class="text-blue-700 font-semibold">Alts: @altDominance.ToString("0.0")%</span>
+                </div>
+            </div>
+
+            <!-- Derivatives Margin Utilization Bar -->
+            <div class="bg-slate-50/70 rounded-xl p-3.5 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="font-semibold text-slate-600 text-2xs uppercase tracking-wider">Derivatives Margin</span>
+                    <span class="font-bold text-slate-800 font-mono">@c.MarginUtilizationPercent.ToString("0.0")%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex">
+                    <div class="@(c.MarginUtilizationPercent > 70 ? "bg-rose-500" : (c.MarginUtilizationPercent > 40 ? "bg-amber-500" : "bg-emerald-500")) h-2" style="width: @(Math.Min(100, c.MarginUtilizationPercent))%"></div>
+                </div>
+                <div class="flex items-center justify-between mt-2 text-3xs text-slate-500">
+                    <span>Available: @c.MarginAvailablePercent.ToString("0.0")%</span>
+                    <span>Max DD: @c.MaxDrawdownPercent.ToString("0.0")%</span>
+                </div>
+            </div>
+
+            <!-- Long vs Short Ratio Split Bar -->
+            @{
+                var totalCryptoPositions = Math.Max(1, c.LongPositionsCount + c.ShortPositionsCount);
+                var cLongPct = Math.Round((decimal)c.LongPositionsCount / totalCryptoPositions * 100m, 0);
+                var cShortPct = 100m - cLongPct;
+            }
+            <div class="bg-slate-50/70 rounded-xl p-3.5 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="font-semibold text-slate-600 text-2xs uppercase tracking-wider">Position Bias</span>
+                    <span class="text-3xs text-slate-500">@c.OpenPositionsCount active</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden flex">
+                    <div class="bg-emerald-500 h-2" style="width: @cLongPct%"></div>
+                    <div class="bg-rose-500 h-2" style="width: @cShortPct%"></div>
+                </div>
+                <div class="flex items-center justify-between mt-2 text-3xs text-slate-500">
+                    <span class="text-emerald-700 font-semibold">Long: @c.LongPositionsCount (@cLongPct%)</span>
+                    <span class="text-rose-700 font-semibold">Short: @c.ShortPositionsCount (@cShortPct%)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Crypto Charts Matrix -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5">
+            <!-- Cumulative Realized PnL Progression (Line Chart) -->
+            <div class="lg:col-span-8 bg-slate-50/50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Crypto Realized PnL Trajectory</h4>
+                    </div>
+                    <span class="text-3xs text-slate-400 font-mono">Cumulative Profit & Loss ($)</span>
+                </div>
+                <div class="h-60 w-full relative">
+                    <canvas id="cryptoPnlHistoryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Portfolio Asset Allocation (Doughnut Chart) -->
+            <div class="lg:col-span-4 bg-slate-50/50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-600 inline-block"></span>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Asset Allocation</h4>
+                    </div>
+                    <span class="text-3xs text-slate-400">Tokens</span>
+                </div>
+                <div class="h-60 w-full relative flex items-center justify-center">
+                    <canvas id="cryptoAssetAllocationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 24h Market Movers Horizontal Bar Chart & Gainers/Losers Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-1">
+            <!-- 24h Movers Horizontal Bar Chart -->
+            <div class="lg:col-span-6 bg-slate-50/50 rounded-xl p-4 border border-slate-100 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block"></span>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">24h Market Momentum</h4>
+                    </div>
+                    <span class="text-3xs text-slate-400">Percent Change (%)</span>
+                </div>
+                <div class="h-56 w-full relative">
+                    <canvas id="cryptoMoversBarChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Gainers List -->
+            <div class="lg:col-span-3 bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrow-trend-up text-emerald-500"></i> Top Gainers
+                    </span>
+                    <span class="text-3xs text-slate-400">24h Change</span>
+                </div>
+                <div class="space-y-2">
+                    @foreach (var g in c.TopGainers)
+                    {
+                        <div class="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-100 text-xs">
+                            <div>
+                                <span class="font-bold text-slate-800 block">@g.Symbol</span>
+                                <span class="text-3xs text-slate-400 font-mono">$@g.Price.ToString("N2")</span>
+                            </div>
+                            <span class="text-3xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 font-mono">
+                                +@g.Change24h.ToString("0.00")%
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Top Pullbacks List -->
+            <div class="lg:col-span-3 bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrow-trend-down text-rose-500"></i> Pullbacks
+                    </span>
+                    <span class="text-3xs text-slate-400">Volatility</span>
+                </div>
+                <div class="space-y-2">
+                    @foreach (var l in c.TopLosers)
+                    {
+                        <div class="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-100 text-xs">
+                            <div>
+                                <span class="font-bold text-slate-800 block">@l.Symbol</span>
+                                <span class="text-3xs text-slate-400 font-mono">$@l.Price.ToString("N2")</span>
+                            </div>
+                            <span class="text-3xs font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-600 font-mono">
+                                @l.Change24h.ToString("0.00")%
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="py-8 text-center text-xs text-slate-400">
+            <i class="fa-brands fa-bitcoin text-2xl text-slate-300 mb-2 block"></i>
+            Crypto portfolio data is currently initializing. Visit the Crypto Terminal to connect your keys or paper trade.
+        </div>
+    }
+</div>

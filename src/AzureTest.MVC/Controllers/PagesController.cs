@@ -77,6 +77,13 @@ public class PagesController : Controller
             filter.PageSize = 9; // 3x3 responsive grid
         }
 
+        // Default sort to newest first instead of A-Z
+        if (string.IsNullOrWhiteSpace(filter.SortBy))
+        {
+            filter.SortBy = "createdat";
+            filter.SortDescending = true;
+        }
+
         // When user asks for newest/createdat/date, sort descending by default
         if (string.Equals(filter.SortBy, "createdat", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(filter.SortBy, "date", StringComparison.OrdinalIgnoreCase) ||
