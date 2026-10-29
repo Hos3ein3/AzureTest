@@ -14,6 +14,7 @@ using AzureTest.Application.Users.Commands.DeleteUser;
 using AzureTest.Application.Users.Commands.ToggleUserLockout;
 using AzureTest.Application.Users.Commands.CreateRole;
 using AzureTest.Application.Users.Commands.AssignRolesToUser;
+using AzureTest.Application.Users.Commands.AdminResetPassword;
 using System;
 
 namespace AzureTest.Application.Users;
@@ -30,6 +31,7 @@ public class UserCommandUnit : IUserCommandUnit
     public ICommandHandler<ToggleUserLockoutCommand, (bool Success, string[] Errors)> ToggleUserLockout { get; }
     public ICommandHandler<CreateRoleCommand, (bool Success, string[] Errors)> CreateRole { get; }
     public ICommandHandler<AssignRolesToUserCommand, (bool Success, string[] Errors)> AssignRolesToUser { get; }
+    public ICommandHandler<AdminResetPasswordCommand, (bool Success, string[] Errors)> AdminResetPassword { get; }
     public UserCommandUnit(
         ICommandHandler<LoginUserCommand, Result<LoginUserResult>> login,
         ICommandHandler<LogoutUserCommand, Result<bool>> logout,
@@ -40,7 +42,8 @@ public class UserCommandUnit : IUserCommandUnit
         ICommandHandler<DeleteUserCommand, (bool Success, string[] Errors)> deleteUser,
         ICommandHandler<ToggleUserLockoutCommand, (bool Success, string[] Errors)> toggleUserLockout,
         ICommandHandler<CreateRoleCommand, (bool Success, string[] Errors)> createRole,
-        ICommandHandler<AssignRolesToUserCommand, (bool Success, string[] Errors)> assignRolesToUser)
+        ICommandHandler<AssignRolesToUserCommand, (bool Success, string[] Errors)> assignRolesToUser,
+        ICommandHandler<AdminResetPasswordCommand, (bool Success, string[] Errors)> adminResetPassword)
     {
         Login = login;
         Logout = logout;
@@ -52,5 +55,6 @@ public class UserCommandUnit : IUserCommandUnit
         ToggleUserLockout = toggleUserLockout;
         CreateRole = createRole;
         AssignRolesToUser = assignRolesToUser;
+        AdminResetPassword = adminResetPassword;
     }
 }

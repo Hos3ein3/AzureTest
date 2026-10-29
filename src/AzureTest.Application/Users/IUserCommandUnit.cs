@@ -13,6 +13,7 @@ using AzureTest.Application.Users.Commands.DeleteUser;
 using AzureTest.Application.Users.Commands.ToggleUserLockout;
 using AzureTest.Application.Users.Commands.CreateRole;
 using AzureTest.Application.Users.Commands.AssignRolesToUser;
+using AzureTest.Application.Users.Commands.AdminResetPassword;
 using System;
 
 namespace AzureTest.Application.Users;
@@ -30,4 +31,5 @@ public interface IUserCommandUnit
     ICommandHandler<ToggleUserLockoutCommand, (bool Success, string[] Errors)> ToggleUserLockout { get; }
     ICommandHandler<CreateRoleCommand, (bool Success, string[] Errors)> CreateRole { get; }
     ICommandHandler<AssignRolesToUserCommand, (bool Success, string[] Errors)> AssignRolesToUser { get; }
+    ICommandHandler<AdminResetPasswordCommand, (bool Success, string[] Errors)> AdminResetPassword { get; }
 }

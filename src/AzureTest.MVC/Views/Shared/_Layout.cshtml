@@ -162,13 +162,34 @@
                     <!-- Floating Notification Dropdown -->
                     <div id="floatingNotificationDropdown" class="hidden absolute right-0 mt-2 w-80 max-w-[calc(100vw-24px)] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden">
                         <div class="p-3 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700 font-semibold text-sm text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                            <span>Notifications</span>
-                            <span class="text-xs text-slate-400">Live</span>
+                            <span class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-bell text-brand-600 text-xs"></i>
+                                <span>Notifications</span>
+                            </span>
+                            <button type="button" onclick="markAllNotificationsAsRead()" class="text-3xs text-brand-600 dark:text-brand-400 hover:underline font-medium">
+                                Mark all as read
+                            </button>
                         </div>
                         <div id="floatingNotificationList" class="max-h-72 overflow-y-auto p-2 space-y-1">
                             <div class="text-xs text-slate-400 dark:text-slate-500 text-center py-6" id="floatingNoNotifications">
                                 <i class="fa-regular fa-bell-slash text-base mb-1 block text-slate-300"></i>
                                 No new notifications
+                            </div>
+                        </div>
+                        <div class="p-2.5 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-3xs text-slate-400 bg-slate-50/50 dark:bg-slate-800/50">
+                            <a href="/Notification" class="text-brand-600 dark:text-brand-400 hover:underline font-semibold inline-flex items-center gap-1">
+                                <i class="fa-solid fa-list-check"></i>
+                                <span>All Notifications</span>
+                            </a>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="sendTestPushNotification()" class="text-slate-500 hover:text-brand-600 hover:underline inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                    <span>Test</span>
+                                </button>
+                                <button type="button" onclick="registerWebPushSubscription()" class="text-brand-600 hover:underline inline-flex items-center gap-1 font-medium">
+                                    <i class="fa-solid fa-bell-ring"></i>
+                                    <span>Sync Push</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -302,11 +323,20 @@
                             <div class="text-sm text-slate-500 dark:text-slate-400 text-center py-6" id="noNotifications">No new notifications</div>
                         </div>
                         <div class="p-2.5 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-3xs text-slate-400 bg-slate-50/50 dark:bg-slate-800/50 rounded-b-xl">
-                            <span>Push alerts enabled</span>
-                            <button type="button" onclick="registerWebPushSubscription()" class="text-brand-600 hover:underline inline-flex items-center gap-1 font-medium">
-                                <i class="fa-solid fa-bell-ring"></i>
-                                <span>Sync Web Push</span>
-                            </button>
+                            <a href="/Notification" class="text-brand-600 dark:text-brand-400 hover:underline font-semibold inline-flex items-center gap-1">
+                                <i class="fa-solid fa-list-check"></i>
+                                <span>All Notifications</span>
+                            </a>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="sendTestPushNotification()" class="text-slate-500 hover:text-brand-600 hover:underline inline-flex items-center gap-1">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                    <span>Send Test</span>
+                                </button>
+                                <button type="button" onclick="registerWebPushSubscription()" class="text-brand-600 hover:underline inline-flex items-center gap-1 font-medium">
+                                    <i class="fa-solid fa-bell-ring"></i>
+                                    <span>Sync Web Push</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1023,6 +1053,57 @@
             .withAutomaticReconnect()
             .build();
 
+        // ── Pleasant, Modern Notification Sound ─────────────────────────────────
+        // You can customize this by setting window.NOTIFICATION_SOUND_URL = '/sounds/my-sound.mp3';
+        window.NOTIFICATION_SOUND_URL = null;
+
+        function playNotificationChime() {
+            if (window.NOTIFICATION_SOUND_URL) {
+                try {
+                    const audio = new Audio(window.NOTIFICATION_SOUND_URL);
+                    audio.play().catch(() => {});
+                    return;
+                } catch (e) {}
+            }
+
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                if (ctx.state === 'suspended') ctx.resume();
+
+                // Gentle two-tone chime (D5 -> A5)
+                const now = ctx.currentTime;
+                
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(587.33, now); // D5
+                gain1.gain.setValueAtTime(0, now);
+                gain1.gain.linearRampToValueAtTime(0.18, now + 0.02);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.50);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.50);
+
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(880.00, now + 0.08); // A5
+                gain2.gain.setValueAtTime(0, now + 0.08);
+                gain2.gain.linearRampToValueAtTime(0.14, now + 0.10);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(now + 0.08);
+                osc2.stop(now + 0.65);
+            } catch (err) {
+                console.warn('Audio play notice', err);
+            }
+        }
+        window.playNotificationChime = playNotificationChime;
+
         function escapeHtml(str) {
             if (!str) return '';
             const div = document.createElement('div');
@@ -1032,6 +1113,7 @@
 
         function updateBadgeCount(count) {
             unreadCount = Math.max(0, count);
+            window.unreadCount = unreadCount;
             const badge = document.getElementById('notificationBadge');
             const fBadge = document.getElementById('floatingNotificationBadge');
             if (badge) {
@@ -1043,14 +1125,9 @@
                 fBadge.classList.toggle('hidden', unreadCount === 0);
             }
         }
+        window.updateBadgeCount = updateBadgeCount;
 
-        function renderNotificationItem(n, prepend = false) {
-            const list = document.getElementById('notificationList');
-            if (!list) return;
-
-            document.getElementById('noNotifications')?.remove();
-            document.getElementById('floatingNoNotifications')?.remove();
-
+        function createNotificationDomItem(n) {
             const item = document.createElement('div');
             const isRead = n.isRead === true;
             const unreadBg = isRead ? "bg-white dark:bg-slate-800" : "bg-brand-50/70 dark:bg-brand-950/30";
@@ -1078,13 +1155,17 @@
                         <p class="font-bold text-slate-800 dark:text-slate-100 truncate text-xs">${escapeHtml(n.title)}</p>
                         <span class="text-3xs text-slate-400 shrink-0">${n.timeAgo || 'Just now'}</span>
                     </div>
-                    <p class="text-slate-600 dark:text-slate-300 text-2xs mt-0.5 line-clamp-2 leading-relaxed">${escapeHtml(n.message)}</p>
+                    <p class="text-slate-600 dark:text-slate-300 text-2xs mt-0.5 line-clamp-2 leading-relaxed">${escapeHtml(n.message || '').replace(/Realized PnL:\s*([+-]?\$?[0-9,.]+)/gi, (m, val) => {
+                        const isPos = val.includes('+') || (!val.includes('-') && !val.includes('$0.00'));
+                        const color = isPos ? 'text-emerald-500 font-bold font-mono' : 'text-rose-500 font-bold font-mono';
+                        return `Realized PnL: <span class="${color}">${val}</span>`;
+                    })}</p>
                 </div>
                 ${!isRead ? '<span class="unread-dot w-2 h-2 rounded-full bg-brand-500 shrink-0 mt-1.5 ring-2 ring-white dark:ring-slate-800"></span>' : ''}
             `;
 
             item.onclick = async () => {
-                if (!n.isRead) {
+                if (!n.isRead && n.id) {
                     try {
                         await fetch('/Notification/MarkAsRead', {
                             method: 'POST',
@@ -1092,22 +1173,39 @@
                             body: JSON.stringify({ notificationId: n.id })
                         });
                         n.isRead = true;
-                        item.classList.remove('bg-brand-50/70', 'dark:bg-brand-950/30');
-                        item.querySelector('.unread-dot')?.remove();
                         updateBadgeCount(unreadCount - 1);
                     } catch (e) {
                         console.error('Failed to mark read', e);
                     }
                 }
-                if (n.actionUrl) {
+                
+                // Navigate to notification center showing full details in the top section
+                if (n.id) {
+                    window.location.href = '/Notification?id=' + encodeURIComponent(n.id);
+                } else if (n.actionUrl) {
                     window.location.href = n.actionUrl;
+                } else {
+                    window.location.href = '/Notification';
                 }
             };
 
-            if (prepend) {
-                list.prepend(item);
-            } else {
-                list.appendChild(item);
+            return item;
+        }
+
+        function renderNotificationItem(n, prepend = false) {
+            const list = document.getElementById('notificationList');
+            const fList = document.getElementById('floatingNotificationList');
+
+            document.getElementById('noNotifications')?.remove();
+            document.getElementById('floatingNoNotifications')?.remove();
+
+            if (list) {
+                const item1 = createNotificationDomItem(n);
+                if (prepend) list.prepend(item1); else list.appendChild(item1);
+            }
+            if (fList) {
+                const item2 = createNotificationDomItem(n);
+                if (prepend) fList.prepend(item2); else fList.appendChild(item2);
             }
         }
 
@@ -1115,14 +1213,21 @@
             try {
                 const res = await fetch('/Notification/GetUserNotifications?limit=30');
                 if (!res.ok) return;
+                const contentType = res.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) return;
+
                 const data = await res.json();
                 if (data && data.success && data.notifications) {
                     const list = document.getElementById('notificationList');
+                    const fList = document.getElementById('floatingNotificationList');
                     if (list) list.innerHTML = '';
+                    if (fList) fList.innerHTML = '';
+
                     updateBadgeCount(data.unreadCount || 0);
 
                     if (data.notifications.length === 0) {
                         if (list) list.innerHTML = '<div class="text-sm text-slate-500 dark:text-slate-400 text-center py-6" id="noNotifications">No new notifications</div>';
+                        if (fList) fList.innerHTML = '<div class="text-xs text-slate-400 dark:text-slate-500 text-center py-6" id="floatingNoNotifications"><i class="fa-regular fa-bell-slash text-base mb-1 block text-slate-300"></i>No new notifications</div>';
                     } else {
                         data.notifications.forEach(n => renderNotificationItem(n, false));
                     }
@@ -1140,7 +1245,7 @@
                     body: JSON.stringify({})
                 });
                 updateBadgeCount(0);
-                document.querySelectorAll('#notificationList > div').forEach(div => {
+                document.querySelectorAll('#notificationList > div, #floatingNotificationList > div').forEach(div => {
                     div.classList.remove('bg-brand-50/70', 'dark:bg-brand-950/30');
                     div.querySelector('.unread-dot')?.remove();
                 });
@@ -1163,6 +1268,14 @@
 
             try {
                 const keyRes = await fetch('/Notification/GetVapidPublicKey');
+                if (!keyRes.ok) {
+                    throw new Error(`Failed to fetch VAPID key (Status: ${keyRes.status})`);
+                }
+                const contentType = keyRes.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    const text = await keyRes.text();
+                    throw new Error(`Server returned HTML instead of JSON. Ensure you are logged in. (Preview: ${text.substring(0, 80)}...)`);
+                }
                 const keyData = await keyRes.json();
                 if (!keyData.publicKey) {
                     alert('Unable to retrieve VAPID public key.');
@@ -1192,10 +1305,30 @@
 
                 if (res.ok) {
                     alert('WebPush subscribed successfully! You will receive live trade alerts on this device.');
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    alert('WebPush subscription error: ' + (errData.error || res.statusText));
                 }
             } catch (err) {
                 console.warn('WebPush setup error', err);
                 alert('WebPush subscription error: ' + (err.message || err));
+            }
+        };
+
+        window.sendTestPushNotification = async function() {
+            try {
+                const res = await fetch('/Notification/SendTestNotification', { method: 'POST' });
+                const contentType = res.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    throw new Error('Server returned non-JSON response.');
+                }
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    alert('Failed to send test notification: ' + (data.error || 'Server error'));
+                }
+            } catch (err) {
+                console.warn('Test notification error', err);
+                alert('Test notification error: ' + (err.message || err));
             }
         };
 
@@ -1212,8 +1345,7 @@
 
         // Live Realtime SignalR Notification Handler
         connection.on("ReceiveNotification", (notification) => {
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            audio.play().catch(() => {});
+            playNotificationChime();
 
             updateBadgeCount(unreadCount + 1);
             renderNotificationItem(notification, true);
@@ -1224,8 +1356,7 @@
         });
 
         connection.on("ReceiveTicketNotification", (title, message) => {
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            audio.play().catch(e => console.log("Audio play blocked by browser", e));
+            playNotificationChime();
 
             updateBadgeCount(unreadCount + 1);
 

@@ -49,7 +49,31 @@ public sealed class CloseTradingPositionCommandHandler : ICommandHandler<CloseTr
             return Result<Guid>.Failure("Active position not found or already closed.");
         }
 
-        var exitPrice = cmd.ClosePrice ?? await _marketData.GetCurrentPriceAsync(position.Symbol, position.CurrentPrice, ct);
+        decimal exitPrice;
+        if (cmd.ClosePrice.HasValue && cmd.ClosePrice.Value > 0)
+        {
+            exitPrice = cmd.ClosePrice.Value;
+        }
+        else
+        {
+            var livePrice = await _marketData.GetCurrentPriceAsync(position.Symbol, 0m, ct);
+            if (livePrice > 0)
+            {
+                exitPrice = livePrice;
+            }
+            else if (position.CurrentPrice > 0 && position.CurrentPrice != position.EntryPrice)
+            {
+                exitPrice = position.CurrentPrice;
+            }
+            else
+            {
+                var freshQuote = await _marketData.GetQuoteAsync(position.Symbol, null, ct);
+                exitPrice = (freshQuote != null && freshQuote.Price > 0)
+                    ? freshQuote.Price
+                    : (position.CurrentPrice > 0 ? position.CurrentPrice : position.EntryPrice);
+            }
+        }
+
         position.Close(exitPrice);
 
         var account = await _uow.TradingAccounts.GetByIdAsync(position.AccountId);
@@ -62,9 +86,22 @@ public sealed class CloseTradingPositionCommandHandler : ICommandHandler<CloseTr
 
         if (_notificationService != null)
         {
-            var pnlSign = position.RealizedPnl >= 0 ? "+" : "";
+            var formattedExitPrice = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPrice(exitPrice);
+            var formattedPnl = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPnl(position.RealizedPnl);
+            var formattedQty = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatQuantity(position.Quantity);
             var title = $"Paper Trade Closed: {position.Symbol}";
-            var message = $"Closed {position.Side} position for {position.Quantity:G29} {position.Symbol} @ ${exitPrice:N2}. Realized PnL: {pnlSign}${position.RealizedPnl:N2}.";
+            var message = $"Closed {position.Side} position for {formattedQty} {position.Symbol} @ {formattedExitPrice}. Realized PnL: {formattedPnl}.";
+            
+            var metadata = new Dictionary<string, string>
+            {
+                ["positionId"] = position.Id.ToString(),
+                ["symbol"] = position.Symbol,
+                ["side"] = position.Side.ToString(),
+                ["realizedPnl"] = position.RealizedPnl.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["exitPrice"] = exitPrice.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["quantity"] = position.Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            };
+
             await _notificationService.SendNotificationAsync(
                 position.UserId,
                 position.TenantId,
@@ -72,6 +109,7 @@ public sealed class CloseTradingPositionCommandHandler : ICommandHandler<CloseTr
                 message,
                 type: "Trade",
                 actionUrl: "/Trading",
+                metadata: metadata,
                 ct: ct);
         }
 

@@ -280,8 +280,10 @@ public sealed class PlaceTradingOrderCommandHandler : ICommandHandler<PlaceTradi
             if (_notificationService != null)
             {
                 var sideText = cmd.Side == TradingOrderSide.Buy ? "Buy (Long)" : "Sell (Short)";
+                var formattedMarketPrice = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPrice(marketPrice);
+                var formattedQty = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatQuantity(cmd.Quantity);
                 var title = $"Paper Trade Opened: {cmd.Symbol}";
-                var message = $"Opened {sideText} position for {cmd.Quantity:G29} {cmd.Symbol} @ ${marketPrice:N2} ({cmd.Leverage}x leverage).";
+                var message = $"Opened {sideText} position for {formattedQty} {cmd.Symbol} @ {formattedMarketPrice} ({cmd.Leverage}x leverage).";
                 await _notificationService.SendNotificationAsync(
                     cmd.UserId,
                     cmd.TenantId,

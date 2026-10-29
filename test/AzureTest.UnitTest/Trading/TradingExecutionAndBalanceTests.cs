@@ -580,4 +580,253 @@ public class TradingExecutionAndBalanceTests
         position.StopLoss.Should().BeNull();
         position.TakeProfit.Should().BeNull();
     }
+
+    [Fact]
+    public async Task ModifyTradingPosition_WithMultipleTakeProfits_Valid_UpdatesPositionAndJson()
+    {
+        // Arrange
+        var position = TradingPosition.Open(
+            accountId: Guid.NewGuid(),
+            userId: _userId,
+            tenantId: _tenantId,
+            symbol: "XANUSDT",
+            assetName: "XAN / USDT",
+            assetClass: AssetClass.Crypto,
+            side: TradingOrderSide.Buy,
+            quantity: 1000m,
+            entryPrice: 0.108m,
+            leverage: 10,
+            stopLoss: 0.106m,
+            takeProfit: 0.115m);
+
+        _mockPositions.Setup(p => p.GetByIdAsync(position.Id)).ReturnsAsync(position);
+        _mockMarketData
+            .Setup(m => m.GetCurrentPriceAsync("XANUSDT", It.IsAny<decimal>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0.110m);
+
+        var handler = new ModifyTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        var multiTpJson = "[{\"price\":0.115,\"percentage\":30},{\"price\":0.120,\"percentage\":30},{\"price\":0.125,\"percentage\":40}]";
+        var cmd = new ModifyTradingPositionCommand(
+            PositionId: position.Id,
+            UserId: _userId,
+            TenantId: _tenantId,
+            StopLoss: 0.106m,
+            TakeProfit: null,
+            MultipleTakeProfitsJson: multiTpJson);
+
+        // Act
+        var result = await handler.HandleAsync(cmd, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        position.TakeProfit.Should().Be(0.115m);
+        position.MultipleTakeProfitsJson.Should().Be(multiTpJson);
+        _mockUow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ModifyTradingPosition_WithMultipleTakeProfits_InvalidPercentageSum_ReturnsFailure()
+    {
+        // Arrange
+        var position = TradingPosition.Open(
+            accountId: Guid.NewGuid(),
+            userId: _userId,
+            tenantId: _tenantId,
+            symbol: "XANUSDT",
+            assetName: "XAN / USDT",
+            assetClass: AssetClass.Crypto,
+            side: TradingOrderSide.Buy,
+            quantity: 1000m,
+            entryPrice: 0.108m,
+            leverage: 10);
+
+        _mockPositions.Setup(p => p.GetByIdAsync(position.Id)).ReturnsAsync(position);
+        _mockMarketData
+            .Setup(m => m.GetCurrentPriceAsync("XANUSDT", It.IsAny<decimal>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0.110m);
+
+        var handler = new ModifyTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        // Sum is 80%, not 100%
+        var multiTpJson = "[{\"price\":0.115,\"percentage\":40},{\"price\":0.120,\"percentage\":40}]";
+        var cmd = new ModifyTradingPositionCommand(
+            PositionId: position.Id,
+            UserId: _userId,
+            TenantId: _tenantId,
+            MultipleTakeProfitsJson: multiTpJson);
+
+        // Act
+        var result = await handler.HandleAsync(cmd, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("must equal 100%");
+    }
+
+    [Fact]
+    public async Task ModifyTradingPosition_WithMultipleTakeProfits_InvalidPriceBelowMarket_ReturnsFailure()
+    {
+        // Arrange
+        var position = TradingPosition.Open(
+            accountId: Guid.NewGuid(),
+            userId: _userId,
+            tenantId: _tenantId,
+            symbol: "XANUSDT",
+            assetName: "XAN / USDT",
+            assetClass: AssetClass.Crypto,
+            side: TradingOrderSide.Buy,
+            quantity: 1000m,
+            entryPrice: 0.108m,
+            leverage: 10);
+
+        _mockPositions.Setup(p => p.GetByIdAsync(position.Id)).ReturnsAsync(position);
+        _mockMarketData
+            .Setup(m => m.GetCurrentPriceAsync("XANUSDT", It.IsAny<decimal>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0.110m);
+
+        var handler = new ModifyTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        // Level 1 (0.105) is below current market price (0.110) for Buy position
+        var multiTpJson = "[{\"price\":0.105,\"percentage\":50},{\"price\":0.120,\"percentage\":50}]";
+        var cmd = new ModifyTradingPositionCommand(
+            PositionId: position.Id,
+            UserId: _userId,
+            TenantId: _tenantId,
+            MultipleTakeProfitsJson: multiTpJson);
+
+        // Act
+        var result = await handler.HandleAsync(cmd, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("must be above current price");
+    }
+
+    [Fact]
+    public void TradingNotificationFormatter_FormatsMicroPnlAndPrices_AccuratelyWithoutZeroRounding()
+    {
+        // Arrange & Act
+        var formattedPnlSmallPositive = TradingNotificationFormatter.FormatPnl(0.0025m);
+        var formattedPnlSmallNegative = TradingNotificationFormatter.FormatPnl(-0.0040m);
+        var formattedPnlZero = TradingNotificationFormatter.FormatPnl(0m);
+        var formattedPnlStandard = TradingNotificationFormatter.FormatPnl(15.50m);
+        var formattedPriceSmall = TradingNotificationFormatter.FormatPrice(0.0108m);
+        var formattedPriceMicro = TradingNotificationFormatter.FormatPrice(0.00000015m);
+
+        // Assert
+        formattedPnlSmallPositive.Should().Be("+$0.00250");
+        formattedPnlSmallPositive.Should().NotBe("+$0.00");
+        formattedPnlSmallNegative.Should().Be("-$0.00400");
+        formattedPnlSmallNegative.Should().NotBe("-$0.00");
+        formattedPnlZero.Should().Be("$0.00000");
+        formattedPnlStandard.Should().Be("+$15.50000");
+        formattedPriceSmall.Should().Be("$0.01080");
+        formattedPriceSmall.Should().NotBe("$0.01");
+        formattedPriceMicro.Should().Be("$0.00000015");
+    }
+
+    [Fact]
+    public async Task CloseTradingPosition_WithMicroPnL_SendsNotificationWithAccuratePnLAndMetadata()
+    {
+        // Arrange: Position with small quantity where PnL is 0.002
+        var account = TradingAccount.Create(_userId, _tenantId, "Paper Trading", "USD", 1000m);
+        var position = TradingPosition.Open(
+            account.Id,
+            _userId,
+            _tenantId,
+            "XANUSDT",
+            "XAN / USDT",
+            AssetClass.Crypto,
+            TradingOrderSide.Buy,
+            quantity: 10m,
+            entryPrice: 0.108m,
+            leverage: 10);
+
+        account.DeductMargin(position.InitialMargin);
+
+        _mockPositions.Setup(p => p.GetByIdAsync(position.Id)).ReturnsAsync(position);
+        _mockAccounts.Setup(a => a.GetByIdAsync(account.Id)).ReturnsAsync(account);
+
+        var mockNotification = new Mock<AzureTest.Application.Interfaces.Services.IAppNotificationService>();
+        string capturedMessage = string.Empty;
+        Dictionary<string, string>? capturedMetadata = null;
+
+        mockNotification
+            .Setup(n => n.SendNotificationAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<Guid>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<Dictionary<string, string>?>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<Guid, Guid, string, string, string, string?, Dictionary<string, string>?, CancellationToken>(
+                (uid, tid, title, msg, type, url, meta, ct) =>
+                {
+                    capturedMessage = msg;
+                    capturedMetadata = meta;
+                })
+            .ReturnsAsync(AzureTest.Application.Abstractions.Result<Guid>.Success(Guid.NewGuid()));
+
+        var handler = new CloseTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object, mockNotification.Object);
+        // Closed at 0.1082: PnL = (0.1082 - 0.1080) * 10 = +0.002
+        var cmd = new CloseTradingPositionCommand(position.Id, _userId, _tenantId, 0.1082m);
+
+        // Act
+        var result = await handler.HandleAsync(cmd, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        position.RealizedPnl.Should().Be(0.002m);
+
+        capturedMessage.Should().NotBeNullOrEmpty();
+        capturedMessage.Should().Contain("+$0.00200");
+        capturedMessage.Should().NotContain("+$0.00.");
+
+        capturedMetadata.Should().NotBeNull();
+        decimal.Parse(capturedMetadata!["realizedPnl"], System.Globalization.CultureInfo.InvariantCulture).Should().Be(0.002m);
+        decimal.Parse(capturedMetadata["exitPrice"], System.Globalization.CultureInfo.InvariantCulture).Should().Be(0.1082m);
+    }
+
+    [Fact]
+    public async Task CloseTradingPosition_WithoutExplicitClosePrice_FetchesLiveMarketPrice_AndCalculatesNonZeroPnL()
+    {
+        // Arrange
+        var account = TradingAccount.Create(_userId, _tenantId, "Paper Trading", "USD", 1000m);
+        var position = TradingPosition.Open(
+            account.Id,
+            _userId,
+            _tenantId,
+            "XANUSDT",
+            "XAN / USDT",
+            AssetClass.Crypto,
+            TradingOrderSide.Buy,
+            quantity: 1000m,
+            entryPrice: 0.108m,
+            leverage: 10);
+
+        account.DeductMargin(position.InitialMargin);
+
+        _mockPositions.Setup(p => p.GetByIdAsync(position.Id)).ReturnsAsync(position);
+        _mockAccounts.Setup(a => a.GetByIdAsync(account.Id)).ReturnsAsync(account);
+
+        // Market data returns live price 0.115 (different from entry 0.108)
+        _mockMarketData
+            .Setup(m => m.GetCurrentPriceAsync("XANUSDT", 0m, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0.115m);
+
+        var handler = new CloseTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        // No explicit ClosePrice provided (simulating button click without form price)
+        var cmd = new CloseTradingPositionCommand(position.Id, _userId, _tenantId, null);
+
+        // Act
+        var result = await handler.HandleAsync(cmd, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        position.ClosePrice.Should().Be(0.115m);
+        // PnL = (0.115 - 0.108) * 1000 = +7.00
+        position.RealizedPnl.Should().Be(7m);
+        account.RealizedPnl.Should().Be(7m);
+        account.CashBalance.Should().Be(1007m);
+    }
 }

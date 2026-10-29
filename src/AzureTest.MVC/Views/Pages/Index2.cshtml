@@ -65,8 +65,8 @@
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Sort By</label>
                 <div class="relative">
                     <select name="sortBy" class="w-full py-3 px-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl text-sm focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-slate-800 dark:text-slate-100 cursor-pointer">
+                        <!option value="createdat" @(filter.SortBy?.ToLower() == "createdat" || filter.SortBy?.ToLower() == "date" || filter.SortBy?.ToLower() == "newest" ? "selected" : "")>Newest First</!option>
                         <!option value="title" @(filter.SortBy?.ToLower() == "title" ? "selected" : "")>Title (A-Z)</!option>
-                        <!option value="createdat" @(filter.SortBy?.ToLower() == "createdat" || filter.SortBy?.ToLower() == "date" ? "selected" : "")>Newest First</!option>
                         <!option value="slug" @(filter.SortBy?.ToLower() == "slug" ? "selected" : "")>Slug Keyword</!option>
                     </select>
                 </div>

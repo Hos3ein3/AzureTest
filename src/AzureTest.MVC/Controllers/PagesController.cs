@@ -77,6 +77,14 @@ public class PagesController : Controller
             filter.PageSize = 9; // 3x3 responsive grid
         }
 
+        // When user asks for newest/createdat/date, sort descending by default
+        if (string.Equals(filter.SortBy, "createdat", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(filter.SortBy, "date", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(filter.SortBy, "newest", StringComparison.OrdinalIgnoreCase))
+        {
+            filter.SortDescending = true;
+        }
+
         var result = await _getAll.HandleAsync(new GetAllPagesQuery(filter));
         var pagedResult = result.IsSuccess 
             ? result.Value 

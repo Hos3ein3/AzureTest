@@ -406,13 +406,24 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
 
     public async Task<decimal> GetCurrentPriceAsync(string symbol, decimal fallback = 100m, CancellationToken ct = default)
     {
-        if (LiveCache.TryGetValue(symbol, out var live) && live.Price > 0)
+        var cleanSym = (symbol ?? string.Empty).Trim().ToUpperInvariant();
+        if (LiveCache.TryGetValue(cleanSym, out var live) && live.Price > 0)
         {
             return live.Price;
         }
 
-        var quote = await GetQuoteAsync(symbol, null, ct);
-        return quote?.Price ?? fallback;
+        var quote = await GetQuoteAsync(cleanSym, null, ct);
+        if (quote != null && quote.Price > 0)
+        {
+            return quote.Price;
+        }
+
+        if (DynamicCatalog.TryGetValue(cleanSym, out var dyn) && dyn.BasePrice > 0)
+        {
+            return dyn.BasePrice;
+        }
+
+        return fallback;
     }
 
     public async Task<IReadOnlyList<TradingQuoteDto>> SearchAssetsAsync(string query, HashSet<string>? watchlistedSymbols = null, CancellationToken ct = default)
@@ -740,13 +751,14 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
 
     public decimal GetCurrentPrice(string symbol, decimal fallback = 100m)
     {
-        if (LiveCache.TryGetValue(symbol, out var live) && live.Price > 0)
+        var cleanSym = (symbol ?? string.Empty).Trim().ToUpperInvariant();
+        if (LiveCache.TryGetValue(cleanSym, out var live) && live.Price > 0)
         {
             return live.Price;
         }
 
-        var item = Catalog.FirstOrDefault(c => c.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase))
-                   ?? (DynamicCatalog.TryGetValue(symbol, out var dynamicItem) ? dynamicItem : null);
+        var item = Catalog.FirstOrDefault(c => c.Symbol.Equals(cleanSym, StringComparison.OrdinalIgnoreCase))
+                   ?? (DynamicCatalog.TryGetValue(cleanSym, out var dynamicItem) ? dynamicItem : null);
 
         return item != null ? item.BasePrice : fallback;
     }

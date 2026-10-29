@@ -1,0 +1,357 @@
+@model AzureTest.MVC.Models.NotificationIndexViewModel
+@functions {
+    public static Microsoft.AspNetCore.Html.HtmlString FormatNotificationMessage(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message)) return Microsoft.AspNetCore.Html.HtmlString.Empty;
+        var encoded = System.Net.WebUtility.HtmlEncode(message);
+        var regex = new System.Text.RegularExpressions.Regex(@"Realized PnL:\s*([+-]?\$?[0-9,.]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        var formatted = regex.Replace(encoded, match =>
+        {
+            var val = match.Groups[1].Value;
+            var isPositive = val.Contains("+") || (!val.Contains("-") && !val.Contains("$0.00"));
+            var colorClass = isPositive ? "text-emerald-600 dark:text-emerald-400 font-black font-mono" : "text-rose-600 dark:text-rose-400 font-black font-mono";
+            return $"Realized PnL: <span class=\"{colorClass}\">{val}</span>";
+        });
+        return new Microsoft.AspNetCore.Html.HtmlString(formatted);
+    }
+}
+@{
+    ViewData["Title"] = "Notification Center";
+    var selected = Model.SelectedNotification;
+}
+
+<div class="space-y-6 max-w-6xl mx-auto px-2 sm:px-4 py-4">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-bell"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white">Notification Center</h1>
+                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Review all your system, trade, and ticket alerts</p>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="markAllNotificationsAsRead()" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors shadow-xs inline-flex items-center gap-1.5">
+                <i class="fa-solid fa-check-double text-brand-600 dark:text-brand-400"></i>
+                <span>Mark All as Read</span>
+            </button>
+            <button type="button" onclick="registerWebPushSubscription()" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-brand-600 hover:bg-brand-700 text-white transition-colors shadow-xs inline-flex items-center gap-1.5">
+                <i class="fa-solid fa-bell-ring"></i>
+                <span>Sync Web Push</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- TOP SECTION: Selected Notification Full Detail Card -->
+    <div id="detailSection" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 sm:p-6 transition-all">
+        @if (selected != null)
+        {
+            <div id="selectedNotificationCard" class="space-y-4">
+                <div class="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-700">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold @(selected.Type == "Trade" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" : (selected.Type == "Ticket" ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" : "bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300"))" id="detailTypeBadge">
+                                @selected.Type
+                            </span>
+                            @if (selected.Type == "Trade" && selected.Metadata != null && selected.Metadata.TryGetValue("realizedPnl", out var pnlStr) && decimal.TryParse(pnlStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var pnlVal))
+                            {
+                                var isWin = pnlVal >= 0;
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-black font-mono @(isWin ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20")" id="detailPnlBadge">
+                                    PnL: @AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPnl(pnlVal)
+                                </span>
+                            }
+                            <span id="detailReadBadge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold @(selected.IsRead ? "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300" : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300")">
+                                @(selected.IsRead ? "Read" : "Unread")
+                            </span>
+                            <span class="text-xs text-slate-400" id="detailTimestamp">
+                                <i class="fa-regular fa-clock mr-1"></i>@selected.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC (@selected.TimeAgo)
+                            </span>
+                        </div>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white" id="detailTitle">
+                            @selected.Title
+                        </h2>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        @if (!string.IsNullOrWhiteSpace(selected.ActionUrl))
+                        {
+                            <a id="detailActionLink" href="@selected.ActionUrl" class="px-3.5 py-1.5 rounded-xl bg-brand-50 hover:bg-brand-100 dark:bg-brand-950/60 dark:hover:bg-brand-900/50 text-brand-700 dark:text-brand-300 text-xs font-semibold transition-colors inline-flex items-center gap-1.5">
+                                <span>Open Target</span>
+                                <i class="fa-solid fa-arrow-up-right-from-square text-2xs"></i>
+                            </a>
+                        }
+                    </div>
+                </div>
+
+                <!-- Full Message -->
+                <div class="rounded-xl bg-slate-50 dark:bg-slate-750/50 p-4 border border-slate-100 dark:border-slate-700/60">
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Notification Message</p>
+                    <p class="text-sm sm:text-base text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed" id="detailMessage">@FormatNotificationMessage(selected.Message)</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div id="noNotificationSelected" class="text-center py-8">
+                <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 mx-auto flex items-center justify-center text-xl mb-2">
+                    <i class="fa-regular fa-bell-slash"></i>
+                </div>
+                <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">No notifications found</h3>
+                <p class="text-xs text-slate-400 mt-1">You will see all your trade alerts and updates here.</p>
+            </div>
+        }
+    </div>
+
+    <!-- MIDDLE SECTION: Filter & Search Toolbar -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <!-- Filter Tabs -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0" id="filterTabs">
+            <button type="button" onclick="setFilter('all')" data-filter="all" class="filter-tab px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-600 text-white transition-colors">
+                All (@Model.Notifications.Count)
+            </button>
+            <button type="button" onclick="setFilter('unread')" data-filter="unread" class="filter-tab px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors">
+                Unread (<span id="filterUnreadBadge">@Model.UnreadCount</span>)
+            </button>
+            <button type="button" onclick="setFilter('trade')" data-filter="trade" class="filter-tab px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors">
+                Trades
+            </button>
+            <button type="button" onclick="setFilter('ticket')" data-filter="ticket" class="filter-tab px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors">
+                Tickets
+            </button>
+            <button type="button" onclick="setFilter('system')" data-filter="system" class="filter-tab px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors">
+                System
+            </button>
+        </div>
+
+        <!-- In-Page Search Box -->
+        <div class="relative w-full md:w-72">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" id="notificationSearchInput" oninput="onSearchChanged(this.value)" placeholder="Search notifications..." value="@Model.SearchTerm" class="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-750 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all" />
+        </div>
+    </div>
+
+    <!-- BOTTOM SECTION: Notification List -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-100 dark:border-slate-700/80 flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">All Notifications</span>
+            <span class="text-3xs text-slate-400">Click any item to view its details above</span>
+        </div>
+
+        <div id="fullNotificationList" class="divide-y divide-slate-100 dark:divide-slate-700/60 max-h-[600px] overflow-y-auto">
+            @if (Model.Notifications.Any())
+            {
+                foreach (var item in Model.Notifications)
+                {
+                    var isSelected = selected != null && selected.Id == item.Id;
+                    var itemBg = isSelected
+                        ? "bg-brand-50/90 dark:bg-brand-950/40 ring-1 ring-inset ring-brand-500/30"
+                        : (!item.IsRead ? "bg-brand-50/40 dark:bg-brand-950/20" : "bg-white dark:bg-slate-800");
+
+                    <div class="notification-row p-3.5 sm:p-4 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer flex items-start gap-3 relative @itemBg"
+                         data-id="@item.Id"
+                         data-title="@item.Title"
+                         data-message="@item.Message"
+                         data-type="@item.Type"
+                         data-isread="@(item.IsRead ? "true" : "false")"
+                         data-actionurl="@(item.ActionUrl ?? "")"
+                         data-timeago="@item.TimeAgo"
+                         data-created="@item.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")"
+                         onclick="selectNotificationRow(this)">
+                        
+                        <div class="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center @(item.Type == "Trade" ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300" : (item.Type == "Ticket" ? "bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300" : "bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-300"))">
+                            <i class="@(item.Type == "Trade" ? "fa-solid fa-chart-line" : (item.Type == "Ticket" ? "fa-solid fa-life-ring" : "fa-solid fa-bell")) text-xs"></i>
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <h4 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-white truncate">@item.Title</h4>
+                                <span class="text-3xs text-slate-400 shrink-0">@item.TimeAgo</span>
+                            </div>
+                            <p class="text-xs text-slate-600 dark:text-slate-300 mt-1 line-clamp-2 leading-relaxed">@FormatNotificationMessage(item.Message)</p>
+                        </div>
+
+                        <div class="flex items-center gap-1.5 shrink-0 self-center">
+                            @if (!item.IsRead)
+                            {
+                                <span class="unread-indicator w-2.5 h-2.5 rounded-full bg-brand-500 ring-2 ring-white dark:ring-slate-800" title="Unread"></span>
+                            }
+                            <i class="fa-solid fa-chevron-right text-slate-300 dark:text-slate-600 text-2xs"></i>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="p-8 text-center text-xs text-slate-400" id="noRowsPlaceholder">
+                    No notifications available.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let currentFilter = '@(Model.ActiveFilter ?? "all")';
+    let currentSearch = '@(Model.SearchTerm ?? "")';
+
+    function onSearchChanged(val) {
+        currentSearch = (val || '').toLowerCase().trim();
+        applyFilterAndSearch();
+    }
+
+    function setFilter(filter) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-tab').forEach(btn => {
+            const matches = btn.getAttribute('data-filter') === filter;
+            btn.className = matches
+                ? 'filter-tab px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-600 text-white transition-colors'
+                : 'filter-tab px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors';
+        });
+        applyFilterAndSearch();
+    }
+
+    function applyFilterAndSearch() {
+        const rows = document.querySelectorAll('.notification-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const title = (row.getAttribute('data-title') || '').toLowerCase();
+            const msg = (row.getAttribute('data-message') || '').toLowerCase();
+            const type = (row.getAttribute('data-type') || '').toLowerCase();
+            const isRead = row.getAttribute('data-isread') === 'true';
+
+            let matchesFilter = true;
+            if (currentFilter === 'unread') {
+                matchesFilter = !isRead;
+            } else if (currentFilter === 'trade') {
+                matchesFilter = type.includes('trade');
+            } else if (currentFilter === 'ticket') {
+                matchesFilter = type.includes('ticket');
+            } else if (currentFilter === 'system') {
+                matchesFilter = !type.includes('trade') && !type.includes('ticket');
+            }
+
+            const matchesSearch = !currentSearch || title.includes(currentSearch) || msg.includes(currentSearch);
+
+            if (matchesFilter && matchesSearch) {
+                row.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+
+        let placeholder = document.getElementById('noFilterMatchesPlaceholder');
+        if (visibleCount === 0) {
+            if (!placeholder) {
+                placeholder = document.createElement('div');
+                placeholder.id = 'noFilterMatchesPlaceholder';
+                placeholder.className = 'p-8 text-center text-xs text-slate-400';
+                placeholder.innerText = 'No notifications match your filter/search criteria.';
+                document.getElementById('fullNotificationList').appendChild(placeholder);
+            }
+        } else if (placeholder) {
+            placeholder.remove();
+        }
+    }
+
+    async function selectNotificationRow(row) {
+        const id = row.getAttribute('data-id');
+        const title = row.getAttribute('data-title');
+        const message = row.getAttribute('data-message');
+        const type = row.getAttribute('data-type');
+        const isRead = row.getAttribute('data-isread') === 'true';
+        const actionUrl = row.getAttribute('data-actionurl');
+        const timeAgo = row.getAttribute('data-timeago');
+        const created = row.getAttribute('data-created');
+
+        // Update active row visual highlights
+        document.querySelectorAll('.notification-row').forEach(r => {
+            r.classList.remove('bg-brand-50/90', 'dark:bg-brand-950/40', 'ring-1', 'ring-inset', 'ring-brand-500/30');
+            const rRead = r.getAttribute('data-isread') === 'true';
+            if (!rRead) {
+                r.classList.add('bg-brand-50/40', 'dark:bg-brand-950/20');
+            } else {
+                r.classList.add('bg-white', 'dark:bg-slate-800');
+            }
+        });
+        row.classList.add('bg-brand-50/90', 'dark:bg-brand-950/40', 'ring-1', 'ring-inset', 'ring-brand-500/30');
+
+        // Update TOP Section
+        const card = document.getElementById('selectedNotificationCard');
+        if (card) {
+            document.getElementById('detailTitle').textContent = title;
+            const rawMsg = (message || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const formattedMsg = rawMsg.replace(/Realized PnL:\s*([+-]?\$?[0-9,.]+)/gi, (m, val) => {
+                const isPos = val.includes('+') || (!val.includes('-') && !val.includes('$0.00'));
+                const color = isPos ? 'text-emerald-600 dark:text-emerald-400 font-black font-mono' : 'text-rose-600 dark:text-rose-400 font-black font-mono';
+                return `Realized PnL: <span class="${color}">${val}</span>`;
+            });
+            document.getElementById('detailMessage').innerHTML = formattedMsg;
+            document.getElementById('detailTypeBadge').textContent = type;
+            document.getElementById('detailTimestamp').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${created} UTC (${timeAgo})`;
+
+            const typeBadge = document.getElementById('detailTypeBadge');
+            typeBadge.className = `px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                type === 'Trade' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                (type === 'Ticket' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
+                'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300')
+            }`;
+
+            const readBadge = document.getElementById('detailReadBadge');
+            readBadge.textContent = 'Read';
+            readBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
+
+            const actionContainer = document.getElementById('detailActionLink');
+            if (actionUrl) {
+                if (actionContainer) {
+                    actionContainer.href = actionUrl;
+                    actionContainer.classList.remove('hidden');
+                }
+            } else if (actionContainer) {
+                actionContainer.classList.add('hidden');
+            }
+        }
+
+        // Scroll to detail smoothly on mobile
+        if (window.innerWidth < 768) {
+            document.getElementById('detailSection')?.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Mark as read if not already read
+        if (!isRead) {
+            row.setAttribute('data-isread', 'true');
+            row.querySelector('.unread-indicator')?.remove();
+            try {
+                await fetch('/Notification/MarkAsRead', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notificationId: id })
+                });
+
+                if (window.updateBadgeCount && typeof window.unreadCount === 'number') {
+                    window.updateBadgeCount(Math.max(0, window.unreadCount - 1));
+                    const unreadBadge = document.getElementById('filterUnreadBadge');
+                    if (unreadBadge) {
+                        const cur = parseInt(unreadBadge.textContent || '0', 10);
+                        unreadBadge.textContent = Math.max(0, cur - 1);
+                    }
+                }
+            } catch (err) {
+                console.error('Mark read failed', err);
+            }
+        }
+
+        // Update URL query string without reloading page
+        if (history.replaceState) {
+            const newUrl = window.location.pathname + '?id=' + id;
+            history.replaceState({ path: newUrl }, '', newUrl);
+        }
+    }
+</script>
+}

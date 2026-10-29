@@ -98,14 +98,30 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
                 if (_notificationService != null)
                 {
                     var triggerReason = (pos.TakeProfit.HasValue && closePrice == pos.TakeProfit.Value) ? "Take Profit" : "Stop Loss";
-                    var pnlSign = pos.RealizedPnl >= 0 ? "+" : "";
+                    var formattedClosePrice = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPrice(closePrice);
+                    var formattedPnl = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPnl(pos.RealizedPnl);
+                    var title = $"Paper Trade Closed ({triggerReason}): {pos.Symbol}";
+                    var message = $"Triggered {triggerReason} at {formattedClosePrice}. Realized PnL: {formattedPnl}.";
+
+                    var metadata = new Dictionary<string, string>
+                    {
+                        ["positionId"] = pos.Id.ToString(),
+                        ["symbol"] = pos.Symbol,
+                        ["side"] = pos.Side.ToString(),
+                        ["realizedPnl"] = pos.RealizedPnl.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                        ["closePrice"] = closePrice.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                        ["triggerReason"] = triggerReason,
+                        ["quantity"] = pos.Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    };
+
                     _ = _notificationService.SendNotificationAsync(
                         pos.UserId,
                         pos.TenantId,
-                        $"Paper Trade Closed ({triggerReason}): {pos.Symbol}",
-                        $"Triggered {triggerReason} at ${closePrice:N2}. Realized PnL: {pnlSign}${pos.RealizedPnl:N2}.",
+                        title,
+                        message,
                         type: "Trade",
                         actionUrl: "/Trading",
+                        metadata: metadata,
                         ct: ct);
                 }
             }
@@ -167,11 +183,13 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
                         if (_notificationService != null)
                         {
                             var sideText = order.Side == TradingOrderSide.Buy ? "Buy (Long)" : "Sell (Short)";
+                            var formattedMarketPrice = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPrice(marketPrice);
+                            var formattedQty = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatQuantity(order.Quantity);
                             _ = _notificationService.SendNotificationAsync(
                                 order.UserId,
                                 order.TenantId,
                                 $"Paper Order Filled: {order.Symbol}",
-                                $"Pending order filled: {sideText} {order.Quantity:G29} {order.Symbol} @ ${marketPrice:N2}.",
+                                $"Pending order filled: {sideText} {formattedQty} {order.Symbol} @ {formattedMarketPrice}.",
                                 type: "Trade",
                                 actionUrl: "/Trading",
                                 ct: ct);

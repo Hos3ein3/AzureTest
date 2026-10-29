@@ -83,7 +83,8 @@ public class AppNotificationService : IAppNotificationService
             // 3. Dispatch WebPush to registered browser endpoints
             try
             {
-                await _webPushService.SendPushAsync(userId, title, message, actionUrl, ct);
+                var pushUrl = !string.IsNullOrWhiteSpace(actionUrl) ? actionUrl : $"/Notification?id={doc.Id}";
+                await _webPushService.SendPushAsync(userId, title, message, pushUrl, ct);
             }
             catch (Exception ex)
             {

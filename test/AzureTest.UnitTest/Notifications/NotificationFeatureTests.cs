@@ -262,7 +262,7 @@ public class NotificationFeatureTests
             It.Is<string>(s => s.Contains("BTCUSDT")),
             "Trade",
             "/Trading",
-            null,
+            It.IsAny<Dictionary<string, string>?>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -314,7 +314,7 @@ public class NotificationFeatureTests
             It.Is<string>(s => s.Contains("ETHUSDT") && s.Contains("PnL")),
             "Trade",
             "/Trading",
-            null,
+            It.IsAny<Dictionary<string, string>?>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 }

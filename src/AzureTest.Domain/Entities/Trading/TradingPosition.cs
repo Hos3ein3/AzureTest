@@ -189,8 +189,9 @@ public sealed class TradingPosition : AggregateRoot, IAudit, ISoftDelete, ITenan
         StopLoss = stopLoss;
         TakeProfit = takeProfit;
         TrailingStopDistance = trailingStopDistance;
-        if (!string.IsNullOrEmpty(multipleTakeProfitsJson))
-            MultipleTakeProfitsJson = multipleTakeProfitsJson;
+        MultipleTakeProfitsJson = (takeProfit.HasValue && !string.IsNullOrWhiteSpace(multipleTakeProfitsJson))
+            ? multipleTakeProfitsJson
+            : null;
     }
 
     public void Close(decimal closePrice)

@@ -256,8 +256,20 @@ public class TradingController : Controller
 
         if (result.IsSuccess)
         {
-            if (isAjax) return Json(new { success = true, message = "Position closed successfully." });
-            TempData["SuccessMessage"] = "Position closed successfully.";
+            var msg = "Position closed successfully.";
+            var dashRes = await _queries.GetDashboardAsync(new GetTradingDashboardQuery(_currentUser.Id, _currentUser.TenantId, symbol ?? "BTCUSDT"), ct);
+            if (dashRes.IsSuccess)
+            {
+                var closed = dashRes.Value.ClosedPositions.FirstOrDefault(c => c.Id == positionId);
+                if (closed != null)
+                {
+                    var pnlFormatted = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPnl(closed.RealizedPnl);
+                    msg = $"Position closed successfully. Realized PnL: {pnlFormatted}.";
+                }
+            }
+
+            if (isAjax) return Json(new { success = true, message = msg });
+            TempData["SuccessMessage"] = msg;
         }
         else
         {
@@ -318,6 +330,11 @@ public class TradingController : Controller
                     trailingStopDistance = parsedTrail > 0 ? parsedTrail : null;
                 else if (string.IsNullOrWhiteSpace(s))
                     trailingStopDistance = null;
+            }
+            if (Request.Form.TryGetValue("multipleTakeProfitsJson", out var multiVal))
+            {
+                var s = multiVal.ToString().Trim();
+                multipleTakeProfitsJson = string.IsNullOrWhiteSpace(s) ? null : s;
             }
         }
 

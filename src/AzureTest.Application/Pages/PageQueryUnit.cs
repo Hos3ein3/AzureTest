@@ -49,11 +49,18 @@ public class GetAllPagesQueryHandler : IQueryHandler<GetAllPagesQuery, Result<Az
 
         string sortBy = (query.Filter.SortBy ?? "Title").ToLower();
         bool desc = query.Filter.SortDescending;
+
+        // If sorting by newest/createdat/date without explicit SortDescending specified, default to descending (newest first)
+        if ((sortBy is "createdat" or "date" or "newest") && !query.Filter.SortDescending && query.Filter.SortBy?.ToLower() is "createdat" or "date" or "newest")
+        {
+            desc = true;
+        }
+
         dtos = sortBy switch
         {
             "slug" => desc ? dtos.OrderByDescending(x => x.Slug) : dtos.OrderBy(x => x.Slug),
             "status" => desc ? dtos.OrderByDescending(x => x.Status) : dtos.OrderBy(x => x.Status),
-            "createdat" or "date" => desc ? dtos.OrderByDescending(x => x.CreatedAt) : dtos.OrderBy(x => x.CreatedAt),
+            "createdat" or "date" or "newest" => desc ? dtos.OrderByDescending(x => x.CreatedAt) : dtos.OrderBy(x => x.CreatedAt),
             _ => desc ? dtos.OrderByDescending(x => x.Title) : dtos.OrderBy(x => x.Title)
         };
 

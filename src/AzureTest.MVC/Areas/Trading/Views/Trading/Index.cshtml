@@ -59,6 +59,40 @@
     {
         return qty.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture);
     }
+
+    sealed record MultiTpLevelItem(decimal Price, decimal Percentage);
+
+    List<MultiTpLevelItem> ParseMultiTp(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return new();
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Array) return new();
+            var list = new List<MultiTpLevelItem>();
+            foreach (var el in doc.RootElement.EnumerateArray())
+            {
+                decimal p = 0m;
+                decimal pct = 0m;
+                if (el.TryGetProperty("price", out var pProp) || el.TryGetProperty("Price", out pProp))
+                {
+                    if (pProp.ValueKind == System.Text.Json.JsonValueKind.Number) p = pProp.GetDecimal();
+                    else if (pProp.ValueKind == System.Text.Json.JsonValueKind.String && decimal.TryParse(pProp.GetString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedP)) p = parsedP;
+                }
+                if (el.TryGetProperty("percentage", out var pctProp) || el.TryGetProperty("Percentage", out pctProp))
+                {
+                    if (pctProp.ValueKind == System.Text.Json.JsonValueKind.Number) pct = pctProp.GetDecimal();
+                    else if (pctProp.ValueKind == System.Text.Json.JsonValueKind.String && decimal.TryParse(pctProp.GetString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedPct)) pct = parsedPct;
+                }
+                if (p > 0) list.Add(new(p, pct));
+            }
+            return list;
+        }
+        catch
+        {
+            return new();
+        }
+    }
 }
 @* *@
 @* <partial name="UiComponents/_PageHeader" model="pageHeader" /> *@
@@ -311,7 +345,7 @@
                             <tbody class="divide-y divide-slate-100 dark:divide-slate-800" id="indexOpenPositionsBody">
                                 @foreach (var pos in Model.OpenPositions)
                                 {
-                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors pos-row-idx" id="posRowIdx_@pos.Id" data-pos-id="@pos.Id" data-symbol="@pos.Symbol">
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors pos-row-idx" id="posRowIdx_@pos.Id" data-pos-id="@pos.Id" data-symbol="@pos.Symbol" data-multi-tp="@pos.MultipleTakeProfitsJson">
                                         <td class="p-3 pl-5 font-black text-slate-900 dark:text-white">
                                             <div class="flex items-center gap-1.5 flex-wrap">
                                                 <span>@pos.Symbol</span>
@@ -349,8 +383,34 @@
                                         <td class="p-3 font-mono text-3xs text-slate-500" id="idxPosSl_@pos.Id">
                                             @(pos.StopLoss.HasValue && pos.StopLoss > 0 ? FormatPrice5(pos.StopLoss.Value) : "--")
                                         </td>
-                                        <td class="p-3 font-mono text-3xs text-slate-500" id="idxPosTp_@pos.Id">
-                                            @(pos.TakeProfit.HasValue && pos.TakeProfit > 0 ? FormatPrice5(pos.TakeProfit.Value) : "--")
+                                        <td class="p-3 font-mono text-3xs text-slate-500 whitespace-nowrap" id="idxPosTp_@pos.Id">
+                                            @{
+                                                var multiTpList = ParseMultiTp(pos.MultipleTakeProfitsJson);
+                                            }
+                                            @if (multiTpList.Count > 1)
+                                            {
+                                                <div class="space-y-1">
+                                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-black text-4xs uppercase tracking-wider border border-emerald-500/20">
+                                                        <i class="fa-solid fa-layer-group text-5xs"></i>
+                                                        <span>@multiTpList.Count TP Targets</span>
+                                                    </span>
+                                                    <div class="flex flex-col gap-0.5 font-mono text-3xs">
+                                                        @for (int i = 0; i < multiTpList.Count; i++)
+                                                        {
+                                                            var lvl = multiTpList[i];
+                                                            <div class="flex items-center gap-1 text-slate-700 dark:text-slate-300">
+                                                                <span class="font-bold text-emerald-600 dark:text-emerald-400">TP@(i + 1):</span>
+                                                                <span class="font-extrabold">@FormatPrice5(lvl.Price)</span>
+                                                                <span class="text-slate-400 text-4xs font-semibold">(@lvl.Percentage%)</span>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                @(pos.TakeProfit.HasValue && pos.TakeProfit > 0 ? FormatPrice5(pos.TakeProfit.Value) : "--")
+                                            }
                                         </td>
                                         <td class="p-3 font-mono text-slate-600 dark:text-slate-300">
                                             @FormatPrice5(pos.InitialMargin)
@@ -665,18 +725,40 @@
                 <p class="text-4xs text-slate-400 mt-1" id="modifySlHint">Price to automatically close trade and prevent loss.</p>
             </div>
 
-            <!-- Take Profit -->
-            <div>
-                <div class="flex items-center justify-between mb-1">
+            <!-- Take Profit Targets (Multi-Level Target Protection) -->
+            <div class="space-y-2.5">
+                <div class="flex items-center justify-between">
                     <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                         <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        <span>Take Profit (TP)</span>
+                        <span>Take Profit Target(s)</span>
                     </label>
-                    <button type="button" onclick="document.getElementById('modifyPosTpInput').value = ''" class="text-3xs text-emerald-500 hover:underline font-bold">Clear TP</button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="addModifyTpLevel()" id="btnAddModifyTpLevel"
+                                class="text-3xs px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors font-bold inline-flex items-center gap-1">
+                            <i class="fa-solid fa-plus text-4xs"></i> Add Level
+                        </button>
+                        <button type="button" onclick="clearModifyTpLevels()" class="text-3xs text-emerald-500 hover:underline font-bold">
+                            Clear All
+                        </button>
+                    </div>
                 </div>
-                <input type="text" inputmode="decimal" id="modifyPosTpInput" name="takeProfit" placeholder="Leave blank to remove Take Profit"
-                       class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 font-mono font-bold focus:border-brand-500 focus:outline-none" />
-                <p class="text-4xs text-slate-400 mt-1" id="modifyTpHint">Price to automatically close trade and lock in profit.</p>
+
+                <!-- Dynamic Container for Edit Modal TP Levels -->
+                <div id="modifyTpLevelsContainer" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    <!-- Populated dynamically by openModifyModal -->
+                </div>
+
+                <input type="hidden" id="modifyPosTpInput" name="takeProfit" />
+                <input type="hidden" id="modifyMultipleTakeProfitsJson" name="multipleTakeProfitsJson" />
+
+                <!-- Allocation Summary Bar -->
+                <div class="flex justify-between items-center text-3xs font-bold text-slate-400 pt-0.5">
+                    <div class="flex items-center gap-1">
+                        <span>Allocation:</span>
+                        <span id="modifyTpAllocationBadge" class="text-emerald-600 font-mono font-black">100%</span>
+                    </div>
+                    <p class="text-4xs text-slate-400 text-right truncate max-w-[200px]" id="modifyTpHint">Price to automatically lock in profit.</p>
+                </div>
             </div>
 
             <div class="flex items-center gap-3 pt-2">
@@ -1015,12 +1097,73 @@
         return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
     }
 
+    function formatPriceInput(val) {
+        if (val === null || val === undefined || isNaN(val)) return '0.00';
+        const num = Number(val);
+        let maxDigits = 2;
+        if (num < 0.0001) maxDigits = 8;
+        else if (num < 0.01) maxDigits = 6;
+        else if (num < 1) maxDigits = 5;
+        else if (num < 10) maxDigits = 5;
+        else if (num < 1000) maxDigits = 4;
+        else maxDigits = 2;
+
+        let s = num.toFixed(maxDigits);
+        if (s.includes('.')) {
+            const parts = s.split('.');
+            if (parts[1].length > 2) {
+                parts[1] = parts[1].replace(/0+$/, '');
+                if (parts[1].length < 2) parts[1] = parts[1].padEnd(2, '0');
+                s = parts[0] + '.' + parts[1];
+            }
+        }
+        return s;
+    }
+
     function formatPnl5(val) {
         const n = Number(val);
         if (isNaN(n)) return '$0.00000';
         const sign = n >= 0 ? '+' : '-';
         const abs = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
         return `${sign}$${abs}`;
+    }
+
+    function renderTpCellHtml(tp, multiTpJson) {
+        if (!multiTpJson) {
+            return (tp && Number(tp) > 0) ? formatPrice5(tp) : '--';
+        }
+        try {
+            let levels = typeof multiTpJson === 'string' ? JSON.parse(multiTpJson) : multiTpJson;
+            if (Array.isArray(levels) && levels.length > 1) {
+                let html = `
+                    <div class="space-y-1">
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-black text-4xs uppercase tracking-wider border border-emerald-500/20">
+                            <i class="fa-solid fa-layer-group text-5xs"></i>
+                            <span>${levels.length} TP Targets</span>
+                        </span>
+                        <div class="flex flex-col gap-0.5 font-mono text-3xs">
+                `;
+                levels.forEach((lvl, idx) => {
+                    const p = Number(lvl.price ?? lvl.Price ?? 0);
+                    const pct = Number(lvl.percentage ?? lvl.Percentage ?? 0);
+                    html += `
+                        <div class="flex items-center gap-1 text-slate-700 dark:text-slate-300">
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400">TP${idx + 1}:</span>
+                            <span class="font-extrabold">${formatPrice5(p)}</span>
+                            <span class="text-slate-400 text-4xs font-semibold">(${pct}%)</span>
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
+                return html;
+            } else if (Array.isArray(levels) && levels.length === 1) {
+                const singleP = Number(levels[0].price ?? levels[0].Price ?? 0);
+                return singleP > 0 ? formatPrice5(singleP) : '--';
+            }
+        } catch (e) {
+            // fallback
+        }
+        return (tp && Number(tp) > 0) ? formatPrice5(tp) : '--';
     }
 
     // Modify Position Modal logic
@@ -1034,9 +1177,7 @@
         document.getElementById('modifyPosSide').value = side;
 
         const slInput = document.getElementById('modifyPosSlInput');
-        const tpInput = document.getElementById('modifyPosTpInput');
         slInput.value = (sl && Number(sl) > 0) ? Number(sl).toFixed(5) : '';
-        tpInput.value = (tp && Number(tp) > 0) ? Number(tp).toFixed(5) : '';
 
         const slHint = document.getElementById('modifySlHint');
         const tpHint = document.getElementById('modifyTpHint');
@@ -1048,7 +1189,176 @@
             tpHint.textContent = `Must be strictly BELOW current price (${formatPrice5(current)}).`;
         }
 
+        // Retrieve existing multi-level TP JSON from row data attribute
+        const row = document.getElementById(`posRowIdx_${id}`) || document.getElementById(`posRow_${id}`);
+        const multiTpJson = row ? row.getAttribute('data-multi-tp') : '';
+        populateModifyTpLevels(multiTpJson, tp, side, current);
+
         document.getElementById('modifyPositionModal').classList.remove('hidden');
+    }
+
+    function populateModifyTpLevels(multiTpJson, singleTp, side, currentPrice) {
+        const container = document.getElementById('modifyTpLevelsContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        let levels = [];
+        if (multiTpJson) {
+            try {
+                const parsed = typeof multiTpJson === 'string' ? JSON.parse(multiTpJson) : multiTpJson;
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    levels = parsed;
+                }
+            } catch (e) {
+                console.debug('Failed to parse position multi-tp json:', e);
+            }
+        }
+
+        if (levels.length === 0 && singleTp && Number(singleTp) > 0) {
+            levels = [{ price: Number(singleTp), percentage: 100 }];
+        }
+
+        if (levels.length === 0) {
+            levels = [{ price: '', percentage: 100 }];
+        }
+
+        levels.forEach((lvl, idx) => {
+            const p = (lvl.price !== undefined && lvl.price !== null && lvl.price !== '') ? formatPriceInput(lvl.price) : '';
+            const pct = lvl.percentage || (levels.length === 1 ? 100 : Math.floor(100 / levels.length));
+            const rowEl = createModifyTpHtmlRow(idx + 1, p, pct, levels.length > 1);
+            container.appendChild(rowEl);
+        });
+
+        onModifyTpLevelChange();
+    }
+
+    function createModifyTpHtmlRow(index, priceVal, pctVal, showRemove) {
+        const div = document.createElement('div');
+        div.className = 'modify-tp-row flex items-center gap-2';
+        div.setAttribute('data-index', index);
+        div.innerHTML = `
+            <span class="text-3xs font-black text-emerald-600 dark:text-emerald-400 px-1.5 py-1 rounded bg-emerald-500/10 shrink-0 modify-tp-tag">TP ${index}</span>
+            <div class="relative flex-1">
+                <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono text-xs">$</span>
+                <input type="text" inputmode="decimal"
+                       value="${priceVal}"
+                       placeholder="Target Price"
+                       oninput="this.value = this.value.replace(',', '.'); onModifyTpLevelChange();"
+                       class="modify-tp-price w-full pl-6 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+            </div>
+            <div class="flex items-center gap-1 w-20 shrink-0">
+                <input type="number" min="1" max="100" value="${pctVal}"
+                       oninput="onModifyTpLevelChange();"
+                       class="modify-tp-pct w-14 px-1.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs text-center focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+                <span class="text-3xs font-extrabold text-slate-400">%</span>
+            </div>
+            <button type="button" onclick="removeModifyTpLevel(this)" class="modify-tp-remove ${showRemove ? '' : 'hidden'} p-1.5 text-slate-400 hover:text-rose-500 rounded transition-colors shrink-0" title="Remove level">
+                <i class="fa-solid fa-xmark text-xs"></i>
+            </button>
+        `;
+        return div;
+    }
+
+    function addModifyTpLevel() {
+        const container = document.getElementById('modifyTpLevelsContainer');
+        const rows = container.querySelectorAll('.modify-tp-row');
+        if (rows.length >= 5) {
+            showToast('error', 'Maximum 5 Take Profit levels allowed.');
+            return;
+        }
+
+        const newIndex = rows.length + 1;
+        const currentPrice = parseFloat(document.getElementById('modifyPosCurrentPrice').value) || 0;
+        const side = document.getElementById('modifyPosSide').value;
+        const isBuy = String(side).toLowerCase().includes('buy');
+        const offset = isBuy ? (1 + (0.02 * newIndex)) : (1 - (0.02 * newIndex));
+        const suggPrice = currentPrice > 0 ? formatPriceInput(currentPrice * offset) : '';
+
+        const newPct = Math.floor(100 / newIndex);
+        const remPct = 100 - (newPct * (newIndex - 1));
+
+        rows.forEach((r, idx) => {
+            const pctInput = r.querySelector('.modify-tp-pct');
+            if (pctInput) pctInput.value = (idx === 0 ? remPct : newPct);
+        });
+
+        const newRow = createModifyTpHtmlRow(newIndex, suggPrice, newPct, true);
+        container.appendChild(newRow);
+
+        container.querySelectorAll('.modify-tp-remove').forEach(btn => btn.classList.remove('hidden'));
+        onModifyTpLevelChange();
+    }
+
+    function removeModifyTpLevel(btn) {
+        const row = btn.closest('.modify-tp-row');
+        const container = document.getElementById('modifyTpLevelsContainer');
+        if (row && container) {
+            row.remove();
+            const remaining = container.querySelectorAll('.modify-tp-row');
+            remaining.forEach((r, idx) => {
+                const tag = r.querySelector('.modify-tp-tag');
+                if (tag) tag.textContent = `TP ${idx + 1}`;
+                r.setAttribute('data-index', idx + 1);
+            });
+
+            if (remaining.length <= 1) {
+                remaining.forEach(r => {
+                    const remBtn = r.querySelector('.modify-tp-remove');
+                    if (remBtn) remBtn.classList.add('hidden');
+                    const pct = r.querySelector('.modify-tp-pct');
+                    if (pct) pct.value = 100;
+                });
+            }
+
+            onModifyTpLevelChange();
+        }
+    }
+
+    function clearModifyTpLevels() {
+        const container = document.getElementById('modifyTpLevelsContainer');
+        if (container) {
+            container.innerHTML = '';
+            container.appendChild(createModifyTpHtmlRow(1, '', 100, false));
+            onModifyTpLevelChange();
+        }
+    }
+
+    function onModifyTpLevelChange() {
+        const container = document.getElementById('modifyTpLevelsContainer');
+        if (!container) return;
+        const rows = container.querySelectorAll('.modify-tp-row');
+
+        let totalPct = 0;
+        const validLevels = [];
+
+        rows.forEach((r, idx) => {
+            const priceInput = r.querySelector('.modify-tp-price');
+            const pctInput = r.querySelector('.modify-tp-pct');
+            const p = parseFloat((priceInput?.value || '').replace(',', '.')) || 0;
+            const pct = parseFloat(pctInput?.value) || 0;
+
+            totalPct += pct;
+            if (p > 0 && pct > 0) {
+                validLevels.push({ price: p, percentage: pct });
+            }
+
+            if (idx === 0) {
+                document.getElementById('modifyPosTpInput').value = p > 0 ? p : '';
+            }
+        });
+
+        const badge = document.getElementById('modifyTpAllocationBadge');
+        if (badge) {
+            badge.textContent = `${totalPct}%`;
+            if (totalPct === 100) badge.className = 'text-emerald-600 font-mono font-black';
+            else if (totalPct > 100) badge.className = 'text-rose-500 font-mono font-black animate-pulse';
+            else badge.className = 'text-amber-500 font-mono font-black';
+        }
+
+        const jsonInput = document.getElementById('modifyMultipleTakeProfitsJson');
+        if (jsonInput) {
+            jsonInput.value = (validLevels.length > 0) ? JSON.stringify(validLevels) : '';
+        }
     }
 
     function closeModifyModal() {
@@ -1060,8 +1370,44 @@
         const btn = document.getElementById('btnSaveModifyPosition');
         const posId = document.getElementById('modifyPosId').value;
         const sym = document.getElementById('modifyPosSymbol').value;
-        const sl = document.getElementById('modifyPosSlInput').value;
-        const tp = document.getElementById('modifyPosTpInput').value;
+        const side = document.getElementById('modifyPosSide').value;
+        const currentPrice = parseFloat(document.getElementById('modifyPosCurrentPrice').value) || 0;
+        const sl = (document.getElementById('modifyPosSlInput').value || '').trim();
+        const tp = (document.getElementById('modifyPosTpInput').value || '').trim();
+        const multiTpJson = (document.getElementById('modifyMultipleTakeProfitsJson').value || '').trim();
+
+        // Multi-level TP client-side validation
+        if (multiTpJson) {
+            try {
+                const levels = JSON.parse(multiTpJson);
+                const isBuy = String(side).toLowerCase().includes('buy');
+                let totalPct = 0;
+                for (let lvl of levels) {
+                    const p = Number(lvl.price);
+                    const pct = Number(lvl.percentage);
+                    if (isBuy && p <= currentPrice) {
+                        showToast('error', `Multi-level TP price ($${p}) must be above current price ($${currentPrice}).`);
+                        return;
+                    }
+                    if (!isBuy && p >= currentPrice) {
+                        showToast('error', `Multi-level TP price ($${p}) must be below current price ($${currentPrice}).`);
+                        return;
+                    }
+                    if (pct <= 0 || pct > 100) {
+                        showToast('error', 'Each Take Profit percentage must be between 1% and 100%.');
+                        return;
+                    }
+                    totalPct += pct;
+                }
+                if (totalPct !== 100) {
+                    showToast('error', `Total Take Profit percentage allocation must equal 100% (currently ${totalPct}%).`);
+                    return;
+                }
+            } catch (err) {
+                showToast('error', 'Invalid multi-level Take Profit format.');
+                return;
+            }
+        }
 
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
@@ -1072,6 +1418,7 @@
             fd.append('symbol', sym);
             fd.append('stopLoss', sl);
             fd.append('takeProfit', tp);
+            fd.append('multipleTakeProfitsJson', multiTpJson);
             fd.append('sourcePage', 'index');
 
             const res = await fetch('/Trading/Trading/ModifyPosition', {
@@ -1087,7 +1434,14 @@
                 const slCell = document.getElementById(`idxPosSl_${posId}`) || document.getElementById(`posSl_${posId}`);
                 if (slCell) slCell.textContent = (sl && parseFloat(sl) > 0) ? formatPrice5(sl) : '--';
                 const tpCell = document.getElementById(`idxPosTp_${posId}`) || document.getElementById(`posTp_${posId}`);
-                if (tpCell) tpCell.textContent = (tp && parseFloat(tp) > 0) ? formatPrice5(tp) : '--';
+                if (tpCell) {
+                    tpCell.innerHTML = renderTpCellHtml(tp, multiTpJson);
+                }
+                const row = document.getElementById(`posRowIdx_${posId}`) || document.getElementById(`posRow_${posId}`);
+                if (row) {
+                    row.setAttribute('data-multi-tp', multiTpJson || '');
+                }
+                pollLiveIndexStatus(true);
             } else {
                 showToast('error', data.error || 'Failed to update position.');
             }
@@ -1102,9 +1456,15 @@
     // AJAX Close Position
     async function ajaxClosePositionIndex(posId, sym) {
         try {
+            const priceEl = document.getElementById(`idxPosPrice_${posId}`);
+            let cp = priceEl ? parseFloat(priceEl.textContent.replace('$', '').replace(/,/g, '').trim()) : 0;
+
             const fd = new FormData();
             fd.append('positionId', posId);
             fd.append('symbol', sym);
+            if (cp > 0) {
+                fd.append('closePrice', cp);
+            }
             fd.append('sourcePage', 'index');
 
             const res = await fetch('/Trading/Trading/ClosePosition', {
@@ -1193,6 +1553,24 @@
                 const pnlEl = document.getElementById(`idxPosPnl_${id}`);
                 if (pnlEl) {
                     pnlEl.innerHTML = `<span class="${unPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}">${formatPnl5(unPnl)}</span>`;
+                }
+
+                const row = document.getElementById(`posRowIdx_${id}`);
+                const multiTp = pos.multipleTakeProfitsJson ?? pos.MultipleTakeProfitsJson;
+                if (row) {
+                    row.setAttribute('data-multi-tp', multiTp || '');
+                }
+
+                const slCell = document.getElementById(`idxPosSl_${id}`);
+                if (slCell) {
+                    const sl = Number(pos.stopLoss ?? pos.StopLoss ?? 0);
+                    slCell.textContent = sl > 0 ? formatPrice5(sl) : '--';
+                }
+
+                const tpCell = document.getElementById(`idxPosTp_${id}`);
+                if (tpCell) {
+                    const tp = Number(pos.takeProfit ?? pos.TakeProfit ?? 0);
+                    tpCell.innerHTML = renderTpCellHtml(tp, multiTp);
                 }
             });
 

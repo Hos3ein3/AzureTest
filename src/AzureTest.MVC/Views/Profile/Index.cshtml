@@ -14,7 +14,10 @@
         Title = "Profile Settings",
         Subtitle = "Manage your personal account profile, contact credentials, and avatar picture.",
         Icon = "fa-solid fa-user-gear",
-        Breadcrumbs = breadcrumbs
+        Breadcrumbs = breadcrumbs,
+        ActionText = "Change Password",
+        ActionUrl = Url.Action("ChangePassword", "Auth"),
+        ActionIcon = "fa-solid fa-key"
     };
 }
 
@@ -27,7 +30,12 @@
                 <i class="fa-solid fa-id-badge text-brand-600 text-xs"></i>
                 <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Personal Information</h2>
             </div>
-            <span class="text-2xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">User Profile</span>
+            <div class="flex items-center gap-2">
+                <a asp-controller="Auth" asp-action="ChangePassword" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-2xs font-semibold shadow-2xs transition-colors">
+                    <i class="fa-solid fa-key text-brand-600"></i> Change Password
+                </a>
+                <span class="text-2xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">User Profile</span>
+            </div>
         </div>
 
         @if (TempData["SuccessMessage"] != null)

@@ -31,7 +31,8 @@ public class DynamicAuthorizationFilter : IAsyncAuthorizationFilter
 
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
-        if (context.ActionDescriptor.EndpointMetadata.OfType<AllowAnonymousAttribute>().Any())
+        if (context.ActionDescriptor.EndpointMetadata.OfType<AllowAnonymousAttribute>().Any() ||
+            context.ActionDescriptor.EndpointMetadata.OfType<BypassDynamicAuthorizationAttribute>().Any())
         {
             return;
         }
