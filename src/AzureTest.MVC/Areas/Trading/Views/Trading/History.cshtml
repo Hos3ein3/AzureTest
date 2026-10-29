@@ -786,31 +786,31 @@
     }
 
     function showTradeReceiptById(id) {
-        const t = allTradeHistoryItems.find(x => String(x.Id || x.id) === String(id));
+        const t = (allTradeHistoryItems || []).find(x => String(x.Id || x.id || '').toLowerCase() === String(id || '').toLowerCase());
         if (!t) return;
         showTradeReceipt(t);
     }
 
     function showPnlCalculationModal(id) {
-        const t = allTradeHistoryItems.find(x => String(x.Id || x.id) === String(id));
+        const t = (allTradeHistoryItems || []).find(x => String(x.Id || x.id || '').toLowerCase() === String(id || '').toLowerCase());
         if (!t) return;
-        const isBuy = t.Side === 1 || t.Side === 'Buy';
-        const entryP = Number(t.EntryPrice || 0);
-        const closeP = Number(t.ClosePrice || t.CurrentPrice || 0);
-        const qty = Number(t.Quantity || 0);
-        const lev = Number(t.Leverage || 1);
-        const initMargin = Number(t.InitialMargin || 0);
-        const pnl = Number(t.RealizedPnl || 0);
-        const roi = Number(t.RoiPercentage || 0);
+        const isBuy = t.Side === 1 || t.Side === 'Buy' || t.side === 1 || t.side === 'Buy';
+        const entryP = Number(t.EntryPrice ?? t.entryPrice ?? 0);
+        const closeP = Number(t.ClosePrice ?? t.closePrice ?? t.CurrentPrice ?? t.currentPrice ?? 0);
+        const qty = Number(t.Quantity ?? t.quantity ?? 0);
+        const lev = Number(t.Leverage ?? t.leverage ?? 1);
+        const initMargin = Number(t.InitialMargin ?? t.initialMargin ?? 0);
+        const pnl = Number(t.RealizedPnl ?? t.realizedPnl ?? 0);
+        const roi = Number(t.RoiPercentage ?? t.roiPercentage ?? 0);
         const notional = qty * entryP;
         const isWin = pnl >= 0;
-        const isLiquidated = t.Status === 3 || t.Status === 'Liquidated' || t.OutcomeBadge === 'LIQUIDATED';
+        const isLiquidated = t.Status === 3 || t.Status === 'Liquidated' || t.status === 3 || t.status === 'Liquidated' || t.OutcomeBadge === 'LIQUIDATED' || t.outcomeBadge === 'LIQUIDATED';
 
         const priceDiff = isBuy ? (closeP - entryP) : (entryP - closeP);
         const returnedCollateral = Math.max(0, initMargin + pnl);
 
-        document.getElementById('calcModalTitle').innerText = `${t.Symbol} (${t.AssetName || t.Symbol})`;
-        document.getElementById('calcModalTicketId').innerText = `Ticket #${t.Id} • ${isBuy ? 'Long (Buy)' : 'Short (Sell)'} • ${lev}x Leverage`;
+        document.getElementById('calcModalTitle').innerText = `${t.Symbol || t.symbol} (${t.AssetName || t.assetName || t.Symbol || t.symbol})`;
+        document.getElementById('calcModalTicketId').innerText = `Ticket #${t.Id || t.id} • ${isBuy ? 'Long (Buy)' : 'Short (Sell)'} • ${lev}x Leverage`;
         
         // Result hero banner
         const pnlEl = document.getElementById('calcModalPnlDisplay');
@@ -821,7 +821,7 @@
         roiEl.innerText = `${roi >= 0 ? '+' : ''}${roi.toFixed(2)}% ROI`;
 
         const badgeEl = document.getElementById('calcModalBadge');
-        badgeEl.innerText = t.OutcomeBadge || (isWin ? 'WIN' : 'LOSS');
+        badgeEl.innerText = t.OutcomeBadge || t.outcomeBadge || (isWin ? 'WIN' : 'LOSS');
         badgeEl.className = `px-2.5 py-1 rounded-lg text-3xs font-black uppercase ${isWin ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`;
 
         // Formula elements
@@ -856,28 +856,17 @@
     function closePnlCalculationModal() {
         document.getElementById('tradeCalculationModal').classList.add('hidden');
     }
-            const name = r.getAttribute('data-name') || '';
-            const side = r.getAttribute('data-side') || '';
-            const outcome = r.getAttribute('data-outcome') || '';
-            const txt = (r.innerText || '').toLowerCase();
-            if (!val || sym.includes(val) || name.includes(val) || side.includes(val) || outcome.includes(val) || txt.includes(val)) {
-                r.style.display = '';
-            } else {
-                r.style.display = 'none';
-            }
-        });
-    }
 
     function showTradeReceipt(t) {
         if (!t) return;
         const modal = document.getElementById('tradeReceiptModal');
-        const isBuy = t.Side === 1 || t.Side === 'Buy';
+        const isBuy = t.Side === 1 || t.Side === 'Buy' || t.side === 1 || t.side === 'Buy';
 
-        document.getElementById('modalTradeTitle').innerText = `${t.Symbol} (${t.AssetName})`;
-        document.getElementById('modalTicketId').innerText = `Ticket #${t.Id}`;
+        document.getElementById('modalTradeTitle').innerText = `${t.Symbol || t.symbol} (${t.AssetName || t.assetName || t.Symbol || t.symbol})`;
+        document.getElementById('modalTicketId').innerText = `Ticket #${t.Id || t.id}`;
 
         // Outcome Banner
-        const pnl = Number(t.RealizedPnl || 0);
+        const pnl = Number(t.RealizedPnl ?? t.realizedPnl ?? 0);
         const pnlEl = document.getElementById('modalRealizedPnl');
         pnlEl.innerText = (pnl >= 0 ? '+' : '') + '$' + pnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         pnlEl.className = 'text-base font-black ' + (pnl >= 0 ? 'text-emerald-500' : 'text-rose-500');
@@ -887,16 +876,16 @@
             (pnl >= 0 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-rose-500/10 border border-rose-500/20');
 
         const badge = document.getElementById('modalOutcomeBadge');
-        badge.innerText = t.OutcomeBadge || (pnl >= 0 ? 'WIN' : 'LOSS');
+        badge.innerText = t.OutcomeBadge || t.outcomeBadge || (pnl >= 0 ? 'WIN' : 'LOSS');
         badge.className = 'px-2.5 py-1 rounded-lg text-3xs font-black uppercase ' +
             (pnl >= 0 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white');
 
-        document.getElementById('modalRoiPct').innerText = (Number(t.RoiPercentage || 0) >= 0 ? '+' : '') + 
-            Number(t.RoiPercentage || 0).toFixed(2) + '% ROI';
+        document.getElementById('modalRoiPct').innerText = (Number(t.RoiPercentage ?? t.roiPercentage ?? 0) >= 0 ? '+' : '') + 
+            Number(t.RoiPercentage ?? t.roiPercentage ?? 0).toFixed(2) + '% ROI';
 
         // Price Trade Closed With & Closed When - Hero Highlights
-        const closeP = (t.ClosePrice !== null && t.ClosePrice !== undefined) ? Number(t.ClosePrice) : ((t.CurrentPrice !== null && t.CurrentPrice !== undefined) ? Number(t.CurrentPrice) : null);
-        const entryP = Number(t.EntryPrice || 0);
+        const closeP = (t.ClosePrice !== null && t.ClosePrice !== undefined) ? Number(t.ClosePrice) : ((t.closePrice !== null && t.closePrice !== undefined) ? Number(t.closePrice) : ((t.CurrentPrice !== null && t.CurrentPrice !== undefined) ? Number(t.CurrentPrice) : ((t.currentPrice !== null && t.currentPrice !== undefined) ? Number(t.currentPrice) : null)));
+        const entryP = Number(t.EntryPrice ?? t.entryPrice ?? 0);
 
         if (closeP !== null && closeP > 0) {
             document.getElementById('modalHeroExitPrice').innerText = '$' + closeP.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
@@ -912,8 +901,9 @@
             diffEl.className = 'text-3xs font-bold text-slate-400';
         }
 
-        if (t.ClosedAtUtc) {
-            const cDate = new Date(t.ClosedAtUtc);
+        const closedAt = t.ClosedAtUtc || t.closedAtUtc;
+        if (closedAt) {
+            const cDate = new Date(closedAt);
             document.getElementById('modalHeroClosedWhen').innerText = cDate.toUTCString();
             const diffMs = Date.now() - cDate.getTime();
             const diffSec = Math.max(0, Math.floor(diffMs / 1000));
@@ -930,26 +920,31 @@
 
         // Grid values
         document.getElementById('modalSideText').innerText = isBuy ? 'Long (Buy)' : 'Short (Sell)';
-        document.getElementById('modalUnitsText').innerText = Number(t.Quantity || 0).toLocaleString('en-US', { maximumFractionDigits: 6 }) + ' Units';
-        document.getElementById('modalMarginText').innerText = '$' + Number(t.InitialMargin || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('modalLeverageText').innerText = (t.Leverage || 1) + 'x Leverage';
-        document.getElementById('modalWholeBalanceText').innerText = '$' + Number(t.WholeAccountBalance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('modalBalancePctText').innerText = Number(t.BalancePercentage || 0).toFixed(1) + '% of Whole Balance';
-        document.getElementById('modalEntryPriceText').innerText = '$' + Number(t.EntryPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
-        document.getElementById('modalExitPriceText').innerText = t.ClosePrice ? ('$' + Number(t.ClosePrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })) : '--';
-        document.getElementById('modalTpText').innerText = t.TakeProfit ? ('$' + Number(t.TakeProfit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })) : 'None';
-        document.getElementById('modalSlText').innerText = t.StopLoss ? ('$' + Number(t.StopLoss).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })) : 'None';
+        document.getElementById('modalUnitsText').innerText = Number(t.Quantity ?? t.quantity ?? 0).toLocaleString('en-US', { maximumFractionDigits: 6 }) + ' Units';
+        document.getElementById('modalMarginText').innerText = '$' + Number(t.InitialMargin ?? t.initialMargin ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('modalLeverageText').innerText = (t.Leverage ?? t.leverage ?? 1) + 'x Leverage';
+        document.getElementById('modalWholeBalanceText').innerText = '$' + Number(t.WholeAccountBalance ?? t.wholeAccountBalance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('modalBalancePctText').innerText = Number(t.BalancePercentage ?? t.balancePercentage ?? 0).toFixed(1) + '% of Whole Balance';
+        document.getElementById('modalEntryPriceText').innerText = '$' + Number(t.EntryPrice ?? t.entryPrice ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+        const exitPriceVal = t.ClosePrice ?? t.closePrice;
+        document.getElementById('modalExitPriceText').innerText = exitPriceVal ? ('$' + Number(exitPriceVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })) : '--';
+        const tpVal = t.TakeProfit ?? t.takeProfit;
+        document.getElementById('modalTpText').innerText = tpVal ? ('$' + Number(tpVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })) : 'None';
+        const slVal = t.StopLoss ?? t.stopLoss;
+        document.getElementById('modalSlText').innerText = slVal ? ('$' + Number(slVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })) : 'None';
 
-        document.getElementById('modalOpenedText').innerText = t.OpenedAtUtc ? new Date(t.OpenedAtUtc).toUTCString() : '--';
-        document.getElementById('modalClosedText').innerText = t.ClosedAtUtc ? new Date(t.ClosedAtUtc).toUTCString() : '--';
+        const openedAt = t.OpenedAtUtc || t.openedAtUtc;
+        document.getElementById('modalOpenedText').innerText = openedAt ? new Date(openedAt).toUTCString() : '--';
+        document.getElementById('modalClosedText').innerText = closedAt ? new Date(closedAt).toUTCString() : '--';
 
         // Multi-TP handling
         const multiBox = document.getElementById('modalMultiTpBox');
         const multiList = document.getElementById('modalMultiTpList');
         multiList.innerHTML = '';
-        if (t.MultipleTakeProfitsJson) {
+        const multiTpJson = t.MultipleTakeProfitsJson || t.multipleTakeProfitsJson;
+        if (multiTpJson) {
             try {
-                const arr = JSON.parse(t.MultipleTakeProfitsJson);
+                const arr = JSON.parse(multiTpJson);
                 if (Array.isArray(arr) && arr.length > 0) {
                     multiBox.classList.remove('hidden');
                     arr.forEach((item, idx) => {
@@ -976,21 +971,17 @@
     }
 
     function exportHistoryCsv() {
-        const rows = document.querySelectorAll('#historyDataTable tbody tr.trade-row');
-        if (!rows.length) {
+        if (!allTradeHistoryItems || !allTradeHistoryItems.length) {
             alert('No trade history available to export.');
             return;
         }
 
         let csv = 'TicketId,Symbol,Side,Units,Margin,Leverage,BalancePct,EntryPrice,ExitPrice,TakeProfit,StopLoss,RealizedPnl,RoiPct,Outcome,CloseReason,OpenedAt,ClosedAt\n';
 
-        @foreach (var t in trades)
-        {
-            var isBuy = t.Side == AzureTest.Domain.Entities.Trading.Enums.TradingOrderSide.Buy;
-            <text>
-            csv += `"${t.Id}","${t.Symbol}","@(isBuy ? "Long" : "Short")",${t.Quantity},${t.InitialMargin},${t.Leverage},${t.BalancePercentage},${t.EntryPrice},@(t.ClosePrice.HasValue ? t.ClosePrice.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "0"),@(t.TakeProfit.HasValue ? t.TakeProfit.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""),@(t.StopLoss.HasValue ? t.StopLoss.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""),${t.RealizedPnl},${t.RoiPercentage},"${t.OutcomeBadge}","${t.CloseReasonBadge}","${t.OpenedAtUtc:O}","@(t.ClosedAtUtc?.ToString("O") ?? "")"\n`;
-            </text>
-        }
+        allTradeHistoryItems.forEach(t => {
+            const side = (t.Side === 1 || t.Side === 'Buy' || t.side === 1 || t.side === 'Buy') ? 'Long' : 'Short';
+            csv += `"${t.Id || t.id}","${t.Symbol || t.symbol}","${side}",${t.Quantity || t.quantity || 0},${t.InitialMargin || t.initialMargin || 0},${t.Leverage || t.leverage || 1},${t.BalancePercentage || t.balancePercentage || 0},${t.EntryPrice || t.entryPrice || 0},${t.ClosePrice || t.closePrice || 0},${t.TakeProfit || t.takeProfit || ''},${t.StopLoss || t.stopLoss || ''},${t.RealizedPnl || t.realizedPnl || 0},${t.RoiPercentage || t.roiPercentage || 0},"${t.OutcomeBadge || t.outcomeBadge || ''}","${t.CloseReasonBadge || t.closeReasonBadge || ''}","${t.OpenedAtUtc || t.openedAtUtc || ''}","${t.ClosedAtUtc || t.closedAtUtc || ''}"\n`;
+        });
 
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -1001,5 +992,14 @@
         a.click();
         document.body.removeChild(a);
     }
+
+    // Explicitly bind to window to ensure global availability in inline onclick attributes
+    window.quickFilterTable = quickFilterTable;
+    window.showTradeReceiptById = showTradeReceiptById;
+    window.showPnlCalculationModal = showPnlCalculationModal;
+    window.closePnlCalculationModal = closePnlCalculationModal;
+    window.showTradeReceipt = showTradeReceipt;
+    window.closeTradeReceiptModal = closeTradeReceiptModal;
+    window.exportHistoryCsv = exportHistoryCsv;
 </script>
 }
