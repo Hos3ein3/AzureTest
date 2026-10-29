@@ -1,0 +1,204 @@
+@using AzureTest.MVC.Models
+@using AzureTest.Contracts.DTOs.Pages
+@using System.Text.RegularExpressions
+@model AzureTest.Contracts.DTOs.Common.PagedResult<PageDto, AzureTest.Application.Pages.PageFilter>
+@{
+    ViewData["Title"] = "Explore Documentation & Pages";
+    var currentUserId = (Guid)(ViewBag.CurrentUserId ?? Guid.Empty);
+    var filter = (AzureTest.Application.Pages.PageFilter)(ViewBag.Filters ?? new AzureTest.Application.Pages.PageFilter());
+    var search = (string)(ViewBag.Search ?? "");
+
+    var breadcrumbs = new List<BreadcrumbItem>
+    {
+        new BreadcrumbItem("Home", Url.Action("Index", "Home"), "fa-solid fa-house"),
+        new BreadcrumbItem("Knowledge Base", null, "fa-solid fa-book-open", true)
+    };
+
+    var headerModel = new PageHeaderModel(
+        "Knowledge Base & Guides",
+        "Explore articles, tutorials, game rules, and documentation across our platform.",
+        "fa-solid fa-book-bookmark"
+    );
+
+    string GetPageUrl(int p)
+    {
+        return Url.Action("Index2", new { search = filter.Search, sortBy = filter.SortBy, sortDescending = filter.SortDescending, pageNumber = p, pageSize = filter.PageSize });
+    }
+
+    var paginationModel = new PaginationModel(
+        Model.PageNumber,
+        Model.TotalPages,
+        Model.PageSize,
+        Model.TotalCount,
+        p => GetPageUrl(p)
+    );
+
+    string StripHtmlAndTruncate(string? html, int maxChars = 140)
+    {
+        if (string.IsNullOrWhiteSpace(html)) return "No preview text available.";
+        var text = Regex.Replace(html, "<.*?>", string.Empty);
+        text = System.Net.WebUtility.HtmlDecode(text).Trim();
+        if (text.Length <= maxChars) return text;
+        return text.Substring(0, maxChars).TrimEnd() + "...";
+    }
+}
+
+<div class="px-4 sm:px-6 lg:px-8 py-8 mx-auto max-w-7xl space-y-8">
+    <partial name="UiComponents/_Breadcrumb" model="breadcrumbs" />
+    <partial name="UiComponents/_PageHeader" model="headerModel" />
+
+    <!-- Search & Filter Card -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 sm:p-7">
+        <form method="get" class="flex flex-col md:flex-row gap-4 items-stretch md:items-end">
+            <div class="flex-1">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Search Articles & Guides</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
+                        <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                    </div>
+                    <input type="text" name="search" value="@search" placeholder="Search by topic, title, keywords..."
+                           class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl text-sm focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400" />
+                </div>
+            </div>
+
+            <div class="w-full md:w-56">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Sort By</label>
+                <div class="relative">
+                    <select name="sortBy" class="w-full py-3 px-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl text-sm focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-slate-800 dark:text-slate-100 cursor-pointer">
+                        <!option value="title" @(filter.SortBy?.ToLower() == "title" ? "selected" : "")>Title (A-Z)</!option>
+                        <!option value="createdat" @(filter.SortBy?.ToLower() == "createdat" || filter.SortBy?.ToLower() == "date" ? "selected" : "")>Newest First</!option>
+                        <!option value="slug" @(filter.SortBy?.ToLower() == "slug" ? "selected" : "")>Slug Keyword</!option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button type="submit"
+                        class="flex-1 md:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-2xl shadow-sm hover:shadow-md transition-all duration-200">
+                    <i class="fa-solid fa-filter text-xs"></i> Filter
+                </button>
+                @if (!string.IsNullOrWhiteSpace(search))
+                {
+                    <a asp-action="Index2"
+                       class="inline-flex items-center justify-center p-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl transition-all"
+                       title="Reset Search">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+
+    @if (Model == null || !Model.Items.Any())
+    {
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-12 text-center max-w-lg mx-auto shadow-sm">
+            <div class="w-16 h-16 rounded-2xl bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fa-solid fa-file-circle-question"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">No Articles Found</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                @(string.IsNullOrWhiteSpace(search) ? "There are currently no published pages available in the knowledge base." : $"No articles matched your search query \"{search}\".")
+            </p>
+            @if (!string.IsNullOrWhiteSpace(search))
+            {
+                <a asp-action="Index2" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-all">
+                    <i class="fa-solid fa-rotate-left"></i> View All Pages
+                </a>
+            }
+        </div>
+    }
+    else
+    {
+        <!-- Modern Card Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
+            @foreach (var pageItem in Model.Items)
+            {
+                var isRead = currentUserId != Guid.Empty && pageItem.ReadBy != null && pageItem.ReadBy.Contains(currentUserId);
+                var likesCount = pageItem.LikedBy?.Count ?? 0;
+                var commentsCount = pageItem.Comments?.Count ?? 0;
+
+                <article class="group bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/90 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden relative">
+                    <!-- Top Ribbon / Read Badge -->
+                    <div class="absolute top-4 right-4 z-10 flex items-center gap-2">
+                        @if (!isRead)
+                        {
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-2xs font-extrabold uppercase tracking-wider bg-emerald-500 text-white shadow-md backdrop-blur-xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> New
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-semibold bg-slate-900/60 text-slate-200 backdrop-blur-md">
+                                <i class="fa-solid fa-check text-emerald-400 text-3xs"></i> Read
+                            </span>
+                        }
+                    </div>
+
+                    <!-- Card Header / Image or Gradient Banner -->
+                    <a href="@Url.Action("Read", "Pages", new { slug = pageItem.Slug })" class="block relative aspect-16/9 overflow-hidden bg-slate-100 dark:bg-slate-800">
+                        @if (!string.IsNullOrEmpty(pageItem.ImagePath))
+                        {
+                            <img src="@pageItem.ImagePath" alt="@pageItem.Title"
+                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                        }
+                        else
+                        {
+                            <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-brand-500/10 via-slate-100 to-indigo-500/10 dark:from-brand-950/40 dark:via-slate-800 dark:to-indigo-950/30 text-brand-600 dark:text-brand-400 p-6 text-center">
+                                <div class="w-14 h-14 rounded-2xl bg-white/80 dark:bg-slate-900/80 shadow-xs flex items-center justify-center text-2xl mb-2 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                                    <i class="fa-solid fa-file-lines"></i>
+                                </div>
+                                <span class="text-3xs uppercase tracking-widest font-black text-slate-400 dark:text-slate-500">Document</span>
+                            </div>
+                        }
+                    </a>
+
+                    <!-- Card Body -->
+                    <div class="p-6 flex-1 flex flex-col">
+                        <div class="flex items-center gap-2 mb-2.5 text-2xs font-semibold text-slate-400 dark:text-slate-500">
+                            <span><i class="fa-regular fa-calendar-days mr-1"></i>@pageItem.CreatedAt.ToString("MMM dd, yyyy")</span>
+                            <span>•</span>
+                            <span class="font-mono text-slate-500 dark:text-slate-400">/@pageItem.Slug</span>
+                        </div>
+
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors line-clamp-2 leading-snug mb-3">
+                            <a href="@Url.Action("Read", "Pages", new { slug = pageItem.Slug })">
+                                @pageItem.Title
+                            </a>
+                        </h3>
+
+                        <p class="text-sm text-slate-500 dark:text-slate-400 line-clamp-3 mb-6 leading-relaxed flex-1">
+                            @StripHtmlAndTruncate(pageItem.Content, 130)
+                        </p>
+
+                        <!-- Card Footer / Stats & CTA -->
+                        <div class="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between mt-auto">
+                            <div class="flex items-center gap-3.5 text-xs text-slate-400 dark:text-slate-500">
+                                <span class="inline-flex items-center gap-1 hover:text-brand-600 transition-colors" title="@likesCount Likes">
+                                    <i class="fa-regular fa-thumbs-up"></i>
+                                    <span class="font-bold text-slate-600 dark:text-slate-300">@likesCount</span>
+                                </span>
+                                <span class="inline-flex items-center gap-1 hover:text-brand-600 transition-colors" title="@commentsCount Comments">
+                                    <i class="fa-regular fa-comment"></i>
+                                    <span class="font-bold text-slate-600 dark:text-slate-300">@commentsCount</span>
+                                </span>
+                            </div>
+
+                            <a href="@Url.Action("Read", "Pages", new { slug = pageItem.Slug })"
+                               class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 group/link">
+                                Read Article
+                                <i class="fa-solid fa-arrow-right text-3xs group-hover/link:translate-x-1 transition-transform"></i>
+                            </a>
+                        </div>
+                    </div>
+                </article>
+            }
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden p-2">
+                <partial name="UiComponents/_Pagination" model="paginationModel" />
+            </div>
+        }
+    }
+</div>

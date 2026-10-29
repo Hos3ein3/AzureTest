@@ -30,7 +30,8 @@ public sealed class ConfirmEmailCommandValidator : AbstractValidator<ConfirmEmai
     public ConfirmEmailCommandValidator()
     {
         RuleFor(x => x.UserId)
-            .NotEmpty().WithMessage("User ID is required.");
+            .NotEmpty().WithMessage("User ID is required.")
+            .Must(id => Guid.TryParse(id, out _)).WithMessage("Invalid User ID format.");
 
         RuleFor(x => x.Code)
             .NotEmpty().WithMessage("Confirmation token is required.");
@@ -54,6 +55,14 @@ public sealed class ConfirmEmailCommandHandler : ICommandHandler<ConfirmEmailCom
         ConfirmEmailCommand request,
         CancellationToken cancellationToken = default)
     {
+        if (!Guid.TryParse(request.UserId, out _))
+        {
+            return Result<ConfirmEmailResult>.Success(new ConfirmEmailResult(
+                false,
+                "Invalid confirmation link format.",
+                new[] { "Invalid user identifier format." }));
+        }
+
         var user = await _userManager.FindByIdAsync(request.UserId);
         if (user == null)
         {

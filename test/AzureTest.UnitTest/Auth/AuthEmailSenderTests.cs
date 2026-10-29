@@ -208,4 +208,90 @@ public class AuthEmailSenderTests
         result.Value.Succeeded.Should().BeTrue();
         result.Value.Message.Should().Contain("reset successfully");
     }
+
+    [Fact]
+    public async Task ConfirmEmailCommandHandler_WhenUserIdIsNotValidGuid_ShouldReturnFailureWithoutException()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<ConfirmEmailCommandHandler>>();
+        var handler = new ConfirmEmailCommandHandler(_userManagerMock.Object, loggerMock.Object);
+
+        // Pass invalid non-guid userId (such as literally "{userId}")
+        var command = new ConfirmEmailCommand("{userId}", "some-code");
+
+        // Act
+        var result = await handler.HandleAsync(command);
+
+        // Assert: It should return a graceful failure result and NOT throw System.FormatException
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Succeeded.Should().BeFalse();
+        result.Value.Message.Should().Contain("Invalid confirmation link format");
+        _userManagerMock.Verify(m => m.FindByIdAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ResetPasswordCommandHandler_WhenUserIdIsNotValidGuid_ShouldReturnFailureWithoutException()
+    {
+        // Arrange
+        var loggerMock = new Mock<ILogger<ResetPasswordCommandHandler>>();
+        var handler = new ResetPasswordCommandHandler(_userManagerMock.Object, loggerMock.Object);
+
+        var command = new ResetPasswordCommand("not-a-guid", "some-code", "Password123!", "Password123!");
+
+        // Act
+        var result = await handler.HandleAsync(command);
+
+        // Assert: It should return a graceful failure result and NOT throw System.FormatException
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Succeeded.Should().BeFalse();
+        result.Value.Message.Should().Contain("Invalid password reset link format");
+        _userManagerMock.Verify(m => m.FindByIdAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RegisterCommandHandler_WhenTemplateIsUrlEncoded_ShouldReplaceEncodedPlaceholdersProperly()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        _userManagerMock.Setup(m => m.FindByEmailAsync(It.IsAny<string>()))
+            .ReturnsAsync((ApplicationUser?)null);
+
+        _userManagerMock.Setup(m => m.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()))
+            .Callback<ApplicationUser, string>((u, p) =>
+            {
+                // Assign Id matching userId
+                typeof(ApplicationUser).GetProperty("Id")!.SetValue(u, userId);
+            })
+            .ReturnsAsync(IdentityResult.Success);
+
+        _userManagerMock.Setup(m => m.GenerateEmailConfirmationTokenAsync(It.IsAny<ApplicationUser>()))
+            .ReturnsAsync("raw-token-xyz");
+
+        string capturedLink = string.Empty;
+        _emailSenderMock.Setup(e => e.SendConfirmationLinkAsync(It.IsAny<ApplicationUser>(), "encoded@test.com", It.IsAny<string>()))
+            .Callback<ApplicationUser, string, string>((u, email, link) => capturedLink = link)
+            .Returns(Task.CompletedTask);
+
+        var loggerMock = new Mock<ILogger<RegisterCommandHandler>>();
+        var handler = new RegisterCommandHandler(
+            _userManagerMock.Object,
+            _authSessionServiceMock.Object,
+            _identitySettingQueryMock.Object,
+            _emailSenderMock.Object,
+            _httpContextAccessorMock.Object,
+            loggerMock.Object);
+
+        // Simulates what Url.Action creates when passed new { userId = "{userId}", code = "{code}" }
+        var urlEncodedTemplate = "https://example.com/Auth/ConfirmEmail?userId=%7BuserId%7D&code=%7Bcode%7D";
+        var command = new RegisterCommand("Test User", "encoded@test.com", "Password123!", "Password123!", urlEncodedTemplate);
+
+        // Act
+        var result = await handler.HandleAsync(command);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        capturedLink.Should().NotContain("%7BuserId%7D");
+        capturedLink.Should().NotContain("{userId}");
+        capturedLink.Should().Contain($"userId={userId}");
+    }
 }

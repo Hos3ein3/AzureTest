@@ -63,6 +63,30 @@ public class PagesController : Controller
         ViewBag.Filters = filter;
         return View(pagedResult);
     }
+
+    [AllowAnonymous]
+    [DisplayName("Explore Pages")]
+    [Description("User-facing catalog showcasing published knowledge base and documentation pages.")]
+    public async Task<IActionResult> Index2([FromQuery] PageFilter? filter)
+    {
+        filter ??= new PageFilter();
+        // Public/regular user view always restricts to published pages
+        filter.Status = AzureTest.Domain.Enums.PageStatus.Published;
+        if (filter.PageSize <= 0)
+        {
+            filter.PageSize = 9; // 3x3 responsive grid
+        }
+
+        var result = await _getAll.HandleAsync(new GetAllPagesQuery(filter));
+        var pagedResult = result.IsSuccess 
+            ? result.Value 
+            : new PagedResult<PageDto, PageFilter>(new System.Collections.Generic.List<PageDto>(), 0, 1, filter.PageSize, filter);
+
+        ViewBag.Filters = filter;
+        ViewBag.Search = filter.Search;
+        ViewBag.CurrentUserId = _currentUser.Id;
+        return View(pagedResult);
+    }
     [DisplayName("Create")]
     [Description("Action: Create")]
     public IActionResult Create()

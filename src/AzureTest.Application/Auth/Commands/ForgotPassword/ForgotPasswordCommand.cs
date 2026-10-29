@@ -75,7 +75,9 @@ public sealed class ForgotPasswordCommandHandler : ICommandHandler<ForgotPasswor
         {
             resetLink = request.ResetLinkTemplate
                 .Replace("{userId}", user.Id.ToString())
-                .Replace("{code}", Uri.EscapeDataString(encodedToken));
+                .Replace("%7BuserId%7D", user.Id.ToString(), StringComparison.OrdinalIgnoreCase)
+                .Replace("{code}", Uri.EscapeDataString(encodedToken))
+                .Replace("%7Bcode%7D", Uri.EscapeDataString(encodedToken), StringComparison.OrdinalIgnoreCase);
         }
         else
         {

@@ -32,7 +32,8 @@ public sealed class ResetPasswordCommandValidator : AbstractValidator<ResetPassw
     public ResetPasswordCommandValidator()
     {
         RuleFor(x => x.UserId)
-            .NotEmpty().WithMessage("User ID is required.");
+            .NotEmpty().WithMessage("User ID is required.")
+            .Must(id => Guid.TryParse(id, out _)).WithMessage("Invalid User ID format.");
 
         RuleFor(x => x.Code)
             .NotEmpty().WithMessage("Reset token is required.");
@@ -63,6 +64,14 @@ public sealed class ResetPasswordCommandHandler : ICommandHandler<ResetPasswordC
         ResetPasswordCommand request,
         CancellationToken cancellationToken = default)
     {
+        if (!Guid.TryParse(request.UserId, out _))
+        {
+            return Result<ResetPasswordResult>.Success(new ResetPasswordResult(
+                false,
+                "Invalid password reset link format.",
+                new[] { "Invalid user identifier format." }));
+        }
+
         var user = await _userManager.FindByIdAsync(request.UserId);
         if (user == null)
         {

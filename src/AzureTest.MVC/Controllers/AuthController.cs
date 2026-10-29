@@ -155,7 +155,8 @@ public class AuthController : Controller
         string confirmPassword,
         CancellationToken cancellationToken = default)
     {
-        var confirmationTemplate = Url.Action(nameof(ConfirmEmail), "Auth", new { userId = "{userId}", code = "{code}" }, Request.Scheme);
+        var actionUrl = Url.Action(nameof(ConfirmEmail), "Auth", null, Request.Scheme);
+        var confirmationTemplate = $"{actionUrl}?userId={{userId}}&code={{code}}";
         var command = new RegisterCommand(name, email, password, confirmPassword, confirmationTemplate);
         var result = await _commands.Register.HandleAsync(command, cancellationToken);
 
@@ -378,7 +379,8 @@ public class AuthController : Controller
             return View();
         }
 
-        var resetLinkTemplate = Url.Action(nameof(ResetPassword), "Auth", new { userId = "{userId}", code = "{code}" }, Request.Scheme);
+        var actionUrl = Url.Action(nameof(ResetPassword), "Auth", null, Request.Scheme);
+        var resetLinkTemplate = $"{actionUrl}?userId={{userId}}&code={{code}}";
         var result = await _commands.ForgotPassword.HandleAsync(new ForgotPasswordCommand(email, resetLinkTemplate), cancellationToken);
         if (!result.IsSuccess)
         {
@@ -406,6 +408,13 @@ public class AuthController : Controller
             return View();
         }
 
+        if (!Guid.TryParse(userId, out _))
+        {
+            ViewBag.Success = false;
+            ViewBag.Message = "Invalid confirmation link format. Please request a new confirmation email.";
+            return View();
+        }
+
         var result = await _commands.ConfirmEmail.HandleAsync(new ConfirmEmailCommand(userId, code), cancellationToken);
         if (!result.IsSuccess)
         {
@@ -429,6 +438,12 @@ public class AuthController : Controller
         if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(code))
         {
             TempData["Error"] = "Invalid or expired password reset link. Please request a new one.";
+            return RedirectToAction(nameof(ForgotPassword));
+        }
+
+        if (!Guid.TryParse(userId, out _))
+        {
+            TempData["Error"] = "Invalid password reset link format. Please request a new one.";
             return RedirectToAction(nameof(ForgotPassword));
         }
 

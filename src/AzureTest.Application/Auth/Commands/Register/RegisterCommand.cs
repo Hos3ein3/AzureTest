@@ -131,7 +131,9 @@ public sealed class RegisterCommandHandler : ICommandHandler<RegisterCommand, Re
                 {
                     confirmationLink = request.ConfirmationLinkTemplate
                         .Replace("{userId}", user.Id.ToString())
-                        .Replace("{code}", Uri.EscapeDataString(encodedToken));
+                        .Replace("%7BuserId%7D", user.Id.ToString(), StringComparison.OrdinalIgnoreCase)
+                        .Replace("{code}", Uri.EscapeDataString(encodedToken))
+                        .Replace("%7Bcode%7D", Uri.EscapeDataString(encodedToken), StringComparison.OrdinalIgnoreCase);
                 }
                 else
                 {
