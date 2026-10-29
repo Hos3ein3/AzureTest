@@ -28,7 +28,8 @@ public sealed record LoginCommandResult(
     string? Token,
     string? RefreshToken,
     string? RedirectUrl,
-    IReadOnlyList<string>? Errors
+    IReadOnlyList<string>? Errors,
+    DateTimeOffset? LockoutEnd = null
 );
 
 public sealed class LoginCommandValidator : AbstractValidator<LoginCommand>
@@ -78,7 +79,7 @@ public sealed class LoginCommandHandler : ICommandHandler<LoginCommand, Result<L
         if (await _userManager.IsLockedOutAsync(user))
         {
             return Result<LoginCommandResult>.Success(new LoginCommandResult(
-                false, true, user, null, null, null, new[] { "Your account is temporarily locked. Please try again later." }));
+                false, true, user, null, null, null, new[] { "Your account is temporarily locked. Please try again later." }, user.LockoutEnd));
         }
 
         var isPasswordValid = await _userManager.CheckPasswordAsync(user, request.Password);

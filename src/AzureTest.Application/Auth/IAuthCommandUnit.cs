@@ -1,4 +1,6 @@
 using AzureTest.Application.Abstractions;
+using AzureTest.Application.Auth.Commands.ChangePassword;
+using AzureTest.Application.Auth.Commands.ForgotPassword;
 using AzureTest.Application.Auth.Commands.GoogleCallback;
 using AzureTest.Application.Auth.Commands.Login;
 using AzureTest.Application.Auth.Commands.Logout;
@@ -16,4 +18,6 @@ public interface IAuthCommandUnit
     ICommandHandler<LogoutCommand, Result> Logout { get; }
     ICommandHandler<ProcessGoogleCallbackCommand, Result<GoogleCallbackResult>> GoogleCallback { get; }
     ICommandHandler<RefreshTokenCommand, Result<RefreshTokenResult>> RefreshToken { get; }
+    ICommandHandler<ForgotPasswordCommand, Result<ForgotPasswordResult>> ForgotPassword { get; }
+    ICommandHandler<ChangePasswordCommand, Result<ChangePasswordResult>> ChangePassword { get; }
 }

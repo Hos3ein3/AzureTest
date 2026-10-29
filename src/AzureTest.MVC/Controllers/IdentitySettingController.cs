@@ -1,11 +1,12 @@
 using System.ComponentModel;
-
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AzureTest.Application.IdentitySettings;
+using AzureTest.Application.Permissions;
 using Microsoft.AspNetCore.Identity;
 using AzureTest.Domain.Entities;
 using AzureTest.Domain.Entities.Identity;
@@ -21,15 +22,40 @@ public class IdentitySettingController : Controller
     private readonly GetIdentitySettingQueryHandler _getQuery;
     private readonly UpdateIdentitySettingCommandHandler _updateCommand;
     private readonly RoleManager<ApplicationRole> _roleManager;
+    private readonly IPermissionQueryUnit _permissionQuery;
 
     public IdentitySettingController(
         GetIdentitySettingQueryHandler getQuery, 
         UpdateIdentitySettingCommandHandler updateCommand,
-        RoleManager<ApplicationRole> roleManager)
+        RoleManager<ApplicationRole> roleManager,
+        IPermissionQueryUnit permissionQuery)
     {
         _getQuery = getQuery;
         _updateCommand = updateCommand;
         _roleManager = roleManager;
+        _permissionQuery = permissionQuery;
+    }
+
+    [HttpGet]
+    [DisplayName("Get Role Permissions")]
+    [Description("Load permissions assigned to a role in JSON format.")]
+    public async Task<IActionResult> GetRolePermissionsJson(string roleName, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(roleName))
+            return Json(new object[] { });
+
+        var perms = await _permissionQuery.GetRolePermissions.HandleAsync(new GetRolePermissionsQuery(roleName), cancellationToken);
+        var data = perms.Select(p => new
+        {
+            area = p.Permission.AreaName ?? "",
+            controller = p.Permission.ControllerName,
+            action = p.Permission.ActionName,
+            displayName = p.Permission.DisplayName,
+            description = p.Permission.Description,
+            isRestricted = p.Permission.IsRestricted
+        }).ToList();
+
+        return Json(data);
     }
 
     [HttpGet]

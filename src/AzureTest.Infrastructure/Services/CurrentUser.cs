@@ -187,6 +187,32 @@ public class CurrentUser : ICurrentUser
         }
     }
 
+    public bool IsReadOnly
+    {
+        get
+        {
+            var cached = GetCachedSession();
+            if (cached != null) return cached.IsReadOnly;
+
+            var id = Id;
+            if (id != Guid.Empty)
+            {
+                var userManager = _serviceProvider.GetService<Microsoft.AspNetCore.Identity.UserManager<ApplicationUser>>();
+                if (userManager != null)
+                {
+                    try
+                    {
+                        var user = userManager.FindByIdAsync(id.ToString()).GetAwaiter().GetResult();
+                        return user?.IsReadOnly ?? false;
+                    }
+                    catch { }
+                }
+            }
+
+            return false;
+        }
+    }
+
     public Guid TenantId => _tenantProvider?.IsMultiTenancyEnabled == true
         ? _tenantProvider.CurrentTenantId
         : Id;

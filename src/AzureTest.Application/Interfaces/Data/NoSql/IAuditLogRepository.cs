@@ -23,4 +23,13 @@ public interface IAuditLogRepository : IDocumentRepository<AuditLogDocument>
         string? actionType,
         string? searchTerm,
         CancellationToken cancellationToken = default);
+
+    Task<long> DeleteLogsAsync(
+        Guid? id,
+        Guid? userId,
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        CancellationToken cancellationToken = default);
+
+    Task<long> PurgeAllLogsAsync(CancellationToken cancellationToken = default);
 }

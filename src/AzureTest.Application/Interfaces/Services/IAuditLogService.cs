@@ -25,4 +25,9 @@ public interface IAuditLogService
         int pageNumber = 1,
         int pageSize = 50,
         CancellationToken cancellationToken = default);
+
+    Task<long> DeleteLogByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<long> DeleteLogsByUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<long> DeleteLogsByDateRangeAsync(DateTime? fromUtc, DateTime? toUtc, CancellationToken cancellationToken = default);
+    Task<long> PurgeAllLogsAsync(CancellationToken cancellationToken = default);
 }

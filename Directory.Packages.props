@@ -3,96 +3,109 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Microsoft / ASP.NET Core & OpenApi -->
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.13" />
-    <PackageVersion Include="Google.Apis.Auth.AspNetCore3" Version="1.77.0" />
-    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
-    <PackageVersion Include="FluentValidation" Version="12.1.1" />
-    <PackageVersion Include="LigerShark.WebOptimizer.Core" Version="3.0.477" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.2" />
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.2" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="10.0.5" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageVersion Include="Serilog.Enrichers.Span" Version="3.1.0" />
-    <PackageVersion Include="TMDbLib" Version="3.0.0" />
-    <PackageVersion Include="xunit" Version="2.9.3" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.2" />
-    <PackageVersion Include="Bogus" Version="35.6.2" />
-    <PackageVersion Include="Testcontainers" Version="4.3.0" />
-    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.3.0" />
-    <PackageVersion Include="Testcontainers.MongoDb" Version="4.3.0" />
-    <PackageVersion Include="Testcontainers.Redis" Version="4.3.0" />
-    <PackageVersion Include="Moq" Version="4.20.70" />
-    <PackageVersion Include="FluentAssertions" Version="6.12.0" />
-    <PackageVersion Include="Microsoft.Playwright" Version="1.42.0" />
-    <!-- Architecture Packages -->
+    <PackageVersion Include="Microsoft.FeatureManagement.AspNetCore" Version="4.0.0" />
+    <PackageVersion Include="Google.Apis.Auth.AspNetCore3" Version="1.77.0" />
+    <PackageVersion Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.1.2" />
+
+    <!-- Architecture & DI -->
     <PackageVersion Include="Scrutor" Version="5.0.1" />
+
+    <!-- Validation -->
+    <PackageVersion Include="FluentValidation" Version="12.1.1" />
+    <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
+
+    <!-- Persistence (EF Core, PostgreSQL, MongoDb) -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.2" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.2" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.2" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.3" />
+    <PackageVersion Include="MongoDB.Driver" Version="3.1.0" />
+    <PackageVersion Include="Microsoft.Extensions.Identity.Stores" Version="9.0.2" />
+
+    <!-- Caching -->
+    <PackageVersion Include="Microsoft.Extensions.Caching.Hybrid" Version="9.0.0-preview.9.24556.5" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.2" />
+
+    <!-- Messaging & Background Jobs -->
+    <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.18" />
+    <PackageVersion Include="Hangfire.PostgreSql" Version="1.20.10" />
+    <PackageVersion Include="MassTransit" Version="8.2.3" />
+    <PackageVersion Include="MassTransit.RabbitMQ" Version="8.2.3" />
+    <PackageVersion Include="Quartz.Extensions.Hosting" Version="3.13.1" />
+
+    <!-- Resilience & HTTP -->
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="8.7.0" />
+    <PackageVersion Include="Microsoft.Extensions.Resilience" Version="8.7.0" />
+
     <!-- HealthChecks -->
+    <PackageVersion Include="AspNetCore.HealthChecks.AzureStorage" Version="7.0.0" />
+    <PackageVersion Include="AspNetCore.HealthChecks.CosmosDb" Version="8.0.1" />
+    <PackageVersion Include="AspNetCore.HealthChecks.Hangfire" Version="9.0.0" />
+    <PackageVersion Include="AspNetCore.HealthChecks.MongoDb" Version="9.0.0" />
+    <PackageVersion Include="AspNetCore.HealthChecks.Npgsql" Version="8.0.2" />
+    <PackageVersion Include="AspNetCore.HealthChecks.Publisher.ApplicationInsights" Version="8.0.1" />
+    <PackageVersion Include="AspNetCore.HealthChecks.Rabbitmq" Version="8.0.2" />
+    <PackageVersion Include="AspNetCore.HealthChecks.Redis" Version="8.0.1" />
+    <PackageVersion Include="AspNetCore.HealthChecks.SqlServer" Version="8.0.2" />
     <PackageVersion Include="AspNetCore.HealthChecks.UI" Version="8.0.2" />
     <PackageVersion Include="AspNetCore.HealthChecks.UI.Client" Version="8.0.1" />
     <PackageVersion Include="AspNetCore.HealthChecks.UI.InMemory.Storage" Version="8.0.1" />
-    <PackageVersion Include="AspNetCore.HealthChecks.SqlServer" Version="8.0.2" />
-    <PackageVersion Include="AspNetCore.HealthChecks.CosmosDb" Version="8.0.1" />
-    <PackageVersion Include="AspNetCore.HealthChecks.MongoDb" Version="9.0.0" />
-    <PackageVersion Include="AspNetCore.HealthChecks.Publisher.ApplicationInsights" Version="8.0.1" />
-    <PackageVersion Include="AspNetCore.HealthChecks.AzureStorage" Version="7.0.0" />
-    <PackageVersion Include="AspNetCore.HealthChecks.Npgsql" Version="8.0.2" />
-    <PackageVersion Include="AspNetCore.HealthChecks.Redis" Version="8.0.1" />
-    <PackageVersion Include="AspNetCore.HealthChecks.Rabbitmq" Version="8.0.2" />
     <PackageVersion Include="AspNetCore.HealthChecks.Uris" Version="8.0.1" />
-    <PackageVersion Include="AspNetCore.HealthChecks.Hangfire" Version="8.0.2" />
-    <!-- Azure Storage -->
-    <PackageVersion Include="Azure.Storage.Blobs" Version="12.23.0" />
+
+    <!-- Azure & Cloud Services -->
     <PackageVersion Include="Azure.Identity" Version="1.12.0" />
-    <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.6.0" />
-    <!-- OpenTelemetry -->
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.23.0" />
+
+    <!-- Observability, Logging & Telemetry -->
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.19.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.11.0-beta.1" />
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.10.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Process" Version="1.11.0-beta.1" />
-    <PackageVersion Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.11.0-beta.1" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.19.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.19.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Process" Version="1.11.0-beta.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.10.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.19.0" />
-    <!-- API specific -->
-    <PackageVersion Include="Scalar.AspNetCore" Version="2.1.2" />
-    <PackageVersion Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
-    <PackageVersion Include="Microsoft.FeatureManagement.AspNetCore" Version="4.0.0" />
-    <!-- MVC specific -->
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="10.0.5" />
-    <!-- Persistence -->
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.2" />
-    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.3" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.2" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.2" />
-    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.2" />
-    <PackageVersion Include="Microsoft.Extensions.Identity.Stores" Version="9.0.2" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.2" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
-    <PackageVersion Include="MongoDB.Driver" Version="3.1.0" />
-    <!-- Observability & Telemetry -->
     <PackageVersion Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageVersion Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    <PackageVersion Include="Serilog.Enrichers.Span" Version="3.1.0" />
+    <PackageVersion Include="Serilog.Sinks.ApplicationInsights" Version="4.0.0" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="6.0.0" />
-    <PackageVersion Include="Serilog.Sinks.ApplicationInsights" Version="4.0.0" />
     <PackageVersion Include="Serilog.Sinks.Seq" Version="9.0.0" />
-    <PackageVersion Include="Serilog.Enrichers.Environment" Version="3.0.1" />
-    <!-- Background Jobs -->
-    <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.18" />
-    <PackageVersion Include="Hangfire.PostgreSql" Version="1.20.10" />
-    <PackageVersion Include="Quartz.Extensions.Hosting" Version="3.13.1" />
-    <!-- Validation -->
-    <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
-    <!-- Caching -->
-    <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.2" />
-    <PackageVersion Include="Microsoft.Extensions.Caching.Hybrid" Version="9.0.0-preview.9.24556.5" />
-    <PackageVersion Include="HtmlAgilityPack" Version="1.11.71" />
+
+    <!-- Utility & Third-Party Libraries -->
     <PackageVersion Include="ClosedXML" Version="0.104.2" />
-    <PackageVersion Include="Shouldly" Version="4.3.0" />
-    <PackageVersion Include="AutoFixture" Version="4.18.1" />
-    <PackageVersion Include="MassTransit" Version="8.2.3" />
-    <PackageVersion Include="MassTransit.RabbitMQ" Version="8.2.3" />
-    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="8.7.0" />
-    <PackageVersion Include="Microsoft.Extensions.Resilience" Version="8.7.0" />
+    <PackageVersion Include="HtmlAgilityPack" Version="1.11.71" />
+    <PackageVersion Include="LigerShark.WebOptimizer.Core" Version="3.0.477" />
+    <PackageVersion Include="MailKit" Version="4.18.2" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageVersion Include="TMDbLib" Version="3.0.0" />
     <PackageVersion Include="WebMarkupMin.AspNetCore8" Version="2.17.0" />
+
+    <!-- Testing & Mocks -->
+    <PackageVersion Include="AutoFixture" Version="4.18.1" />
+    <PackageVersion Include="Bogus" Version="35.6.2" />
+    <PackageVersion Include="FluentAssertions" Version="6.12.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.2" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.42.0" />
+    <PackageVersion Include="Moq" Version="4.20.70" />
+    <PackageVersion Include="Shouldly" Version="4.3.0" />
+    <PackageVersion Include="Testcontainers" Version="4.3.0" />
+    <PackageVersion Include="Testcontainers.MongoDb" Version="4.3.0" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.3.0" />
+    <PackageVersion Include="Testcontainers.Redis" Version="4.3.0" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>
 </Project>

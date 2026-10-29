@@ -12,9 +12,12 @@ using AzureTest.Application.Users.Commands.ToggleUserLockout;
 using AzureTest.Application.Users.Commands.UpdateUser;
 using AzureTest.Application.Users.Queries.GetAllRoles;
 using AzureTest.Application.Users.Queries.GetAllUsers;
+using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Users.Queries.GetUserById;
+using AzureTest.Domain.Entities.Identity;
 using AzureTest.MVC.ViewModels.Users;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -24,15 +27,23 @@ namespace AzureTest.MVC.Controllers;
 [Authorize(Roles = "Admin")]
 [DisplayName("User")]
 [Description("Manage and control User operations.")]
-    public class UserController : Controller
+public class UserController : Controller
 {
     private readonly IUserQueryUnit _queryUnit;
     private readonly IUserCommandUnit _commandUnit;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IAuditLogService _auditLogService;
 
-    public UserController(IUserQueryUnit queryUnit, IUserCommandUnit commandUnit)
+    public UserController(
+        IUserQueryUnit queryUnit,
+        IUserCommandUnit commandUnit,
+        UserManager<ApplicationUser> userManager,
+        IAuditLogService auditLogService)
     {
         _queryUnit = queryUnit;
         _commandUnit = commandUnit;
+        _userManager = userManager;
+        _auditLogService = auditLogService;
     }
 
     // GET: User
@@ -117,17 +128,51 @@ namespace AzureTest.MVC.Controllers;
     [Description("Modify an existing User.")]
     public async Task<IActionResult> Edit(Guid id)
     {
-        var user = await _queryUnit.GetUserById.HandleAsync(new GetUserByIdQuery(id));
-        if (user == null)
+        var appUser = await _userManager.FindByIdAsync(id.ToString());
+        if (appUser == null)
             return NotFound();
+
+        var isLockedOut = await _userManager.IsLockedOutAsync(appUser);
+        var logins = await _userManager.GetLoginsAsync(appUser);
+        var roles = await _userManager.GetRolesAsync(appUser);
+
+        // Fetch recent audit logs for this user (up to 25)
+        var (logs, _) = await _auditLogService.GetLogsAsync(
+            isAdmin: true,
+            currentUserId: id,
+            currentTenantId: Guid.Empty,
+            actionType: null,
+            searchTerm: null,
+            pageNumber: 1,
+            pageSize: 25);
+
+        var loginProvidersList = new List<string>();
+        if (!string.IsNullOrEmpty(appUser.PasswordHash))
+        {
+            loginProvidersList.Add("Local Password");
+        }
+        foreach (var l in logins)
+        {
+            loginProvidersList.Add(l.ProviderDisplayName ?? l.LoginProvider);
+        }
 
         var vm = new UserEditViewModel
         {
-            Id = user.Id,
-            Email = user.Email,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            PhoneNumber = user.PhoneNumber
+            Id = appUser.Id,
+            Email = appUser.Email ?? string.Empty,
+            FirstName = appUser.FirstName,
+            LastName = appUser.LastName,
+            PhoneNumber = appUser.PhoneNumber,
+            IsReadOnly = appUser.IsReadOnly,
+            IsLockedOut = isLockedOut,
+            LockoutEnd = appUser.LockoutEnd,
+            EmailConfirmed = appUser.EmailConfirmed,
+            PhoneNumberConfirmed = appUser.PhoneNumberConfirmed,
+            TwoFactorEnabled = appUser.TwoFactorEnabled,
+            AccessFailedCount = appUser.AccessFailedCount,
+            LoginProviders = loginProvidersList,
+            Roles = roles.ToList(),
+            AuditLogs = logs
         };
 
         return View(vm);
@@ -142,9 +187,29 @@ namespace AzureTest.MVC.Controllers;
     {
         if (id != model.Id) return BadRequest();
 
-        if (!ModelState.IsValid) return View(model);
+        if (!ModelState.IsValid)
+        {
+            var appUser = await _userManager.FindByIdAsync(id.ToString());
+            if (appUser != null)
+            {
+                var (logs, _) = await _auditLogService.GetLogsAsync(true, id, Guid.Empty, null, null, 1, 25);
+                model.AuditLogs = logs;
+                model.IsLockedOut = await _userManager.IsLockedOutAsync(appUser);
+                model.LockoutEnd = appUser.LockoutEnd;
+                model.EmailConfirmed = appUser.EmailConfirmed;
+                model.PhoneNumberConfirmed = appUser.PhoneNumberConfirmed;
+                model.TwoFactorEnabled = appUser.TwoFactorEnabled;
+                model.AccessFailedCount = appUser.AccessFailedCount;
+                var logins = await _userManager.GetLoginsAsync(appUser);
+                var providers = new List<string>();
+                if (!string.IsNullOrEmpty(appUser.PasswordHash)) providers.Add("Local Password");
+                foreach (var l in logins) providers.Add(l.ProviderDisplayName ?? l.LoginProvider);
+                model.LoginProviders = providers;
+            }
+            return View(model);
+        }
 
-        var command = new UpdateUserCommand(model.Id, model.FirstName, model.LastName, model.PhoneNumber);
+        var command = new UpdateUserCommand(model.Id, model.FirstName, model.LastName, model.PhoneNumber, model.IsReadOnly);
         var result = await _commandUnit.UpdateUser.HandleAsync(command);
 
         if (result.Success)
@@ -221,6 +286,52 @@ namespace AzureTest.MVC.Controllers;
             TempData["Success"] = "User lockout status toggled successfully.";
         else
             TempData["Error"] = "Failed to toggle user lockout: " + string.Join(", ", result.Errors);
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Lock User")]
+    [Description("Lock a user account until a specific UTC date/time or permanently.")]
+    public async Task<IActionResult> LockUser(Guid id, string? lockDate, string? lockTime, bool isPermanent)
+    {
+        DateTimeOffset? lockoutEnd = null;
+        if (!isPermanent && !string.IsNullOrWhiteSpace(lockDate))
+        {
+            var timePart = !string.IsNullOrWhiteSpace(lockTime) ? lockTime : "00:00";
+            if (DateTime.TryParse($"{lockDate} {timePart}", out var parsedDt))
+            {
+                // Ensure kind is UTC for PostgreSQL compatibility
+                var utcDt = DateTime.SpecifyKind(parsedDt, DateTimeKind.Utc);
+                lockoutEnd = new DateTimeOffset(utcDt);
+            }
+        }
+
+        var command = new ToggleUserLockoutCommand(id, lockoutEnd, isPermanent, Unlock: false);
+        var result = await _commandUnit.ToggleUserLockout.HandleAsync(command);
+
+        if (result.Success)
+            TempData["Success"] = isPermanent ? "User has been locked permanently." : $"User locked until {lockoutEnd?.ToString("yyyy-MM-dd HH:mm")} UTC.";
+        else
+            TempData["Error"] = "Failed to lock user: " + string.Join(", ", result.Errors);
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Unlock User")]
+    [Description("Unlock a previously locked user account.")]
+    public async Task<IActionResult> UnlockUser(Guid id)
+    {
+        var command = new ToggleUserLockoutCommand(id, Unlock: true);
+        var result = await _commandUnit.ToggleUserLockout.HandleAsync(command);
+
+        if (result.Success)
+            TempData["Success"] = "User has been unlocked successfully.";
+        else
+            TempData["Error"] = "Failed to unlock user: " + string.Join(", ", result.Errors);
 
         return RedirectToAction(nameof(Index));
     }

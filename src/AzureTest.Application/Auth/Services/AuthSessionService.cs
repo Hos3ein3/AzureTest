@@ -78,7 +78,8 @@ public class AuthSessionService : IAuthSessionService
             Roles = roles.ToList(),
             RolePermissions = distinctRolePerms,
             DirectPermissions = distinctDirectPerms,
-            Permissions = combinedPermissions
+            Permissions = combinedPermissions,
+            IsReadOnly = user.IsReadOnly
         };
 
         await _redisService.SetAsync($"User_Info_{user.Id}", sessionDto, TimeSpan.FromDays(7));

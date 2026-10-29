@@ -230,12 +230,21 @@
                                     </form>
                                 }
                                 
-                                <form asp-action="ToggleLockout" asp-route-id="@user.Id" method="post" class="inline">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="p-2 rounded-lg @(user.IsLockedOut ? "text-slate-400 hover:text-emerald-600 hover:bg-emerald-50" : "text-slate-400 hover:text-amber-600 hover:bg-amber-50") transition-colors" title="@(user.IsLockedOut ? "Unlock User" : "Lock User")">
-                                        <i class="fa-solid @(user.IsLockedOut ? "fa-unlock" : "fa-lock")"></i>
+                                @if (user.IsLockedOut)
+                                {
+                                    <form asp-action="UnlockUser" asp-route-id="@user.Id" method="post" class="inline" onsubmit="return confirm('Unlock user @user.Email?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="p-2 rounded-lg text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors" title="Unlock User">
+                                            <i class="fa-solid fa-unlock"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button type="button" onclick="openLockUserModal('@user.Id', '@(user.FullName ?? user.Email)', '@user.Email')" class="p-2 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors" title="Lock User">
+                                        <i class="fa-solid fa-lock"></i>
                                     </button>
-                                </form>
+                                }
 
                                 <form asp-action="Delete" asp-route-id="@user.Id" method="post" class="inline" onsubmit="return confirm('Are you sure you want to permanently delete this user? This action cannot be undone.');">
                                     @Html.AntiForgeryToken()
@@ -272,3 +281,142 @@
         <partial name="UiComponents/_Pagination" model="paginationModel" />
     }
 </div>
+
+<!-- Lock User Modal -->
+<div id="lockUserModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-amber-50/50">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-user-lock"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Lock User Account</h3>
+                    <p class="text-2xs text-slate-500">Specify lockout duration or apply permanent lock</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeLockUserModal()" class="w-7 h-7 rounded-lg hover:bg-slate-200/60 text-slate-400 hover:text-slate-600 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form id="lockUserForm" asp-action="LockUser" method="post" class="p-6 space-y-5">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="lockUserId" name="id" />
+            <input type="hidden" id="lockIsPermanent" name="isPermanent" value="false" />
+
+            <!-- User Context Pill -->
+            <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <div>
+                    <div id="lockUserName" class="text-xs font-bold text-slate-800"></div>
+                    <div id="lockUserEmail" class="text-2xs text-slate-500 font-mono"></div>
+                </div>
+                <span class="text-3xs font-bold uppercase px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">PostgreSQL UTC</span>
+            </div>
+
+            <!-- Quick Duration Presets -->
+            <div>
+                <label class="block text-2xs font-bold uppercase tracking-wider text-slate-500 mb-2">Quick Duration Presets</label>
+                <div class="grid grid-cols-4 gap-2 text-2xs">
+                    <button type="button" onclick="applyLockPreset(1)" class="py-2 px-2.5 rounded-xl border border-slate-200 hover:border-amber-400 bg-white hover:bg-amber-50/50 font-semibold text-slate-700 transition-colors text-center">
+                        +1 Hour
+                    </button>
+                    <button type="button" onclick="applyLockPreset(24)" class="py-2 px-2.5 rounded-xl border border-slate-200 hover:border-amber-400 bg-white hover:bg-amber-50/50 font-semibold text-slate-700 transition-colors text-center">
+                        +24 Hours
+                    </button>
+                    <button type="button" onclick="applyLockPreset(24 * 7)" class="py-2 px-2.5 rounded-xl border border-slate-200 hover:border-amber-400 bg-white hover:bg-amber-50/50 font-semibold text-slate-700 transition-colors text-center">
+                        +7 Days
+                    </button>
+                    <button type="button" onclick="applyLockPreset(24 * 30)" class="py-2 px-2.5 rounded-xl border border-slate-200 hover:border-amber-400 bg-white hover:bg-amber-50/50 font-semibold text-slate-700 transition-colors text-center">
+                        +30 Days
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Custom Date Picker -->
+                <div class="relative">
+                    <label class="block text-2xs font-bold uppercase tracking-wider text-slate-500 mb-1">Lock Until Date (UTC)</label>
+                    <div class="relative">
+                        <i class="fa-regular fa-calendar absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input id="lockDateInput" name="lockDate" type="date" required
+                               class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                    </div>
+                </div>
+
+                <!-- Custom Time Picker -->
+                <div class="relative">
+                    <label class="block text-2xs font-bold uppercase tracking-wider text-slate-500 mb-1">Lock Until Time (UTC)</label>
+                    <div class="relative">
+                        <i class="fa-regular fa-clock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input id="lockTimeInput" name="lockTime" type="time" required
+                               class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-2xs text-amber-800 space-y-1">
+                <div class="font-bold flex items-center gap-1.5 text-amber-900">
+                    <i class="fa-solid fa-clock text-amber-600"></i> UTC Conversion Notice:
+                </div>
+                <p>The lockout timestamp will be stored as strict UTC in PostgreSQL. When the user logs in, access will be blocked until this timestamp elapses.</p>
+            </div>
+
+            <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+                <button type="button" onclick="submitPermanentLock()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-2xs font-bold transition-colors">
+                    <i class="fa-solid fa-ban"></i> Permanent Lock
+                </button>
+
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="closeLockUserModal()" class="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-2xs font-semibold">
+                        Cancel
+                    </button>
+                    <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-2xs font-bold shadow-2xs transition-colors">
+                        <i class="fa-solid fa-lock"></i> Apply Lockout
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openLockUserModal(userId, fullName, email) {
+        document.getElementById('lockUserId').value = userId;
+        document.getElementById('lockUserName').textContent = fullName;
+        document.getElementById('lockUserEmail').textContent = email;
+        document.getElementById('lockIsPermanent').value = 'false';
+
+        // Default to +24 hours UTC
+        applyLockPreset(24);
+
+        document.getElementById('lockUserModal').classList.remove('hidden');
+    }
+
+    function closeLockUserModal() {
+        document.getElementById('lockUserModal').classList.add('hidden');
+    }
+
+    function applyLockPreset(hours) {
+        const now = new Date();
+        const target = new Date(now.getTime() + (hours * 60 * 60 * 1000));
+
+        // Format UTC date & time
+        const yyyy = target.getUTCFullYear();
+        const mm = String(target.getUTCMonth() + 1).padStart(2, '0');
+        const dd = String(target.getUTCDate()).padStart(2, '0');
+        const hh = String(target.getUTCHours()).padStart(2, '0');
+        const min = String(target.getUTCMinutes()).padStart(2, '0');
+
+        document.getElementById('lockDateInput').value = `${yyyy}-${mm}-${dd}`;
+        document.getElementById('lockTimeInput').value = `${hh}:${min}`;
+        document.getElementById('lockIsPermanent').value = 'false';
+    }
+
+    function submitPermanentLock() {
+        if (confirm('Are you sure you want to permanently lock this user account?')) {
+            document.getElementById('lockIsPermanent').value = 'true';
+            document.getElementById('lockUserForm').submit();
+        }
+    }
+</script>

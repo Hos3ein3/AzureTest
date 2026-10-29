@@ -16,4 +16,5 @@ public class UserSessionCacheDto
     public List<string> DirectPermissions { get; set; } = new();
     public List<string> RolePermissions { get; set; } = new();
     public List<string> Permissions { get; set; } = new();
+    public bool IsReadOnly { get; set; } = false;
 }

@@ -96,6 +96,8 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<AzureTest.Application.Auth.Commands.Register.RegisterCommand, Result<AzureTest.Application.Auth.Commands.Register.RegisterCommandResult>>, AzureTest.Application.Auth.Commands.Register.RegisterCommandHandler>();
         services.AddScoped<ICommandHandler<AzureTest.Application.Auth.Commands.Logout.LogoutCommand, Result>, AzureTest.Application.Auth.Commands.Logout.LogoutCommandHandler>();
         services.AddScoped<ICommandHandler<AzureTest.Application.Auth.Commands.GoogleCallback.ProcessGoogleCallbackCommand, Result<AzureTest.Application.Auth.Commands.GoogleCallback.GoogleCallbackResult>>, AzureTest.Application.Auth.Commands.GoogleCallback.ProcessGoogleCallbackCommandHandler>();
+        services.AddScoped<ICommandHandler<AzureTest.Application.Auth.Commands.ForgotPassword.ForgotPasswordCommand, Result<AzureTest.Application.Auth.Commands.ForgotPassword.ForgotPasswordResult>>, AzureTest.Application.Auth.Commands.ForgotPassword.ForgotPasswordCommandHandler>();
+        services.AddScoped<ICommandHandler<AzureTest.Application.Auth.Commands.ChangePassword.ChangePasswordCommand, Result<AzureTest.Application.Auth.Commands.ChangePassword.ChangePasswordResult>>, AzureTest.Application.Auth.Commands.ChangePassword.ChangePasswordCommandHandler>();
         services.AddScoped<IQueryHandler<AzureTest.Application.Auth.Queries.GetSessionUser.GetSessionUserQuery, Result<AzureTest.Contracts.DTOs.Users.UserSessionCacheDto?>>, AzureTest.Application.Auth.Queries.GetSessionUser.GetSessionUserQueryHandler>();
 
         // SampleNote dev playground

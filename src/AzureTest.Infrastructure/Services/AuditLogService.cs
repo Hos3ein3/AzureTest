@@ -179,6 +179,26 @@ public class AuditLogService : IAuditLogService
         return (logs, total);
     }
 
+    public async Task<long> DeleteLogByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _noSqlUnitOfWork.AuditLogs.DeleteLogsAsync(id, null, null, null, cancellationToken);
+    }
+
+    public async Task<long> DeleteLogsByUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await _noSqlUnitOfWork.AuditLogs.DeleteLogsAsync(null, userId, null, null, cancellationToken);
+    }
+
+    public async Task<long> DeleteLogsByDateRangeAsync(DateTime? fromUtc, DateTime? toUtc, CancellationToken cancellationToken = default)
+    {
+        return await _noSqlUnitOfWork.AuditLogs.DeleteLogsAsync(null, null, fromUtc, toUtc, cancellationToken);
+    }
+
+    public async Task<long> PurgeAllLogsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _noSqlUnitOfWork.AuditLogs.PurgeAllLogsAsync(cancellationToken);
+    }
+
     private static string? SanitizePayload(object? payload)
     {
         if (payload == null)

@@ -15,7 +15,8 @@ public sealed record UpdateUserCommand(
     Guid Id,
     string FirstName,
     string LastName,
-    string? PhoneNumber
+    string? PhoneNumber,
+    bool IsReadOnly = false
 ) : ICommand<(bool Success, string[] Errors)>;
 internal sealed class UpdateUserCommandHandler : ICommandHandler<UpdateUserCommand, (bool Success, string[] Errors)>
 {
@@ -34,6 +35,7 @@ internal sealed class UpdateUserCommandHandler : ICommandHandler<UpdateUserComma
         user.FirstName = command.FirstName;
         user.LastName = command.LastName;
         user.PhoneNumber = command.PhoneNumber;
+        user.IsReadOnly = command.IsReadOnly;
         var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)
         {

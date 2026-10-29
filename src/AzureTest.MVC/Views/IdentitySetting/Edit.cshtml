@@ -12,10 +12,13 @@
     var headerModel = new AzureTest.MVC.Models.PageHeaderModel
     {
         Title = "Identity & Auth Settings",
-        Subtitle = "Configure global authentication flows, default redirects, and registration role assignments.",
+        Subtitle = "Configure global authentication flows, default redirects, registration role assignments, and inspect role permissions.",
         Icon = "fa-solid fa-shield-halved",
         Breadcrumbs = breadcrumbs
     };
+
+    var allRoles = (ViewBag.Roles as IEnumerable<SelectListItem>)?.ToList() ?? new List<SelectListItem>();
+    var selectedRoles = Model.RolesForRegister ?? new List<string>();
 }
 
 <partial name="UiComponents/_PageHeader" model="headerModel" />
@@ -43,82 +46,320 @@
     </div>
 }
 
-<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden max-w-4xl">
-    <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <i class="fa-solid fa-sliders text-brand-600 text-xs"></i>
-            <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">System Defaults</h2>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <!-- Left Column: Settings Form (7 cols) -->
+    <div class="lg:col-span-7 space-y-6">
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-2xs overflow-hidden">
+            <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-brand-600 text-xs"></i>
+                    <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">System Defaults</h2>
+                </div>
+                <span class="text-2xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Global Configuration</span>
+            </div>
+
+            <form asp-action="Edit" method="post" class="p-6 md:p-8 space-y-6">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="All" class="p-3 bg-rose-50 border border-rose-200/80 rounded-xl text-rose-700 text-xs"></div>
+                <input type="hidden" asp-for="Id" />
+
+                <!-- Hidden select for reliable model binding -->
+                <select asp-for="RolesForRegister" id="hiddenRolesSelect" multiple class="hidden">
+                    @foreach (var role in allRoles)
+                    {
+                        var isSelected = selectedRoles.Contains(role.Value);
+                        if (isSelected)
+                        {
+                            <option value="@role.Value" selected="selected">@role.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@role.Value">@role.Text</option>
+                        }
+                    }
+                </select>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label asp-for="RedirectAfterLogin" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Redirect After Login</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-arrow-right-to-bracket absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input asp-for="RedirectAfterLogin" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="/Home/Index" />
+                        </div>
+                        <span asp-validation-for="RedirectAfterLogin" class="text-2xs text-rose-600 mt-1 block"></span>
+                        <p class="text-3xs text-slate-400 mt-1">Relative URL target after successful authentication.</p>
+                    </div>
+
+                    <div>
+                        <label asp-for="RedirectAfterRegister" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Redirect After Register</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-user-plus absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input asp-for="RedirectAfterRegister" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="/Auth/Login" />
+                        </div>
+                        <span asp-validation-for="RedirectAfterRegister" class="text-2xs text-rose-600 mt-1 block"></span>
+                        <p class="text-3xs text-slate-400 mt-1">Relative URL target when new sign-up succeeds.</p>
+                    </div>
+                </div>
+
+                <!-- Modern Multi-Select Tag Input for Roles -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider">
+                            Roles Assigned on Register
+                        </label>
+                        <span class="text-3xs text-slate-400">Click a role pill below to inspect its permissions on the right</span>
+                    </div>
+
+                    <!-- Selected Role Tags Container -->
+                    <div id="roleTagsContainer" class="min-h-12 p-2.5 rounded-2xl border border-slate-300 bg-white flex flex-wrap items-center gap-2 mb-2 focus-within:ring-2 focus-within:ring-brand-500/20 focus-within:border-brand-500 transition-all">
+                        <!-- Rendered by JS -->
+                    </div>
+
+                    <!-- Available Roles Picker Dropdown Pills -->
+                    <div class="flex items-center gap-1.5 flex-wrap pt-1 text-2xs">
+                        <span class="text-3xs font-bold uppercase text-slate-400 mr-1">Available:</span>
+                        @foreach (var role in allRoles)
+                        {
+                            <button type="button" onclick="toggleRoleTag('@role.Value')" data-role="@role.Value"
+                                    class="role-picker-btn px-2.5 py-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold transition-colors flex items-center gap-1.5">
+                                <span class="role-check-icon hidden text-brand-600"><i class="fa-solid fa-check text-3xs"></i></span>
+                                <span>@role.Text</span>
+                            </button>
+                        }
+                    </div>
+                    <span asp-validation-for="RolesForRegister" class="text-2xs text-rose-600 mt-1 block"></span>
+                </div>
+
+                <div class="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800">Auto-login After Registration</span>
+                            <p class="text-2xs text-slate-500 mt-0.5">When enabled, newly registered users are automatically signed in immediately.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input asp-for="StayLoginAfterRegister" type="checkbox" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800">Logout Other Devices on Login</span>
+                            <p class="text-2xs text-slate-500 mt-0.5">When enabled, signing in invalidates previous active sessions across all other devices.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input asp-for="LogoutOtherDevicesOnLogin" type="checkbox" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pt-5 border-t border-slate-100 flex items-center justify-end gap-3">
+                    <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Settings
+                    </button>
+                </div>
+            </form>
         </div>
-        <span class="text-2xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Global Document</span>
     </div>
 
-    <form asp-action="Edit" method="post" class="p-6 md:p-8">
-        <div asp-validation-summary="All" class="p-3 mb-6 bg-rose-50 border border-rose-200/80 rounded-xl text-rose-700 text-xs"></div>
-        <input type="hidden" asp-for="Id" />
+    <!-- Right Column: Read-Only Role Permissions Inspector (5 cols) -->
+    <div class="lg:col-span-5 space-y-4">
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-2xs overflow-hidden">
+            <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-brand-600 text-xs"></i>
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Role Permissions Inspector</h3>
+                </div>
+                <span id="rolePermsBadge" class="text-3xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                    Read-Only
+                </span>
+            </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <label asp-for="RedirectAfterLogin" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Redirect After Login</label>
+            <!-- Role Selector / Filter bar -->
+            <div class="p-4 border-b border-slate-100 space-y-3 bg-slate-50/30">
+                <div class="flex items-center justify-between gap-2">
+                    <label class="text-2xs font-bold uppercase tracking-wider text-slate-500">Inspecting Role:</label>
+                    <select id="roleInspectorSelect" onchange="inspectRolePermissions(this.value)" class="text-xs font-bold py-1 px-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        @foreach (var role in allRoles)
+                        {
+                            <option value="@role.Value">@role.Text</option>
+                        }
+                    </select>
+                </div>
+
                 <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
-                        <i class="fa-solid fa-arrow-right-to-bracket"></i>
-                    </div>
-                    <input asp-for="RedirectAfterLogin" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="/Home/Index" />
-                </div>
-                <span asp-validation-for="RedirectAfterLogin" class="text-2xs text-rose-600 mt-1 block"></span>
-                <p class="text-3xs text-slate-400 mt-1">Relative URL target after successful authentication.</p>
-            </div>
-
-            <div>
-                <label asp-for="RedirectAfterRegister" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Redirect After Register</label>
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
-                        <i class="fa-solid fa-user-plus"></i>
-                    </div>
-                    <input asp-for="RedirectAfterRegister" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="/Auth/Login" />
-                </div>
-                <span asp-validation-for="RedirectAfterRegister" class="text-2xs text-rose-600 mt-1 block"></span>
-                <p class="text-3xs text-slate-400 mt-1">Relative URL target when new sign-up succeeds.</p>
-            </div>
-
-            <div class="md:col-span-2">
-                <label asp-for="RolesForRegister" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Roles Assigned on Register</label>
-                <select asp-for="RolesForRegister" asp-items="ViewBag.Roles" multiple class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white h-36"></select>
-                <span asp-validation-for="RolesForRegister" class="text-2xs text-rose-600 mt-1 block"></span>
-                <p class="text-3xs text-slate-400 mt-1">Hold <kbd class="px-1 py-0.5 rounded bg-slate-100 border text-slate-600">Ctrl</kbd> or <kbd class="px-1 py-0.5 rounded bg-slate-100 border text-slate-600">Cmd</kbd> to select multiple default roles.</p>
-            </div>
-
-            <div class="md:col-span-2 p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <span class="text-xs font-bold text-slate-800">Auto-login After Registration</span>
-                        <p class="text-2xs text-slate-500 mt-0.5">When enabled, newly registered users are automatically authenticated into the session immediately.</p>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input asp-for="StayLoginAfterRegister" type="checkbox" class="sr-only peer">
-                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
-                    </label>
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input id="permSearchInput" type="text" onkeyup="filterPermissionsList()" placeholder="Filter permissions (e.g. User, Delete, Media)..."
+                           class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
                 </div>
             </div>
 
-            <div class="md:col-span-2 p-4 rounded-xl border border-slate-200/80 bg-slate-50/50">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <span class="text-xs font-bold text-slate-800">Logout Other Devices on Login</span>
-                        <p class="text-2xs text-slate-500 mt-0.5">When enabled, signing in invalidates previous active sessions across all other devices and browsers.</p>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input asp-for="LogoutOtherDevicesOnLogin" type="checkbox" class="sr-only peer">
-                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
-                    </label>
-                </div>
+            <!-- Permissions List Container -->
+            <div id="permissionsLoading" class="p-8 text-center text-slate-400 hidden">
+                <i class="fa-solid fa-spinner fa-spin text-xl text-brand-600 mb-2"></i>
+                <p class="text-2xs font-semibold">Loading role permissions...</p>
+            </div>
+
+            <div id="permissionsList" class="p-4 divide-y divide-slate-100 max-h-[580px] overflow-y-auto space-y-2">
+                <!-- Injected via JavaScript -->
+            </div>
+
+            <div class="p-3 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between text-3xs text-slate-500">
+                <span id="permissionsCount">0 permissions granted</span>
+                <span class="font-semibold text-slate-400"><i class="fa-solid fa-lock text-slate-400 mr-1"></i>System Enforced</span>
             </div>
         </div>
-
-        <div class="mt-8 pt-5 border-t border-slate-100 flex items-center justify-end gap-3">
-            <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
-                <i class="fa-solid fa-floppy-disk"></i> Save Settings
-            </button>
-        </div>
-    </form>
+    </div>
 </div>
+
+<script>
+    let currentSelectedRoles = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(selectedRoles));
+    const allAvailableRoles = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(allRoles.Select(r => r.Value)));
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderRoleTags();
+        if (currentSelectedRoles.length > 0) {
+            inspectRolePermissions(currentSelectedRoles[0]);
+        } else if (allAvailableRoles.length > 0) {
+            inspectRolePermissions(allAvailableRoles[0]);
+        }
+    });
+
+    function renderRoleTags() {
+        const container = document.getElementById('roleTagsContainer');
+        container.innerHTML = '';
+
+        if (currentSelectedRoles.length === 0) {
+            container.innerHTML = '<span class="text-2xs text-slate-400 italic">No default roles selected. Click any role button below to assign.</span>';
+        } else {
+            currentSelectedRoles.forEach(role => {
+                const tag = document.createElement('div');
+                tag.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-50 border border-brand-200 text-brand-700 text-2xs font-bold shadow-2xs cursor-pointer hover:bg-brand-100 transition-colors';
+                tag.innerHTML = `
+                    <span onclick="inspectRolePermissions('${role}')" title="Inspect permissions for ${role}">${role}</span>
+                    <button type="button" onclick="event.stopPropagation(); removeRoleTag('${role}')" class="text-brand-400 hover:text-brand-800 ml-1">
+                        <i class="fa-solid fa-xmark text-3xs"></i>
+                    </button>
+                `;
+                container.appendChild(tag);
+            });
+        }
+
+        // Sync hidden select element
+        const select = document.getElementById('hiddenRolesSelect');
+        Array.from(select.options).forEach(opt => {
+            opt.selected = currentSelectedRoles.includes(opt.value);
+        });
+
+        // Update picker button highlights
+        document.querySelectorAll('.role-picker-btn').forEach(btn => {
+            const role = btn.getAttribute('data-role');
+            const icon = btn.querySelector('.role-check-icon');
+            if (currentSelectedRoles.includes(role)) {
+                btn.classList.add('bg-brand-50', 'border-brand-300', 'text-brand-700');
+                btn.classList.remove('bg-slate-50', 'text-slate-700');
+                if (icon) icon.classList.remove('hidden');
+            } else {
+                btn.classList.remove('bg-brand-50', 'border-brand-300', 'text-brand-700');
+                btn.classList.add('bg-slate-50', 'text-slate-700');
+                if (icon) icon.classList.add('hidden');
+            }
+        });
+    }
+
+    function toggleRoleTag(role) {
+        const idx = currentSelectedRoles.indexOf(role);
+        if (idx >= 0) {
+            currentSelectedRoles.splice(idx, 1);
+        } else {
+            currentSelectedRoles.push(role);
+        }
+        renderRoleTags();
+        inspectRolePermissions(role);
+    }
+
+    function removeRoleTag(role) {
+        const idx = currentSelectedRoles.indexOf(role);
+        if (idx >= 0) {
+            currentSelectedRoles.splice(idx, 1);
+            renderRoleTags();
+        }
+    }
+
+    let loadedPermissions = [];
+
+    async function inspectRolePermissions(roleName) {
+        if (!roleName) return;
+
+        const select = document.getElementById('roleInspectorSelect');
+        if (select) select.value = roleName;
+
+        const badge = document.getElementById('rolePermsBadge');
+        if (badge) badge.textContent = `${roleName} Role`;
+
+        const loading = document.getElementById('permissionsLoading');
+        const list = document.getElementById('permissionsList');
+
+        loading.classList.remove('hidden');
+        list.innerHTML = '';
+
+        try {
+            const response = await fetch(`/IdentitySetting/GetRolePermissionsJson?roleName=${encodeURIComponent(roleName)}`);
+            if (!response.ok) throw new Error('Failed to fetch permissions');
+            loadedPermissions = await response.json();
+            renderPermissions(loadedPermissions);
+        } catch (err) {
+            list.innerHTML = `<div class="p-4 text-center text-rose-500 text-2xs font-semibold">Error loading permissions for ${roleName}</div>`;
+        } finally {
+            loading.classList.add('hidden');
+        }
+    }
+
+    function renderPermissions(items) {
+        const list = document.getElementById('permissionsList');
+        const countSpan = document.getElementById('permissionsCount');
+        countSpan.textContent = `${items.length} permissions granted`;
+
+        if (!items || items.length === 0) {
+            list.innerHTML = '<div class="py-8 text-center text-slate-400 text-xs">No permissions assigned to this role.</div>';
+            return;
+        }
+
+        list.innerHTML = '';
+        items.forEach(p => {
+            const row = document.createElement('div');
+            row.className = 'perm-item pt-2.5 first:pt-0 space-y-1';
+            const areaBadge = p.area ? `<span class="px-1.5 py-0.5 rounded text-3xs font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200">${p.area}</span>` : '';
+            const restrictedBadge = p.isRestricted ? `<span class="px-1.5 py-0.5 rounded text-3xs font-bold uppercase bg-rose-100 text-rose-700">Restricted</span>` : '';
+
+            row.innerHTML = `
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <i class="fa-solid fa-check text-emerald-500 text-xs"></i>
+                        ${areaBadge}
+                        <span class="font-bold text-xs text-slate-800">${p.displayName || p.action}</span>
+                        ${restrictedBadge}
+                    </div>
+                    <span class="font-mono text-3xs text-slate-400 shrink-0">${p.controller}/${p.action}</span>
+                </div>
+                ${p.description ? `<p class="text-3xs text-slate-500 pl-4">${p.description}</p>` : ''}
+            `;
+            list.appendChild(row);
+        });
+    }
+
+    function filterPermissionsList() {
+        const query = (document.getElementById('permSearchInput').value || '').toLowerCase();
+        const filtered = loadedPermissions.filter(p => {
+            return (p.displayName && p.displayName.toLowerCase().includes(query)) ||
+                   (p.action && p.action.toLowerCase().includes(query)) ||
+                   (p.controller && p.controller.toLowerCase().includes(query)) ||
+                   (p.area && p.area.toLowerCase().includes(query)) ||
+                   (p.description && p.description.toLowerCase().includes(query));
+        });
+        renderPermissions(filtered);
+    }
+</script>

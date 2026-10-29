@@ -21,6 +21,22 @@
 
 <partial name="UiComponents/_PageHeader" model="headerModel" />
 
+@if (TempData["Success"] != null)
+{
+    <div class="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 shadow-2xs">
+        <i class="fa-solid fa-circle-check text-emerald-600"></i>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2 shadow-2xs">
+        <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
+        <span>@TempData["Error"]</span>
+    </div>
+}
+
 <!-- Status Scope Bar -->
 <div class="flex flex-wrap items-center justify-between gap-3 mb-6 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
     <div class="flex flex-wrap items-center gap-2">
@@ -45,8 +61,16 @@
         }
     </div>
 
-    <div class="text-2xs text-slate-400 font-medium font-mono">
-        Total Records: @Model.TotalCount.ToString("N0")
+    <div class="flex items-center gap-3">
+        @if (Model.IsAdmin)
+        {
+            <button type="button" onclick="openPurgeAuditModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-2xs font-bold transition-colors">
+                <i class="fa-solid fa-trash-can text-3xs"></i> Manage / Purge Logs
+            </button>
+        }
+        <div class="text-2xs text-slate-400 font-medium font-mono">
+            Total Records: @Model.TotalCount.ToString("N0")
+        </div>
     </div>
 </div>
 
@@ -117,6 +141,10 @@
                         <th scope="col" class="px-4 py-3.5">Duration</th>
                         <th scope="col" class="px-4 py-3.5">Status</th>
                         <th scope="col" class="px-4 py-3.5">Payload Summary</th>
+                        @if (Model.IsAdmin)
+                        {
+                            <th scope="col" class="px-4 py-3.5 text-right">Actions</th>
+                        }
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -200,6 +228,17 @@
                                     <span class="text-slate-300">-</span>
                                 }
                             </td>
+                            @if (Model.IsAdmin)
+                            {
+                                <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                    <form asp-action="Delete" asp-route-id="@log.Id" method="post" class="inline" onsubmit="return confirm('Delete this audit log record?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Delete Log Record">
+                                            <i class="fa-solid fa-trash text-3xs"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            }
                         </tr>
                     }
                 </tbody>
@@ -226,3 +265,89 @@
         }
     }
 </div>
+
+@if (Model.IsAdmin)
+{
+    <!-- Purge / Batch Delete Modal -->
+    <div id="purgeAuditModal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-rose-50/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Purge Audit Logs</h3>
+                        <p class="text-2xs text-slate-500">Delete specific audit records, by user, by timeframe, or purge all</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closePurgeAuditModal()" class="w-7 h-7 rounded-lg hover:bg-slate-200/60 text-slate-400 hover:text-slate-600 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <!-- Option 1: Delete by Date Range -->
+                <form asp-action="DeleteByDateRange" method="post" class="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3" onsubmit="return confirm('Delete all audit logs within this timeframe?');">
+                    @Html.AntiForgeryToken()
+                    <div class="flex items-center gap-2 text-xs font-bold text-slate-800">
+                        <i class="fa-regular fa-calendar-days text-brand-600"></i>
+                        <span>Delete by Date Range (From - To)</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-2xs">
+                        <div>
+                            <label class="block font-semibold text-slate-500 mb-1">From Date (UTC)</label>
+                            <input type="date" name="fromDate" required class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-500 mb-1">To Date (UTC)</label>
+                            <input type="date" name="toDate" required class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-2xs font-bold transition-colors">
+                        Delete Range Records
+                    </button>
+                </form>
+
+                <!-- Option 2: Delete by User ID -->
+                <form asp-action="DeleteByUser" method="post" class="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3" onsubmit="return confirm('Delete all audit logs for this user?');">
+                    @Html.AntiForgeryToken()
+                    <div class="flex items-center gap-2 text-xs font-bold text-slate-800">
+                        <i class="fa-solid fa-user-xmark text-brand-600"></i>
+                        <span>Delete by User ID</span>
+                    </div>
+                    <div>
+                        <input type="text" name="userId" placeholder="Enter target User Guid (e.g. 00000000-0000...)" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                    </div>
+                    <button type="submit" class="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-2xs font-bold transition-colors">
+                        Delete User Records
+                    </button>
+                </form>
+
+                <!-- Option 3: Danger Zone - Purge All -->
+                <form asp-action="PurgeAll" method="post" class="p-4 rounded-2xl border border-rose-200 bg-rose-50/50 space-y-3" onsubmit="return confirm('WARNING: Are you absolutely certain you want to permanently delete ALL audit log entries? This cannot be undone.');">
+                    @Html.AntiForgeryToken()
+                    <div class="flex items-center gap-2 text-xs font-bold text-rose-900">
+                        <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
+                        <span>Danger Zone: Clear All Audit Logs</span>
+                    </div>
+                    <p class="text-3xs text-rose-700">
+                        Permanently deletes all historical command and query logs across all tenants.
+                    </p>
+                    <button type="submit" class="w-full py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-2xs font-bold transition-colors">
+                        Purge Entire Audit Log
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openPurgeAuditModal() {
+            document.getElementById('purgeAuditModal').classList.remove('hidden');
+        }
+        function closePurgeAuditModal() {
+            document.getElementById('purgeAuditModal').classList.add('hidden');
+        }
+    </script>
+}

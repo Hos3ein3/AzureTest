@@ -4,10 +4,13 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Auth;
+using AzureTest.Application.Auth.Commands.ChangePassword;
+using AzureTest.Application.Auth.Commands.ForgotPassword;
 using AzureTest.Application.Auth.Commands.GoogleCallback;
 using AzureTest.Application.Auth.Commands.Login;
 using AzureTest.Application.Auth.Commands.Logout;
 using AzureTest.Application.Auth.Commands.Register;
+using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Users.Commands.RefreshToken;
 using AzureTest.Contracts.DTOs.Users;
 using AzureTest.Domain.Entities.Identity;
@@ -31,17 +34,20 @@ public class AuthController : Controller
     private readonly IAuthQueryUnit _queries;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly InfrastructureFeatureOptions _featureOptions;
+    private readonly ICurrentUser _currentUser;
 
     public AuthController(
         IAuthCommandUnit commands,
         IAuthQueryUnit queries,
         SignInManager<ApplicationUser> signInManager,
-        IOptions<InfrastructureFeatureOptions> featureOptions)
+        IOptions<InfrastructureFeatureOptions> featureOptions,
+        ICurrentUser currentUser)
     {
         _commands = commands ?? throw new ArgumentNullException(nameof(commands));
         _queries = queries ?? throw new ArgumentNullException(nameof(queries));
         _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
         _featureOptions = featureOptions?.Value ?? new InfrastructureFeatureOptions();
+        _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
     }
 
     [HttpGet]
@@ -84,7 +90,7 @@ public class AuthController : Controller
         {
             if (loginResult.IsLockedOut)
             {
-                return RedirectToAction(nameof(AccessDenied));
+                return RedirectToAction(nameof(LockedOut), new { lockoutEnd = loginResult.LockoutEnd?.ToString("o") });
             }
 
             if (loginResult.Errors != null)
@@ -321,7 +327,7 @@ public class AuthController : Controller
         if (!googleResult.Succeeded)
         {
             if (googleResult.IsLockedOut)
-                return RedirectToAction(nameof(AccessDenied));
+                return RedirectToAction(nameof(LockedOut), new { lockoutEnd = googleResult.LockoutEnd?.ToString("o") });
 
             return Fail(googleResult.ErrorMessage ?? "Google sign-in failed.", googleResult.FallbackAction);
         }
@@ -332,6 +338,107 @@ public class AuthController : Controller
         }
 
         return RedirectAfterLogin(googleResult.RedirectUrl ?? returnUrl);
+    }
+
+    [HttpGet]
+    [DisplayName("Account Locked")]
+    [Description("View displayed when a user account is locked.")]
+    public IActionResult LockedOut(string? lockoutEnd = null, string? message = null)
+    {
+        ViewBag.LockoutEnd = lockoutEnd;
+        ViewBag.Message = message;
+        return View();
+    }
+
+    [HttpGet]
+    [DisplayName("Forgot Password")]
+    [Description("Display forgot password request form.")]
+    public IActionResult ForgotPassword()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Forgot Password")]
+    [Description("Submit forgot password request to generate reset instructions.")]
+    public async Task<IActionResult> ForgotPassword(string email, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            ModelState.AddModelError("email", "Email address is required.");
+            return View();
+        }
+
+        var result = await _commands.ForgotPassword.HandleAsync(new ForgotPasswordCommand(email), cancellationToken);
+        if (!result.IsSuccess)
+        {
+            ModelState.AddModelError(string.Empty, result.Error ?? "Unable to process request.");
+            return View();
+        }
+
+        ViewBag.ResetToken = result.Value.ResetToken;
+        ViewBag.Message = result.Value.Message;
+        ViewBag.IsSubmitted = true;
+        return View();
+    }
+
+    [HttpGet]
+    [DisplayName("Change Password")]
+    [Description("Display change password form for current user.")]
+    public IActionResult ChangePassword()
+    {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return RedirectToAction(nameof(Login), new { returnUrl = Url.Action(nameof(ChangePassword)) });
+        }
+
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Change Password")]
+    [Description("Submit change password request for current user.")]
+    public async Task<IActionResult> ChangePassword(
+        string currentPassword,
+        string newPassword,
+        string confirmPassword,
+        CancellationToken cancellationToken = default)
+    {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return RedirectToAction(nameof(Login), new { returnUrl = Url.Action(nameof(ChangePassword)) });
+        }
+
+        var currentUserId = _currentUser.Id;
+        if (currentUserId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        var command = new ChangePasswordCommand(currentUserId, currentPassword, newPassword, confirmPassword);
+        var result = await _commands.ChangePassword.HandleAsync(command, cancellationToken);
+        if (!result.IsSuccess)
+        {
+            ModelState.AddModelError(string.Empty, result.Error ?? "Password change failed.");
+            return View();
+        }
+
+        if (!result.Value.Success)
+        {
+            if (result.Value.Errors != null)
+            {
+                foreach (var err in result.Value.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, err);
+                }
+            }
+            return View();
+        }
+
+        TempData["Success"] = "Your password has been changed successfully.";
+        return RedirectToAction("Index", "Home");
     }
 
     private IActionResult RedirectAfterLogin(string? returnUrl)

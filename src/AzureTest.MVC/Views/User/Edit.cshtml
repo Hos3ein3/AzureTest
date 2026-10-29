@@ -7,13 +7,13 @@
         new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
         new AzureTest.MVC.Models.BreadcrumbItem { Label = "Administration", Url = "#" },
         new AzureTest.MVC.Models.BreadcrumbItem { Label = "Users", Url = "/User/Index" },
-        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Edit Profile", IsActive = true }
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Edit User", IsActive = true }
     };
 
     var headerModel = new AzureTest.MVC.Models.PageHeaderModel
     {
         Title = "Edit User Profile",
-        Subtitle = $"Modify account information for {Model.Email}",
+        Subtitle = $"Manage credentials, account flags, security status, and inspect recent audit trail for {Model.Email}",
         Icon = "fa-solid fa-user-pen",
         Breadcrumbs = breadcrumbs
     };
@@ -21,55 +21,320 @@
 
 <partial name="UiComponents/_PageHeader" model="headerModel" />
 
-<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden max-w-2xl">
-    <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <i class="fa-solid fa-address-card text-brand-600 text-xs"></i>
-            <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Profile Information</h2>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <!-- Left Column: Form & Security Profile (7 cols) -->
+    <div class="lg:col-span-7 space-y-6">
+        <!-- Main Form Card -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-2xs overflow-hidden">
+            <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-address-card text-brand-600 text-xs"></i>
+                    <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Profile Information</h2>
+                </div>
+                <span class="text-2xs font-mono font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                    ID: @Model.Id.ToString().Substring(0, 8)...
+                </span>
+            </div>
+
+            <form asp-action="Edit" method="post" class="p-6 md:p-8">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <div asp-validation-summary="ModelOnly" class="p-3 mb-6 bg-rose-50 border border-rose-200/80 rounded-xl text-rose-700 text-xs"></div>
+
+                <div class="mb-5">
+                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Address</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                            <i class="fa-solid fa-envelope"></i>
+                        </div>
+                        <input asp-for="Email" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 text-xs cursor-not-allowed font-medium" readonly />
+                    </div>
+                    <p class="text-3xs text-slate-400 mt-1 flex items-center gap-1">
+                        <i class="fa-solid fa-lock text-slate-400"></i> Primary login identifier cannot be altered.
+                    </p>
+                </div>
+
+                <partial name="_UpsertPartial" />
+
+                <div class="mb-5">
+                    <label asp-for="PhoneNumber" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Phone Number</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                            <i class="fa-solid fa-phone"></i>
+                        </div>
+                        <input asp-for="PhoneNumber" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="+1 (555) 000-0000" />
+                    </div>
+                    <span asp-validation-for="PhoneNumber" class="text-2xs text-rose-600 mt-1 block"></span>
+                </div>
+
+                <!-- Read-Only Account Restriction Switch -->
+                <div class="p-4 rounded-2xl border border-amber-200/80 bg-amber-50/50 mb-6">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="space-y-0.5">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-shield-halved text-amber-600 text-xs"></i>
+                                <label asp-for="IsReadOnly" class="text-xs font-bold text-amber-950 uppercase tracking-wider cursor-pointer">
+                                    Read-Only Account Mode
+                                </label>
+                            </div>
+                            <p class="text-2xs text-amber-800/90 leading-relaxed">
+                                When enabled, this user can authenticate and browse data normally, but any write or mutation attempt (SaveChanges) will be blocked immediately.
+                            </p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                            <input asp-for="IsReadOnly" type="checkbox" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-5 border-t border-slate-100">
+                    <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                    </button>
+                </div>
+            </form>
         </div>
-        <span class="text-2xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">ID: @Model.Id.ToString().Substring(0, 8)...</span>
+
+        <!-- Security & Status Metadata Card -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-2xs p-6 space-y-4">
+            <div class="flex items-center gap-2 pb-3 border-b border-slate-100">
+                <i class="fa-solid fa-user-shield text-brand-600 text-xs"></i>
+                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Account Security & Verification</h3>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-2xs">
+                <!-- Lockout Status -->
+                <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <span class="text-3xs uppercase font-bold text-slate-400 block mb-1">Lockout Status</span>
+                    @if (Model.IsLockedOut)
+                    {
+                        var isPermanent = Model.LockoutEnd.HasValue && Model.LockoutEnd.Value.Year > 2090;
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-bold">
+                            <i class="fa-solid fa-lock text-3xs"></i> @(isPermanent ? "Permanent" : "Locked")
+                        </span>
+                        @if (Model.LockoutEnd.HasValue && !isPermanent)
+                        {
+                            <span class="text-3xs text-slate-500 block mt-1">Until: @Model.LockoutEnd.Value.ToUniversalTime().ToString("yyyy-MM-dd HH:mm") UTC</span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">
+                            <i class="fa-solid fa-unlock text-3xs"></i> Active
+                        </span>
+                    }
+                </div>
+
+                <!-- Email Verified -->
+                <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <span class="text-3xs uppercase font-bold text-slate-400 block mb-1">Email Verified</span>
+                    @if (Model.EmailConfirmed)
+                    {
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">
+                            <i class="fa-solid fa-circle-check text-3xs"></i> Confirmed
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold">
+                            <i class="fa-solid fa-clock text-3xs"></i> Unconfirmed
+                        </span>
+                    }
+                </div>
+
+                <!-- Phone Verified -->
+                <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <span class="text-3xs uppercase font-bold text-slate-400 block mb-1">Phone Verified</span>
+                    @if (Model.PhoneNumberConfirmed)
+                    {
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">
+                            <i class="fa-solid fa-circle-check text-3xs"></i> Confirmed
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 font-bold">
+                            <i class="fa-solid fa-minus text-3xs"></i> Unverified
+                        </span>
+                    }
+                </div>
+
+                <!-- 2FA Status -->
+                <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <span class="text-3xs uppercase font-bold text-slate-400 block mb-1">Two-Factor Auth</span>
+                    @if (Model.TwoFactorEnabled)
+                    {
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">
+                            <i class="fa-solid fa-shield-check text-3xs"></i> Enabled
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 font-bold">
+                            <i class="fa-solid fa-shield text-3xs"></i> Disabled
+                        </span>
+                    }
+                </div>
+
+                <!-- Failed Attempts -->
+                <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <span class="text-3xs uppercase font-bold text-slate-400 block mb-1">Failed Logins</span>
+                    <span class="font-mono font-black text-slate-800 text-sm">@Model.AccessFailedCount</span>
+                </div>
+
+                <!-- Read-Only Mode Badge -->
+                <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <span class="text-3xs uppercase font-bold text-slate-400 block mb-1">Access Mode</span>
+                    @if (Model.IsReadOnly)
+                    {
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold">
+                            <i class="fa-solid fa-eye text-3xs"></i> Read-Only
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold">
+                            <i class="fa-solid fa-pen text-3xs"></i> Full Access
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <!-- Login Providers & Roles -->
+            <div class="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <span class="text-3xs uppercase font-bold text-slate-400 block mb-1.5">Connected Login Providers</span>
+                    <div class="flex flex-wrap gap-1.5">
+                        @if (Model.LoginProviders.Any())
+                        {
+                            @foreach (var provider in Model.LoginProviders)
+                            {
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-2xs font-semibold">
+                                    @if (provider.Contains("Google", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <i class="fa-brands fa-google text-red-500 text-3xs"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="fa-solid fa-key text-slate-400 text-3xs"></i>
+                                    }
+                                    @provider
+                                </span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-3xs text-slate-400">No login providers linked</span>
+                        }
+                    </div>
+                </div>
+
+                <div>
+                    <span class="text-3xs uppercase font-bold text-slate-400 block mb-1.5">Assigned Roles</span>
+                    <div class="flex flex-wrap gap-1.5">
+                        @if (Model.Roles.Any())
+                        {
+                            @foreach (var role in Model.Roles)
+                            {
+                                <span class="px-2.5 py-1 rounded-xl bg-brand-50 border border-brand-200 text-brand-700 text-2xs font-bold">
+                                    @role
+                                </span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-3xs text-slate-400">No roles assigned</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <form asp-action="Edit" method="post" class="p-6 md:p-8">
-        @Html.AntiForgeryToken()
-        <input type="hidden" asp-for="Id" />
-        <div asp-validation-summary="ModelOnly" class="p-3 mb-6 bg-rose-50 border border-rose-200/80 rounded-xl text-rose-700 text-xs"></div>
-
-        <div class="mb-5">
-            <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Address</label>
-            <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
-                    <i class="fa-solid fa-envelope"></i>
+    <!-- Right Column: User Activity & Audit Logs (5 cols) -->
+    <div class="lg:col-span-5 space-y-4">
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-2xs overflow-hidden">
+            <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-brand-600 text-xs"></i>
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">User Activity & Audit Trail</h3>
                 </div>
-                <input asp-for="Email" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 text-xs cursor-not-allowed font-medium" readonly />
+                <span class="text-3xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                    Recent @Model.AuditLogs.Count
+                </span>
             </div>
-            <p class="text-3xs text-slate-400 mt-1 flex items-center gap-1">
-                <i class="fa-solid fa-lock text-slate-400"></i> Primary login identifier cannot be altered.
-            </p>
-        </div>
 
-        <partial name="_UpsertPartial" />
+            <div class="p-4 divide-y divide-slate-100 max-h-[640px] overflow-y-auto space-y-3">
+                @if (Model.AuditLogs != null && Model.AuditLogs.Any())
+                {
+                    @foreach (var log in Model.AuditLogs)
+                    {
+                        <div class="pt-3 first:pt-0 space-y-1.5">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="px-1.5 py-0.5 rounded text-3xs font-bold uppercase tracking-wider @(log.ActionType == "Command" ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800")">
+                                        @log.ActionType
+                                    </span>
+                                    <span class="font-mono text-2xs font-bold text-slate-800 truncate max-w-[190px]" title="@log.ActionName">
+                                        @log.ActionName
+                                    </span>
+                                </div>
+                                <span class="text-3xs font-medium text-slate-400 shrink-0">
+                                    @log.Timestamp.ToString("MM/dd HH:mm") UTC
+                                </span>
+                            </div>
 
-        <div class="mb-6">
-            <label asp-for="PhoneNumber" class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Phone Number</label>
-            <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
-                    <i class="fa-solid fa-phone"></i>
-                </div>
-                <input asp-for="PhoneNumber" class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" placeholder="+1 (555) 000-0000" />
+                            <div class="flex items-center justify-between text-3xs text-slate-500">
+                                <span class="flex items-center gap-1">
+                                    @if (log.IsSuccess)
+                                    {
+                                        <i class="fa-solid fa-check text-emerald-500"></i>
+                                        <span>Success (@(log.ExecutionDurationMs)ms)</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="fa-solid fa-xmark text-rose-500"></i>
+                                        <span class="text-rose-600 font-semibold truncate max-w-[150px]" title="@log.ErrorMessage">@log.ErrorMessage</span>
+                                    }
+                                </span>
+                                @if (!string.IsNullOrEmpty(log.IpAddress))
+                                {
+                                    <span class="font-mono text-slate-400">@log.IpAddress</span>
+                                }
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(log.Payload))
+                            {
+                                <details class="text-3xs">
+                                    <summary class="cursor-pointer text-slate-400 hover:text-slate-600 font-semibold select-none">
+                                        View Payload
+                                    </summary>
+                                    <pre class="mt-1 p-2 rounded-xl bg-slate-900 text-slate-200 font-mono text-3xs overflow-x-auto max-h-32">@log.Payload</pre>
+                                </details>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="py-12 text-center text-slate-400 space-y-2">
+                        <i class="fa-regular fa-folder-open text-2xl"></i>
+                        <p class="text-xs font-semibold">No audit logs recorded for this user yet.</p>
+                    </div>
+                }
             </div>
-            <span asp-validation-for="PhoneNumber" class="text-2xs text-rose-600 mt-1 block"></span>
-        </div>
 
-        <div class="flex items-center justify-end gap-3 pt-5 border-t border-slate-100">
-            <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors">
-                Cancel
-            </a>
-            <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition-colors">
-                <i class="fa-solid fa-floppy-disk"></i> Save Changes
-            </button>
+            <div class="p-3 bg-slate-50/70 border-t border-slate-100 text-center">
+                <a asp-controller="AuditLog" asp-action="Index" asp-route-searchTerm="@Model.Email" class="text-2xs font-bold text-brand-600 hover:text-brand-700 transition-colors">
+                    View Complete Audit Trail <i class="fa-solid fa-arrow-right text-3xs ml-1"></i>
+                </a>
+            </div>
         </div>
-    </form>
+    </div>
 </div>
 
 @section Scripts {

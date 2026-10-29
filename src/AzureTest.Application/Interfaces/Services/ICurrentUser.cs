@@ -17,7 +17,8 @@ public interface ICurrentUser
     System.Collections.Generic.IReadOnlyList<string> DirectPermissions { get; }
     System.Collections.Generic.IReadOnlyList<string> RolePermissions { get; }
     System.Collections.Generic.IReadOnlyList<string> Permissions { get; }
-    public bool IsAdmin { get;  }
+    public bool IsAdmin { get; }
+    public bool IsReadOnly { get; }
     public Guid TenantId { get; }
 
     /// <summary>

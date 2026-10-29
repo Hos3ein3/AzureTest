@@ -14,6 +14,11 @@ public class ApplicationUser : IdentityUser<Guid>
 
     public string FullName => $"{FirstName} {LastName}".Trim();
 
+    /// <summary>
+    /// When true, the user has read-only access and cannot commit any entity changes.
+    /// </summary>
+    public bool IsReadOnly { get; set; } = false;
+
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 }
 

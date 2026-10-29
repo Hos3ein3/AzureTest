@@ -71,4 +71,59 @@ public class AuditLogController : Controller
 
         return View(vm);
     }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin")]
+    [DisplayName("Delete Audit Log")]
+    [Description("Delete a specific audit log entry.")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
+    {
+        var deleted = await _auditLogService.DeleteLogByIdAsync(id, cancellationToken);
+        if (deleted > 0)
+            TempData["Success"] = "Audit log record deleted successfully.";
+        else
+            TempData["Error"] = "Audit log record could not be deleted.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin")]
+    [DisplayName("Delete Logs by User")]
+    [Description("Delete all audit logs for a specific user.")]
+    public async Task<IActionResult> DeleteByUser(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var deleted = await _auditLogService.DeleteLogsByUserAsync(userId, cancellationToken);
+        TempData["Success"] = $"{deleted} audit log record(s) deleted for user.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin")]
+    [DisplayName("Delete Logs by Date Range")]
+    [Description("Delete audit logs within a specific date range.")]
+    public async Task<IActionResult> DeleteByDateRange(DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
+    {
+        DateTime? fromUtc = fromDate.HasValue ? DateTime.SpecifyKind(fromDate.Value, DateTimeKind.Utc) : null;
+        DateTime? toUtc = toDate.HasValue ? DateTime.SpecifyKind(toDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc) : null;
+
+        var deleted = await _auditLogService.DeleteLogsByDateRangeAsync(fromUtc, toUtc, cancellationToken);
+        TempData["Success"] = $"{deleted} audit log record(s) deleted within specified timeframe.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin")]
+    [DisplayName("Purge All Logs")]
+    [Description("Permanently purge all audit log records.")]
+    public async Task<IActionResult> PurgeAll(CancellationToken cancellationToken = default)
+    {
+        var deleted = await _auditLogService.PurgeAllLogsAsync(cancellationToken);
+        TempData["Success"] = $"All audit log records purged successfully ({deleted} total).";
+        return RedirectToAction(nameof(Index));
+    }
 }

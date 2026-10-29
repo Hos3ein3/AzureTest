@@ -9,5 +9,9 @@ public class ApplicationUserConfiguration : IEntityTypeConfiguration<Application
     public void Configure(EntityTypeBuilder<ApplicationUser> builder)
     {
         builder.ToTable("Users", "Identity");
+
+        builder.Property(x => x.IsReadOnly)
+            .HasDefaultValue(false)
+            .IsRequired();
     }
 }

@@ -115,6 +115,7 @@ public class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsy
         public System.Collections.Generic.IReadOnlyList<string> RolePermissions => new System.Collections.Generic.List<string>();
         public System.Collections.Generic.IReadOnlyList<string> Permissions => new System.Collections.Generic.List<string>();
         public bool IsAdmin => false;
+        public bool IsReadOnly => false;
         public bool HasAccess() => true;
         public bool HasAccess(string url) => true;
         public bool HasAccess(Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, string? url = null) => true;

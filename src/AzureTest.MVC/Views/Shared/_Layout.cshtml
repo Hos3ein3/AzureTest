@@ -377,6 +377,17 @@
             </div>
         }
 
+        @if (_CurrentUser != null && _CurrentUser.IsReadOnly)
+        {
+            <div class="bg-amber-400 text-amber-950 px-6 py-2 flex items-center justify-between text-2xs font-bold border-b border-amber-500 shadow-2xs z-30">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-lock text-xs"></i>
+                    <span>Read-Only Account Mode: You are signed in with read-only permissions. Modifying or saving changes is disabled.</span>
+                </div>
+                <span class="text-3xs uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/50 text-amber-950 font-black">Restricted</span>
+            </div>
+        }
+
         <!-- Main Scrollable Area -->
         <main class="flex-1 overflow-y-auto px-6 pb-6 md:px-8 md:pb-8 @(enableFloatingNav ? (isTabletFloating ? "pt-20 lg:pt-8 pb-24 lg:pb-8" : "pt-20 md:pt-8 pb-24 md:pb-8") : "pt-6 md:pt-8") bg-slate-50">
             <div class="max-w-7xl mx-auto">

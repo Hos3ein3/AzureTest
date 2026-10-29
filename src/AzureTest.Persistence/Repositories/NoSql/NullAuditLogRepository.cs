@@ -33,4 +33,19 @@ public class NullAuditLogRepository : NullDocumentRepository<AuditLogDocument>, 
     {
         return Task.FromResult(0L);
     }
+
+    public Task<long> DeleteLogsAsync(
+        Guid? id,
+        Guid? userId,
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(0L);
+    }
+
+    public Task<long> PurgeAllLogsAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(0L);
+    }
 }

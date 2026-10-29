@@ -23,6 +23,9 @@
   "rewrite all command and queries to saparete the VSA": false,
   "Create component for filter, sorting and searching for all index with same style": false,
   "Create a component for everything to rewrite all button and other things with same style": false,
+  "Forget Password": false,
+  "Confirm email": false,
+  "Notification for trade": false,
   
   
 }

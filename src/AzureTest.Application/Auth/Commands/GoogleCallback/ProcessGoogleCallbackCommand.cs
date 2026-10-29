@@ -31,7 +31,8 @@ public sealed record GoogleCallbackResult(
     ApplicationUser? User,
     string? RedirectUrl,
     string? ErrorMessage,
-    string? FallbackAction
+    string? FallbackAction,
+    DateTimeOffset? LockoutEnd = null
 );
 
 public sealed class ProcessGoogleCallbackCommandValidator : AbstractValidator<ProcessGoogleCallbackCommand>
@@ -84,7 +85,7 @@ public sealed class ProcessGoogleCallbackCommandHandler : ICommandHandler<Proces
             if (await _userManager.IsLockedOutAsync(linkedUser))
             {
                 return Result<GoogleCallbackResult>.Success(new GoogleCallbackResult(
-                    false, true, linkedUser, null, "User account is locked.", null));
+                    false, true, linkedUser, null, "User account is locked.", null, linkedUser.LockoutEnd));
             }
 
             if (enableLogoutOtherDevices && setting.LogoutOtherDevicesOnLogin)

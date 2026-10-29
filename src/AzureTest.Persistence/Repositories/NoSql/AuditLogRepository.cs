@@ -57,6 +57,46 @@ public class AuditLogRepository : DocumentRepository<AuditLogDocument>, IAuditLo
         return await _collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
     }
 
+    public async Task<long> DeleteLogsAsync(
+        Guid? id,
+        Guid? userId,
+        DateTime? fromUtc,
+        DateTime? toUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var builder = Builders<AuditLogDocument>.Filter;
+        var filter = builder.Empty;
+
+        if (id.HasValue && id.Value != Guid.Empty)
+        {
+            filter &= builder.Eq(x => x.Id, id.Value);
+        }
+
+        if (userId.HasValue && userId.Value != Guid.Empty)
+        {
+            filter &= builder.Eq(x => x.UserId, userId.Value);
+        }
+
+        if (fromUtc.HasValue)
+        {
+            filter &= builder.Gte(x => x.Timestamp, fromUtc.Value.ToUniversalTime());
+        }
+
+        if (toUtc.HasValue)
+        {
+            filter &= builder.Lte(x => x.Timestamp, toUtc.Value.ToUniversalTime());
+        }
+
+        var result = await _collection.DeleteManyAsync(filter, cancellationToken);
+        return result.DeletedCount;
+    }
+
+    public async Task<long> PurgeAllLogsAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await _collection.DeleteManyAsync(Builders<AuditLogDocument>.Filter.Empty, cancellationToken);
+        return result.DeletedCount;
+    }
+
     private static FilterDefinition<AuditLogDocument> BuildFilter(
         Guid? tenantId,
         Guid? userId,
