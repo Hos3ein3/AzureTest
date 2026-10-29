@@ -36,6 +36,16 @@ public interface ICurrentUser
     /// </summary>
     bool HasAccess(Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor, string? url = null);
 
+    /// <summary>
+    /// Checks if the current user has been explicitly granted a direct permission override.
+    /// </summary>
+    bool HasDirectPermission(string permissionKey);
+
+    /// <summary>
+    /// Checks if the current user has a specific permission (either via direct user grant or assigned role).
+    /// </summary>
+    bool HasPermission(string permissionKey);
+
     bool BelongToCurrentUser(string entityUserId);
     bool BelongToCurrentUser(Guid entityUserId);
 }

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Security.Claims;
 using AzureTest.Application.Interfaces.Services;
+using AzureTest.Domain.Entities.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -50,7 +51,30 @@ public class CurrentUser : ICurrentUser
         var redis = _serviceProvider.GetService<IRedisService>();
         if (redis == null) return null;
         
-        return redis.GetAsync<AzureTest.Contracts.DTOs.Users.UserSessionCacheDto>($"User_Info_{id}").GetAwaiter().GetResult();
+        var cached = redis.GetAsync<AzureTest.Contracts.DTOs.Users.UserSessionCacheDto>($"User_Info_{id}").GetAwaiter().GetResult();
+        if (cached != null) return cached;
+
+        // Auto re-populate Redis cache from database if expired or missed
+        try
+        {
+            var userManager = _serviceProvider.GetService<Microsoft.AspNetCore.Identity.UserManager<ApplicationUser>>();
+            var sessionService = _serviceProvider.GetService<AzureTest.Application.Auth.Services.IAuthSessionService>();
+            if (userManager != null && sessionService != null)
+            {
+                var userObj = userManager.FindByIdAsync(id.ToString()).GetAwaiter().GetResult();
+                if (userObj != null)
+                {
+                    sessionService.CacheUserSessionAsync(userObj).GetAwaiter().GetResult();
+                    return redis.GetAsync<AzureTest.Contracts.DTOs.Users.UserSessionCacheDto>($"User_Info_{id}").GetAwaiter().GetResult();
+                }
+            }
+        }
+        catch
+        {
+            // Cache repopulation failure should not throw
+        }
+
+        return null;
     }
 
     public string Email =>
@@ -107,9 +131,45 @@ public class CurrentUser : ICurrentUser
         ?? User?.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList() 
         ?? new System.Collections.Generic.List<string>();
 
-    public System.Collections.Generic.IReadOnlyList<string> DirectPermissions =>
-        GetCachedSession()?.DirectPermissions
-        ?? new System.Collections.Generic.List<string>();
+    public System.Collections.Generic.IReadOnlyList<string> DirectPermissions
+    {
+        get
+        {
+            var cached = GetCachedSession();
+            if (cached != null) return cached.DirectPermissions;
+
+            // Direct DB fallback if Redis is unavailable
+            var id = Id;
+            if (id != Guid.Empty)
+            {
+                var unitOfWork = _serviceProvider.GetService<AzureTest.Application.Interfaces.Data.IUnitOfWork>();
+                if (unitOfWork != null)
+                {
+                    try
+                    {
+                        var directPerms = unitOfWork.UserPermissions.GetPermissionsByUserIdAsync(id).GetAwaiter().GetResult();
+                        var list = new System.Collections.Generic.List<string>();
+                        foreach (var up in directPerms.Where(x => x.IsGranted))
+                        {
+                            if (up.Permission != null)
+                            {
+                                var areaPrefix = !string.IsNullOrWhiteSpace(up.Permission.AreaName) ? $"{up.Permission.AreaName}/" : "";
+                                list.Add($"{areaPrefix}{up.Permission.ControllerName}/{up.Permission.ActionName}");
+                                list.Add($"{up.Permission.ControllerName}/{up.Permission.ActionName}");
+                            }
+                        }
+                        return list.Distinct().ToList();
+                    }
+                    catch
+                    {
+                        // Fallback failure should not throw
+                    }
+                }
+            }
+
+            return new System.Collections.Generic.List<string>();
+        }
+    }
 
     public System.Collections.Generic.IReadOnlyList<string> RolePermissions =>
         GetCachedSession()?.RolePermissions
@@ -209,7 +269,30 @@ public class CurrentUser : ICurrentUser
         var fullKey = !string.IsNullOrWhiteSpace(area) ? $"{area}/{controller}/{action}" : null;
         var shortKey = $"{controller}/{action}";
 
+        // 1. Direct User Permissions check (takes priority and bypasses roles)
+        if (DirectPermissions.Any(p => (fullKey != null && p.Equals(fullKey, StringComparison.OrdinalIgnoreCase)) || p.Equals(shortKey, StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        // 2. Role / Combined permissions check
         return (fullKey != null && Permissions.Any(p => p.Equals(fullKey, StringComparison.OrdinalIgnoreCase)))
             || Permissions.Any(p => p.Equals(shortKey, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public bool HasDirectPermission(string permissionKey)
+    {
+        if (string.IsNullOrWhiteSpace(permissionKey)) return false;
+        if (IsAdmin) return true;
+        var cleanKey = permissionKey.TrimStart('/');
+        return DirectPermissions.Any(p => p.Equals(cleanKey, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public bool HasPermission(string permissionKey)
+    {
+        if (string.IsNullOrWhiteSpace(permissionKey)) return false;
+        if (IsAdmin) return true;
+        var cleanKey = permissionKey.TrimStart('/');
+        return Permissions.Any(p => p.Equals(cleanKey, StringComparison.OrdinalIgnoreCase));
     }
 }
