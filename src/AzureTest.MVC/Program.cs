@@ -52,6 +52,9 @@ NormalizeWidgetPartialViews(builder.Environment.ContentRootPath);
 
 var app = builder.Build();
 
+// ── Check & Log Sensitive Secrets Presence (Never Log Values) ────────────────
+LogSecretConfigurationsPresence(app);
+
 // ── 7. Cold Start Migrations & Seeders ────────────────────────────────────────
 var isSimulateEnv = app.Environment.IsEnvironment("ProductionSimulate") ||
                     app.Environment.IsEnvironment("ProductionSimulateLocal");
@@ -111,7 +114,7 @@ if (app.Environment.IsEnvironment("ProductionSimulateLocal"))
 // ── 8. NoSql Dashboard Components Deduplication ──────────────────────────────
 await DeduplicateDashboardComponentsAsync(app);
 
-app.Logger.LogInformation(app.Environment.EnvironmentName, "Environment {0}");
+app.Logger.LogInformation("Environment: {EnvironmentName}", app.Environment.EnvironmentName);
 
 // ── 9. HTTP Request Pipeline Configuration ───────────────────────────────────
 if (!app.Environment.IsDevelopment())
@@ -305,5 +308,33 @@ static async Task MigrateWithRetryAsync(IServiceProvider services, ILogger logge
                 attempt, maxAttempts, delay.TotalSeconds);
             await Task.Delay(delay);
         }
+    }
+}
+
+static void LogSecretConfigurationsPresence(WebApplication app)
+{
+    var secretsToCheck = new (string EnvVar, string ConfigKey)[]
+    {
+        ("Authentication__Google__ClientId", "Authentication:Google:ClientId"),
+        ("Authentication__Google__ClientSecret", "Authentication:Google:ClientSecret"),
+        ("EmailSettings__Username", "EmailSettings:Username"),
+        ("EmailSettings__Password", "EmailSettings:Password")
+    };
+
+    foreach (var (envVar, configKey) in secretsToCheck)
+    {
+        var rawEnv = Environment.GetEnvironmentVariable(envVar);
+        var configVal = app.Configuration[configKey] ?? app.Configuration[envVar];
+
+        var effectiveVal = !string.IsNullOrWhiteSpace(rawEnv) ? rawEnv : configVal;
+        var exists = !string.IsNullOrWhiteSpace(effectiveVal) &&
+                     !(effectiveVal.StartsWith("${") && effectiveVal.EndsWith("}"));
+
+        var status = exists ? "exist" : "not exist";
+
+        app.Logger.LogInformation("Configuration secret check -> env:key {EnvVar} ({ConfigKey}): {Status}",
+            envVar,
+            configKey,
+            status);
     }
 }

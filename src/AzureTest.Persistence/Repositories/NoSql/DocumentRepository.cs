@@ -120,6 +120,16 @@ public class DocumentRepository<TDocument> : IDocumentRepository<TDocument> wher
             }
         }
 
+        if (document is ISingleRecordSetting)
+        {
+            var baseFilter = GetBaseFilter();
+            var existingCount = await _collection.CountDocumentsAsync(baseFilter, cancellationToken: cancellationToken);
+            if (existingCount > 0)
+            {
+                throw new InvalidOperationException($"An instance of single-record setting '{typeof(TDocument).Name}' already exists. Only one record is permitted.");
+            }
+        }
+
         await _collection.InsertOneAsync(document, cancellationToken: cancellationToken);
     }
 

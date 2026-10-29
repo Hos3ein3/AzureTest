@@ -4,7 +4,7 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Entities.Pomodoro;
 
-public sealed class PomodoroSetting : BaseEntity, IAudit, ITenantEntity
+public sealed class PomodoroSetting : BaseEntity, IAudit, ITenantEntity, ISingleRecordSetting
 {
     public static class Rules
     {

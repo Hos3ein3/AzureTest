@@ -40,6 +40,9 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+// Check & Log Sensitive Secrets Presence (Never Log Values)
+LogSecretConfigurationsPresence(app);
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -60,3 +63,31 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 });
 
 app.Run();
+
+static void LogSecretConfigurationsPresence(WebApplication app)
+{
+    var secretsToCheck = new (string EnvVar, string ConfigKey)[]
+    {
+        ("Authentication__Google__ClientId", "Authentication:Google:ClientId"),
+        ("Authentication__Google__ClientSecret", "Authentication:Google:ClientSecret"),
+        ("EmailSettings__Username", "EmailSettings:Username"),
+        ("EmailSettings__Password", "EmailSettings:Password")
+    };
+
+    foreach (var (envVar, configKey) in secretsToCheck)
+    {
+        var rawEnv = Environment.GetEnvironmentVariable(envVar);
+        var configVal = app.Configuration[configKey] ?? app.Configuration[envVar];
+
+        var effectiveVal = !string.IsNullOrWhiteSpace(rawEnv) ? rawEnv : configVal;
+        var exists = !string.IsNullOrWhiteSpace(effectiveVal) &&
+                     !(effectiveVal.StartsWith("${") && effectiveVal.EndsWith("}"));
+
+        var status = exists ? "exist" : "not exist";
+
+        app.Logger.LogInformation("Configuration secret check -> env:key {EnvVar} ({ConfigKey}): {Status}",
+            envVar,
+            configKey,
+            status);
+    }
+}

@@ -3,7 +3,7 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Entities.Forex;
 
-public sealed class ForexApiSetting : AggregateRoot, IAudit, ISoftDelete, ITenantEntity
+public sealed class ForexApiSetting : AggregateRoot, IAudit, ISoftDelete, ITenantEntity, ISingleRecordSetting
 {
     public static class Rules
     {

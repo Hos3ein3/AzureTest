@@ -32,6 +32,8 @@ public static class DependencyInjection
         services.AddScoped<TenantSaveChangesInterceptor>();
         services.AddScoped<ReadOnlyUserInterceptor>();
         services.AddScoped<ImpersonationReadOnlyInterceptor>();
+        services.AddScoped<SingleRecordSettingInterceptor>();
+        services.AddScoped<ConcurrencyStampInterceptor>();
 
         // ── PostgreSQL / EF Core ──────────────────────────────────────────────
         var connectionString = configuration.GetConnectionString("DefaultConnection");
@@ -47,7 +49,9 @@ public static class DependencyInjection
                 sp.GetRequiredService<DomainEventsInterceptor>(),
                 sp.GetRequiredService<TenantSaveChangesInterceptor>(),
                 sp.GetRequiredService<ReadOnlyUserInterceptor>(),
-                sp.GetRequiredService<ImpersonationReadOnlyInterceptor>());
+                sp.GetRequiredService<ImpersonationReadOnlyInterceptor>(),
+                sp.GetRequiredService<SingleRecordSettingInterceptor>(),
+                sp.GetRequiredService<ConcurrencyStampInterceptor>());
         });
 
         // ── Read-Only DbContext for CQRS Read Scale-Out ───────────────────────

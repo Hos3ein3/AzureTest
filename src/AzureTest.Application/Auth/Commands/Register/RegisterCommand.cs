@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using AzureTest.Application.Abstractions;
 using AzureTest.Application.Auth.Services;
 using AzureTest.Application.IdentitySettings;

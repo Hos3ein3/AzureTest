@@ -1,7 +1,6 @@
 
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 namespace AzureTest.Persistence.Interceptors;
 
 /// <summary>
-/// EF Core interceptor that automatically sets IAudit properties (CreatedOn, ModifiedOn, etc.)
-/// and validates ConcurrencyStamp on save.
+/// EF Core interceptor that automatically sets IAudit properties (CreatedOn, ModifiedOn)
+/// and converts hard-deletes to soft-deletes on save for ISoftDelete entities.
 /// </summary>
 public sealed class AuditInterceptor : SaveChangesInterceptor
 {
@@ -24,7 +23,7 @@ public sealed class AuditInterceptor : SaveChangesInterceptor
     {
         if (eventData.Context is not null)
         {
-            ApplyAuditAndValidate(eventData.Context);
+            ApplyAudit(eventData.Context);
         }
 
         return base.SavingChangesAsync(eventData, result, cancellationToken);
@@ -36,13 +35,13 @@ public sealed class AuditInterceptor : SaveChangesInterceptor
     {
         if (eventData.Context is not null)
         {
-            ApplyAuditAndValidate(eventData.Context);
+            ApplyAudit(eventData.Context);
         }
 
         return base.SavingChanges(eventData, result);
     }
 
-    private static void ApplyAuditAndValidate(DbContext context)
+    private static void ApplyAudit(DbContext context)
     {
         var now = DateTime.UtcNow;
 
@@ -73,27 +72,6 @@ public sealed class AuditInterceptor : SaveChangesInterceptor
                 entry.Entity.IsDeleted = true;
                 entry.Entity.DeletedOn = now;
             }
-        }
-
-        ValidateConcurrencyStamps(context);
-    }
-
-    private static void ValidateConcurrencyStamps(DbContext context)
-    {
-        // Find entities that expose a ConcurrencyStamp property
-        var stampedEntities = context.ChangeTracker
-            .Entries()
-            .Where(e => e.State is EntityState.Modified or EntityState.Deleted)
-            .Where(e => e.Metadata.FindProperty("ConcurrencyStamp") != null)
-            .ToList();
-
-        foreach (var entry in stampedEntities)
-        {
-            var stampProperty = entry.Property("ConcurrencyStamp");
-
-            // Rotate the stamp on every update to enable optimistic concurrency
-            stampProperty.CurrentValue = Guid.NewGuid().ToString();
-            stampProperty.IsModified = true;
         }
     }
 }

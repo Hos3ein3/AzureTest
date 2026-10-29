@@ -4,7 +4,7 @@ using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Entities.Crypto;
 
-public sealed class CryptoApiSetting : AggregateRoot, IAudit, ISoftDelete, ITenantEntity
+public sealed class CryptoApiSetting : AggregateRoot, IAudit, ISoftDelete, ITenantEntity, ISingleRecordSetting
 {
     public static class Rules
     {
