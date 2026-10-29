@@ -16,6 +16,8 @@ public class AuditLogListViewModel
 
     public string? ActionType { get; set; }
     public string? SearchTerm { get; set; }
+    public Guid? FilterUserId { get; set; }
+    public IReadOnlyList<AzureTest.Contracts.DTOs.Users.UserListDto> AvailableUsers { get; set; } = Array.Empty<AzureTest.Contracts.DTOs.Users.UserListDto>();
 
     public bool IsAdmin { get; set; }
     public bool IsImpersonating { get; set; }

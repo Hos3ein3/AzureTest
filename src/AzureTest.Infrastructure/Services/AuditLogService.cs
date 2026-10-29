@@ -139,30 +139,39 @@ public class AuditLogService : IAuditLogService
         string? searchTerm = null,
         int pageNumber = 1,
         int pageSize = 50,
+        Guid? filterUserId = null,
         CancellationToken cancellationToken = default)
     {
         // Strict Security Isolation:
         // Non-admin users are strictly scoped to their own logs
-        Guid? filterTenantId = null;
-        Guid? filterUserId = null;
+        Guid? targetTenantId = null;
+        Guid? targetUserId = null;
 
         if (!isAdmin)
         {
-            filterUserId = currentUserId;
+            targetUserId = currentUserId;
             if (currentTenantId != Guid.Empty)
             {
-                filterTenantId = currentTenantId;
+                targetTenantId = currentTenantId;
             }
         }
-        else if (_tenantProvider.IsAdminImpersonating)
+        else
         {
-            // When Admin is actively impersonating, show logs for the impersonated tenant
-            filterTenantId = _tenantProvider.CurrentTenantId;
+            if (filterUserId.HasValue && filterUserId.Value != Guid.Empty)
+            {
+                targetUserId = filterUserId.Value;
+            }
+
+            if (_tenantProvider.IsAdminImpersonating)
+            {
+                // When Admin is actively impersonating, show logs for the impersonated tenant
+                targetTenantId = _tenantProvider.CurrentTenantId;
+            }
         }
 
         var logs = await _noSqlUnitOfWork.AuditLogs.GetFilteredLogsAsync(
-            filterTenantId,
-            filterUserId,
+            targetTenantId,
+            targetUserId,
             actionType,
             searchTerm,
             pageNumber,
@@ -170,8 +179,8 @@ public class AuditLogService : IAuditLogService
             cancellationToken);
 
         var total = await _noSqlUnitOfWork.AuditLogs.CountFilteredLogsAsync(
-            filterTenantId,
-            filterUserId,
+            targetTenantId,
+            targetUserId,
             actionType,
             searchTerm,
             cancellationToken);

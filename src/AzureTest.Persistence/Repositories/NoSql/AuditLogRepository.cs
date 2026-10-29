@@ -69,12 +69,24 @@ public class AuditLogRepository : DocumentRepository<AuditLogDocument>, IAuditLo
 
         if (id.HasValue && id.Value != Guid.Empty)
         {
-            filter &= builder.Eq(x => x.Id, id.Value);
+            var idFilter = builder.Or(
+                builder.Eq(x => x.Id, id.Value),
+                builder.Eq("_id", id.Value),
+                builder.Eq("Id", id.Value),
+                builder.Eq("_id", id.Value.ToString()),
+                builder.Eq("Id", id.Value.ToString())
+            );
+            filter &= idFilter;
         }
 
         if (userId.HasValue && userId.Value != Guid.Empty)
         {
-            filter &= builder.Eq(x => x.UserId, userId.Value);
+            var userFilter = builder.Or(
+                builder.Eq(x => x.UserId, userId.Value),
+                builder.Eq("UserId", userId.Value),
+                builder.Eq("UserId", userId.Value.ToString())
+            );
+            filter &= userFilter;
         }
 
         if (fromUtc.HasValue)
@@ -108,12 +120,20 @@ public class AuditLogRepository : DocumentRepository<AuditLogDocument>, IAuditLo
 
         if (tenantId.HasValue && tenantId.Value != Guid.Empty)
         {
-            filter &= builder.Eq(x => x.TenantId, tenantId.Value);
+            filter &= builder.Or(
+                builder.Eq(x => x.TenantId, tenantId.Value),
+                builder.Eq("TenantId", tenantId.Value),
+                builder.Eq("TenantId", tenantId.Value.ToString())
+            );
         }
 
         if (userId.HasValue && userId.Value != Guid.Empty)
         {
-            filter &= builder.Eq(x => x.UserId, userId.Value);
+            filter &= builder.Or(
+                builder.Eq(x => x.UserId, userId.Value),
+                builder.Eq("UserId", userId.Value),
+                builder.Eq("UserId", userId.Value.ToString())
+            );
         }
 
         if (!string.IsNullOrWhiteSpace(actionType))

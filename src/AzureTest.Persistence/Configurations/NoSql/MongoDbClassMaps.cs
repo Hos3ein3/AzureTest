@@ -186,6 +186,16 @@ public static class MongoDbClassMaps
                 });
             }
 
+            if (!BsonClassMap.IsClassMapRegistered(typeof(AzureTest.Domain.Documents.Audit.AuditLogDocument)))
+            {
+                BsonClassMap.RegisterClassMap<AzureTest.Domain.Documents.Audit.AuditLogDocument>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.MapIdMember(c => c.Id).SetSerializer(new GuidSerializer(GuidRepresentation.Standard));
+                    cm.SetIgnoreExtraElements(true);
+                });
+            }
+
             _registered = true;
         }
     }

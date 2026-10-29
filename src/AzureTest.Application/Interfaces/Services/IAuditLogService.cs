@@ -24,6 +24,7 @@ public interface IAuditLogService
         string? searchTerm = null,
         int pageNumber = 1,
         int pageSize = 50,
+        Guid? filterUserId = null,
         CancellationToken cancellationToken = default);
 
     Task<long> DeleteLogByIdAsync(Guid id, CancellationToken cancellationToken = default);

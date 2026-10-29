@@ -78,8 +78,8 @@
 <!-- Filters Card -->
 <div class="mb-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
     <form method="get" asp-action="Index">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div class="md:col-span-2">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div class="lg:col-span-2">
                 <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Search Logs</label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
@@ -98,11 +98,27 @@
                 </select>
             </div>
 
+            @if (isAdmin)
+            {
+                <div>
+                    <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Filter by User</label>
+                    <select name="filterUserId" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white">
+                        <option value="" selected="@(!Model.FilterUserId.HasValue)">All Users</option>
+                        @foreach (var u in Model.AvailableUsers)
+                        {
+                            <option value="@u.Id" selected="@(Model.FilterUserId == u.Id)">
+                                @(string.IsNullOrWhiteSpace(u.FullName) ? u.Email : $"{u.FullName} ({u.Email})")
+                            </option>
+                        }
+                    </select>
+                </div>
+            }
+
             <div class="flex items-end gap-2">
                 <button type="submit" class="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition-colors">
                     <i class="fa-solid fa-filter"></i> Filter
                 </button>
-                @if (!string.IsNullOrEmpty(Model.SearchTerm) || !string.IsNullOrEmpty(Model.ActionType))
+                @if (!string.IsNullOrEmpty(Model.SearchTerm) || !string.IsNullOrEmpty(Model.ActionType) || Model.FilterUserId.HasValue)
                 {
                     <a asp-action="Index" class="inline-flex justify-center items-center p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold shadow-2xs transition-colors" title="Clear Filter">
                         <i class="fa-solid fa-rotate-left"></i>
@@ -232,8 +248,9 @@
                             @if (isAdmin)
                             {
                                 <td class="px-4 py-3.5 text-right whitespace-nowrap">
-                                    <form asp-action="Delete" asp-route-id="@log.Id" method="post" class="inline" onsubmit="return confirm('Delete this audit log record?');">
+                                    <form asp-action="Delete" method="post" class="inline" onsubmit="return confirm('Delete this audit log record?');">
                                         @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@log.Id" />
                                         <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Delete Log Record">
                                             <i class="fa-solid fa-trash text-3xs"></i>
                                         </button>
@@ -259,6 +276,7 @@
                 {
                     { "searchTerm", Model.SearchTerm ?? "" },
                     { "actionType", Model.ActionType ?? "" },
+                    { "filterUserId", Model.FilterUserId?.ToString() ?? "" },
                     { "pageSize", Model.PageSize.ToString() }
                 }
             };
@@ -296,14 +314,18 @@
                             <i class="fa-regular fa-calendar-days text-rose-600"></i>
                             <span>Delete by Date Range (From - To)</span>
                         </div>
-                        <span class="text-4xs uppercase font-extrabold text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full">Date Filter</span>
+                        <button type="button" onclick="setAuditToPresent()" class="text-3xs text-brand-600 hover:text-brand-700 font-bold hover:underline">
+                            Set To: Present (Now)
+                        </button>
                     </div>
 
                     <!-- Date Presets -->
                     <div class="flex flex-wrap gap-1.5 text-3xs">
-                        <button type="button" onclick="setAuditDateRangePreset(7)" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:border-brand-500 font-semibold">Last 7 Days</button>
-                        <button type="button" onclick="setAuditDateRangePreset(30)" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:border-brand-500 font-semibold">Last 30 Days</button>
-                        <button type="button" onclick="setAuditDateRangeOlderThan(90)" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:border-brand-500 font-semibold">Older than 90d</button>
+                        <button type="button" onclick="setAuditDateRangePreset(0)" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:border-brand-500 font-semibold text-slate-700">Today (Present)</button>
+                        <button type="button" onclick="setAuditDateRangePreset(7)" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:border-brand-500 font-semibold text-slate-700">Last 7 Days</button>
+                        <button type="button" onclick="setAuditDateRangePreset(30)" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:border-brand-500 font-semibold text-slate-700">Last 30 Days</button>
+                        <button type="button" onclick="setAuditDateRangeOlderThan(30)" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:border-brand-500 font-semibold text-slate-700">Older than 30d</button>
+                        <button type="button" onclick="setAuditAllToPresent()" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:border-brand-500 font-semibold text-slate-700">All Time to Present</button>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3 text-2xs">
@@ -312,7 +334,12 @@
                             <input type="date" id="auditFromDate" name="fromDate" required class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-rose-500" />
                         </div>
                         <div>
-                            <label class="block font-semibold text-slate-500 mb-1">To Date (UTC)</label>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block font-semibold text-slate-500">To Date (UTC)</label>
+                                <button type="button" onclick="setAuditToPresent()" class="text-[10px] text-brand-600 hover:text-brand-700 font-bold hover:underline">
+                                    Present
+                                </button>
+                            </div>
                             <input type="date" id="auditToDate" name="toDate" required class="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-rose-500" />
                         </div>
                     </div>
@@ -326,10 +353,26 @@
                     @Html.AntiForgeryToken()
                     <div class="flex items-center gap-2 text-xs font-bold text-slate-800">
                         <i class="fa-solid fa-user-xmark text-brand-600"></i>
-                        <span>Delete by User ID</span>
+                        <span>Delete by User</span>
                     </div>
+
+                    @if (Model.AvailableUsers.Count > 0)
+                    {
+                        <div>
+                            <label class="block text-3xs font-bold text-slate-500 uppercase tracking-wider mb-1">Select from Registered Users</label>
+                            <select onchange="if (this.value) { document.getElementById('auditDeleteUserIdInput').value = this.value; }" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                <option value="">-- Choose User to Fill ID --</option>
+                                @foreach (var u in Model.AvailableUsers)
+                                {
+                                    <option value="@u.Id">@(string.IsNullOrWhiteSpace(u.FullName) ? u.Email : $"{u.FullName} ({u.Email})")</option>
+                                }
+                            </select>
+                        </div>
+                    }
+
                     <div>
-                        <input type="text" name="userId" placeholder="Enter target User Guid (e.g. 00000000-0000...)" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                        <label class="block text-3xs font-bold text-slate-500 uppercase tracking-wider mb-1">Target User GUID</label>
+                        <input type="text" id="auditDeleteUserIdInput" name="userId" placeholder="Enter target User Guid (e.g. 00000000-0000...)" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
                     </div>
                     <button type="submit" class="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-2xs font-bold transition-colors">
                         Delete User Records
@@ -371,6 +414,16 @@
         function setAuditDateRangeOlderThan(days) {
             const to = new Date();
             to.setDate(to.getDate() - days);
+            const from = new Date('2020-01-01');
+            document.getElementById('auditFromDate').value = from.toISOString().split('T')[0];
+            document.getElementById('auditToDate').value = to.toISOString().split('T')[0];
+        }
+        function setAuditToPresent() {
+            const to = new Date();
+            document.getElementById('auditToDate').value = to.toISOString().split('T')[0];
+        }
+        function setAuditAllToPresent() {
+            const to = new Date();
             const from = new Date('2020-01-01');
             document.getElementById('auditFromDate').value = from.toISOString().split('T')[0];
             document.getElementById('auditToDate').value = to.toISOString().split('T')[0];
