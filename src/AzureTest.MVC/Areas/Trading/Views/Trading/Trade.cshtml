@@ -445,18 +445,6 @@
             </div>
         </div>
 
-        <!-- Trade Direction / Side Selector (Long vs Short) -->
-        <div class="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700">
-            <button type="button" onclick="setOrderSide(1)" id="sideTabLong" class="py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 bg-emerald-500 text-white shadow-xs">
-                <i class="fa-solid fa-arrow-trend-up"></i>
-                <span id="sideTabLongText">Long (Buy)</span>
-            </button>
-            <button type="button" onclick="setOrderSide(2)" id="sideTabShort" class="py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:bg-slate-200 dark:hover:bg-slate-700">
-                <i class="fa-solid fa-arrow-trend-down"></i>
-                <span id="sideTabShortText">Short (Sell)</span>
-            </button>
-        </div>
-
         <!-- UIComponent Group Tab: Market | Limit | Stop -->
         <div class="flex items-center gap-1.5 sm:gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 overflow-x-auto">
             <button type="button" onclick="setOrderTab('market')" id="tabMarket" class="order-type-tab px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs font-black bg-brand-500 text-white shadow-xs transition-all shrink-0">
@@ -663,6 +651,16 @@
                     </h4>
                     <!-- Quick R:R Pre-set Buttons -->
                     <div class="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 text-3xs">
+                        <!-- iOS Side Switch (Long / Short) -->
+                        <div class="flex items-center gap-1.5 shrink-0 mr-1.5 pr-2 border-r border-slate-200 dark:border-slate-700">
+                            <span id="sideSwitchLongLabel" class="text-3xs font-black uppercase text-emerald-600 dark:text-emerald-400">Long</span>
+                            <label class="relative inline-flex items-center cursor-pointer" title="Toggle Long / Short Mode">
+                                <input type="checkbox" id="sideToggleSwitch" onchange="toggleSideFromSwitch(this.checked)" class="sr-only peer" />
+                                <div class="w-9 h-5 bg-emerald-500 peer-focus:outline-none rounded-full peer dark:bg-emerald-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-500"></div>
+                            </label>
+                            <span id="sideSwitchShortLabel" class="text-3xs font-extrabold uppercase text-slate-400">Short</span>
+                        </div>
+
                         <span class="text-slate-400 font-bold uppercase mr-1 shrink-0">R:R:</span>
                         <button type="button" onclick="setQuickRr(0.5)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors shrink-0">1:0.5</button>
                         <button type="button" onclick="setQuickRr(1.0)" class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-brand-500 hover:text-white transition-colors shrink-0">1:1</button>
@@ -2060,27 +2058,29 @@
         }
     }
 
+    function toggleSideFromSwitch(isShort) {
+        setOrderSide(isShort ? 2 : 1, true);
+    }
+
     function setOrderSide(side, flipTpSl = true) {
         currentSide = side;
         const sideInput = document.getElementById('formOrderSide');
         if (sideInput) sideInput.value = side;
 
-        const tabLong = document.getElementById('sideTabLong');
-        const tabShort = document.getElementById('sideTabShort');
+        const sideSwitch = document.getElementById('sideToggleSwitch');
+        if (sideSwitch) {
+            sideSwitch.checked = (side === 2);
+        }
 
-        if (side === 1) {
-            if (tabLong) {
-                tabLong.className = "py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 bg-emerald-500 text-white shadow-xs";
-            }
-            if (tabShort) {
-                tabShort.className = "py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:bg-slate-200 dark:hover:bg-slate-700";
-            }
-        } else {
-            if (tabLong) {
-                tabLong.className = "py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-emerald-500 hover:bg-slate-200 dark:hover:bg-slate-700";
-            }
-            if (tabShort) {
-                tabShort.className = "py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 bg-rose-500 text-white shadow-xs";
+        const longLbl = document.getElementById('sideSwitchLongLabel');
+        const shortLbl = document.getElementById('sideSwitchShortLabel');
+        if (longLbl && shortLbl) {
+            if (side === 1) {
+                longLbl.className = "text-3xs font-black uppercase text-emerald-600 dark:text-emerald-400";
+                shortLbl.className = "text-3xs font-extrabold uppercase text-slate-400";
+            } else {
+                longLbl.className = "text-3xs font-extrabold uppercase text-slate-400";
+                shortLbl.className = "text-3xs font-black uppercase text-rose-600 dark:text-rose-400";
             }
         }
 

@@ -237,6 +237,9 @@
                             <a asp-area="" asp-action="Manage" asp-controller="Dashboard" class="flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60">
                                 <i class="fab fa-windows mr-3 w-4 text-center text-slate-400"></i> Dashboards
                             </a>
+                            <a asp-area="" asp-action="Index2" asp-controller="Pages" class="flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60">
+                                <i class="fa-solid fa-book-bookmark mr-3 w-4 text-center text-slate-400"></i> Explore Articles & Docs
+                            </a>
                             @if (_CurrentUser?.IsAdmin == true && _TenantProvider != null && _TenantProvider.IsMultiTenancyEnabled)
                             {
                                 <a asp-area="" asp-action="Index" asp-controller="Tenant" class="flex items-center px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60">
