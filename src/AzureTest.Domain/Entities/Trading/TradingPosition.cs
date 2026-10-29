@@ -194,7 +194,7 @@ public sealed class TradingPosition : AggregateRoot, IAudit, ISoftDelete, ITenan
             : null;
     }
 
-    public void Close(decimal closePrice)
+    public void Close(decimal closePrice, string triggerReason = "Manual")
     {
         if (Status != TradingPositionStatus.Open) return;
 
@@ -219,12 +219,51 @@ public sealed class TradingPosition : AggregateRoot, IAudit, ISoftDelete, ITenan
         }
 
         UnrealizedPnl = Rules.ZeroValue;
+
+        var roi = InitialMargin > 0 ? (RealizedPnl / InitialMargin) * 100m : 0m;
+        AddDomainEvent(new Events.TradingPositionClosedDomainEvent(
+            Id,
+            AccountId,
+            UserId,
+            TenantId,
+            Symbol,
+            AssetName,
+            AssetClass,
+            Side,
+            Quantity,
+            EntryPrice,
+            closePrice,
+            InitialMargin,
+            RealizedPnl,
+            roi,
+            triggerReason,
+            ClosedAtUtc.Value));
     }
 
     public void Liquidate(decimal liquidationPrice)
     {
-        Close(liquidationPrice);
-        RealizedPnl = -InitialMargin;
+        if (Status != TradingPositionStatus.Open) return;
+
+        ClosePrice = liquidationPrice;
+        CurrentPrice = liquidationPrice;
         Status = TradingPositionStatus.Liquidated;
+        ClosedAtUtc = DateTime.UtcNow;
+        RealizedPnl = -InitialMargin;
+        UnrealizedPnl = Rules.ZeroValue;
+
+        AddDomainEvent(new Events.TradingPositionLiquidatedDomainEvent(
+            Id,
+            AccountId,
+            UserId,
+            TenantId,
+            Symbol,
+            AssetName,
+            AssetClass,
+            Side,
+            Quantity,
+            EntryPrice,
+            liquidationPrice,
+            InitialMargin,
+            ClosedAtUtc.Value));
     }
 }

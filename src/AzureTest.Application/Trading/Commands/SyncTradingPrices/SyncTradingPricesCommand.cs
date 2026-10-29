@@ -25,18 +25,18 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
 {
     private readonly IUnitOfWork _uow;
     private readonly ITradingMarketDataService _marketData;
-    private readonly AzureTest.Application.Interfaces.Services.IAppNotificationService? _notificationService;
+    private readonly IEventDispatcher? _eventDispatcher;
     private readonly Microsoft.Extensions.Logging.ILogger<SyncTradingPricesCommandHandler> _logger;
 
     public SyncTradingPricesCommandHandler(
         IUnitOfWork uow,
         ITradingMarketDataService marketData,
-        AzureTest.Application.Interfaces.Services.IAppNotificationService? notificationService = null,
+        IEventDispatcher? eventDispatcher = null,
         Microsoft.Extensions.Logging.ILogger<SyncTradingPricesCommandHandler>? logger = null)
     {
         _uow = uow;
         _marketData = marketData;
-        _notificationService = notificationService;
+        _eventDispatcher = eventDispatcher;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<SyncTradingPricesCommandHandler>.Instance;
     }
 
@@ -116,58 +116,22 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
 
             if (shouldClose)
             {
+                var triggerReason = isLiquidated ? "Liquidation" : ((pos.TakeProfit.HasValue && closePrice == pos.TakeProfit.Value) ? "Take Profit" : "Stop Loss");
+
                 if (isLiquidated)
                 {
                     pos.Liquidate(closePrice);
                 }
                 else
                 {
-                    pos.Close(closePrice);
+                    pos.Close(closePrice, triggerReason);
                 }
 
-                var account = await _uow.TradingAccounts.GetByIdAsync(pos.AccountId);
-                if (account != null)
-                {
-                    account.ApplyRealizedPnl(pos.RealizedPnl, pos.InitialMargin);
-                }
                 actionsExecuted++;
 
-                var triggerReason = isLiquidated ? "Liquidation" : ((pos.TakeProfit.HasValue && closePrice == pos.TakeProfit.Value) ? "Take Profit" : "Stop Loss");
-                var formattedClosePrice = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPrice(closePrice);
-                var formattedPnl = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPnl(pos.RealizedPnl);
-
                 _logger.LogInformation(
-                    "Paper Trade Closed by Background Sync/Hangfire: PositionId={PositionId}, Symbol={Symbol}, Side={Side}, Qty={Quantity}, EntryPrice={EntryPrice}, ExitPrice={ExitPrice}, RealizedPnl={RealizedPnl}, Reason={Reason}, ClosedAt={ClosedAtUtc}",
+                    "Paper Trade Triggered via Domain Event: PositionId={PositionId}, Symbol={Symbol}, Side={Side}, Qty={Quantity}, EntryPrice={EntryPrice}, ExitPrice={ExitPrice}, RealizedPnl={RealizedPnl}, Reason={Reason}, ClosedAt={ClosedAtUtc}",
                     pos.Id, pos.Symbol, pos.Side, pos.Quantity, pos.EntryPrice, closePrice, pos.RealizedPnl, triggerReason, pos.ClosedAtUtc);
-
-                if (_notificationService != null)
-                {
-                    var title = isLiquidated ? $"Paper Trade Liquidated: {pos.Symbol}" : $"Paper Trade Closed ({triggerReason}): {pos.Symbol}";
-                    var message = isLiquidated
-                        ? $"Position liquidated at {formattedClosePrice}. Loss: {formattedPnl}."
-                        : $"Triggered {triggerReason} at {formattedClosePrice}. Realized PnL: {formattedPnl}.";
-
-                    var metadata = new Dictionary<string, string>
-                    {
-                        ["positionId"] = pos.Id.ToString(),
-                        ["symbol"] = pos.Symbol,
-                        ["side"] = pos.Side.ToString(),
-                        ["realizedPnl"] = pos.RealizedPnl.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                        ["closePrice"] = closePrice.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                        ["triggerReason"] = triggerReason,
-                        ["quantity"] = pos.Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                    };
-
-                    _ = _notificationService.SendNotificationAsync(
-                        pos.UserId,
-                        pos.TenantId,
-                        title,
-                        message,
-                        type: "Trade",
-                        actionUrl: "/Trading",
-                        metadata: metadata,
-                        ct: ct);
-                }
             }
         }
 
@@ -216,24 +180,9 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
                     if (account.FreeMargin >= position.InitialMargin)
                     {
                         account.DeductMargin(position.InitialMargin);
-                        order.Fill();
+                        order.Fill(position.Id, marketPrice);
                         _uow.TradingPositions.Add(position);
                         actionsExecuted++;
-
-                        if (_notificationService != null)
-                        {
-                            var sideText = order.Side == TradingOrderSide.Buy ? "Buy (Long)" : "Sell (Short)";
-                            var formattedMarketPrice = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPrice(marketPrice);
-                            var formattedQty = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatQuantity(order.Quantity);
-                            _ = _notificationService.SendNotificationAsync(
-                                order.UserId,
-                                order.TenantId,
-                                $"Paper Order Filled: {order.Symbol}",
-                                $"Pending order filled: {sideText} {formattedQty} {order.Symbol} @ {formattedMarketPrice}.",
-                                type: "Trade",
-                                actionUrl: "/Trading",
-                                ct: ct);
-                        }
                     }
                 }
             }
@@ -241,7 +190,41 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
 
         if (actionsExecuted > 0 || positions.Count > 0)
         {
+            // Atomically commit database changes and Outbox messages in single transaction
             await _uow.SaveChangesAsync(ct);
+
+            // Dispatch collected domain events via EventDispatcher to invoke handlers
+            var domainEvents = _uow.PopDomainEvents();
+            if ((domainEvents == null || domainEvents.Count == 0))
+            {
+                domainEvents = positions.SelectMany(p => p.DomainEvents)
+                    .Concat(pendingOrders.SelectMany(o => o.DomainEvents))
+                    .ToList();
+            }
+
+            if (_eventDispatcher != null && domainEvents != null)
+            {
+                foreach (var domainEvent in domainEvents)
+                {
+                    await _eventDispatcher.PublishAsync(domainEvent, ct);
+                }
+            }
+            else if (domainEvents != null)
+            {
+                var closedHandler = new AzureTest.Application.Trading.EventHandlers.TradingPositionClosedDomainEventHandler(_uow);
+                var liquidatedHandler = new AzureTest.Application.Trading.EventHandlers.TradingPositionLiquidatedDomainEventHandler(_uow);
+                var filledHandler = new AzureTest.Application.Trading.EventHandlers.TradingOrderFilledDomainEventHandler(_uow);
+
+                foreach (var ev in domainEvents)
+                {
+                    if (ev is AzureTest.Domain.Entities.Trading.Events.TradingPositionClosedDomainEvent closed)
+                        await closedHandler.HandleAsync(closed, ct);
+                    else if (ev is AzureTest.Domain.Entities.Trading.Events.TradingPositionLiquidatedDomainEvent liq)
+                        await liquidatedHandler.HandleAsync(liq, ct);
+                    else if (ev is AzureTest.Domain.Entities.Trading.Events.TradingOrderFilledDomainEvent filled)
+                        await filledHandler.HandleAsync(filled, ct);
+                }
+            }
         }
 
         return Result<int>.Success(actionsExecuted);

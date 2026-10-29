@@ -145,10 +145,30 @@ public sealed class TradingOrder : AggregateRoot, IAudit, ISoftDelete, ITenantEn
             expiryDateUtc);
     }
 
-    public void Fill()
+    public void Fill(Guid? positionId = null, decimal? fillPrice = null)
     {
         Status = TradingOrderStatus.Filled;
         FilledAtUtc = DateTime.UtcNow;
+
+        var actualFillPrice = fillPrice ?? Price ?? TriggerPrice ?? 0m;
+        var actualPosId = positionId ?? Guid.Empty;
+        var margin = actualFillPrice > 0 ? (actualFillPrice * Quantity) / Math.Max(1, Leverage) : 0m;
+
+        AddDomainEvent(new Events.TradingOrderFilledDomainEvent(
+            Id,
+            actualPosId,
+            AccountId,
+            UserId,
+            TenantId,
+            Symbol,
+            AssetName,
+            AssetClass,
+            Side,
+            Quantity,
+            actualFillPrice,
+            margin,
+            Leverage,
+            FilledAtUtc.Value));
     }
 
     public void Cancel()

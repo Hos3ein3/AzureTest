@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Messaging;
+using AzureTest.Domain.Primitives;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -19,12 +20,21 @@ public class EventDispatcher : IEventDispatcher
         _logger = logger;
     }
 
-    public async Task PublishAsync<TEvent>(TEvent @event, CancellationToken cancellationToken = default) where TEvent : class
+    public Task PublishAsync<TEvent>(TEvent @event, CancellationToken cancellationToken = default) where TEvent : class
+    {
+        return PublishObjectAsync(@event, cancellationToken);
+    }
+
+    public Task PublishAsync(IDomainEvent domainEvent, CancellationToken cancellationToken = default)
+    {
+        return PublishObjectAsync(domainEvent, cancellationToken);
+    }
+
+    private async Task PublishObjectAsync(object @event, CancellationToken cancellationToken)
     {
         var eventType = @event.GetType();
-        _logger.LogInformation("Publishing event {EventType}", eventType.Name);
+        _logger.LogInformation("EventDispatcher: Publishing event {EventType}", eventType.Name);
 
-        // We use a scope to resolve handlers in case they depend on scoped services like DbContext
         using var scope = _serviceProvider.CreateScope();
         var handlerType = typeof(IEventHandler<>).MakeGenericType(eventType);
         var handlers = scope.ServiceProvider.GetServices(handlerType);

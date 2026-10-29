@@ -207,6 +207,8 @@ public class UnitOfWork : IUnitOfWork
     private AzureTest.Application.Interfaces.Data.Trading.ITradingPositionRepository? _tradingPositions;
     private AzureTest.Application.Interfaces.Data.Trading.ITradingOrderRepository? _tradingOrders;
     private AzureTest.Application.Interfaces.Data.Trading.ITradingWatchlistRepository? _tradingWatchlists;
+    private AzureTest.Application.Interfaces.Data.Outbox.IOutboxRepository? _outboxMessages;
+    private AzureTest.Application.Interfaces.Data.Outbox.IInboxRepository? _inboxMessages;
 
     public AzureTest.Application.Interfaces.Data.Crypto.ICryptoAccountRepository CryptoAccounts => _cryptoAccounts ??= new Crypto.CryptoAccountRepository(_dbContext);
     public AzureTest.Application.Interfaces.Data.Crypto.ICryptoOrderRepository CryptoOrders => _cryptoOrders ??= new Crypto.CryptoOrderRepository(_dbContext);
@@ -221,6 +223,9 @@ public class UnitOfWork : IUnitOfWork
     public AzureTest.Application.Interfaces.Data.Trading.ITradingPositionRepository TradingPositions => _tradingPositions ??= new Trading.TradingPositionRepository(_dbContext);
     public AzureTest.Application.Interfaces.Data.Trading.ITradingOrderRepository TradingOrders => _tradingOrders ??= new Trading.TradingOrderRepository(_dbContext);
     public AzureTest.Application.Interfaces.Data.Trading.ITradingWatchlistRepository TradingWatchlists => _tradingWatchlists ??= new Trading.TradingWatchlistRepository(_dbContext);
+
+    public AzureTest.Application.Interfaces.Data.Outbox.IOutboxRepository OutboxMessages => _outboxMessages ??= new Outbox.OutboxRepository(_dbContext);
+    public AzureTest.Application.Interfaces.Data.Outbox.IInboxRepository InboxMessages => _inboxMessages ??= new Outbox.InboxRepository(_dbContext);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

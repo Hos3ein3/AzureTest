@@ -644,6 +644,11 @@
 
                 @if (_CurrentUser.IsAdmin)
                 {
+                    <a asp-area="" asp-controller="OutboxAdmin" asp-action="Index" data-title="Outbox & Inbox"
+                       class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("OutboxAdmin")">
+                        <i class="fa-solid fa-paper-plane w-6 text-center text-lg transition-colors @GetActiveIconClasses("OutboxAdmin")"></i>
+                        <span class="ml-2 font-medium sidebar-text whitespace-nowrap transition-all duration-300">Outbox &amp; Inbox</span>
+                    </a>
                     <a asp-area="" asp-controller="Tenant" asp-action="Index" data-title="Tenant Management"
                        class="nav-item-link flex items-center px-3 py-2.5 rounded-lg transition-colors group @GetActiveClasses("Tenant")">
                         <i class="fa-solid fa-building-user w-6 text-center text-lg transition-colors @GetActiveIconClasses("Tenant")"></i>

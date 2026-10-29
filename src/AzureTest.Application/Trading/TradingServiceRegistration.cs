@@ -60,6 +60,11 @@ public static class TradingServiceRegistration
         services.AddScoped<ITradingCommandUnit, TradingCommandUnit>();
         services.AddScoped<ITradingQueryUnit, TradingQueryUnit>();
 
+        // Domain Event Handlers
+        services.AddScoped<IEventHandler<AzureTest.Domain.Entities.Trading.Events.TradingPositionClosedDomainEvent>, EventHandlers.TradingPositionClosedDomainEventHandler>();
+        services.AddScoped<IEventHandler<AzureTest.Domain.Entities.Trading.Events.TradingPositionLiquidatedDomainEvent>, EventHandlers.TradingPositionLiquidatedDomainEventHandler>();
+        services.AddScoped<IEventHandler<AzureTest.Domain.Entities.Trading.Events.TradingOrderFilledDomainEvent>, EventHandlers.TradingOrderFilledDomainEventHandler>();
+
         return services;
     }
 }

@@ -112,5 +112,11 @@ public interface IUnitOfWork : IDisposable
     AzureTest.Application.Interfaces.Data.Trading.ITradingOrderRepository TradingOrders { get; }
     AzureTest.Application.Interfaces.Data.Trading.ITradingWatchlistRepository TradingWatchlists { get; }
 
+    // Transactional Outbox & Inbox
+    AzureTest.Application.Interfaces.Data.Outbox.IOutboxRepository OutboxMessages { get; }
+    AzureTest.Application.Interfaces.Data.Outbox.IInboxRepository InboxMessages { get; }
+
+    System.Collections.Generic.IReadOnlyList<AzureTest.Domain.Primitives.IDomainEvent> PopDomainEvents();
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

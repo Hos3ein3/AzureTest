@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Abstractions;
 using AzureTest.Application.Interfaces.Data;
+using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
 using AzureTest.Application.Trading.Services;
 using AzureTest.Domain.Entities.Trading.Enums;
@@ -29,16 +30,27 @@ public sealed class CloseTradingPositionCommandHandler : ICommandHandler<CloseTr
 {
     private readonly IUnitOfWork _uow;
     private readonly ITradingMarketDataService _marketData;
-    private readonly AzureTest.Application.Interfaces.Services.IAppNotificationService? _notificationService;
+    private readonly IEventDispatcher? _eventDispatcher;
+    private readonly IAppNotificationService? _notificationService;
 
     public CloseTradingPositionCommandHandler(
         IUnitOfWork uow,
         ITradingMarketDataService marketData,
-        AzureTest.Application.Interfaces.Services.IAppNotificationService? notificationService = null)
+        IEventDispatcher? eventDispatcher = null,
+        IAppNotificationService? notificationService = null)
     {
         _uow = uow;
         _marketData = marketData;
+        _eventDispatcher = eventDispatcher;
         _notificationService = notificationService;
+    }
+
+    public CloseTradingPositionCommandHandler(
+        IUnitOfWork uow,
+        ITradingMarketDataService marketData,
+        IAppNotificationService? notificationService)
+        : this(uow, marketData, null, notificationService)
+    {
     }
 
     public async Task<Result<Guid>> HandleAsync(CloseTradingPositionCommand cmd, CancellationToken ct)
@@ -74,43 +86,33 @@ public sealed class CloseTradingPositionCommandHandler : ICommandHandler<CloseTr
             }
         }
 
-        position.Close(exitPrice);
+        // Close position and raise TradingPositionClosedDomainEvent on AggregateRoot
+        position.Close(exitPrice, "Manual");
 
-        var account = await _uow.TradingAccounts.GetByIdAsync(position.AccountId);
-        if (account != null)
-        {
-            account.ApplyRealizedPnl(position.RealizedPnl, position.InitialMargin);
-        }
-
+        // Atomically commit position status and transactional Outbox message
         await _uow.SaveChangesAsync(ct);
 
-        if (_notificationService != null)
+        // Dispatch domain events via EventDispatcher to handle balance settlement & side effects
+        var domainEvents = _uow.PopDomainEvents();
+        if ((domainEvents == null || domainEvents.Count == 0) && position.DomainEvents.Count > 0)
         {
-            var formattedExitPrice = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPrice(exitPrice);
-            var formattedPnl = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPnl(position.RealizedPnl);
-            var formattedQty = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatQuantity(position.Quantity);
-            var title = $"Paper Trade Closed: {position.Symbol}";
-            var message = $"Closed {position.Side} position for {formattedQty} {position.Symbol} @ {formattedExitPrice}. Realized PnL: {formattedPnl}.";
-            
-            var metadata = new Dictionary<string, string>
-            {
-                ["positionId"] = position.Id.ToString(),
-                ["symbol"] = position.Symbol,
-                ["side"] = position.Side.ToString(),
-                ["realizedPnl"] = position.RealizedPnl.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                ["exitPrice"] = exitPrice.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                ["quantity"] = position.Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture)
-            };
+            domainEvents = position.DomainEvents.ToList();
+        }
 
-            await _notificationService.SendNotificationAsync(
-                position.UserId,
-                position.TenantId,
-                title,
-                message,
-                type: "Trade",
-                actionUrl: "/Trading",
-                metadata: metadata,
-                ct: ct);
+        if (_eventDispatcher != null && domainEvents != null)
+        {
+            foreach (var domainEvent in domainEvents)
+            {
+                await _eventDispatcher.PublishAsync(domainEvent, ct);
+            }
+        }
+        else if (domainEvents != null)
+        {
+            var fallbackHandler = new AzureTest.Application.Trading.EventHandlers.TradingPositionClosedDomainEventHandler(_uow, _notificationService);
+            foreach (var domainEvent in domainEvents.OfType<AzureTest.Domain.Entities.Trading.Events.TradingPositionClosedDomainEvent>())
+            {
+                await fallbackHandler.HandleAsync(domainEvent, ct);
+            }
         }
 
         return Result<Guid>.Success(position.Id);

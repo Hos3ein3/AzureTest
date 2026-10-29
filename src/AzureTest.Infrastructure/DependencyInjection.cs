@@ -132,6 +132,11 @@ public static class DependencyInjection
         services.AddSingleton<AzureTest.Application.Messaging.IEventDispatcher, AzureTest.Infrastructure.Services.EventDispatcher>();
         services.AddTransient<AzureTest.Application.Messaging.IEventHandler<AzureTest.Application.Permissions.RolePermissionsChangedEvent>, AzureTest.Application.Permissions.RolePermissionsChangedEventHandler>();
         services.AddTransient<AzureTest.Application.Messaging.IEventHandler<AzureTest.Application.Users.UserRegisteredEvent>, AzureTest.Application.Users.UserRegisteredEventHandler>();
+        services.AddTransient<AzureTest.Application.Messaging.IEventHandler<AzureTest.Domain.Entities.Trading.Events.TradingPositionClosedDomainEvent>, AzureTest.Application.Trading.EventHandlers.TradingPositionClosedDomainEventHandler>();
+        services.AddTransient<AzureTest.Application.Messaging.IEventHandler<AzureTest.Domain.Entities.Trading.Events.TradingPositionLiquidatedDomainEvent>, AzureTest.Application.Trading.EventHandlers.TradingPositionLiquidatedDomainEventHandler>();
+        services.AddTransient<AzureTest.Application.Messaging.IEventHandler<AzureTest.Domain.Entities.Trading.Events.TradingOrderFilledDomainEvent>, AzureTest.Application.Trading.EventHandlers.TradingOrderFilledDomainEventHandler>();
+
+        services.AddScoped<AzureTest.Infrastructure.Jobs.IProcessTradingOutboxJob, AzureTest.Infrastructure.Jobs.ProcessTradingOutboxJob>();
 
         services.AddHttpClient<AzureTest.Application.Interfaces.Services.IFootballApiService, AzureTest.Infrastructure.Services.FootballApiService>();
 

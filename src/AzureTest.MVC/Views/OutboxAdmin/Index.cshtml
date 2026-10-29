@@ -1,0 +1,397 @@
+@model AzureTest.MVC.ViewModels.Outbox.OutboxMessageListViewModel
+@{
+    ViewData["Title"] = "Outbox Messages";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Administration", Url = "#" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Outbox Messages", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Transactional Outbox Messages",
+        Subtitle = "Monitor and inspect event messages reliably stored and dispatched in database transactions.",
+        Icon = "fa-solid fa-paper-plane",
+        Badge = "Transactional Outbox",
+        Breadcrumbs = breadcrumbs
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+@if (TempData["Success"] != null)
+{
+    <div class="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 shadow-2xs">
+        <i class="fa-solid fa-circle-check text-emerald-600"></i>
+        <span>@TempData["Success"]</span>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2 shadow-2xs">
+        <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
+        <span>@TempData["Error"]</span>
+    </div>
+}
+
+<!-- Navigation Tabs -->
+<div class="flex items-center gap-2 mb-6 border-b border-slate-200/80 pb-3">
+    <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-brand-500 text-white shadow-2xs">
+        <i class="fa-solid fa-paper-plane text-2xs"></i> Outbox Messages
+        <span class="ml-1 px-2 py-0.5 rounded-full text-3xs font-extrabold bg-white/20 text-white">@Model.TotalCount</span>
+    </a>
+    <a asp-action="Inbox" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors">
+        <i class="fa-solid fa-inbox text-2xs"></i> Inbox Messages
+    </a>
+</div>
+
+<!-- Overview Metric Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+        <div>
+            <p class="text-2xs font-bold text-slate-400 uppercase tracking-wider">Total Outbox Rows</p>
+            <h3 class="text-xl font-black text-slate-900 mt-1">@Model.TotalCount.ToString("N0")</h3>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-database"></i>
+        </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+        <div>
+            <p class="text-2xs font-bold text-emerald-600 uppercase tracking-wider">Processed (Done)</p>
+            <h3 class="text-xl font-black text-emerald-700 mt-1">@Model.ProcessedCount.ToString("N0")</h3>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+        <div>
+            <p class="text-2xs font-bold text-amber-500 uppercase tracking-wider">Pending / Queued</p>
+            <h3 class="text-xl font-black text-amber-600 mt-1">@Model.PendingCount.ToString("N0")</h3>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-hourglass-half"></i>
+        </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+        <div>
+            <p class="text-2xs font-bold text-rose-500 uppercase tracking-wider">Errors / Retries</p>
+            <h3 class="text-xl font-black text-rose-600 mt-1">@Model.FailedCount.ToString("N0")</h3>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Card -->
+<div class="mb-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+    <form method="get" asp-action="Index">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
+            <!-- Search -->
+            <div class="lg:col-span-2">
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Search Outbox</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <input type="text" name="searchTerm" value="@Model.SearchTerm" placeholder="Event type, payload, error..." class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+                </div>
+            </div>
+
+            <!-- Is Done Filter -->
+            <div>
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Status (Is Done)</label>
+                <select name="isDone" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white">
+                    <option value="" selected="@(!Model.IsDone.HasValue)">All Statuses</option>
+                    <option value="true" selected="@(Model.IsDone == true)">Done (Processed)</option>
+                    <option value="false" selected="@(Model.IsDone == false)">Pending (Unprocessed)</option>
+                </select>
+            </div>
+
+            <!-- From Date -->
+            <div>
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">From Date</label>
+                <input type="date" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+            </div>
+
+            <!-- To Date -->
+            <div>
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">To Date</label>
+                <input type="date" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+            </div>
+
+            <!-- Filter & Clear Buttons -->
+            <div class="flex items-end gap-2">
+                <button type="submit" class="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition-colors">
+                    <i class="fa-solid fa-filter"></i> Filter
+                </button>
+                @if (!string.IsNullOrEmpty(Model.SearchTerm) || Model.IsDone.HasValue || Model.FromDate.HasValue || Model.ToDate.HasValue)
+                {
+                    <a asp-action="Index" class="inline-flex justify-center items-center p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold shadow-2xs transition-colors" title="Clear Filters">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                }
+            </div>
+        </div>
+
+        <!-- Secondary Controls: Sorting & PageSize -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-slate-100 text-2xs text-slate-500">
+            <div class="flex items-center gap-3">
+                <span class="font-bold uppercase tracking-wider">Sort by:</span>
+                <select name="sortBy" onchange="this.form.submit()" class="px-2.5 py-1 rounded-lg border border-slate-200 text-2xs font-medium text-slate-700 bg-white">
+                    <option value="OccurredOnUtc" selected="@(string.Equals(Model.SortBy, "OccurredOnUtc", StringComparison.OrdinalIgnoreCase))">Occurred On</option>
+                    <option value="ProcessedOnUtc" selected="@(string.Equals(Model.SortBy, "ProcessedOnUtc", StringComparison.OrdinalIgnoreCase))">Processed On</option>
+                    <option value="EventType" selected="@(string.Equals(Model.SortBy, "EventType", StringComparison.OrdinalIgnoreCase))">Event Type</option>
+                    <option value="RetryCount" selected="@(string.Equals(Model.SortBy, "RetryCount", StringComparison.OrdinalIgnoreCase))">Retry Count</option>
+                </select>
+
+                <select name="sortDescending" onchange="this.form.submit()" class="px-2.5 py-1 rounded-lg border border-slate-200 text-2xs font-medium text-slate-700 bg-white">
+                    <option value="true" selected="@Model.SortDescending">Descending (Newest First)</option>
+                    <option value="false" selected="@(!Model.SortDescending)">Ascending (Oldest First)</option>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <span class="font-bold uppercase tracking-wider">Rows per page:</span>
+                <select name="pageSize" onchange="this.form.submit()" class="px-2.5 py-1 rounded-lg border border-slate-200 text-2xs font-medium text-slate-700 bg-white">
+                    <option value="10" selected="@(Model.PageSize == 10)">10</option>
+                    <option value="20" selected="@(Model.PageSize == 20)">20</option>
+                    <option value="50" selected="@(Model.PageSize == 50)">50</option>
+                    <option value="100" selected="@(Model.PageSize == 100)">100</option>
+                </select>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Outbox Table Card -->
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+    <div class="px-5 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-brand-600 text-xs"></i>
+            <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Outbox Records (@Model.TotalCount total)</span>
+        </div>
+        <span class="text-2xs text-slate-400 font-mono">Page @Model.PageNumber of @Model.TotalPages</span>
+    </div>
+
+    @if (Model.Messages.Count == 0)
+    {
+        <div class="p-8">
+            <partial name="UiComponents/_EmptyState" model='new AzureTest.MVC.Models.EmptyStateModel { Title = "No Outbox Messages Found", Description = "No outbox records matched your filter criteria. As domain events are raised, they are persisted here.", Icon = "fa-solid fa-paper-plane" }' />
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200/80 uppercase tracking-wider text-2xs">
+                    <tr>
+                        <th scope="col" class="px-5 py-3.5">Message ID</th>
+                        <th scope="col" class="px-4 py-3.5">Event Type</th>
+                        <th scope="col" class="px-4 py-3.5">Occurred (UTC)</th>
+                        <th scope="col" class="px-4 py-3.5">Status / Done</th>
+                        <th scope="col" class="px-4 py-3.5">Processed (UTC)</th>
+                        <th scope="col" class="px-4 py-3.5">Retries</th>
+                        <th scope="col" class="px-4 py-3.5 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach (var msg in Model.Messages)
+                    {
+                        var isDone = msg.ProcessedOnUtc.HasValue;
+                        var hasError = !string.IsNullOrWhiteSpace(msg.Error);
+                        var shortEventName = msg.EventType.Contains('.') ? msg.EventType.Split('.').Last().Split(',').First() : msg.EventType;
+
+                        <tr class="hover:bg-slate-50/70 transition-colors">
+                            <td class="px-5 py-3.5 font-mono text-slate-700 whitespace-nowrap text-2xs">
+                                <div class="flex items-center gap-1.5">
+                                    <span title="@msg.Id">@msg.Id.ToString().Substring(0, 8)...</span>
+                                    <button type="button" onclick="navigator.clipboard.writeText('@msg.Id'); alert('Copied ID to clipboard!');" class="text-slate-400 hover:text-slate-600" title="Copy GUID">
+                                        <i class="fa-regular fa-copy text-3xs"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3.5">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80" title="@msg.EventType">
+                                    <i class="fa-solid fa-tag text-3xs"></i> @shortEventName
+                                </span>
+                            </td>
+                            <td class="px-4 py-3.5 font-mono text-slate-600 whitespace-nowrap text-2xs">
+                                @msg.OccurredOnUtc.ToString("yyyy-MM-dd HH:mm:ss")
+                            </td>
+                            <td class="px-4 py-3.5 whitespace-nowrap">
+                                @if (isDone)
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                                        <i class="fa-solid fa-circle-check text-3xs"></i> Done
+                                    </span>
+                                }
+                                else if (hasError)
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-rose-50 text-rose-700 border border-rose-200/80" title="@msg.Error">
+                                        <i class="fa-solid fa-triangle-exclamation text-3xs"></i> Failed
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-amber-50 text-amber-700 border border-amber-200/80">
+                                        <i class="fa-solid fa-clock text-3xs"></i> Pending
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-4 py-3.5 font-mono text-slate-600 whitespace-nowrap text-2xs">
+                                @(msg.ProcessedOnUtc.HasValue ? msg.ProcessedOnUtc.Value.ToString("yyyy-MM-dd HH:mm:ss") : "-")
+                            </td>
+                            <td class="px-4 py-3.5 whitespace-nowrap font-mono text-2xs">
+                                @if (msg.RetryCount > 0)
+                                {
+                                    <span class="px-2 py-0.5 rounded-md font-bold text-rose-700 bg-rose-50 border border-rose-200">
+                                        @msg.RetryCount / 5
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-slate-400">0</span>
+                                }
+                            </td>
+                            <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <button type="button" onclick="viewOutboxPayload('@msg.Id')" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-2xs font-bold transition-colors shadow-2xs" title="View Payload JSON">
+                                        <i class="fa-solid fa-code text-3xs"></i> Payload
+                                    </button>
+
+                                    @if (!isDone || hasError)
+                                    {
+                                        <form asp-action="RetryOutbox" asp-route-id="@msg.Id" method="post" class="inline" onsubmit="return confirm('Reset this message to be retried by the background worker?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="px-2.5 py-1 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-2xs font-bold transition-colors shadow-2xs" title="Retry Processing">
+                                                <i class="fa-solid fa-rotate-right text-3xs"></i> Retry
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            var paginationModel = new AzureTest.MVC.Models.PaginationModel
+            {
+                CurrentPage = Model.PageNumber,
+                TotalPages = Model.TotalPages,
+                PageSize = Model.PageSize,
+                TotalItems = Model.TotalCount,
+                BaseUrl = "/OutboxAdmin/Index",
+                RouteParams = new Dictionary<string, string>
+                {
+                    { "searchTerm", Model.SearchTerm ?? "" },
+                    { "isDone", Model.IsDone.HasValue ? Model.IsDone.Value.ToString().ToLower() : "" },
+                    { "fromDate", Model.FromDate?.ToString("yyyy-MM-dd") ?? "" },
+                    { "toDate", Model.ToDate?.ToString("yyyy-MM-dd") ?? "" },
+                    { "sortBy", Model.SortBy ?? "OccurredOnUtc" },
+                    { "sortDescending", Model.SortDescending.ToString().ToLower() },
+                    { "pageSize", Model.PageSize.ToString() }
+                }
+            };
+            <partial name="UiComponents/_Pagination" model="paginationModel" />
+        }
+    }
+</div>
+
+<!-- Payload JSON Viewer Modal -->
+<div id="payloadModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-code"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Outbox Message Details</h3>
+                    <p id="modalEventType" class="text-2xs text-slate-500 font-mono truncate max-w-md"></p>
+                </div>
+            </div>
+            <button type="button" onclick="closePayloadModal()" class="w-7 h-7 rounded-lg hover:bg-slate-200/60 text-slate-400 hover:text-slate-600 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div id="modalErrorSection" class="hidden p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-2xs font-mono break-all">
+                <div class="font-bold mb-1 text-rose-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Error Log
+                </div>
+                <div id="modalErrorText"></div>
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="text-2xs font-bold text-slate-500 uppercase tracking-wider">Event Payload (JSON)</label>
+                    <button type="button" onclick="copyModalPayload()" class="text-2xs font-bold text-brand-600 hover:text-brand-700">
+                        <i class="fa-regular fa-copy"></i> Copy JSON
+                    </button>
+                </div>
+                <pre id="modalPayloadJson" class="w-full max-h-96 p-4 rounded-2xl bg-slate-900 text-emerald-400 font-mono text-2xs overflow-auto select-all leading-relaxed"></pre>
+            </div>
+        </div>
+
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+            <button type="button" onclick="closePayloadModal()" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold transition-colors">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function viewOutboxPayload(id) {
+        try {
+            const resp = await fetch('/OutboxAdmin/OutboxPayload/' + id);
+            if (!resp.ok) throw new Error('Failed to load payload');
+            const data = await resp.json();
+
+            document.getElementById('modalEventType').innerText = data.eventType;
+
+            const errorSec = document.getElementById('modalErrorSection');
+            const errorText = document.getElementById('modalErrorText');
+            if (data.error) {
+                errorText.innerText = data.error;
+                errorSec.classList.remove('hidden');
+            } else {
+                errorSec.classList.add('hidden');
+            }
+
+            let formattedJson = data.payload;
+            try {
+                formattedJson = JSON.stringify(JSON.parse(data.payload), null, 2);
+            } catch (e) { }
+
+            document.getElementById('modalPayloadJson').innerText = formattedJson;
+            document.getElementById('payloadModal').classList.remove('hidden');
+        } catch (err) {
+            alert('Failed to load message details: ' + err.message);
+        }
+    }
+
+    function closePayloadModal() {
+        document.getElementById('payloadModal').classList.add('hidden');
+    }
+
+    function copyModalPayload() {
+        const text = document.getElementById('modalPayloadJson').innerText;
+        navigator.clipboard.writeText(text);
+        alert('Payload JSON copied to clipboard!');
+    }
+</script>

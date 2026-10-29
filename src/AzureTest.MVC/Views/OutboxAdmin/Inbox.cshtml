@@ -1,0 +1,223 @@
+@model AzureTest.MVC.ViewModels.Outbox.InboxMessageListViewModel
+@{
+    ViewData["Title"] = "Inbox Messages";
+
+    var breadcrumbs = new List<AzureTest.MVC.Models.BreadcrumbItem>
+    {
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Dashboard", Url = "/" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Administration", Url = "#" },
+        new AzureTest.MVC.Models.BreadcrumbItem { Label = "Inbox Messages", IsActive = true }
+    };
+
+    var headerModel = new AzureTest.MVC.Models.PageHeaderModel
+    {
+        Title = "Inbox Messages & Deduplication",
+        Subtitle = "Idempotency log ensuring exactly-once processing of domain events by event handlers.",
+        Icon = "fa-solid fa-inbox",
+        Badge = "Idempotent Inbox",
+        Breadcrumbs = breadcrumbs
+    };
+}
+
+<partial name="UiComponents/_PageHeader" model="headerModel" />
+
+<!-- Navigation Tabs -->
+<div class="flex items-center gap-2 mb-6 border-b border-slate-200/80 pb-3">
+    <a asp-action="Index" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors">
+        <i class="fa-solid fa-paper-plane text-2xs"></i> Outbox Messages
+    </a>
+    <a asp-action="Inbox" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-brand-500 text-white shadow-2xs">
+        <i class="fa-solid fa-inbox text-2xs"></i> Inbox Messages
+        <span class="ml-1 px-2 py-0.5 rounded-full text-3xs font-extrabold bg-white/20 text-white">@Model.TotalCount</span>
+    </a>
+</div>
+
+<!-- Overview Metric Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+        <div>
+            <p class="text-2xs font-bold text-slate-400 uppercase tracking-wider">Processed &amp; Deduplicated</p>
+            <h3 class="text-xl font-black text-slate-900 mt-1">@Model.TotalCount.ToString("N0")</h3>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-list-check"></i>
+        </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+        <div>
+            <p class="text-2xs font-bold text-emerald-600 uppercase tracking-wider">Idempotency Guarantee</p>
+            <h3 class="text-xl font-black text-emerald-700 mt-1">Active</h3>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-shield-halved"></i>
+        </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+        <div>
+            <p class="text-2xs font-bold text-indigo-600 uppercase tracking-wider">Scope</p>
+            <h3 class="text-xl font-black text-indigo-700 mt-1">Domain Handlers</h3>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-gears"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Card -->
+<div class="mb-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+    <form method="get" asp-action="Inbox">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+            <!-- Search -->
+            <div class="lg:col-span-2">
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Search Inbox</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <input type="text" name="searchTerm" value="@Model.SearchTerm" placeholder="Handler name or event ID..." class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+                </div>
+            </div>
+
+            <!-- From Date -->
+            <div>
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">From Date</label>
+                <input type="date" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+            </div>
+
+            <!-- To Date -->
+            <div>
+                <label class="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">To Date</label>
+                <input type="date" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all bg-white" />
+            </div>
+
+            <!-- Filter & Clear Buttons -->
+            <div class="flex items-end gap-2">
+                <button type="submit" class="flex-1 inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition-colors">
+                    <i class="fa-solid fa-filter"></i> Filter
+                </button>
+                @if (!string.IsNullOrEmpty(Model.SearchTerm) || Model.FromDate.HasValue || Model.ToDate.HasValue)
+                {
+                    <a asp-action="Inbox" class="inline-flex justify-center items-center p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold shadow-2xs transition-colors" title="Clear Filters">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                }
+            </div>
+        </div>
+
+        <!-- Secondary Controls: Sorting & PageSize -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-slate-100 text-2xs text-slate-500">
+            <div class="flex items-center gap-3">
+                <span class="font-bold uppercase tracking-wider">Sort by:</span>
+                <select name="sortBy" onchange="this.form.submit()" class="px-2.5 py-1 rounded-lg border border-slate-200 text-2xs font-medium text-slate-700 bg-white">
+                    <option value="ReceivedOnUtc" selected="@(string.Equals(Model.SortBy, "ReceivedOnUtc", StringComparison.OrdinalIgnoreCase))">Received On</option>
+                    <option value="ProcessedOnUtc" selected="@(string.Equals(Model.SortBy, "ProcessedOnUtc", StringComparison.OrdinalIgnoreCase))">Processed On</option>
+                    <option value="HandlerName" selected="@(string.Equals(Model.SortBy, "HandlerName", StringComparison.OrdinalIgnoreCase))">Handler Name</option>
+                </select>
+
+                <select name="sortDescending" onchange="this.form.submit()" class="px-2.5 py-1 rounded-lg border border-slate-200 text-2xs font-medium text-slate-700 bg-white">
+                    <option value="true" selected="@Model.SortDescending">Descending (Newest First)</option>
+                    <option value="false" selected="@(!Model.SortDescending)">Ascending (Oldest First)</option>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <span class="font-bold uppercase tracking-wider">Rows per page:</span>
+                <select name="pageSize" onchange="this.form.submit()" class="px-2.5 py-1 rounded-lg border border-slate-200 text-2xs font-medium text-slate-700 bg-white">
+                    <option value="10" selected="@(Model.PageSize == 10)">10</option>
+                    <option value="20" selected="@(Model.PageSize == 20)">20</option>
+                    <option value="50" selected="@(Model.PageSize == 50)">50</option>
+                    <option value="100" selected="@(Model.PageSize == 100)">100</option>
+                </select>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Inbox Table Card -->
+<div class="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+    <div class="px-5 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-brand-600 text-xs"></i>
+            <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Inbox Records (@Model.TotalCount total)</span>
+        </div>
+        <span class="text-2xs text-slate-400 font-mono">Page @Model.PageNumber of @Model.TotalPages</span>
+    </div>
+
+    @if (Model.Messages.Count == 0)
+    {
+        <div class="p-8">
+            <partial name="UiComponents/_EmptyState" model='new AzureTest.MVC.Models.EmptyStateModel { Title = "No Inbox Messages Found", Description = "No inbox records matched your filter criteria. As event handlers process domain events, they register their deduplication record here.", Icon = "fa-solid fa-inbox" }' />
+        </div>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200/80 uppercase tracking-wider text-2xs">
+                    <tr>
+                        <th scope="col" class="px-5 py-3.5">Event ID</th>
+                        <th scope="col" class="px-4 py-3.5">Handler Name</th>
+                        <th scope="col" class="px-4 py-3.5">Received (UTC)</th>
+                        <th scope="col" class="px-4 py-3.5">Processed (UTC)</th>
+                        <th scope="col" class="px-4 py-3.5 text-right">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    @foreach (var msg in Model.Messages)
+                    {
+                        <tr class="hover:bg-slate-50/70 transition-colors">
+                            <td class="px-5 py-3.5 font-mono text-slate-700 whitespace-nowrap text-2xs">
+                                <div class="flex items-center gap-1.5">
+                                    <span title="@msg.Id">@msg.Id</span>
+                                    <button type="button" onclick="navigator.clipboard.writeText('@msg.Id'); alert('Copied Event ID to clipboard!');" class="text-slate-400 hover:text-slate-600" title="Copy Event ID">
+                                        <i class="fa-regular fa-copy text-3xs"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3.5">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+                                    <i class="fa-solid fa-gear text-3xs"></i> @msg.HandlerName
+                                </span>
+                            </td>
+                            <td class="px-4 py-3.5 font-mono text-slate-600 whitespace-nowrap text-2xs">
+                                @msg.ReceivedOnUtc.ToString("yyyy-MM-dd HH:mm:ss")
+                            </td>
+                            <td class="px-4 py-3.5 font-mono text-slate-600 whitespace-nowrap text-2xs">
+                                @msg.ProcessedOnUtc.ToString("yyyy-MM-dd HH:mm:ss")
+                            </td>
+                            <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                                    <i class="fa-solid fa-circle-check text-3xs"></i> Processed
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            var paginationModel = new AzureTest.MVC.Models.PaginationModel
+            {
+                CurrentPage = Model.PageNumber,
+                TotalPages = Model.TotalPages,
+                PageSize = Model.PageSize,
+                TotalItems = Model.TotalCount,
+                BaseUrl = "/OutboxAdmin/Inbox",
+                RouteParams = new Dictionary<string, string>
+                {
+                    { "searchTerm", Model.SearchTerm ?? "" },
+                    { "fromDate", Model.FromDate?.ToString("yyyy-MM-dd") ?? "" },
+                    { "toDate", Model.ToDate?.ToString("yyyy-MM-dd") ?? "" },
+                    { "sortBy", Model.SortBy ?? "ReceivedOnUtc" },
+                    { "sortDescending", Model.SortDescending.ToString().ToLower() },
+                    { "pageSize", Model.PageSize.ToString() }
+                }
+            };
+            <partial name="UiComponents/_Pagination" model="paginationModel" />
+        }
+    }
+</div>

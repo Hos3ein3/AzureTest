@@ -38,6 +38,12 @@ public class TradingPriceSyncJob : ITradingPriceSyncJob
                 {
                     _logger.LogInformation("TradingPriceSyncJob [5s Cycle {Cycle}/12]: {Count} paper orders/positions automatically triggered or filled (SL/TP/Limits).", cycle + 1, result.Value);
                 }
+
+                var outboxJob = scope.ServiceProvider.GetService<IProcessTradingOutboxJob>();
+                if (outboxJob != null)
+                {
+                    await outboxJob.ProcessAsync(cancellationToken);
+                }
             }
             catch (Exception ex)
             {

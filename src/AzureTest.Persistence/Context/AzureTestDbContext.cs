@@ -162,6 +162,10 @@ public class AzureTestDbContext : IdentityDbContext<ApplicationUser, Application
     public DbSet<AzureTest.Domain.Entities.Trading.TradingOrder> TradingOrders => Set<AzureTest.Domain.Entities.Trading.TradingOrder>();
     public DbSet<AzureTest.Domain.Entities.Trading.TradingWatchlist> TradingWatchlists => Set<AzureTest.Domain.Entities.Trading.TradingWatchlist>();
 
+    // Event-Driven Outbox & Inbox
+    public DbSet<AzureTest.Domain.Entities.Outbox.OutboxMessage> OutboxMessages => Set<AzureTest.Domain.Entities.Outbox.OutboxMessage>();
+    public DbSet<AzureTest.Domain.Entities.Outbox.InboxMessage> InboxMessages => Set<AzureTest.Domain.Entities.Outbox.InboxMessage>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
