@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.DataProtection;
 using AzureTest.Application;
 using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Interfaces.Services;
-using AzureTest.Domain.Entities.Identity;
 using AzureTest.Infrastructure;
 using AzureTest.Infrastructure.Configuration;
 using AzureTest.Infrastructure.Seeding;

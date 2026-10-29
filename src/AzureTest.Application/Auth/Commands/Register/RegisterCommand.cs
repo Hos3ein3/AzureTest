@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Abstractions;
@@ -10,7 +11,10 @@ using AzureTest.Application.Messaging;
 using AzureTest.Domain.Documents;
 using AzureTest.Domain.Entities.Identity;
 using FluentValidation;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
 
 namespace AzureTest.Application.Auth.Commands.Register;
 
@@ -18,7 +22,8 @@ public sealed record RegisterCommand(
     string Name,
     string Email,
     string Password,
-    string ConfirmPassword
+    string ConfirmPassword,
+    string? ConfirmationLinkTemplate = null
 ) : ICommand<Result<RegisterCommandResult>>;
 
 public sealed record RegisterCommandResult(
@@ -26,7 +31,8 @@ public sealed record RegisterCommandResult(
     ApplicationUser? User,
     bool StayLoginAfterRegister,
     string RedirectUrl,
-    IReadOnlyList<string>? Errors
+    IReadOnlyList<string>? Errors,
+    bool ConfirmationEmailSent = false
 );
 
 public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand>
@@ -53,15 +59,24 @@ public sealed class RegisterCommandHandler : ICommandHandler<RegisterCommand, Re
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IAuthSessionService _sessionService;
     private readonly IQueryHandler<GetIdentitySettingQuery, Result<IdentitySetting>> _identitySettingQuery;
+    private readonly IEmailSender<ApplicationUser> _emailSender;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ILogger<RegisterCommandHandler> _logger;
 
     public RegisterCommandHandler(
         UserManager<ApplicationUser> userManager,
         IAuthSessionService sessionService,
-        IQueryHandler<GetIdentitySettingQuery, Result<IdentitySetting>> identitySettingQuery)
+        IQueryHandler<GetIdentitySettingQuery, Result<IdentitySetting>> identitySettingQuery,
+        IEmailSender<ApplicationUser> emailSender,
+        IHttpContextAccessor httpContextAccessor,
+        ILogger<RegisterCommandHandler> logger)
     {
         _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         _sessionService = sessionService ?? throw new ArgumentNullException(nameof(sessionService));
         _identitySettingQuery = identitySettingQuery ?? throw new ArgumentNullException(nameof(identitySettingQuery));
+        _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
+        _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<Result<RegisterCommandResult>> HandleAsync(RegisterCommand request, CancellationToken cancellationToken = default)
@@ -107,6 +122,39 @@ public sealed class RegisterCommandHandler : ICommandHandler<RegisterCommand, Re
             }
         }
 
+        var confirmationEmailSent = false;
+        if (!user.EmailConfirmed)
+        {
+            try
+            {
+                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+                string confirmationLink;
+                if (!string.IsNullOrWhiteSpace(request.ConfirmationLinkTemplate))
+                {
+                    confirmationLink = request.ConfirmationLinkTemplate
+                        .Replace("{userId}", user.Id.ToString())
+                        .Replace("{code}", Uri.EscapeDataString(encodedToken));
+                }
+                else
+                {
+                    var httpContext = _httpContextAccessor?.HttpContext;
+                    var scheme = httpContext?.Request.Scheme ?? "https";
+                    var host = httpContext?.Request.Host.Value ?? "localhost";
+                    confirmationLink = $"{scheme}://{host}/Auth/ConfirmEmail?userId={user.Id}&code={Uri.EscapeDataString(encodedToken)}";
+                }
+
+                await _emailSender.SendConfirmationLinkAsync(user, user.Email!, confirmationLink);
+                confirmationEmailSent = true;
+                _logger.LogInformation("Email confirmation link dispatched to user {UserId} ({Email})", user.Id, user.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send confirmation email to {Email}", user.Email);
+            }
+        }
+
         if (setting.StayLoginAfterRegister)
         {
             await _sessionService.CacheUserSessionAsync(user, cancellationToken);
@@ -117,6 +165,6 @@ public sealed class RegisterCommandHandler : ICommandHandler<RegisterCommand, Re
             : (setting.RedirectAfterRegister ?? "/Auth/Login");
 
         return Result<RegisterCommandResult>.Success(new RegisterCommandResult(
-            true, user, setting.StayLoginAfterRegister, redirectUrl, null));
+            true, user, setting.StayLoginAfterRegister, redirectUrl, null, confirmationEmailSent));
     }
 }

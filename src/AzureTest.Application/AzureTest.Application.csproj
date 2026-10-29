@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.WebUtilities" />
         <ProjectReference Include="..\AzureTest.Contracts\AzureTest.Contracts.csproj" />
         <ProjectReference Include="..\AzureTest.Domain\AzureTest.Domain.csproj" />
         <PackageReference Include="MassTransit" />

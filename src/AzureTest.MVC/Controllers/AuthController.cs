@@ -5,11 +5,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Auth;
 using AzureTest.Application.Auth.Commands.ChangePassword;
+using AzureTest.Application.Auth.Commands.ConfirmEmail;
 using AzureTest.Application.Auth.Commands.ForgotPassword;
 using AzureTest.Application.Auth.Commands.GoogleCallback;
 using AzureTest.Application.Auth.Commands.Login;
 using AzureTest.Application.Auth.Commands.Logout;
 using AzureTest.Application.Auth.Commands.Register;
+using AzureTest.Application.Auth.Commands.ResetPassword;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Users.Commands.RefreshToken;
 using AzureTest.Contracts.DTOs.Users;
@@ -153,7 +155,8 @@ public class AuthController : Controller
         string confirmPassword,
         CancellationToken cancellationToken = default)
     {
-        var command = new RegisterCommand(name, email, password, confirmPassword);
+        var confirmationTemplate = Url.Action(nameof(ConfirmEmail), "Auth", new { userId = "{userId}", code = "{code}" }, Request.Scheme);
+        var command = new RegisterCommand(name, email, password, confirmPassword, confirmationTemplate);
         var result = await _commands.Register.HandleAsync(command, cancellationToken);
 
         if (!result.IsSuccess)
@@ -178,6 +181,11 @@ public class AuthController : Controller
         if (regResult.StayLoginAfterRegister && regResult.User != null)
         {
             await _signInManager.SignInAsync(regResult.User, isPersistent: true);
+        }
+
+        if (regResult.ConfirmationEmailSent)
+        {
+            TempData["Success"] = $"Registration successful! A confirmation email has been sent to {email}. Please check your inbox to confirm your account.";
         }
 
         return LocalRedirect(regResult.RedirectUrl);
@@ -370,7 +378,8 @@ public class AuthController : Controller
             return View();
         }
 
-        var result = await _commands.ForgotPassword.HandleAsync(new ForgotPasswordCommand(email), cancellationToken);
+        var resetLinkTemplate = Url.Action(nameof(ResetPassword), "Auth", new { userId = "{userId}", code = "{code}" }, Request.Scheme);
+        var result = await _commands.ForgotPassword.HandleAsync(new ForgotPasswordCommand(email, resetLinkTemplate), cancellationToken);
         if (!result.IsSuccess)
         {
             ModelState.AddModelError(string.Empty, result.Error ?? "Unable to process request.");
@@ -378,9 +387,110 @@ public class AuthController : Controller
         }
 
         ViewBag.ResetToken = result.Value.ResetToken;
+        ViewBag.ResetLink = result.Value.ResetLink;
         ViewBag.Message = result.Value.Message;
         ViewBag.IsSubmitted = true;
         return View();
+    }
+
+    [HttpGet]
+    [AllowAnonymous]
+    [DisplayName("Confirm Email")]
+    [Description("Verify user email address using confirmation token.")]
+    public async Task<IActionResult> ConfirmEmail(string? userId = null, string? code = null, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(code))
+        {
+            ViewBag.Success = false;
+            ViewBag.Message = "Invalid or missing email confirmation token.";
+            return View();
+        }
+
+        var result = await _commands.ConfirmEmail.HandleAsync(new ConfirmEmailCommand(userId, code), cancellationToken);
+        if (!result.IsSuccess)
+        {
+            ViewBag.Success = false;
+            ViewBag.Message = result.Error ?? "Email confirmation failed.";
+            return View();
+        }
+
+        ViewBag.Success = result.Value.Succeeded;
+        ViewBag.Message = result.Value.Message;
+        ViewBag.Errors = result.Value.Errors;
+        return View();
+    }
+
+    [HttpGet]
+    [AllowAnonymous]
+    [DisplayName("Reset Password")]
+    [Description("Display password reset form.")]
+    public IActionResult ResetPassword(string? userId = null, string? code = null)
+    {
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(code))
+        {
+            TempData["Error"] = "Invalid or expired password reset link. Please request a new one.";
+            return RedirectToAction(nameof(ForgotPassword));
+        }
+
+        ViewBag.UserId = userId;
+        ViewBag.Code = code;
+        return View();
+    }
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    [DisplayName("Reset Password")]
+    [Description("Submit new password to reset account password.")]
+    public async Task<IActionResult> ResetPassword(
+        string userId,
+        string code,
+        string password,
+        string confirmPassword,
+        CancellationToken cancellationToken = default)
+    {
+        ViewBag.UserId = userId;
+        ViewBag.Code = code;
+
+        if (string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(confirmPassword))
+        {
+            ModelState.AddModelError(string.Empty, "Password and confirmation password are required.");
+            return View();
+        }
+
+        if (password != confirmPassword)
+        {
+            ModelState.AddModelError(string.Empty, "Passwords do not match.");
+            return View();
+        }
+
+        var command = new ResetPasswordCommand(userId, code, password, confirmPassword);
+        var result = await _commands.ResetPassword.HandleAsync(command, cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            ModelState.AddModelError(string.Empty, result.Error ?? "Password reset failed.");
+            return View();
+        }
+
+        if (!result.Value.Succeeded)
+        {
+            if (result.Value.Errors != null)
+            {
+                foreach (var err in result.Value.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, err);
+                }
+            }
+            else
+            {
+                ModelState.AddModelError(string.Empty, result.Value.Message);
+            }
+            return View();
+        }
+
+        TempData["Success"] = "Your password has been reset successfully. You can now sign in with your new password.";
+        return RedirectToAction(nameof(Login));
     }
 
     [HttpGet]

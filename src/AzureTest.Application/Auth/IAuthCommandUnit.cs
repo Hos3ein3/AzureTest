@@ -1,10 +1,12 @@
 using AzureTest.Application.Abstractions;
 using AzureTest.Application.Auth.Commands.ChangePassword;
+using AzureTest.Application.Auth.Commands.ConfirmEmail;
 using AzureTest.Application.Auth.Commands.ForgotPassword;
 using AzureTest.Application.Auth.Commands.GoogleCallback;
 using AzureTest.Application.Auth.Commands.Login;
 using AzureTest.Application.Auth.Commands.Logout;
 using AzureTest.Application.Auth.Commands.Register;
+using AzureTest.Application.Auth.Commands.ResetPassword;
 using AzureTest.Application.Messaging;
 using AzureTest.Application.Users.Commands.RefreshToken;
 using AzureTest.Contracts.DTOs.Users;
@@ -20,4 +22,6 @@ public interface IAuthCommandUnit
     ICommandHandler<RefreshTokenCommand, Result<RefreshTokenResult>> RefreshToken { get; }
     ICommandHandler<ForgotPasswordCommand, Result<ForgotPasswordResult>> ForgotPassword { get; }
     ICommandHandler<ChangePasswordCommand, Result<ChangePasswordResult>> ChangePassword { get; }
+    ICommandHandler<ConfirmEmailCommand, Result<ConfirmEmailResult>> ConfirmEmail { get; }
+    ICommandHandler<ResetPasswordCommand, Result<ResetPasswordResult>> ResetPassword { get; }
 }

@@ -34,7 +34,6 @@ public static class MvcServiceRegistration
                 .Build();
             options.Filters.Add(new AuthorizeFilter(policy));
             options.Filters.Add(typeof(DynamicAuthorizationFilter));
-            options.Filters.Add(typeof(ImpersonationReadOnlyFilter));
         })
         .AddRazorRuntimeCompilation(options =>
         {

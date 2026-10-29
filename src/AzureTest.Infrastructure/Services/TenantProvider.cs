@@ -30,6 +30,8 @@ public class TenantProvider : ITenantProvider
 
     public bool IsMultiTenancyEnabled => _featureOptions.EnableMultiTenancy;
 
+    public bool AllowImpersonationWrites => _featureOptions.AllowImpersonationWrites;
+
     private ClaimsPrincipal? User => _httpContextAccessor.HttpContext?.User;
 
     public Guid RealUserId

@@ -35,4 +35,10 @@ public interface ITenantProvider
     /// Gets the display name or email of the actively impersonated tenant, or null if not impersonating.
     /// </summary>
     string? ImpersonatedTenantName { get; }
+
+    /// <summary>
+    /// Returns true if administrative write operations are permitted while impersonating another tenant.
+    /// Configured via FeatureManagement:AllowImpersonationWrites in application settings.
+    /// </summary>
+    bool AllowImpersonationWrites { get; }
 }

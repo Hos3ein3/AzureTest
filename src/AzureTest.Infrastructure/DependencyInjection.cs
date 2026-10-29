@@ -52,6 +52,7 @@ public static class DependencyInjection
         services.AddBackgroundJobs(configuration);
         services.AddMessageBroker(configuration);
         services.AddResiliencePipelines();
+        services.AddIdentityAndAuthentication(options, configuration);
 
         // Register the correct storage implementation based on the feature flag
         if (options.EnableBlobStorage)
