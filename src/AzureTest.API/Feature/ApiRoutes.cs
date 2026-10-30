@@ -204,6 +204,10 @@ public static class ApiRoutes
             .WithApiVersionSet(apiVersionSet);
 
         // ── Auth Endpoints ───────────────────────────────────────────────────────────
+        app.MapPost("/api/auth/google", GoogleAuth.HandleDirectAsync)
+            .AllowAnonymous()
+            .WithApiDoc(nameof(Auth), "Google Authentication Direct", "Validate Google IdToken, link or create user, and issue JWT tokens.");
+
         apiGroup.MapPost(Auth.Login, Login.HandleAsync)
             .AllowAnonymous()
             .WithApiDoc(nameof(Auth), "User Login", "Authenticate user credentials and return JWT access and refresh tokens.");

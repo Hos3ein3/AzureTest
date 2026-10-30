@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  DEPLOY_DIR: "/home/homelabadmin/wwwroot/azuretest/src"  # or direct path: "/home/ubuntu/projects/src"
+  DEPLOY_DIR: "/home/homelabadmin/wwwroot/azuretest/backend/"  # or direct path: "/home/ubuntu/projects/src"
 
 jobs:
   # ─────────────────────────────────────────────────────────────
@@ -120,7 +120,7 @@ jobs:
           docker compose up -d --remove-orphans
           docker compose up -d --force-recreate cloudflared
 
-      - name: Health Check Verification
+      - name: MVC Health Check
         run: |
           echo "Verifying application health..."
           end=$((SECONDS+120))
@@ -140,6 +140,16 @@ jobs:
           docker logs --tail 50 azuretest-seq || true
           exit 1
 
+      - name: API Health Check
+          run: |
+            end=$((SECONDS+120))
+            while [ $SECONDS -lt $end ]; do
+              R=$(curl -s http://localhost:8089/health || true)
+              if echo "$R" | grep -q '"status":"Healthy"'; then echo "$R"; exit 0; fi
+              sleep 5
+            done
+            docker logs --tail 100 azuretest-api
+            exit 1
       - name: Debug cloudflared
         if: always()
         env:
