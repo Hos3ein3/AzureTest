@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  DEPLOY_DIR: "/home/homelabadmin/wwwroot/azuretest/backend/"  # or direct path: "/home/ubuntu/projects/src"
+  DEPLOY_DIR: "/home/homelabadmin/wwwroot/azuretest/backend"  # or direct path: "/home/ubuntu/projects/src"
 
 jobs:
   # ─────────────────────────────────────────────────────────────

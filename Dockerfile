@@ -33,7 +33,7 @@ RUN dotnet build test/AzureTest.IntegrationTest/AzureTest.IntegrationTest.csproj
 # CMD ["dotnet", "test", "test/AzureTest.IntegrationTest/AzureTest.IntegrationTest.csproj", "--no-build"]
 
 # Stage 2: Runtime
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime-base
 WORKDIR /app
 
 RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
