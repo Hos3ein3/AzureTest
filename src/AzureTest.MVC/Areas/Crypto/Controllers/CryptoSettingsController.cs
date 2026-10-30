@@ -51,21 +51,17 @@ public class CryptoSettingsController : Controller
     [DisplayName("Save API Key")]
     [Description("Securely encrypt and store exchange API keys. Ensure withdrawal permissions remain disabled.")]
     public async Task<IActionResult> Update(
-        CryptoExchange exchange,
-        string apiKey,
-        string apiSecret,
-        string? passphrase,
-        bool isTestnet = true,
+        [FromForm] UpdateCryptoSettingsRequestDto request,
         CancellationToken cancellationToken = default)
     {
         var command = new UpdateCryptoSettingsCommand(
             _currentUser.Id,
             _currentUser.TenantId,
-            exchange,
-            apiKey,
-            apiSecret,
-            passphrase,
-            isTestnet);
+            request.Exchange,
+            request.ApiKey,
+            request.ApiSecret,
+            request.Passphrase,
+            request.IsTestnet);
 
         var validation = await _validator.ValidateAsync(command, cancellationToken);
         if (validation.IsFailure)
@@ -80,7 +76,7 @@ public class CryptoSettingsController : Controller
         }
         else
         {
-            TempData["SuccessMessage"] = $"API keys for {exchange} saved securely (Testnet: {isTestnet}). Withdrawal access is strictly prohibited.";
+            TempData["SuccessMessage"] = $"API keys for {request.Exchange} saved securely (Testnet: {request.IsTestnet}). Withdrawal access is strictly prohibited.";
         }
 
         return RedirectToAction(nameof(Index));
@@ -90,9 +86,9 @@ public class CryptoSettingsController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Test Exchange Connection")]
     [Description("Test connectivity with exchange gateway using AES-GCM-256 decrypted credentials and verify scope restrictions.")]
-    public IActionResult TestConnection(CryptoExchange exchange)
+    public IActionResult TestConnection([FromForm] TestExchangeConnectionRequestDto request)
     {
-        TempData["SuccessMessage"] = $"[CIPHER-GRADE VERIFIED] AES-GCM-256 authentication handshake with {exchange} succeeded. Zero-withdrawal permissions verified. Read/Trade scopes active.";
+        TempData["SuccessMessage"] = $"[CIPHER-GRADE VERIFIED] AES-GCM-256 authentication handshake with {request.Exchange} succeeded. Zero-withdrawal permissions verified. Read/Trade scopes active.";
         return RedirectToAction(nameof(Index));
     }
 }

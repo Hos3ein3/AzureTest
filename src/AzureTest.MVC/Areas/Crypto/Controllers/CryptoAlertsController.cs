@@ -52,21 +52,17 @@ public class CryptoAlertsController : Controller
     [DisplayName("Create Alert")]
     [Description("Create a new alert based on price targets, RSI/MACD triggers, or breakout signals.")]
     public async Task<IActionResult> Create(
-        string symbol,
-        CryptoAlertType alertType,
-        decimal targetValue,
-        string? message,
-        string? channel,
+        [FromForm] CreateCryptoAlertRequestDto request,
         CancellationToken cancellationToken = default)
     {
         var command = new CreateCryptoAlertCommand(
             _currentUser.Id,
             _currentUser.TenantId,
-            symbol,
-            alertType,
-            targetValue,
-            message,
-            channel ?? "InApp");
+            request.Symbol,
+            request.AlertType,
+            request.TargetValue,
+            request.Message,
+            request.Channel ?? "InApp");
 
         var validation = await _validator.ValidateAsync(command, cancellationToken);
         if (validation.IsFailure)
@@ -81,7 +77,7 @@ public class CryptoAlertsController : Controller
         }
         else
         {
-            TempData["SuccessMessage"] = $"Alert created for {symbol} ({alertType} at {targetValue}).";
+            TempData["SuccessMessage"] = $"Alert created for {request.Symbol} ({request.AlertType} at {request.TargetValue}).";
         }
 
         return RedirectToAction(nameof(Index));

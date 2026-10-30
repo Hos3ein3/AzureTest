@@ -7,6 +7,7 @@ using AzureTest.Application.Crypto.Commands.TriggerKillSwitch;
 using AzureTest.Application.Crypto.Queries.GetCryptoRiskOverview;
 using AzureTest.Application.Crypto.Services;
 using AzureTest.Application.Interfaces.Services;
+using AzureTest.Contracts.DTOs.Crypto;
 using AzureTest.MVC.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -52,9 +53,9 @@ public class CryptoRiskController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Emergency Kill Switch")]
     [Description("Immediately cancel all working orders and market-close all open cryptocurrency positions to prevent further drawdown.")]
-    public async Task<IActionResult> KillSwitch(Guid accountId, string reason = "User initiated emergency halt", CancellationToken cancellationToken = default)
+    public async Task<IActionResult> KillSwitch([FromForm] CryptoKillSwitchRequestDto request, CancellationToken cancellationToken = default)
     {
-        var command = new TriggerKillSwitchCommand(accountId, reason);
+        var command = new TriggerKillSwitchCommand(request.AccountId, request.Reason);
         var validation = await _validator.ValidateAsync(command, cancellationToken);
         if (validation.IsFailure)
         {
@@ -79,20 +80,17 @@ public class CryptoRiskController : Controller
     [DisplayName("Update Risk Settings")]
     [Description("Update account risk per trade %, daily drawdown cap %, and maximum concurrent positions.")]
     public async Task<IActionResult> UpdateLimits(
-        Guid accountId,
-        decimal riskPercentagePerTrade,
-        decimal dailyLossLimitPercent,
-        int maxOpenPositions,
+        [FromForm] UpdateCryptoRiskLimitsRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        var result = await _riskService.UpdateRiskLimitsAsync(accountId, riskPercentagePerTrade, dailyLossLimitPercent, maxOpenPositions, cancellationToken);
+        var result = await _riskService.UpdateRiskLimitsAsync(request.AccountId, request.RiskPercentagePerTrade, request.DailyLossLimitPercent, request.MaxOpenPositions, cancellationToken);
         if (result.IsFailure)
         {
             TempData["ErrorMessage"] = result.Message ?? result.Error;
         }
         else
         {
-            TempData["SuccessMessage"] = $"Risk parameters updated successfully: {riskPercentagePerTrade}% Risk/Trade, {dailyLossLimitPercent}% Daily Max Drawdown, {maxOpenPositions} Max Positions.";
+            TempData["SuccessMessage"] = $"Risk parameters updated successfully: {request.RiskPercentagePerTrade}% Risk/Trade, {request.DailyLossLimitPercent}% Daily Max Drawdown, {request.MaxOpenPositions} Max Positions.";
         }
 
         return RedirectToAction(nameof(Index));
@@ -103,26 +101,25 @@ public class CryptoRiskController : Controller
     [DisplayName("Top Up Position Margin")]
     [Description("Add isolated margin to an existing open position to push back liquidation price and prevent forced closure.")]
     public async Task<IActionResult> TopUpMargin(
-        Guid positionId,
-        decimal amountUsd,
+        [FromForm] TopUpCryptoMarginRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        if (positionId.ToString().StartsWith("11111111") ||
-            positionId.ToString().StartsWith("22222222") ||
-            positionId.ToString().StartsWith("33333333"))
+        if (request.PositionId.ToString().StartsWith("11111111") ||
+            request.PositionId.ToString().StartsWith("22222222") ||
+            request.PositionId.ToString().StartsWith("33333333"))
         {
-            TempData["SuccessMessage"] = $"[SIMULATION] Injected ${amountUsd:N2} margin to position. Liquidation price safely pushed back away from current mark price.";
+            TempData["SuccessMessage"] = $"[SIMULATION] Injected ${request.AmountUsd:N2} margin to position. Liquidation price safely pushed back away from current mark price.";
             return RedirectToAction(nameof(Index));
         }
 
-        var result = await _riskService.TopUpPositionMarginAsync(positionId, amountUsd, cancellationToken);
+        var result = await _riskService.TopUpPositionMarginAsync(request.PositionId, request.AmountUsd, cancellationToken);
         if (result.IsFailure)
         {
             TempData["ErrorMessage"] = result.Message ?? result.Error;
         }
         else
         {
-            TempData["SuccessMessage"] = $"Successfully added ${amountUsd:N2} margin. Liquidation distance widened.";
+            TempData["SuccessMessage"] = $"Successfully added ${request.AmountUsd:N2} margin. Liquidation distance widened.";
         }
 
         return RedirectToAction(nameof(Index));
@@ -133,19 +130,18 @@ public class CryptoRiskController : Controller
     [DisplayName("Trim Position Risk")]
     [Description("Partially close or de-risk an open position by taking off exposure to free up maintenance margin.")]
     public async Task<IActionResult> TrimPosition(
-        Guid positionId,
-        decimal trimQuantity,
+        [FromForm] TrimCryptoPositionRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        if (positionId.ToString().StartsWith("11111111") ||
-            positionId.ToString().StartsWith("22222222") ||
-            positionId.ToString().StartsWith("33333333"))
+        if (request.PositionId.ToString().StartsWith("11111111") ||
+            request.PositionId.ToString().StartsWith("22222222") ||
+            request.PositionId.ToString().StartsWith("33333333"))
         {
-            TempData["SuccessMessage"] = $"[SIMULATION] De-risked position by trimming {trimQuantity:N4} units. Maintenance margin requirement reduced.";
+            TempData["SuccessMessage"] = $"[SIMULATION] De-risked position by trimming {request.TrimQuantity:N4} units. Maintenance margin requirement reduced.";
             return RedirectToAction(nameof(Index));
         }
 
-        var result = await _riskService.TrimPositionRiskAsync(positionId, trimQuantity, cancellationToken);
+        var result = await _riskService.TrimPositionRiskAsync(request.PositionId, request.TrimQuantity, cancellationToken);
         if (result.IsFailure)
         {
             TempData["ErrorMessage"] = result.Message ?? result.Error;
@@ -161,15 +157,9 @@ public class CryptoRiskController : Controller
     [HttpPost]
     [DisplayName("Interactive ATR Sizing Calculation")]
     [Description("Calculate volatility-adjusted position size and ATR targets dynamically.")]
-    public IActionResult CalculateAtr(
-        [FromForm] decimal accountEquity,
-        [FromForm] decimal riskPercent,
-        [FromForm] string symbol,
-        [FromForm] decimal entryPrice,
-        [FromForm] decimal atrMultiplier = 1.5m,
-        [FromForm] decimal? customAtr = null)
+    public IActionResult CalculateAtr([FromForm] CalculateCryptoAtrRequestDto request)
     {
-        var dto = _riskService.CalculateAtrPositionSize(accountEquity, riskPercent, symbol, entryPrice, atrMultiplier, customAtr);
+        var dto = _riskService.CalculateAtrPositionSize(request.AccountEquity, request.RiskPercent, request.Symbol, request.EntryPrice, request.AtrMultiplier, request.CustomAtr);
         return Json(dto);
     }
 }

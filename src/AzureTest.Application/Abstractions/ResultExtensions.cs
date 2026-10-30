@@ -1,16 +1,77 @@
-using AzureTest.Application.Abstractions;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace AzureTest.MVC.Extensions;
+namespace AzureTest.Application.Abstractions;
 
 public static class ResultExtensions
 {
+    // ── Minimal API Extensions ─────────────────────────────────────────
+
+    /// <summary>
+    /// Minimal API: Returns IResult (Ok, ValidationProblem, or BadRequest with ProblemDetails).
+    /// </summary>
+    public static IResult ToEndpointResult(this Result result)
+    {
+        if (result.IsSuccess)
+        {
+            return Results.Ok();
+        }
+
+        if (result.ValidationErrors != null && result.ValidationErrors.Count > 0)
+        {
+            return Results.ValidationProblem(
+                errors: result.ValidationErrors.ToDictionary(k => k.Key, v => v.Value),
+                title: result.Title ?? "Validation Error",
+                detail: result.Message ?? result.Error);
+        }
+
+        return Results.BadRequest(new ProblemDetails
+        {
+            Title = result.Title ?? "Bad Request",
+            Detail = result.Message ?? result.Error
+        });
+    }
+
+    /// <summary>
+    /// Minimal API: Returns IResult (Ok with value, ValidationProblem, or BadRequest with ProblemDetails).
+    /// </summary>
+    public static IResult ToEndpointResult<T>(this Result<T> result)
+    {
+        if (result.IsSuccess)
+        {
+            return Results.Ok(result.Value);
+        }
+
+        if (result.ValidationErrors != null && result.ValidationErrors.Count > 0)
+        {
+            return Results.ValidationProblem(
+                errors: result.ValidationErrors.ToDictionary(k => k.Key, v => v.Value),
+                title: result.Title ?? "Validation Error",
+                detail: result.Message ?? result.Error);
+        }
+
+        return Results.BadRequest(new ProblemDetails
+        {
+            Title = result.Title ?? "Bad Request",
+            Detail = result.Message ?? result.Error
+        });
+    }
+
+    public static IResult ToHttpResult(this Result result) => result.ToEndpointResult();
+    public static IResult ToHttpResult<T>(this Result<T> result) => result.ToEndpointResult();
+    public static IResult ToResult(this Result result) => result.ToEndpointResult();
+    public static IResult ToResult<T>(this Result<T> result) => result.ToEndpointResult();
+
+    // ── Controller / MVC Extensions ───────────────────────────────────
+
     public static void AddToModelState(this Result result, ModelStateDictionary modelState)
     {
-        
-        if (result.IsSuccess)
-            return;
+        if (result.IsSuccess) return;
 
         foreach (var error in result.ValidationErrors)
         {
@@ -21,9 +82,6 @@ public static class ResultExtensions
         }
     }
 
-    /// <summary>
-    /// API: Returns JSON ObjectResult based on Result state (Ok, ValidationProblem, or BadRequest).
-    /// </summary>
     public static IActionResult ToActionResult(this Result result, ControllerBase controller)
     {
         if (result.IsSuccess) return controller.Ok();
@@ -41,9 +99,6 @@ public static class ResultExtensions
         });
     }
 
-    /// <summary>
-    /// API: Returns JSON ObjectResult based on Result state (Ok, ValidationProblem, or BadRequest).
-    /// </summary>
     public static IActionResult ToActionResult<T>(this Result<T> result, ControllerBase controller)
     {
         if (result.IsSuccess) return controller.Ok(result.Value);
@@ -61,10 +116,6 @@ public static class ResultExtensions
         });
     }
 
-    /// <summary>
-    /// MVC Form Post: If failure, fills ModelState and returns the View with the model. 
-    /// If success, redirects to the specified action.
-    /// </summary>
     public static IActionResult ToFormResult(this Result result, Controller controller, object model, string successRedirectAction, string? successRedirectController = null)
     {
         if (result.IsSuccess)
@@ -86,9 +137,6 @@ public static class ResultExtensions
         return controller.View(model);
     }
 
-    /// <summary>
-    /// MVC View: Fills ModelState if failure, then always returns a View (used for GETs or non-redirecting POSTs).
-    /// </summary>
     public static IActionResult ToViewResult(this Result result, Controller controller, object? model = null, string? viewName = null)
     {
         if (result.IsFailure)
@@ -102,9 +150,6 @@ public static class ResultExtensions
         return viewName == null ? controller.View(model) : controller.View(viewName, model);
     }
     
-    /// <summary>
-    /// MVC View: Fills ModelState if failure, then always returns a View (used for GETs or non-redirecting POSTs).
-    /// </summary>
     public static IActionResult ToViewResult<T>(this Result<T> result, Controller controller, string? viewName = null)
     {
         if (result.IsFailure)
@@ -132,11 +177,6 @@ public static class ResultExtensions
     public static IActionResult ToForm<T>(this Result<T> result, Controller controller, string successAction, string? successController = null, object? model = null)
         => ((Result)result).ToFormResult(controller, model ?? (object?)result.Value ?? new object(), successAction, successController);
 
-
-    /// <summary>
-    /// Attaches the result errors to ModelState and sets ViewData modal state flags
-    /// so the UI knows which modal was active and should be reopened upon validation/operation failure.
-    /// </summary>
     public static void AddToModal(this Result result, Controller controller, string modalId)
     {
         controller.ViewData["ActiveModalId"] = modalId;
@@ -153,13 +193,27 @@ public static class ResultExtensions
         }
     }
 
-    /// <summary>
-    /// Modal Result Handler:
-    /// - If AJAX/fetch request: returns JSON { success, modalId, message, errors }.
-    /// - If standard HTTP POST:
-    ///   - On Success: sets TempData toast and redirects to the specified action.
-    ///   - On Failure: sets modal state flags, populates ModelState, and returns the View.
-    /// </summary>
+    private static void SetModalToast(Controller controller, Result result)
+    {
+        var title = result.IsSuccess ? "Success" : "Error";
+        var message = result.Message ?? result.Error ?? (result.IsSuccess ? "Operation completed successfully." : "An error occurred.");
+        if (result.IsFailure && result.ValidationErrors.Count > 0)
+        {
+            var firstErrorList = result.ValidationErrors.Values.FirstOrDefault();
+            var firstError = firstErrorList != null && firstErrorList.Length > 0 ? firstErrorList[0] : null;
+            if (!string.IsNullOrEmpty(firstError))
+            {
+                message = string.IsNullOrEmpty(result.Message) ? firstError : $"{message} - {firstError}";
+            }
+        }
+        controller.TempData["ToastMessage"] = JsonSerializer.Serialize(new
+        {
+            Status = (int)result.Status,
+            Title = title,
+            Message = message
+        });
+    }
+
     public static IActionResult ToModal(
         this Result result,
         Controller controller,
@@ -195,7 +249,7 @@ public static class ResultExtensions
 
         if (result.IsSuccess)
         {
-            controller.TempData.SetToast(result);
+            SetModalToast(controller, result);
             if (!string.IsNullOrEmpty(successRedirectAction))
             {
                 return successRedirectController == null
@@ -212,13 +266,6 @@ public static class ResultExtensions
             : controller.View(errorViewName, model);
     }
 
-    /// <summary>
-    /// Generic Modal Result Handler:
-    /// - If AJAX/fetch request: returns JSON { success, modalId, message, data, errors }.
-    /// - If standard HTTP POST:
-    ///   - On Success: sets TempData toast and redirects to the specified action.
-    ///   - On Failure: sets modal state flags, populates ModelState, and returns the View.
-    /// </summary>
     public static IActionResult ToModal<T>(
         this Result<T> result,
         Controller controller,
@@ -255,7 +302,7 @@ public static class ResultExtensions
 
         if (result.IsSuccess)
         {
-            controller.TempData.SetToast(result);
+            SetModalToast(controller, result);
             if (!string.IsNullOrEmpty(successRedirectAction))
             {
                 return successRedirectController == null

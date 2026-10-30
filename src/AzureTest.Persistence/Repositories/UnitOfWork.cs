@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Interfaces.Data;
+using AzureTest.Application.Interfaces.Data.Crypto;
+using AzureTest.Application.Interfaces.Data.Outbox;
+using AzureTest.Application.Interfaces.Data.Trading;
 using AzureTest.Domain.Primitives;
 using AzureTest.Persistence.Context;
 using AzureTest.Persistence.Repositories.FootballFantasy;
@@ -210,26 +213,75 @@ public class UnitOfWork : IUnitOfWork
     private AzureTest.Application.Interfaces.Data.Outbox.IOutboxRepository? _outboxMessages;
     private AzureTest.Application.Interfaces.Data.Outbox.IInboxRepository? _inboxMessages;
 
-    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoAccountRepository CryptoAccounts => _cryptoAccounts ??= new Crypto.CryptoAccountRepository(_dbContext);
-    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoOrderRepository CryptoOrders => _cryptoOrders ??= new Crypto.CryptoOrderRepository(_dbContext);
-    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoPositionRepository CryptoPositions => _cryptoPositions ??= new Crypto.CryptoPositionRepository(_dbContext);
-    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoStrategyRepository CryptoStrategies => _cryptoStrategies ??= new Crypto.CryptoStrategyRepository(_dbContext);
-    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoBacktestRepository CryptoBacktests => _cryptoBacktests ??= new Crypto.CryptoBacktestRepository(_dbContext);
-    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoAlertRepository CryptoAlerts => _cryptoAlerts ??= new Crypto.CryptoAlertRepository(_dbContext);
-    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoJournalEntryRepository CryptoJournalEntries => _cryptoJournalEntries ??= new Crypto.CryptoJournalEntryRepository(_dbContext);
-    public AzureTest.Application.Interfaces.Data.Crypto.ICryptoApiSettingRepository CryptoApiSettings => _cryptoApiSettings ??= new Crypto.CryptoApiSettingRepository(_dbContext);
+    public ICryptoAccountRepository CryptoAccounts => _cryptoAccounts ??= new Crypto.CryptoAccountRepository(_dbContext);
+    public ICryptoOrderRepository CryptoOrders => _cryptoOrders ??= new Crypto.CryptoOrderRepository(_dbContext);
+    public ICryptoPositionRepository CryptoPositions => _cryptoPositions ??= new Crypto.CryptoPositionRepository(_dbContext);
+    public ICryptoStrategyRepository CryptoStrategies => _cryptoStrategies ??= new Crypto.CryptoStrategyRepository(_dbContext);
+    public ICryptoBacktestRepository CryptoBacktests => _cryptoBacktests ??= new Crypto.CryptoBacktestRepository(_dbContext);
+    public ICryptoAlertRepository CryptoAlerts => _cryptoAlerts ??= new Crypto.CryptoAlertRepository(_dbContext);
+    public ICryptoJournalEntryRepository CryptoJournalEntries => _cryptoJournalEntries ??= new Crypto.CryptoJournalEntryRepository(_dbContext);
+    public ICryptoApiSettingRepository CryptoApiSettings => _cryptoApiSettings ??= new Crypto.CryptoApiSettingRepository(_dbContext);
 
-    public AzureTest.Application.Interfaces.Data.Trading.ITradingAccountRepository TradingAccounts => _tradingAccounts ??= new Trading.TradingAccountRepository(_dbContext);
-    public AzureTest.Application.Interfaces.Data.Trading.ITradingPositionRepository TradingPositions => _tradingPositions ??= new Trading.TradingPositionRepository(_dbContext);
-    public AzureTest.Application.Interfaces.Data.Trading.ITradingOrderRepository TradingOrders => _tradingOrders ??= new Trading.TradingOrderRepository(_dbContext);
-    public AzureTest.Application.Interfaces.Data.Trading.ITradingWatchlistRepository TradingWatchlists => _tradingWatchlists ??= new Trading.TradingWatchlistRepository(_dbContext);
+    public ITradingAccountRepository TradingAccounts => _tradingAccounts ??= new Trading.TradingAccountRepository(_dbContext);
+    public ITradingPositionRepository TradingPositions => _tradingPositions ??= new Trading.TradingPositionRepository(_dbContext);
+    public ITradingOrderRepository TradingOrders => _tradingOrders ??= new Trading.TradingOrderRepository(_dbContext);
+    public ITradingWatchlistRepository TradingWatchlists => _tradingWatchlists ??= new Trading.TradingWatchlistRepository(_dbContext);
 
-    public AzureTest.Application.Interfaces.Data.Outbox.IOutboxRepository OutboxMessages => _outboxMessages ??= new Outbox.OutboxRepository(_dbContext);
-    public AzureTest.Application.Interfaces.Data.Outbox.IInboxRepository InboxMessages => _inboxMessages ??= new Outbox.InboxRepository(_dbContext);
+    public IOutboxRepository OutboxMessages => _outboxMessages ??= new Outbox.OutboxRepository(_dbContext);
+    public IInboxRepository InboxMessages => _inboxMessages ??= new Outbox.InboxRepository(_dbContext);
+
+    private Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? _currentTransaction;
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         return await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        if (_currentTransaction == null && Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.IsRelational(_dbContext.Database))
+        {
+            _currentTransaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        }
+    }
+
+    public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            if (_currentTransaction != null)
+            {
+                await _currentTransaction.CommitAsync(cancellationToken);
+            }
+        }
+        finally
+        {
+            if (_currentTransaction != null)
+            {
+                await _currentTransaction.DisposeAsync();
+                _currentTransaction = null;
+            }
+        }
+    }
+
+    public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (_currentTransaction != null)
+            {
+                await _currentTransaction.RollbackAsync(cancellationToken);
+            }
+        }
+        finally
+        {
+            if (_currentTransaction != null)
+            {
+                await _currentTransaction.DisposeAsync();
+                _currentTransaction = null;
+            }
+        }
     }
 
     /// <summary>

@@ -26,3 +26,17 @@ public sealed record WebPushSubscriptionDto(
 public sealed record MarkNotificationReadDto(
     Guid? NotificationId = null
 );
+
+public sealed record DeleteNotificationRequestDto(
+    Guid Id
+);
+
+public sealed record DeleteNotificationsByDateRangeRequestDto(
+    DateTime? FromDate = null,
+    DateTime? ToDate = null
+);
+
+public sealed record GetUserNotificationsRequestDto(
+    bool? UnreadOnly = null,
+    int Limit = 50
+);

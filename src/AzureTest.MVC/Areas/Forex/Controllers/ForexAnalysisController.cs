@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AzureTest.Application.Forex;
 using AzureTest.Application.Forex.Queries.GetForexAnalysis;
 using AzureTest.Application.Interfaces.Services;
+using AzureTest.Contracts.DTOs.Forex;
 using AzureTest.Domain.Entities.Forex.Enums;
 using AzureTest.MVC.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -34,22 +35,24 @@ public class ForexAnalysisController : Controller
     [HttpGet]
     [DisplayName("Analysis Hub")]
     [Description("Integrated view of technical indicators, multi-timeframe alignment, and fundamental drivers.")]
-    public async Task<IActionResult> Index(string symbol = "EUR/USD", ForexTimeframe timeframe = ForexTimeframe.H1, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Index([FromQuery] ForexAnalysisRequestDto? request, CancellationToken cancellationToken = default)
     {
-        var result = await _queries.GetAnalysis.HandleAsync(new GetForexAnalysisQuery(symbol, timeframe), cancellationToken);
-        ViewBag.Symbol = symbol;
-        ViewBag.Timeframe = timeframe;
+        request ??= new ForexAnalysisRequestDto();
+        var result = await _queries.GetAnalysis.HandleAsync(new GetForexAnalysisQuery(request.Symbol, request.Timeframe), cancellationToken);
+        ViewBag.Symbol = request.Symbol;
+        ViewBag.Timeframe = request.Timeframe;
         return result.ToView(this);
     }
 
     [HttpGet]
     [DisplayName("Technical Indicators")]
     [Description("Inspect moving averages, RSI, MACD, ATR, Bollinger Bands, and Pivot Points.")]
-    public async Task<IActionResult> Technical(string symbol = "EUR/USD", ForexTimeframe timeframe = ForexTimeframe.H1, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Technical([FromQuery] ForexAnalysisRequestDto? request, CancellationToken cancellationToken = default)
     {
-        var result = await _queries.GetAnalysis.HandleAsync(new GetForexAnalysisQuery(symbol, timeframe), cancellationToken);
-        ViewBag.Symbol = symbol;
-        ViewBag.Timeframe = timeframe;
+        request ??= new ForexAnalysisRequestDto();
+        var result = await _queries.GetAnalysis.HandleAsync(new GetForexAnalysisQuery(request.Symbol, request.Timeframe), cancellationToken);
+        ViewBag.Symbol = request.Symbol;
+        ViewBag.Timeframe = request.Timeframe;
         return result.ToView(this, viewName: "Technical");
     }
 

@@ -24,11 +24,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AzureTest.MVC.Areas.Trading.Controllers;
 
-public sealed class TradingJsonActionRequest
-{
-    public string Json { get; set; } = string.Empty;
-}
-
 [Area("Trading")]
 [Authorize]
 [DisplayName("Universal Paper Trading")]
@@ -87,21 +82,16 @@ public class TradingController : Controller
 
     [DisplayName("Trade History & Receipts")]
     [Description("Comprehensive trade history ledger showing closed positions, executed prices, margin used, PnL, leverage, and full receipts.")]
-    public async Task<IActionResult> History(
-        string? search = null,
-        TradingOrderSide? side = null,
-        AssetClass? assetClass = null,
-        string? outcome = null,
-        CancellationToken ct = default)
+    public async Task<IActionResult> History([FromQuery] TradingHistoryFilterDto? filter, CancellationToken ct = default)
     {
         var result = await _queries.GetHistoryAsync(
             new AzureTest.Application.Trading.Queries.GetTradingHistory.GetTradingHistoryQuery(
                 _currentUser.Id,
                 _currentUser.TenantId,
-                search,
-                side,
-                assetClass,
-                outcome), ct);
+                filter?.Search,
+                filter?.Side,
+                filter?.AssetClass,
+                filter?.Outcome), ct);
 
         return View(result.Value);
     }
@@ -182,23 +172,7 @@ public class TradingController : Controller
     [HttpPost]
     [DisplayName("Place Order")]
     [Description("Validate and execute a Market, Limit, or Stop paper trade order with multi-level risk parameters.")]
-    public async Task<IActionResult> PlaceOrder(
-        string symbol,
-        string assetName,
-        AssetClass assetClass,
-        TradingOrderSide side,
-        TradingOrderType orderType,
-        decimal quantity,
-        decimal? price,
-        decimal? triggerPrice,
-        int leverage,
-        decimal? stopLoss,
-        decimal? takeProfit,
-        string? multipleTakeProfitsJson,
-        decimal? trailingStopDistance,
-        TimeInForce timeInForce,
-        DateTime? expiryDateUtc,
-        CancellationToken ct = default)
+    public async Task<IActionResult> PlaceOrder([FromForm] PlaceTradingOrderRequestDto request, CancellationToken ct = default)
     {
         decimal? ParseDecimal(string key, decimal? boundValue)
         {
@@ -213,31 +187,31 @@ public class TradingController : Controller
             return boundValue;
         }
 
-        quantity = ParseDecimal("quantity", quantity) ?? quantity;
-        price = ParseDecimal("price", price);
-        triggerPrice = ParseDecimal("triggerPrice", triggerPrice);
-        stopLoss = ParseDecimal("stopLoss", stopLoss);
-        takeProfit = ParseDecimal("takeProfit", takeProfit);
-        trailingStopDistance = ParseDecimal("trailingStopDistance", trailingStopDistance);
+        var quantity = ParseDecimal("quantity", request.Quantity) ?? request.Quantity;
+        var price = ParseDecimal("price", request.Price);
+        var triggerPrice = ParseDecimal("triggerPrice", request.TriggerPrice);
+        var stopLoss = ParseDecimal("stopLoss", request.StopLoss);
+        var takeProfit = ParseDecimal("takeProfit", request.TakeProfit);
+        var trailingStopDistance = ParseDecimal("trailingStopDistance", request.TrailingStopDistance);
 
         var command = new PlaceTradingOrderCommand(
             _currentUser.Id,
             _currentUser.TenantId,
-            symbol,
-            assetName,
-            assetClass,
-            side,
-            orderType,
+            request.Symbol,
+            request.AssetName,
+            request.AssetClass,
+            request.Side,
+            request.OrderType,
             quantity,
             price,
             triggerPrice,
-            leverage,
+            request.Leverage,
             stopLoss,
             takeProfit,
-            multipleTakeProfitsJson,
+            request.MultipleTakeProfitsJson,
             trailingStopDistance,
-            timeInForce,
-            expiryDateUtc);
+            request.TimeInForce,
+            request.ExpiryDateUtc);
 
         bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
 
@@ -247,13 +221,13 @@ public class TradingController : Controller
             var err = validation.Message ?? validation.Error ?? "Order validation failed.";
             if (isAjax) return Json(new { success = false, error = err });
             TempData["ErrorMessage"] = err;
-            return RedirectToAction(nameof(Trade), new { symbol });
+            return RedirectToAction(nameof(Trade), new { symbol = request.Symbol });
         }
 
         var result = await _commands.PlaceOrderAsync(command, ct);
         if (result.IsSuccess)
         {
-            var msg = $"Order placed successfully for {quantity:N4} {symbol}.";
+            var msg = $"Order placed successfully for {quantity:N4} {request.Symbol}.";
             if (isAjax) return Json(new { success = true, message = msg, orderId = result.Value });
             TempData["SuccessMessage"] = msg;
         }
@@ -263,16 +237,17 @@ public class TradingController : Controller
             TempData["ErrorMessage"] = result.Error;
         }
 
-        return RedirectToAction(nameof(Trade), new { symbol });
+        return RedirectToAction(nameof(Trade), new { symbol = request.Symbol });
     }
 
     [HttpPost]
     [DisplayName("Close Position")]
     [Description("Close an open position at the specified market price and update paper equity and realized PnL.")]
-    public async Task<IActionResult> ClosePosition(Guid positionId, decimal? closePrice, string? symbol, string? sourcePage = "index", CancellationToken ct = default)
+    public async Task<IActionResult> ClosePosition([FromForm] CloseTradingPositionRequestDto request, CancellationToken ct = default)
     {
         bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
 
+        var closePrice = request.ClosePrice;
         if (Request.HasFormContentType && Request.Form.TryGetValue("closePrice", out var cpVal) && !string.IsNullOrWhiteSpace(cpVal))
         {
             var s = cpVal.ToString().Trim().Replace(',', '.');
@@ -282,16 +257,16 @@ public class TradingController : Controller
             }
         }
 
-        var command = new CloseTradingPositionCommand(positionId, _currentUser.Id, _currentUser.TenantId, closePrice);
+        var command = new CloseTradingPositionCommand(request.PositionId, _currentUser.Id, _currentUser.TenantId, closePrice);
         var result = await _commands.ClosePositionAsync(command, ct);
 
         if (result.IsSuccess)
         {
             var msg = "Position closed successfully.";
-            var dashRes = await _queries.GetDashboardAsync(new GetTradingDashboardQuery(_currentUser.Id, _currentUser.TenantId, symbol ?? "BTCUSDT"), ct);
+            var dashRes = await _queries.GetDashboardAsync(new GetTradingDashboardQuery(_currentUser.Id, _currentUser.TenantId, request.Symbol ?? "BTCUSDT"), ct);
             if (dashRes.IsSuccess)
             {
-                var closed = dashRes.Value.ClosedPositions.FirstOrDefault(c => c.Id == positionId);
+                var closed = dashRes.Value.ClosedPositions.FirstOrDefault(c => c.Id == request.PositionId);
                 if (closed != null)
                 {
                     var pnlFormatted = AzureTest.Application.Trading.Services.TradingNotificationFormatter.FormatPnl(closed.RealizedPnl);
@@ -308,8 +283,8 @@ public class TradingController : Controller
             TempData["ErrorMessage"] = result.Error;
         }
 
-        if (string.Equals(sourcePage, "trade", StringComparison.OrdinalIgnoreCase))
-            return RedirectToAction(nameof(Trade), new { symbol = symbol ?? "BTCUSDT" });
+        if (string.Equals(request.SourcePage, "trade", StringComparison.OrdinalIgnoreCase))
+            return RedirectToAction(nameof(Trade), new { symbol = request.Symbol ?? "BTCUSDT" });
 
         return RedirectToAction(nameof(Index));
     }
@@ -318,15 +293,7 @@ public class TradingController : Controller
     [AllowAnonymous]
     [DisplayName("Modify Position Stops")]
     [Description("Update Stop Loss and Take Profit levels on an active open position.")]
-    public async Task<IActionResult> ModifyPosition(
-        Guid positionId,
-        decimal? stopLoss,
-        decimal? takeProfit,
-        decimal? trailingStopDistance,
-        string? multipleTakeProfitsJson,
-        string? symbol,
-        string? sourcePage = "trade",
-        CancellationToken ct = default)
+    public async Task<IActionResult> ModifyPosition([FromForm] ModifyTradingPositionRequestDto request, CancellationToken ct = default)
     {
         bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
 
@@ -335,6 +302,11 @@ public class TradingController : Controller
             if (isAjax) return Json(new { success = false, error = "Authentication required." });
             return Challenge();
         }
+
+        var stopLoss = request.StopLoss;
+        var takeProfit = request.TakeProfit;
+        var trailingStopDistance = request.TrailingStopDistance;
+        var multipleTakeProfitsJson = request.MultipleTakeProfitsJson;
 
         if (Request.HasFormContentType)
         {
@@ -369,7 +341,7 @@ public class TradingController : Controller
             }
         }
 
-        var command = new ModifyTradingPositionCommand(positionId, _currentUser.Id, _currentUser.TenantId, stopLoss, takeProfit, trailingStopDistance, multipleTakeProfitsJson);
+        var command = new ModifyTradingPositionCommand(request.PositionId, _currentUser.Id, _currentUser.TenantId, stopLoss, takeProfit, trailingStopDistance, multipleTakeProfitsJson);
         var result = await _commands.ModifyPositionAsync(command, ct);
 
         if (result.IsSuccess)
@@ -383,8 +355,8 @@ public class TradingController : Controller
             TempData["ErrorMessage"] = result.Error;
         }
 
-        if (string.Equals(sourcePage, "trade", StringComparison.OrdinalIgnoreCase))
-            return RedirectToAction(nameof(Trade), new { symbol = symbol ?? "BTCUSDT" });
+        if (string.Equals(request.SourcePage, "trade", StringComparison.OrdinalIgnoreCase))
+            return RedirectToAction(nameof(Trade), new { symbol = request.Symbol ?? "BTCUSDT" });
 
         return RedirectToAction(nameof(Index));
     }
@@ -392,11 +364,11 @@ public class TradingController : Controller
     [HttpPost]
     [DisplayName("Cancel Order")]
     [Description("Cancel an outstanding pending Limit or Stop order.")]
-    public async Task<IActionResult> CancelOrder(Guid orderId, string? symbol, string? sourcePage = "index", CancellationToken ct = default)
+    public async Task<IActionResult> CancelOrder([FromForm] CancelTradingOrderRequestDto request, CancellationToken ct = default)
     {
         bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
 
-        var command = new CancelTradingOrderCommand(orderId, _currentUser.Id, _currentUser.TenantId);
+        var command = new CancelTradingOrderCommand(request.OrderId, _currentUser.Id, _currentUser.TenantId);
         var result = await _commands.CancelOrderAsync(command, ct);
 
         if (result.IsSuccess)
@@ -410,8 +382,8 @@ public class TradingController : Controller
             TempData["ErrorMessage"] = result.Error;
         }
 
-        if (string.Equals(sourcePage, "trade", StringComparison.OrdinalIgnoreCase))
-            return RedirectToAction(nameof(Trade), new { symbol = symbol ?? "BTCUSDT" });
+        if (string.Equals(request.SourcePage, "trade", StringComparison.OrdinalIgnoreCase))
+            return RedirectToAction(nameof(Trade), new { symbol = request.Symbol ?? "BTCUSDT" });
 
         return RedirectToAction(nameof(Index));
     }
@@ -421,42 +393,42 @@ public class TradingController : Controller
     [HttpPost]
     [DisplayName("Reset Balance")]
     [Description("Reset paper trading capital balance to the chosen initial allocation amount.")]
-    public async Task<IActionResult> ResetBalance(decimal newBalance = 50000m, string? symbol = null, CancellationToken ct = default)
+    public async Task<IActionResult> ResetBalance([FromForm] ResetTradingBalanceRequestDto request, CancellationToken ct = default)
     {
-        var command = new ResetTradingAccountBalanceCommand(_currentUser.Id, _currentUser.TenantId, newBalance);
+        var command = new ResetTradingAccountBalanceCommand(_currentUser.Id, _currentUser.TenantId, request.NewBalance);
         var result = await _commands.ResetAccountBalanceAsync(command, ct);
 
         if (result.IsSuccess)
-            TempData["SuccessMessage"] = $"Demo account balance successfully reset to ${newBalance:N2}.";
+            TempData["SuccessMessage"] = $"Demo account balance successfully reset to ${request.NewBalance:N2}.";
         else
             TempData["ErrorMessage"] = result.Error;
 
-        return RedirectToAction(nameof(Index), new { symbol = symbol ?? "BTCUSDT" });
+        return RedirectToAction(nameof(Index), new { symbol = request.Symbol ?? "BTCUSDT" });
     }
 
     [HttpPost]
     [DisplayName("Toggle Watchlist")]
     [Description("Pin or unpin a financial asset to the user's personal trading watchlist.")]
-    public async Task<IActionResult> ToggleWatchlist(string symbol, string assetName, AssetClass assetClass, string? returnUrl = null, CancellationToken ct = default)
+    public async Task<IActionResult> ToggleWatchlist([FromForm] ToggleTradingWatchlistRequestDto request, CancellationToken ct = default)
     {
-        var command = new ToggleTradingWatchlistCommand(_currentUser.Id, _currentUser.TenantId, symbol, assetName, assetClass);
+        var command = new ToggleTradingWatchlistCommand(_currentUser.Id, _currentUser.TenantId, request.Symbol, request.AssetName, request.AssetClass);
         var result = await _commands.ToggleWatchlistAsync(command, ct);
 
         if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json"))
         {
-            return Json(new { success = result.IsSuccess, isWatchlisted = result.Value, symbol });
+            return Json(new { success = result.IsSuccess, isWatchlisted = result.Value, symbol = request.Symbol });
         }
 
-        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-            return Redirect(returnUrl);
+        if (!string.IsNullOrEmpty(request.ReturnUrl) && Url.IsLocalUrl(request.ReturnUrl))
+            return Redirect(request.ReturnUrl);
 
-        return RedirectToAction(nameof(Index), new { symbol });
+        return RedirectToAction(nameof(Index), new { symbol = request.Symbol });
     }
 
     [HttpPost]
     [DisplayName("Execute JSON Batch Actions")]
     [Description("Execute multiple trading actions, programmatic orders, balance resets, or watchlist updates from a raw JSON payload.")]
-    public async Task<IActionResult> ExecuteJson([FromBody] TradingJsonActionRequest request, CancellationToken ct = default)
+    public async Task<IActionResult> ExecuteJson([FromBody] TradingJsonActionRequestDto request, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(request?.Json))
         {

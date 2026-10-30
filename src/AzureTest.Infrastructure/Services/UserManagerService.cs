@@ -8,6 +8,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using AzureTest.Application.Interfaces.Services;
+using AzureTest.Contracts.DTOs.Users;
 using AzureTest.Domain.Entities.Identity;
 using AzureTest.Infrastructure.Configuration;
 using AzureTest.Persistence.Context;

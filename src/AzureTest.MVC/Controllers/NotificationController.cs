@@ -95,15 +95,15 @@ public class NotificationController : Controller
     [DisplayName("Get User Notifications")]
     [Description("Retrieve list of recent notifications for the authenticated user.")]
     public async Task<IActionResult> GetUserNotifications(
-        [FromQuery] bool? unreadOnly = null,
-        [FromQuery] int limit = 50,
+        [FromQuery] GetUserNotificationsRequestDto? request,
         CancellationToken cancellationToken = default)
     {
+        request ??= new GetUserNotificationsRequestDto();
         var userId = _currentUser.Id;
         if (userId == Guid.Empty)
             return Unauthorized(new { success = false, error = "User is not authenticated." });
 
-        var query = new GetUserNotificationsQuery(userId, unreadOnly, limit);
+        var query = new GetUserNotificationsQuery(userId, request.UnreadOnly, request.Limit);
         var result = await _queries.GetUserNotifications.HandleAsync(query, cancellationToken);
 
         if (!result.IsSuccess)
@@ -206,13 +206,13 @@ public class NotificationController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Delete Notification")]
     [Description("Delete a single notification owned by current user.")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Delete(DeleteNotificationRequestDto request, CancellationToken cancellationToken = default)
     {
         var userId = _currentUser.Id;
         if (userId == Guid.Empty)
             return Unauthorized(new { success = false, error = "User is not authenticated." });
 
-        var success = await _notificationHistory.DeleteByIdForUserAsync(id, userId, cancellationToken);
+        var success = await _notificationHistory.DeleteByIdForUserAsync(request.Id, userId, cancellationToken);
         
         var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
                      Request.Headers["Accept"].ToString().Contains("application/json");
@@ -234,14 +234,14 @@ public class NotificationController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Delete Notifications by Date Range")]
     [Description("Delete notifications within a date range for current user.")]
-    public async Task<IActionResult> DeleteByDateRange(DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> DeleteByDateRange(DeleteNotificationsByDateRangeRequestDto request, CancellationToken cancellationToken = default)
     {
         var userId = _currentUser.Id;
         if (userId == Guid.Empty)
             return Unauthorized(new { success = false, error = "User is not authenticated." });
 
-        DateTime? fromUtc = fromDate.HasValue ? DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Utc) : null;
-        DateTime? toUtc = toDate.HasValue ? DateTime.SpecifyKind(toDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc) : null;
+        DateTime? fromUtc = request.FromDate.HasValue ? DateTime.SpecifyKind(request.FromDate.Value.Date, DateTimeKind.Utc) : null;
+        DateTime? toUtc = request.ToDate.HasValue ? DateTime.SpecifyKind(request.ToDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc) : null;
 
         var deleted = await _notificationHistory.DeleteByUserAndDateRangeAsync(userId, fromUtc, toUtc, cancellationToken);
 

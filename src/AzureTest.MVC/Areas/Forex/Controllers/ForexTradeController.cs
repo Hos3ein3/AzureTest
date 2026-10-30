@@ -103,9 +103,9 @@ public class ForexTradeController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Partial Close Position")]
     [Description("Scale out of an open position by closing a fraction of the lots.")]
-    public async Task<IActionResult> PartialClose(Guid tradeId, decimal lotsToClose, CancellationToken cancellationToken)
+    public async Task<IActionResult> PartialClose([FromForm] PartialCloseForexTradeRequestDto request, CancellationToken cancellationToken)
     {
-        var result = await _commands.PartialCloseTrade.HandleAsync(new PartialCloseTradeCommand(tradeId, lotsToClose), cancellationToken);
+        var result = await _commands.PartialCloseTrade.HandleAsync(new PartialCloseTradeCommand(request.TradeId, request.LotsToClose), cancellationToken);
         return RedirectToAction(nameof(Index));
     }
 
@@ -123,8 +123,9 @@ public class ForexTradeController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Emergency Kill Switch")]
     [Description("Instantly liquidate all open positions and cancel all pending orders.")]
-    public async Task<IActionResult> KillSwitch(string? reason, CancellationToken cancellationToken)
+    public async Task<IActionResult> KillSwitch([FromForm] ForexKillSwitchRequestDto? request, CancellationToken cancellationToken)
     {
+        var reason = request?.Reason ?? (Request.HasFormContentType && Request.Form.TryGetValue("reason", out var r) ? r.ToString() : null);
         var result = await _commands.ActivateKillSwitch.HandleAsync(new ActivateKillSwitchCommand(reason ?? "Emergency Manual Kill Switch Triggered"), cancellationToken);
         return RedirectToAction(nameof(Index));
     }

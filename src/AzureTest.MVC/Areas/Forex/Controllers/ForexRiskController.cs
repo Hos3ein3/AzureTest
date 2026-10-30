@@ -47,14 +47,9 @@ public class ForexRiskController : Controller
     [HttpGet]
     [DisplayName("Lot Size Calculator")]
     [Description("Calculate exact lot size from equity, stop loss pips, and risk percentage under ESMA leverage rules.")]
-    public IActionResult Calculate(
-        decimal balance = 10_000m,
-        decimal riskPercent = 1.0m,
-        decimal stopLossPips = 25m,
-        string symbol = "EUR/USD",
-        decimal leverage = 30m)
+    public IActionResult Calculate([FromQuery] LotSizeCalculationRequestDto? request)
     {
-        var request = new LotSizeCalculationRequestDto(balance, riskPercent, stopLossPips, symbol, leverage);
+        request ??= new LotSizeCalculationRequestDto(10_000m, 1.0m, 25m, "EUR/USD", 30m);
         var result = _riskService.CalculateLotSize(request);
         return Json(result);
     }

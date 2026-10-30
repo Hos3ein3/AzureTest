@@ -21,29 +21,48 @@ public abstract class BaseCommandHandler<TCommand> : ICommandHandler<TCommand>
         Logger = logger;
     }
 
+    protected virtual Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+        => UnitOfWork.BeginTransactionAsync(cancellationToken);
+
+    protected virtual async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        await UnitOfWork.SaveChangesAsync(cancellationToken);
+        await UnitOfWork.CommitTransactionAsync(cancellationToken);
+    }
+
+    protected virtual Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
+        => UnitOfWork.RollbackTransactionAsync(cancellationToken);
+
     public async Task<Result> HandleAsync(TCommand command, CancellationToken cancellationToken = default)
     {
         var commandName = typeof(TCommand).Name;
         Logger.LogInformation("Handling command {CommandName}", commandName);
 
+        await BeginTransactionAsync(cancellationToken);
         try
         {
             var result = await ExecuteAsync(command, cancellationToken);
             if (result.IsSuccess)
             {
-                await UnitOfWork.SaveChangesAsync(cancellationToken);
+                await CommitTransactionAsync(cancellationToken);
+                Logger.LogInformation("Command {CommandName} completed successfully", commandName);
+                return result;
             }
-            Logger.LogInformation("Command {CommandName} completed successfully", commandName);
+
+            await RollbackTransactionAsync(cancellationToken);
+            Logger.LogWarning("Command {CommandName} returned failure: {Error}. Changes rolled back.", commandName, result.Error);
             return result;
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            Logger.LogWarning(ex, "Command {CommandName} failed due to a concurrency conflict", commandName);
+            await RollbackTransactionAsync(cancellationToken);
+            Logger.LogWarning(ex, "Command {CommandName} failed due to a concurrency conflict. Changes rolled back.", commandName);
             return Result.Failure("Concurrency conflict");
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Command {CommandName} failed: {Message}. Changes have been rolled back.", commandName, ex.Message);
+            await RollbackTransactionAsync(cancellationToken);
+            Logger.LogError(ex, "Command {CommandName} failed: {Message}. Changes rolled back.", commandName, ex.Message);
             return Result.Failure(ex.Message);
         }
     }
@@ -63,11 +82,24 @@ public abstract class BaseCommandHandler<TCommand, TResponse> : ICommandHandler<
         Logger = logger;
     }
 
+    protected virtual Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+        => UnitOfWork.BeginTransactionAsync(cancellationToken);
+
+    protected virtual async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        await UnitOfWork.SaveChangesAsync(cancellationToken);
+        await UnitOfWork.CommitTransactionAsync(cancellationToken);
+    }
+
+    protected virtual Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
+        => UnitOfWork.RollbackTransactionAsync(cancellationToken);
+
     public async Task<TResponse> HandleAsync(TCommand command, CancellationToken cancellationToken = default)
     {
         var commandName = typeof(TCommand).Name;
         Logger.LogInformation("Handling command {CommandName}", commandName);
 
+        await BeginTransactionAsync(cancellationToken);
         try
         {
             var response = await ExecuteAsync(command, cancellationToken);
@@ -80,31 +112,36 @@ public abstract class BaseCommandHandler<TCommand, TResponse> : ICommandHandler<
 
             if (isSuccess)
             {
-                await UnitOfWork.SaveChangesAsync(cancellationToken);
+                await CommitTransactionAsync(cancellationToken);
+                Logger.LogInformation("Command {CommandName} completed successfully", commandName);
+                return response;
             }
 
-            Logger.LogInformation("Command {CommandName} completed successfully", commandName);
+            await RollbackTransactionAsync(cancellationToken);
+            Logger.LogWarning("Command {CommandName} returned failure. Changes rolled back.", commandName);
             return response;
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            Logger.LogWarning(ex, "Command {CommandName} failed due to a concurrency conflict", commandName);
+            await RollbackTransactionAsync(cancellationToken);
+            Logger.LogWarning(ex, "Command {CommandName} failed due to a concurrency conflict. Changes rolled back.", commandName);
             if (typeof(TResponse).IsGenericType && typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
             {
                 var type = typeof(TResponse).GetGenericArguments()[0];
                 var method = typeof(Result<>).MakeGenericType(type).GetMethod("Failure", new[] { typeof(string) });
-                return (TResponse)method.Invoke(null, new object[] { "Concurrency conflict" });
+                return (TResponse)method!.Invoke(null, new object[] { "Concurrency conflict" })!;
             }
             throw; // fallback
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Command {CommandName} failed: {Message}. Changes have been rolled back.", commandName, ex.Message);
+            await RollbackTransactionAsync(cancellationToken);
+            Logger.LogError(ex, "Command {CommandName} failed: {Message}. Changes rolled back.", commandName, ex.Message);
             if (typeof(TResponse).IsGenericType && typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
             {
                 var type = typeof(TResponse).GetGenericArguments()[0];
                 var method = typeof(Result<>).MakeGenericType(type).GetMethod("Failure", new[] { typeof(string) });
-                return (TResponse)method.Invoke(null, new object[] { ex.Message });
+                return (TResponse)method!.Invoke(null, new object[] { ex.Message })!;
             }
             throw; // fallback
         }

@@ -55,31 +55,34 @@ public class CryptoMarketController : Controller
     [HttpGet]
     [DisplayName("Candlestick Chart")]
     [Description("Interactive candlestick chart across multiple timeframes (1m to 1d) with volume profile.")]
-    public async Task<IActionResult> Chart(string symbol = "BTCUSDT", CryptoTimeframe timeframe = CryptoTimeframe.H1, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Chart([FromQuery] CryptoChartRequestDto? request, CancellationToken cancellationToken = default)
     {
-        var result = await _queries.GetCandles.HandleAsync(new GetCryptoCandlesQuery(symbol, timeframe, 120), cancellationToken);
-        ViewBag.Symbol = symbol;
-        ViewBag.Timeframe = timeframe;
+        request ??= new CryptoChartRequestDto();
+        var result = await _queries.GetCandles.HandleAsync(new GetCryptoCandlesQuery(request.Symbol, request.Timeframe, 120), cancellationToken);
+        ViewBag.Symbol = request.Symbol;
+        ViewBag.Timeframe = request.Timeframe;
         return result.ToView(this);
     }
 
     [HttpGet]
     [DisplayName("Order Book & Trades")]
     [Description("View real-time order book depth ladder (bids/asks), spreads, and recent market executions.")]
-    public async Task<IActionResult> OrderBook(string symbol = "BTCUSDT", CancellationToken cancellationToken = default)
+    public async Task<IActionResult> OrderBook([FromQuery] CryptoSymbolRequestDto? request, CancellationToken cancellationToken = default)
     {
-        var result = await _queries.GetOrderBook.HandleAsync(new GetCryptoOrderBookQuery(symbol, 20), cancellationToken);
-        ViewBag.Symbol = symbol;
+        request ??= new CryptoSymbolRequestDto();
+        var result = await _queries.GetOrderBook.HandleAsync(new GetCryptoOrderBookQuery(request.Symbol, 20), cancellationToken);
+        ViewBag.Symbol = request.Symbol;
         return result.ToView(this);
     }
 
     [HttpGet]
     [DisplayName("Derivatives & Futures Hub")]
     [Description("Perpetual funding rates, open interest, long/short ratio, liquidation map & feed, Deribit options IV/Max Pain, and basis curve.")]
-    public async Task<IActionResult> Futures(string symbol = "BTCUSDT", CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Futures([FromQuery] CryptoSymbolRequestDto? request, CancellationToken cancellationToken = default)
     {
-        var result = await _queries.GetDerivativesHub.HandleAsync(new GetCryptoDerivativesHubQuery(symbol), cancellationToken);
-        ViewBag.Symbol = symbol;
+        request ??= new CryptoSymbolRequestDto();
+        var result = await _queries.GetDerivativesHub.HandleAsync(new GetCryptoDerivativesHubQuery(request.Symbol), cancellationToken);
+        ViewBag.Symbol = request.Symbol;
         return result.ToView(this);
     }
 
@@ -87,11 +90,12 @@ public class CryptoMarketController : Controller
     [HttpGet]
     [DisplayName("Order Flow & Market Data Hub")]
     [Description("Cumulative Volume Delta (CVD), Footprint chart clusters, order book heatmap liquidity walls, Coinbase Premium, and stablecoin depeg radar.")]
-    public async Task<IActionResult> OrderFlow(string symbol = "BTCUSDT", CryptoTimeframe timeframe = CryptoTimeframe.H1, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> OrderFlow([FromQuery] CryptoChartRequestDto? request, CancellationToken cancellationToken = default)
     {
-        var result = await _queries.GetMarketDataHub.HandleAsync(new GetCryptoMarketDataHubQuery(symbol, timeframe), cancellationToken);
-        ViewBag.Symbol = symbol;
-        ViewBag.Timeframe = timeframe;
+        request ??= new CryptoChartRequestDto();
+        var result = await _queries.GetMarketDataHub.HandleAsync(new GetCryptoMarketDataHubQuery(request.Symbol, request.Timeframe), cancellationToken);
+        ViewBag.Symbol = request.Symbol;
+        ViewBag.Timeframe = request.Timeframe;
         return result.ToView(this, viewName: "OrderFlow");
     }
 

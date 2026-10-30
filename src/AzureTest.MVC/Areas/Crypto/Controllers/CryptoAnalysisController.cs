@@ -40,44 +40,48 @@ public class CryptoAnalysisController : Controller
     [HttpGet]
     [DisplayName("Technical Indicators")]
     [Description("Evaluate EMA 9/21/50/200, SMA 20/50, RSI 14, MACD, Bollinger Bands, ATR volatility, and Fibonacci/Classical pivot support and resistance levels.")]
-    public async Task<IActionResult> Index(string symbol = "BTCUSDT", CryptoTimeframe timeframe = CryptoTimeframe.H1, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Index([FromQuery] CryptoChartRequestDto? request, CancellationToken cancellationToken = default)
     {
-        var result = await _queries.GetAnalysis.HandleAsync(new GetCryptoAnalysisQuery(symbol, timeframe), cancellationToken);
-        ViewBag.Symbol = symbol;
-        ViewBag.Timeframe = timeframe;
+        request ??= new CryptoChartRequestDto();
+        var result = await _queries.GetAnalysis.HandleAsync(new GetCryptoAnalysisQuery(request.Symbol, request.Timeframe), cancellationToken);
+        ViewBag.Symbol = request.Symbol;
+        ViewBag.Timeframe = request.Timeframe;
         return result.ToView(this);
     }
 
     [HttpGet]
     [DisplayName("ICT / SMC Market Structure")]
     [Description("Institutional Smart Money Concepts: Break of Structure (BOS), Change of Character (CHoCH), Order Blocks (+OB/-OB), Fair Value Gaps (FVG), Liquidity Sweeps, and Premium/Discount OTE zones.")]
-    public async Task<IActionResult> MarketStructure(string symbol = "BTCUSDT", CryptoTimeframe timeframe = CryptoTimeframe.H1, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> MarketStructure([FromQuery] CryptoChartRequestDto? request, CancellationToken cancellationToken = default)
     {
-        var result = await _queries.GetMarketStructure.HandleAsync(new GetCryptoMarketStructureQuery(symbol, timeframe), cancellationToken);
-        ViewBag.Symbol = symbol;
-        ViewBag.Timeframe = timeframe;
+        request ??= new CryptoChartRequestDto();
+        var result = await _queries.GetMarketStructure.HandleAsync(new GetCryptoMarketStructureQuery(request.Symbol, request.Timeframe), cancellationToken);
+        ViewBag.Symbol = request.Symbol;
+        ViewBag.Timeframe = request.Timeframe;
         return result.ToView(this, viewName: "MarketStructure");
     }
 
     [HttpGet]
     [DisplayName("Volume Profile & Anchored VWAP")]
     [Description("Visible Range Volume Profile (VPVR): Point of Control (POC), Value Area High (VAH), Value Area Low (VAL), High/Low Volume Nodes (HVN/LVN), and Multi-Anchor VWAP with ±1σ and ±2σ standard deviation bands.")]
-    public async Task<IActionResult> VolumeProfile(string symbol = "BTCUSDT", CryptoTimeframe timeframe = CryptoTimeframe.H1, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> VolumeProfile([FromQuery] CryptoChartRequestDto? request, CancellationToken cancellationToken = default)
     {
-        var result = await _queries.GetVolumeProfile.HandleAsync(new GetCryptoVolumeProfileQuery(symbol, timeframe), cancellationToken);
-        ViewBag.Symbol = symbol;
-        ViewBag.Timeframe = timeframe;
+        request ??= new CryptoChartRequestDto();
+        var result = await _queries.GetVolumeProfile.HandleAsync(new GetCryptoVolumeProfileQuery(request.Symbol, request.Timeframe), cancellationToken);
+        ViewBag.Symbol = request.Symbol;
+        ViewBag.Timeframe = request.Timeframe;
         return result.ToView(this, viewName: "VolumeProfile");
     }
 
     [HttpGet]
     [DisplayName("Market Regime & Quant Analysis")]
     [Description("Quantitative regime detection: ADX trend strength, ATR% volatility, Bollinger Bandwidth squeeze detection, Hurst Exponent mean-reversion analysis, and optimal algorithmic strategy allocation.")]
-    public async Task<IActionResult> MarketRegime(string symbol = "BTCUSDT", CryptoTimeframe timeframe = CryptoTimeframe.H1, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> MarketRegime([FromQuery] CryptoChartRequestDto? request, CancellationToken cancellationToken = default)
     {
-        var result = await _queries.GetMarketRegime.HandleAsync(new GetCryptoMarketRegimeQuery(symbol, timeframe), cancellationToken);
-        ViewBag.Symbol = symbol;
-        ViewBag.Timeframe = timeframe;
+        request ??= new CryptoChartRequestDto();
+        var result = await _queries.GetMarketRegime.HandleAsync(new GetCryptoMarketRegimeQuery(request.Symbol, request.Timeframe), cancellationToken);
+        ViewBag.Symbol = request.Symbol;
+        ViewBag.Timeframe = request.Timeframe;
         return result.ToView(this, viewName: "MarketRegime");
     }
 
@@ -94,33 +98,28 @@ public class CryptoAnalysisController : Controller
     [DisplayName("Market Screener")]
     [Description("Scan and filter coins across the cryptocurrency universe by 24h trading volume, RSI oversold/overbought conditions, price momentum, and trend alignment.")]
     public async Task<IActionResult> Screener(
-        [FromQuery] decimal? minVolume,
-        [FromQuery] decimal? minRsi,
-        [FromQuery] decimal? maxRsi,
-        [FromQuery] decimal? minChange,
-        [FromQuery] decimal? maxChange,
-        [FromQuery] string? trend,
+        [FromQuery] CryptoScreenerFilterDto? filter,
         CancellationToken cancellationToken = default)
     {
         var result = await _queries.GetScreener.HandleAsync(new GetCryptoScreenerQuery(), cancellationToken);
         if (result.IsSuccess)
         {
             var list = System.Linq.Enumerable.AsEnumerable(result.Value);
-            if (minVolume.HasValue) list = System.Linq.Enumerable.Where(list, x => x.Volume24h >= minVolume.Value);
-            if (minRsi.HasValue) list = System.Linq.Enumerable.Where(list, x => x.Rsi >= minRsi.Value);
-            if (maxRsi.HasValue) list = System.Linq.Enumerable.Where(list, x => x.Rsi <= maxRsi.Value);
-            if (minChange.HasValue) list = System.Linq.Enumerable.Where(list, x => x.Change24h >= minChange.Value);
-            if (maxChange.HasValue) list = System.Linq.Enumerable.Where(list, x => x.Change24h <= maxChange.Value);
-            if (!string.IsNullOrWhiteSpace(trend)) list = System.Linq.Enumerable.Where(list, x => x.Recommendation.Contains(trend, System.StringComparison.OrdinalIgnoreCase));
+            if (filter?.MinVolume.HasValue == true) list = System.Linq.Enumerable.Where(list, x => x.Volume24h >= filter.MinVolume.Value);
+            if (filter?.MinRsi.HasValue == true) list = System.Linq.Enumerable.Where(list, x => x.Rsi >= filter.MinRsi.Value);
+            if (filter?.MaxRsi.HasValue == true) list = System.Linq.Enumerable.Where(list, x => x.Rsi <= filter.MaxRsi.Value);
+            if (filter?.MinChange.HasValue == true) list = System.Linq.Enumerable.Where(list, x => x.Change24h >= filter.MinChange.Value);
+            if (filter?.MaxChange.HasValue == true) list = System.Linq.Enumerable.Where(list, x => x.Change24h <= filter.MaxChange.Value);
+            if (!string.IsNullOrWhiteSpace(filter?.Trend)) list = System.Linq.Enumerable.Where(list, x => x.Recommendation.Contains(filter.Trend, System.StringComparison.OrdinalIgnoreCase));
             result = AzureTest.Application.Abstractions.Result<System.Collections.Generic.IReadOnlyList<CryptoScreenerItemDto>>.Success(System.Linq.Enumerable.ToList(list));
         }
 
-        ViewBag.MinVolume = minVolume;
-        ViewBag.MinRsi = minRsi;
-        ViewBag.MaxRsi = maxRsi;
-        ViewBag.MinChange = minChange;
-        ViewBag.MaxChange = maxChange;
-        ViewBag.Trend = trend;
+        ViewBag.MinVolume = filter?.MinVolume;
+        ViewBag.MinRsi = filter?.MinRsi;
+        ViewBag.MaxRsi = filter?.MaxRsi;
+        ViewBag.MinChange = filter?.MinChange;
+        ViewBag.MaxChange = filter?.MaxChange;
+        ViewBag.Trend = filter?.Trend;
         return result.ToView(this, viewName: "Screener");
     }
 

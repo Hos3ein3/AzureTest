@@ -9,6 +9,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Compile Include="..\AzureTest.Infrastructure\Configuration\DashboardSettings.cs" Link="DashboardSettings.cs" />
     </ItemGroup>
 

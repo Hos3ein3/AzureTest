@@ -62,27 +62,20 @@ public class CryptoPortfolioController : Controller
     [DisplayName("Save Journal Entry")]
     [Description("Record trade reflections, psychological state (FOMO, Greed, Disciplined), and strategic lessons learned.")]
     public async Task<IActionResult> SaveJournal(
-        Guid? id,
-        Guid? positionId,
-        string symbol,
-        string strategyTag,
-        string emotionTag,
-        int rating,
-        string notes,
-        string lessonsLearned,
+        [FromForm] SaveCryptoJournalRequestDto request,
         CancellationToken cancellationToken = default)
     {
         var command = new SaveCryptoJournalCommand(
-            id,
-            positionId,
+            request.Id,
+            request.PositionId,
             _currentUser.Id,
             _currentUser.TenantId,
-            symbol,
-            strategyTag,
-            emotionTag,
-            rating,
-            notes,
-            lessonsLearned);
+            request.Symbol,
+            request.StrategyTag,
+            request.EmotionTag,
+            request.Rating,
+            request.Notes,
+            request.LessonsLearned);
 
         var validation = await _validator.ValidateAsync(command, cancellationToken);
         if (validation.IsFailure)
@@ -151,9 +144,9 @@ public class CryptoPortfolioController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Reset Paper Capital")]
     [Description("Reset paper trading account balance to fresh initial capital ($10,000 USDT) and clean slate.")]
-    public async Task<IActionResult> ResetAccount(Guid accountId, decimal initialBalance = 10000m, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ResetAccount([FromForm] ResetCryptoAccountRequestDto request, CancellationToken cancellationToken = default)
     {
-        var command = new ResetCryptoAccountCommand(accountId, initialBalance);
+        var command = new ResetCryptoAccountCommand(request.AccountId, request.InitialBalance);
         var result = await _commands.ResetAccount.HandleAsync(command, cancellationToken);
         if (result.IsFailure)
         {
@@ -161,7 +154,7 @@ public class CryptoPortfolioController : Controller
         }
         else
         {
-            TempData["SuccessMessage"] = $"Paper account reset successfully to {initialBalance:C0}.";
+            TempData["SuccessMessage"] = $"Paper account reset successfully to {request.InitialBalance:C0}.";
         }
 
         return RedirectToAction(nameof(Index));

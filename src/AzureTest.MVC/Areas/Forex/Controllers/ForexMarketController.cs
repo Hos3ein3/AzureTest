@@ -47,11 +47,12 @@ public class ForexMarketController : Controller
     [HttpGet]
     [DisplayName("Interactive Chart")]
     [Description("View candlestick price action across multiple timeframes with volume.")]
-    public async Task<IActionResult> Chart(string symbol = "EUR/USD", ForexTimeframe timeframe = ForexTimeframe.H1, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Chart([FromQuery] ForexChartRequestDto? request, CancellationToken cancellationToken = default)
     {
-        var result = await _queries.GetCandles.HandleAsync(new GetForexCandlesQuery(symbol, timeframe, 120), cancellationToken);
-        ViewBag.Symbol = symbol;
-        ViewBag.Timeframe = timeframe;
+        request ??= new ForexChartRequestDto();
+        var result = await _queries.GetCandles.HandleAsync(new GetForexCandlesQuery(request.Symbol, request.Timeframe, 120), cancellationToken);
+        ViewBag.Symbol = request.Symbol;
+        ViewBag.Timeframe = request.Timeframe;
         return result.ToView(this);
     }
 

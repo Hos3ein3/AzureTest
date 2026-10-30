@@ -58,39 +58,27 @@ public class CryptoTradeController : Controller
     [DisplayName("Submit Order")]
     [Description("Place a Market, Limit, or Stop order with optional leverage, Stop Loss, Take Profit, and idempotency protection.")]
     public async Task<IActionResult> PlaceOrder(
-        Guid accountId,
-        string symbol,
-        CryptoOrderSide side,
-        CryptoOrderType orderType,
-        decimal quantity,
-        decimal requestedPrice,
-        decimal? stopPrice,
-        int leverage = 1,
-        decimal? stopLoss = null,
-        decimal? takeProfit = null,
-        decimal? trailingStopDistance = null,
-        CryptoTradingMode tradingMode = CryptoTradingMode.PaperTrading,
-        string? idempotencyKey = null,
+        [FromForm] PlaceCryptoOrderRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        idempotencyKey ??= Guid.NewGuid().ToString("N");
+        var idempotencyKey = request.IdempotencyKey ?? Guid.NewGuid().ToString("N");
 
         var command = new PlaceCryptoOrderCommand(
-            accountId,
+            request.AccountId,
             _currentUser.Id,
             _currentUser.TenantId,
-            symbol,
-            side,
-            orderType,
-            quantity,
-            requestedPrice,
-            stopPrice,
-            leverage,
-            stopLoss,
-            takeProfit,
-            trailingStopDistance,
+            request.Symbol,
+            request.Side,
+            request.OrderType,
+            request.Quantity,
+            request.RequestedPrice,
+            request.StopPrice,
+            request.Leverage,
+            request.StopLoss,
+            request.TakeProfit,
+            request.TrailingStopDistance,
             idempotencyKey,
-            tradingMode);
+            request.TradingMode);
 
         var validation = await _validator.ValidateAsync(command, cancellationToken);
         if (validation.IsFailure)
@@ -102,20 +90,20 @@ public class CryptoTradeController : Controller
         if (result.IsFailure)
         {
             TempData["ErrorMessage"] = result.Message ?? result.Error;
-            return RedirectToAction(nameof(Index), new { symbol });
+            return RedirectToAction(nameof(Index), new { symbol = request.Symbol });
         }
 
-        TempData["SuccessMessage"] = $"Order submitted successfully for {quantity} {symbol} ({side}).";
-        return RedirectToAction(nameof(Index), new { symbol });
+        TempData["SuccessMessage"] = $"Order submitted successfully for {request.Quantity} {request.Symbol} ({request.Side}).";
+        return RedirectToAction(nameof(Index), new { symbol = request.Symbol });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     [DisplayName("Close Position")]
     [Description("Close an open position at the current market bid or ask price, realizing profit/loss.")]
-    public async Task<IActionResult> ClosePosition(Guid positionId, decimal? closePrice, string symbol = "BTCUSDT", CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ClosePosition([FromForm] CloseCryptoPositionRequestDto request, CancellationToken cancellationToken = default)
     {
-        var command = new CloseCryptoPositionCommand(positionId, closePrice);
+        var command = new CloseCryptoPositionCommand(request.PositionId, request.ClosePrice);
         var result = await _commands.ClosePosition.HandleAsync(command, cancellationToken);
         if (result.IsFailure)
         {
@@ -126,16 +114,16 @@ public class CryptoTradeController : Controller
             TempData["SuccessMessage"] = $"Position closed successfully. Realized P&L: {result.Value:C2}.";
         }
 
-        return RedirectToAction(nameof(Index), new { symbol });
+        return RedirectToAction(nameof(Index), new { symbol = request.Symbol });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     [DisplayName("Cancel Order")]
     [Description("Cancel an unfilled pending limit or stop order before execution.")]
-    public async Task<IActionResult> CancelOrder(Guid orderId, string symbol = "BTCUSDT", CancellationToken cancellationToken = default)
+    public async Task<IActionResult> CancelOrder([FromForm] CancelCryptoOrderRequestDto request, CancellationToken cancellationToken = default)
     {
-        var command = new CancelCryptoOrderCommand(orderId);
+        var command = new CancelCryptoOrderCommand(request.OrderId);
         var result = await _commands.CancelOrder.HandleAsync(command, cancellationToken);
         if (result.IsFailure)
         {
@@ -146,16 +134,16 @@ public class CryptoTradeController : Controller
             TempData["SuccessMessage"] = "Order cancelled successfully.";
         }
 
-        return RedirectToAction(nameof(Index), new { symbol });
+        return RedirectToAction(nameof(Index), new { symbol = request.Symbol });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     [DisplayName("Update Stops")]
     [Description("Modify Stop Loss, Take Profit, or Trailing Stop protection on an active position.")]
-    public async Task<IActionResult> UpdateStops(Guid positionId, decimal? stopLoss, decimal? takeProfit, decimal? trailingStopDistance, string symbol = "BTCUSDT", CancellationToken cancellationToken = default)
+    public async Task<IActionResult> UpdateStops([FromForm] UpdateCryptoStopsRequestDto request, CancellationToken cancellationToken = default)
     {
-        var command = new UpdateCryptoStopsCommand(positionId, stopLoss, takeProfit, trailingStopDistance);
+        var command = new UpdateCryptoStopsCommand(request.PositionId, request.StopLoss, request.TakeProfit, request.TrailingStopDistance);
         var result = await _commands.UpdateStops.HandleAsync(command, cancellationToken);
         if (result.IsFailure)
         {
@@ -166,7 +154,7 @@ public class CryptoTradeController : Controller
             TempData["SuccessMessage"] = "Risk stops updated successfully.";
         }
 
-        return RedirectToAction(nameof(Index), new { symbol });
+        return RedirectToAction(nameof(Index), new { symbol = request.Symbol });
     }
 
     [HttpPost]
@@ -174,35 +162,24 @@ public class CryptoTradeController : Controller
     [DisplayName("Place Smart Order")]
     [Description("Execute algorithmic orders: TWAP (Time-Weighted Average Price), Iceberg hidden reserve, or Trailing Stop protection.")]
     public async Task<IActionResult> PlaceSmartOrder(
-        Guid accountId,
-        string symbol,
-        CryptoOrderSide side,
-        CryptoOrderType smartOrderType,
-        decimal totalQuantity,
-        decimal requestedPrice,
-        int durationMinutes = 30,
-        int intervalMinutes = 5,
-        decimal visibleQuantity = 0m,
-        decimal variancePercent = 10m,
-        decimal? trailingDistanceUsd = null,
-        Guid? positionId = null,
+        [FromForm] PlaceCryptoSmartOrderRequestDto request,
         CancellationToken cancellationToken = default)
     {
         var command = new PlaceCryptoSmartOrderCommand(
-            accountId,
+            request.AccountId,
             _currentUser.Id,
             _currentUser.TenantId,
-            symbol,
-            side,
-            smartOrderType,
-            totalQuantity,
-            requestedPrice,
-            durationMinutes,
-            intervalMinutes,
-            visibleQuantity,
-            variancePercent,
-            trailingDistanceUsd,
-            positionId);
+            request.Symbol,
+            request.Side,
+            request.SmartOrderType,
+            request.TotalQuantity,
+            request.RequestedPrice,
+            request.DurationMinutes,
+            request.IntervalMinutes,
+            request.VisibleQuantity,
+            request.VariancePercent,
+            request.TrailingDistanceUsd,
+            request.PositionId);
 
         var result = await _commands.PlaceSmartOrder.HandleAsync(command, cancellationToken);
         if (result.IsFailure)
@@ -211,10 +188,10 @@ public class CryptoTradeController : Controller
         }
         else
         {
-            TempData["SuccessMessage"] = $"{smartOrderType} smart execution algorithm successfully initialized for {symbol} ({side}).";
+            TempData["SuccessMessage"] = $"{request.SmartOrderType} smart execution algorithm successfully initialized for {request.Symbol} ({request.Side}).";
         }
 
-        return RedirectToAction(nameof(Index), new { symbol });
+        return RedirectToAction(nameof(Index), new { symbol = request.Symbol });
     }
 
     [HttpGet]
@@ -230,9 +207,9 @@ public class CryptoTradeController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Execute Arbitrage Opportunity")]
     [Description("Execute multi-exchange or cyclical arbitrage opportunity with automatic fee deductions and slippage controls.")]
-    public IActionResult ExecuteArbitrage(string type, string pairOrRoute, decimal expectedProfit)
+    public IActionResult ExecuteArbitrage([FromForm] ExecuteArbitrageRequestDto request)
     {
-        TempData["SuccessMessage"] = $"Arbitrage loop for {pairOrRoute} ({type}) triggered successfully! Estimated net yield: +${expectedProfit:N2}.";
+        TempData["SuccessMessage"] = $"Arbitrage loop for {request.PairOrRoute} ({request.Type}) triggered successfully! Estimated net yield: +${request.ExpectedProfit:N2}.";
         return RedirectToAction(nameof(Arbitrage));
     }
 }

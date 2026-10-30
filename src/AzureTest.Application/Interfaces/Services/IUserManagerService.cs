@@ -2,6 +2,7 @@ using AzureTest.Application.Abstractions;
 
 
 using System.Threading.Tasks;
+using AzureTest.Contracts.DTOs.Users;
 
 namespace AzureTest.Application.Interfaces.Services;
 

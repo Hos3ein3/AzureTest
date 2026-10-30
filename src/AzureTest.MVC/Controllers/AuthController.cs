@@ -71,19 +71,17 @@ public class AuthController : Controller
     [DisplayName("Login")]
     [Description("Execute Login operation for Auth.")]
     public async Task<IActionResult> Login(
-        string email,
-        string password,
-        [FromForm(Name = "remember-me")] bool rememberMe = true,
-        string? returnUrl = null,
+        [FromForm] LoginRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        var command = new LoginCommand(email, password, rememberMe);
+        var rememberMe = request.RememberMe || (Request.HasFormContentType && Request.Form.ContainsKey("remember-me") && Request.Form["remember-me"] == "on");
+        var command = new LoginCommand(request.Email, request.Password, rememberMe);
         var result = await _commands.Login.HandleAsync(command, cancellationToken);
 
         if (!result.IsSuccess)
         {
             ModelState.AddModelError(string.Empty, result.Error ?? "Login failed.");
-            ViewData["ReturnUrl"] = returnUrl;
+            ViewData["ReturnUrl"] = request.ReturnUrl;
             return View();
         }
 
@@ -103,7 +101,7 @@ public class AuthController : Controller
                 }
             }
 
-            ViewData["ReturnUrl"] = returnUrl;
+            ViewData["ReturnUrl"] = request.ReturnUrl;
             return View();
         }
 
@@ -133,7 +131,7 @@ public class AuthController : Controller
             await _signInManager.SignInAsync(loginResult.User, authProperties);
         }
 
-        return RedirectAfterLogin(returnUrl ?? loginResult.RedirectUrl);
+        return RedirectAfterLogin(request.ReturnUrl ?? loginResult.RedirectUrl);
     }
 
     [HttpGet]
@@ -149,15 +147,15 @@ public class AuthController : Controller
     [DisplayName("Register")]
     [Description("Execute Register operation for Auth.")]
     public async Task<IActionResult> Register(
-        string name,
-        string email,
-        string password,
-        string confirmPassword,
+        [FromForm] RegisterRequestDto request,
         CancellationToken cancellationToken = default)
     {
         var actionUrl = Url.Action(nameof(ConfirmEmail), "Auth", null, Request.Scheme);
         var confirmationTemplate = $"{actionUrl}?userId={{userId}}&code={{code}}";
-        var command = new RegisterCommand(name, email, password, confirmPassword, confirmationTemplate);
+        var confirmPassword = !string.IsNullOrWhiteSpace(request.ConfirmPassword) 
+            ? request.ConfirmPassword 
+            : (Request.HasFormContentType ? Request.Form["confirmpassword"].ToString() : string.Empty);
+        var command = new RegisterCommand(request.Name, request.Email, request.Password, confirmPassword, confirmationTemplate);
         var result = await _commands.Register.HandleAsync(command, cancellationToken);
 
         if (!result.IsSuccess)
@@ -186,7 +184,7 @@ public class AuthController : Controller
 
         if (regResult.ConfirmationEmailSent)
         {
-            TempData["Success"] = $"Registration successful! A confirmation email has been sent to {email}. Please check your inbox to confirm your account.";
+            TempData["Success"] = $"Registration successful! A confirmation email has been sent to {request.Email}. Please check your inbox to confirm your account.";
         }
 
         return LocalRedirect(regResult.RedirectUrl);
@@ -371,9 +369,9 @@ public class AuthController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Forgot Password")]
     [Description("Submit forgot password request to generate reset instructions.")]
-    public async Task<IActionResult> ForgotPassword(string email, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ForgotPassword([FromForm] ForgotPasswordRequestDto request, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(email))
+        if (string.IsNullOrWhiteSpace(request?.Email))
         {
             ModelState.AddModelError("email", "Email address is required.");
             return View();
@@ -381,7 +379,7 @@ public class AuthController : Controller
 
         var actionUrl = Url.Action(nameof(ResetPassword), "Auth", null, Request.Scheme);
         var resetLinkTemplate = $"{actionUrl}?userId={{userId}}&code={{code}}";
-        var result = await _commands.ForgotPassword.HandleAsync(new ForgotPasswordCommand(email, resetLinkTemplate), cancellationToken);
+        var result = await _commands.ForgotPassword.HandleAsync(new ForgotPasswordCommand(request.Email, resetLinkTemplate), cancellationToken);
         if (!result.IsSuccess)
         {
             ModelState.AddModelError(string.Empty, result.Error ?? "Unable to process request.");
@@ -458,28 +456,29 @@ public class AuthController : Controller
     [DisplayName("Reset Password")]
     [Description("Submit new password to reset account password.")]
     public async Task<IActionResult> ResetPassword(
-        string userId,
-        string code,
-        string password,
-        string confirmPassword,
+        [FromForm] ResetPasswordRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        ViewBag.UserId = userId;
-        ViewBag.Code = code;
+        ViewBag.UserId = request.UserId;
+        ViewBag.Code = request.Code;
 
-        if (string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(confirmPassword))
+        var confirmPassword = !string.IsNullOrWhiteSpace(request.ConfirmPassword)
+            ? request.ConfirmPassword
+            : (Request.HasFormContentType ? Request.Form["confirmpassword"].ToString() : string.Empty);
+
+        if (string.IsNullOrWhiteSpace(request.Password) || string.IsNullOrWhiteSpace(confirmPassword))
         {
             ModelState.AddModelError(string.Empty, "Password and confirmation password are required.");
             return View();
         }
 
-        if (password != confirmPassword)
+        if (request.Password != confirmPassword)
         {
             ModelState.AddModelError(string.Empty, "Passwords do not match.");
             return View();
         }
 
-        var command = new ResetPasswordCommand(userId, code, password, confirmPassword);
+        var command = new ResetPasswordCommand(request.UserId, request.Code, request.Password, confirmPassword);
         var result = await _commands.ResetPassword.HandleAsync(command, cancellationToken);
 
         if (!result.IsSuccess)
@@ -526,9 +525,7 @@ public class AuthController : Controller
     [DisplayName("Change Password")]
     [Description("Submit change password request for current user.")]
     public async Task<IActionResult> ChangePassword(
-        string currentPassword,
-        string newPassword,
-        string confirmPassword,
+        [FromForm] ChangePasswordRequestDto request,
         CancellationToken cancellationToken = default)
     {
         if (User.Identity?.IsAuthenticated != true)
@@ -542,7 +539,7 @@ public class AuthController : Controller
             return Unauthorized();
         }
 
-        var command = new ChangePasswordCommand(currentUserId, currentPassword, newPassword, confirmPassword);
+        var command = new ChangePasswordCommand(currentUserId, request.CurrentPassword, request.NewPassword, request.ConfirmPassword);
         var result = await _commands.ChangePassword.HandleAsync(command, cancellationToken);
         if (!result.IsSuccess)
         {

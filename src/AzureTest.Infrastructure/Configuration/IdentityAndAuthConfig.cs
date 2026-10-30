@@ -89,6 +89,10 @@ public static class IdentityAndAuthConfig
                     },
                     OnChallenge = context =>
                     {
+                        if (context.Request.Path.StartsWithSegments("/api"))
+                        {
+                            return Task.CompletedTask;
+                        }
                         context.HandleResponse();
                         context.Response.Redirect("/Auth/Login");
                         return Task.CompletedTask;

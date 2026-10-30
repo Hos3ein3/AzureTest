@@ -1,6 +1,5 @@
 using AzureTest.Application.Abstractions;
-
-
+using AzureTest.Contracts.DTOs.UserPreferences;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,7 +18,7 @@ namespace AzureTest.MVC.Controllers;
 [Authorize]
 [DisplayName("User Preference")]
 [Description("Manage and control User Preference operations.")]
-    public class UserPreferenceController : Controller
+public class UserPreferenceController : Controller
 {
     private readonly ICurrentUser _currentUser;
     private readonly IQueryHandler<GetUserPreferenceQuery, UserPreference> _getUserPreferenceQuery;
@@ -62,7 +61,7 @@ namespace AzureTest.MVC.Controllers;
     [IgnoreAntiforgeryToken]
     [DisplayName("Update")]
     [Description("Modify an existing User Preference.")]
-    public async Task<IActionResult> Update([FromBody] UpdatePreferenceRequest? jsonRequest, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update([FromBody] UpdatePreferenceRequestDto? jsonRequest, CancellationToken cancellationToken)
     {
         string? lang = jsonRequest?.Language;
         string? theme = jsonRequest?.ThemeColor;
@@ -101,14 +100,5 @@ namespace AzureTest.MVC.Controllers;
             cancellationToken);
 
         return Json(new { success = true, language, themeColor, currency = finalCurrency, preferredDashboard = finalPreferredDashboard, isDarkMode = finalIsDarkMode });
-    }
-
-    public class UpdatePreferenceRequest
-    {
-        public string? Language { get; set; }
-        public string? ThemeColor { get; set; }
-        public string? Currency { get; set; }
-        public string? PreferredDashboard { get; set; }
-        public bool? IsDarkMode { get; set; }
     }
 }
