@@ -89,7 +89,7 @@ public sealed class DomainEventsInterceptor : SaveChangesInterceptor
 
                 var outboxMessage = new OutboxMessage
                 {
-                    Id = domainEvent.Id != Guid.Empty ? domainEvent.Id : Guid.NewGuid(),
+                    //Id = domainEvent.Id != Guid.Empty ? domainEvent.Id : Guid.NewGuid(),
                     EventType = eventType.AssemblyQualifiedName ?? eventType.FullName ?? eventType.Name,
                     Payload = payload,
                     OccurredOnUtc = domainEvent.OccurredOnUtc,

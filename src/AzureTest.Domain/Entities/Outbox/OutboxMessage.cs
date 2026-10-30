@@ -1,10 +1,11 @@
 using System;
 
+using AzureTest.Domain.Primitives;
+
 namespace AzureTest.Domain.Entities.Outbox;
 
-public sealed class OutboxMessage
+public sealed class OutboxMessage:BaseEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
     public string EventType { get; set; } = string.Empty;
     public string Payload { get; set; } = string.Empty;
     public DateTime OccurredOnUtc { get; set; } = DateTime.UtcNow;

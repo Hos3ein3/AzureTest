@@ -7,6 +7,8 @@ using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Messaging;
 using AzureTest.Domain.Entities.Trading;
 using AzureTest.Domain.Entities.Trading.Enums;
+using AzureTest.Domain.Exceptions;
+
 using FluentValidation;
 
 namespace AzureTest.Application.Trading.Commands.ToggleTradingWatchlist;
@@ -40,23 +42,29 @@ public sealed class ToggleTradingWatchlistCommandHandler : ICommandHandler<Toggl
 
     public async Task<Result<bool>> HandleAsync(ToggleTradingWatchlistCommand cmd, CancellationToken ct)
     {
-        var items = await _uow.TradingWatchlists.GetAllAsync();
-        var existing = items.FirstOrDefault(w => w.UserId == cmd.UserId && (cmd.TenantId == Guid.Empty || w.TenantId == cmd.TenantId) && w.Symbol.Equals(cmd.Symbol, StringComparison.OrdinalIgnoreCase));
+        var symbol = cmd.Symbol.Trim().ToUpperInvariant();
 
-        bool isNowWatchlisted;
-        if (existing != null)
+        var existing = await _uow.TradingWatchlists.GetByUserAndSymbolAsync(cmd.UserId, symbol, ct);
+
+        if (existing is not null)
         {
             _uow.TradingWatchlists.Remove(existing);
-            isNowWatchlisted = false;
-        }
-        else
-        {
-            var newItem = TradingWatchlist.Create(cmd.UserId, cmd.TenantId, cmd.Symbol, cmd.AssetName, cmd.AssetClass);
-            _uow.TradingWatchlists.Add(newItem);
-            isNowWatchlisted = true;
+            await _uow.SaveChangesAsync(ct);
+            return Result<bool>.Success(false);
         }
 
-        await _uow.SaveChangesAsync(ct);
-        return Result<bool>.Success(isNowWatchlisted);
+        _uow.TradingWatchlists.Add(
+            TradingWatchlist.Create(cmd.UserId, cmd.TenantId, symbol, cmd.AssetName, cmd.AssetClass));
+
+        try
+        {
+            await _uow.SaveChangesAsync(ct);
+        }
+        catch (UniqueConstraintViolationException)
+        {
+            // A parallel request added the same symbol first. The goal state is the same.
+        }
+
+        return Result<bool>.Success(true);
     }
 }

@@ -6,7 +6,7 @@ using AzureTest.Domain.Entities.Outbox;
 
 namespace AzureTest.Application.Interfaces.Data.Outbox;
 
-public interface IOutboxRepository
+public interface IOutboxRepository:IGenericRepository<OutboxMessage>
 {
     Task<List<OutboxMessage>> GetUnprocessedMessagesAsync(int batchSize = 50, CancellationToken ct = default);
     Task<(IReadOnlyList<OutboxMessage> Items, int TotalCount)> GetPagedAsync(
@@ -19,9 +19,8 @@ public interface IOutboxRepository
         int pageNumber = 1,
         int pageSize = 20,
         CancellationToken ct = default);
-    Task<OutboxMessage?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    void Add(OutboxMessage message);
-    void Update(OutboxMessage message);
+    
+    
     Task<int> DeleteByDateRangeAsync(DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default);
     Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
 }

@@ -17,6 +17,8 @@ using AzureTest.Persistence.Repositories.FootballFantasy;
 //using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
+using Npgsql;
+
 namespace AzureTest.Persistence.Repositories;
 
 public class UnitOfWork : IUnitOfWork
@@ -259,6 +261,15 @@ public class UnitOfWork : IUnitOfWork
 
             throw new DuplicateInboxMessageException(inbox.EventId, inbox.HandlerName, ex);
         }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pg)
+        {
+            var inbox = ex.Entries.Select(e => e.Entity).OfType<InboxMessage>().FirstOrDefault();
+            if (inbox is not null)
+                throw new DuplicateInboxMessageException(inbox.EventId, inbox.HandlerName, ex);
+
+            throw new UniqueConstraintViolationException(pg.ConstraintName, ex);
+        }
+
     }
 
     private static bool IsUniqueViolation(DbUpdateException ex)

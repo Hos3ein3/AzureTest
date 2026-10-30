@@ -10,11 +10,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AzureTest.Persistence.Repositories.Outbox;
 
-public sealed class OutboxRepository : IOutboxRepository
+public sealed class OutboxRepository : GenericRepository<OutboxMessage>,IOutboxRepository
 {
     private readonly AzureTestDbContext _context;
 
-    public OutboxRepository(AzureTestDbContext context)
+    public OutboxRepository(AzureTestDbContext context):base(context)
     {
         _context = context;
     }
@@ -28,11 +28,7 @@ public sealed class OutboxRepository : IOutboxRepository
             .ToListAsync(ct);
     }
 
-    public Task<OutboxMessage?> GetByIdAsync(Guid id, CancellationToken ct = default)
-    {
-        return _context.OutboxMessages.FirstOrDefaultAsync(m => m.Id == id, ct);
-    }
-
+    
     public async Task<(IReadOnlyList<OutboxMessage> Items, int TotalCount)> GetPagedAsync(
         string? searchTerm = null,
         bool? isDone = null,
@@ -97,15 +93,7 @@ public sealed class OutboxRepository : IOutboxRepository
         return (items, totalCount);
     }
 
-    public void Add(OutboxMessage message)
-    {
-        _context.OutboxMessages.Add(message);
-    }
-
-    public void Update(OutboxMessage message)
-    {
-        _context.OutboxMessages.Update(message);
-    }
+    
 
     public async Task<int> DeleteByDateRangeAsync(DateTime? fromUtc, DateTime? toUtc, CancellationToken ct = default)
     {
