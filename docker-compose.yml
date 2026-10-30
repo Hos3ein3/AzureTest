@@ -30,30 +30,29 @@ services:
         max-size: "10m"
         max-file: "3"
   api:
-    api:
-      build:
-        context: .
-        dockerfile: Dockerfile
-        target: api
-      container_name: azuretest-api
-      ports:
-        - "8089:8080"
-      environment:
-        - ASPNETCORE_ENVIRONMENT=Production
-        - EmailSettings__Username=${EMAIL_USERNAME}
-        - EmailSettings__Password=${EMAIL_PASSWORD}
-      depends_on:
-        - postgres
-        - mongo
-        - redis
-        - seq
-      networks:
-        - app-azuretest-network
-      logging:
-        driver: "json-file"
-        options:
-          max-size: "10m"
-          max-file: "3"
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    container_name: azuretest-api
+    ports:
+      - "8089:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - EmailSettings__Username=${EMAIL_USERNAME}
+      - EmailSettings__Password=${EMAIL_PASSWORD}
+    depends_on:
+      - postgres
+      - mongo
+      - redis
+      - seq
+    networks:
+      - app-azuretest-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
   # ── PostgreSQL Database & Admin ────────────────────────────────────────────
   postgres:
     image: postgres:15-alpine
