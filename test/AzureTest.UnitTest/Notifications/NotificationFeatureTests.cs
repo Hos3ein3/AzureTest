@@ -18,6 +18,8 @@ using AzureTest.Domain.Entities.Trading;
 using AzureTest.Domain.Entities.Trading.Enums;
 using AzureTest.Infrastructure.Jobs;
 using AzureTest.Infrastructure.Services;
+using AzureTest.UnitTest.Trading;
+
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -299,7 +301,7 @@ public class NotificationFeatureTests
         marketDataMock.Setup(m => m.GetCurrentPriceAsync(It.IsAny<string>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(3200m);
 
-        var handler = new CloseTradingPositionCommandHandler(uowMock.Object, marketDataMock.Object, notificationServiceMock.Object);
+        var handler = new CloseTradingPositionCommandHandler(uowMock.Object, marketDataMock.Object, TestEventDispatcherFactory.Create(uowMock.Object));
         var command = new CloseTradingPositionCommand(position.Id, userId, tenantId, 3200m);
 
         // Act

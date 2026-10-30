@@ -12,6 +12,9 @@ using AzureTest.Application.Trading.Services;
 using AzureTest.Domain.Entities.Trading;
 using AzureTest.Domain.Entities.Trading.Enums;
 using FluentAssertions;
+
+using Microsoft.Extensions.Logging.Abstractions;
+
 using Moq;
 using Xunit;
 
@@ -29,7 +32,7 @@ public class TradingExecutionAndBalanceTests
 
     public TradingExecutionAndBalanceTests()
     {
-        _mockUow = new Mock<IUnitOfWork>();
+        _mockUow = new Mock<IUnitOfWork>(){ DefaultValue = DefaultValue.Mock };;
         _mockAccounts = new Mock<ITradingAccountRepository>();
         _mockPositions = new Mock<ITradingPositionRepository>();
         _mockOrders = new Mock<ITradingOrderRepository>();
@@ -188,7 +191,11 @@ public class TradingExecutionAndBalanceTests
         _mockPositions.Setup(p => p.GetByIdAsync(position.Id)).ReturnsAsync(position);
         _mockAccounts.Setup(a => a.GetByIdAsync(account.Id)).ReturnsAsync(account);
 
-        var handler = new CloseTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        var handler = new CloseTradingPositionCommandHandler(
+            _mockUow.Object,
+            _mockMarketData.Object,
+            TestEventDispatcherFactory.Create(_mockUow.Object));
+
         var cmd = new CloseTradingPositionCommand(
             PositionId: position.Id,
             UserId: _userId,
@@ -235,7 +242,7 @@ public class TradingExecutionAndBalanceTests
         _mockPositions.Setup(p => p.GetByIdAsync(position.Id)).ReturnsAsync(position);
         _mockAccounts.Setup(a => a.GetByIdAsync(account.Id)).ReturnsAsync(account);
 
-        var handler = new CloseTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        var handler = new CloseTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object,TestEventDispatcherFactory.Create(_mockUow.Object));
         var cmd = new CloseTradingPositionCommand(
             PositionId: position.Id,
             UserId: _userId,
@@ -288,11 +295,14 @@ public class TradingExecutionAndBalanceTests
 
         _mockOrders.Setup(o => o.GetAllAsync()).ReturnsAsync(new List<TradingOrder>());
 
-        var handler = new SyncTradingPricesCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        var handler = new SyncTradingPricesCommandHandler(
+            _mockUow.Object,
+            _mockMarketData.Object,
+            TestEventDispatcherFactory.Create(_mockUow.Object),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<SyncTradingPricesCommandHandler>.Instance);
 
-        // Act
+// Act
         var result = await handler.HandleAsync(new SyncTradingPricesCommand(), CancellationToken.None);
-
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().Be(1); // 1 position closed
@@ -336,7 +346,7 @@ public class TradingExecutionAndBalanceTests
 
         _mockOrders.Setup(o => o.GetAllAsync()).ReturnsAsync(new List<TradingOrder>());
 
-        var handler = new SyncTradingPricesCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        var handler = new SyncTradingPricesCommandHandler(_mockUow.Object, _mockMarketData.Object,TestEventDispatcherFactory.Create(_mockUow.Object),NullLogger<SyncTradingPricesCommandHandler>.Instance);
 
         // Act
         var result = await handler.HandleAsync(new SyncTradingPricesCommand(), CancellationToken.None);
@@ -384,7 +394,7 @@ public class TradingExecutionAndBalanceTests
 
         _mockOrders.Setup(o => o.GetAllAsync()).ReturnsAsync(new List<TradingOrder>());
 
-        var handler = new SyncTradingPricesCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        var handler = new SyncTradingPricesCommandHandler(_mockUow.Object, _mockMarketData.Object,TestEventDispatcherFactory.Create(_mockUow.Object),NullLogger<SyncTradingPricesCommandHandler>.Instance);
 
         // Act
         var result = await handler.HandleAsync(new SyncTradingPricesCommand(), CancellationToken.None);
@@ -767,7 +777,7 @@ public class TradingExecutionAndBalanceTests
                 })
             .ReturnsAsync(AzureTest.Application.Abstractions.Result<Guid>.Success(Guid.NewGuid()));
 
-        var handler = new CloseTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object, mockNotification.Object);
+        var handler = new CloseTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object, TestEventDispatcherFactory.Create(_mockUow.Object));
         // Closed at 0.1082: PnL = (0.1082 - 0.1080) * 10 = +0.002
         var cmd = new CloseTradingPositionCommand(position.Id, _userId, _tenantId, 0.1082m);
 
@@ -814,7 +824,7 @@ public class TradingExecutionAndBalanceTests
             .Setup(m => m.GetCurrentPriceAsync("XANUSDT", 0m, It.IsAny<CancellationToken>()))
             .ReturnsAsync(0.115m);
 
-        var handler = new CloseTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        var handler = new CloseTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object, TestEventDispatcherFactory.Create(_mockUow.Object));
         // No explicit ClosePrice provided (simulating button click without form price)
         var cmd = new CloseTradingPositionCommand(position.Id, _userId, _tenantId, null);
 
@@ -878,7 +888,7 @@ public class TradingExecutionAndBalanceTests
         // Now user closes position with a loss (price drops from 65,000 to 60,000)
         _mockPositions.Setup(p => p.GetByIdAsync(openedPosition.Id)).ReturnsAsync(openedPosition);
         var closePrice = 60000m;
-        var closeHandler = new CloseTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        var closeHandler = new CloseTradingPositionCommandHandler(_mockUow.Object, _mockMarketData.Object, TestEventDispatcherFactory.Create(_mockUow.Object));
         var closeCmd = new CloseTradingPositionCommand(openedPosition.Id, _userId, _tenantId, closePrice);
 
         var closeResult = await closeHandler.HandleAsync(closeCmd, CancellationToken.None);
@@ -977,7 +987,7 @@ public class TradingExecutionAndBalanceTests
             .Setup(m => m.GetCurrentPriceAsync("BTCUSDT", It.IsAny<decimal>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(55000m);
 
-        var handler = new SyncTradingPricesCommandHandler(_mockUow.Object, _mockMarketData.Object);
+        var handler = new SyncTradingPricesCommandHandler(_mockUow.Object, _mockMarketData.Object,TestEventDispatcherFactory.Create(_mockUow.Object),NullLogger<SyncTradingPricesCommandHandler>.Instance);
         var result = await handler.HandleAsync(new SyncTradingPricesCommand(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();

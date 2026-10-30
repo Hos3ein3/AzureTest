@@ -30,7 +30,7 @@ public static class GetInboxMessages
             cancellationToken);
 
         var messagesDto = items.Select(m => new InboxMessageDto(
-            m.Id,
+            m.EventId,
             m.HandlerName,
             m.ReceivedOnUtc,
             m.ProcessedOnUtc

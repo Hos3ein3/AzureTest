@@ -178,8 +178,8 @@
                         <tr class="hover:bg-slate-50/70 transition-colors">
                             <td class="px-5 py-3.5 font-mono text-slate-700 whitespace-nowrap text-2xs">
                                 <div class="flex items-center gap-1.5">
-                                    <span title="@msg.Id">@msg.Id</span>
-                                    <button type="button" onclick="navigator.clipboard.writeText('@msg.Id'); alert('Copied Event ID to clipboard!');" class="text-slate-400 hover:text-slate-600" title="Copy Event ID">
+                                    <span title="@msg.EventId">@msg.EventId</span>
+                                    <button type="button" onclick="navigator.clipboard.writeText('@msg.EventId'); alert('Copied Event ID to clipboard!');" class="text-slate-400 hover:text-slate-600" title="Copy Event ID">
                                         <i class="fa-regular fa-copy text-3xs"></i>
                                     </button>
                                 </div>
@@ -201,7 +201,7 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3.5 text-right whitespace-nowrap">
-                                <form asp-action="DeleteInbox" asp-route-id="@msg.Id" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this Inbox record?');">
+                                <form asp-action="DeleteInbox" asp-route-id="@msg.EventId" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this Inbox record?');">
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Delete Inbox Record">
                                         <i class="fa-solid fa-trash text-3xs"></i>

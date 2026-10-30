@@ -25,21 +25,21 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
 {
     private readonly IUnitOfWork _uow;
     private readonly ITradingMarketDataService _marketData;
-    private readonly IEventDispatcher? _eventDispatcher;
-    private readonly Microsoft.Extensions.Logging.ILogger<SyncTradingPricesCommandHandler> _logger;
+    private readonly IEventDispatcher _eventDispatcher;
+    private readonly ILogger<SyncTradingPricesCommandHandler> _logger;
 
     public SyncTradingPricesCommandHandler(
         IUnitOfWork uow,
         ITradingMarketDataService marketData,
-        IEventDispatcher? eventDispatcher = null,
-        Microsoft.Extensions.Logging.ILogger<SyncTradingPricesCommandHandler>? logger = null)
+        IEventDispatcher eventDispatcher,
+        ILogger<SyncTradingPricesCommandHandler> logger)
     {
         _uow = uow;
         _marketData = marketData;
         _eventDispatcher = eventDispatcher;
-        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<SyncTradingPricesCommandHandler>.Instance;
+        _logger = logger;
     }
-
+    
     public async Task<Result<int>> HandleAsync(SyncTradingPricesCommand cmd, CancellationToken ct)
     {
         // 1. Check for open positions and pending orders first
@@ -190,40 +190,20 @@ public sealed class SyncTradingPricesCommandHandler : ICommandHandler<SyncTradin
 
         if (actionsExecuted > 0 || positions.Count > 0)
         {
-            // Atomically commit database changes and Outbox messages in single transaction
+            // Commit position/order/account changes first.
             await _uow.SaveChangesAsync(ct);
 
-            // Dispatch collected domain events via EventDispatcher to invoke handlers
             var domainEvents = _uow.PopDomainEvents();
-            if ((domainEvents == null || domainEvents.Count == 0))
+            if (domainEvents is null || domainEvents.Count == 0)
             {
                 domainEvents = positions.SelectMany(p => p.DomainEvents)
                     .Concat(pendingOrders.SelectMany(o => o.DomainEvents))
                     .ToList();
             }
 
-            if (_eventDispatcher != null && domainEvents != null)
+            foreach (var domainEvent in domainEvents)
             {
-                foreach (var domainEvent in domainEvents)
-                {
-                    await _eventDispatcher.PublishAsync(domainEvent, ct);
-                }
-            }
-            else if (domainEvents != null)
-            {
-                var closedHandler = new AzureTest.Application.Trading.EventHandlers.TradingPositionClosedDomainEventHandler(_uow);
-                var liquidatedHandler = new AzureTest.Application.Trading.EventHandlers.TradingPositionLiquidatedDomainEventHandler(_uow);
-                var filledHandler = new AzureTest.Application.Trading.EventHandlers.TradingOrderFilledDomainEventHandler(_uow);
-
-                foreach (var ev in domainEvents)
-                {
-                    if (ev is AzureTest.Domain.Entities.Trading.Events.TradingPositionClosedDomainEvent closed)
-                        await closedHandler.HandleAsync(closed, ct);
-                    else if (ev is AzureTest.Domain.Entities.Trading.Events.TradingPositionLiquidatedDomainEvent liq)
-                        await liquidatedHandler.HandleAsync(liq, ct);
-                    else if (ev is AzureTest.Domain.Entities.Trading.Events.TradingOrderFilledDomainEvent filled)
-                        await filledHandler.HandleAsync(filled, ct);
-                }
+                await _eventDispatcher.PublishAsync(domainEvent, ct);
             }
         }
 

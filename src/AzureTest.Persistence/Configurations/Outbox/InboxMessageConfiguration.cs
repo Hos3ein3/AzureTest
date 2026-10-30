@@ -9,10 +9,11 @@ public sealed class InboxMessageConfiguration : IEntityTypeConfiguration<InboxMe
     public void Configure(EntityTypeBuilder<InboxMessage> b)
     {
         b.ToTable("InboxMessages");
-        b.HasKey(x => new { x.Id, x.HandlerName });
+        b.HasKey(x => new { x.EventId, x.HandlerName });
 
         b.Property(x => x.HandlerName)
             .HasMaxLength(200)
             .IsRequired();
+        
     }
 }

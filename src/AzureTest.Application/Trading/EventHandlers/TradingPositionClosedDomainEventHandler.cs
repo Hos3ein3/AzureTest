@@ -13,89 +13,52 @@ using Microsoft.Extensions.Logging;
 
 namespace AzureTest.Application.Trading.EventHandlers;
 
-public sealed class TradingPositionClosedDomainEventHandler : IEventHandler<TradingPositionClosedDomainEvent>
+public sealed class TradingPositionClosedDomainEventHandler
+    : IdempotentEventHandler<TradingPositionClosedDomainEvent>
 {
-    private readonly IUnitOfWork _uow;
-    private readonly IAppNotificationService? _notificationService;
-    private readonly ILogger<TradingPositionClosedDomainEventHandler> _logger;
+    private readonly IAppNotificationService _notifications;
 
     public TradingPositionClosedDomainEventHandler(
         IUnitOfWork uow,
-        IAppNotificationService? notificationService = null,
-        ILogger<TradingPositionClosedDomainEventHandler>? logger = null)
+        IAppNotificationService notifications,
+        ILogger<TradingPositionClosedDomainEventHandler> logger,
+        TimeProvider time) : base(uow, logger, time)
+        => _notifications = notifications;
+
+    protected override async Task ApplyAsync(TradingPositionClosedDomainEvent e, CancellationToken ct)
     {
-        _uow = uow;
-        _notificationService = notificationService;
-        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<TradingPositionClosedDomainEventHandler>.Instance;
+        var account = await Uow.TradingAccounts.GetByIdAsync(e.AccountId, ct);
+        if (account is null)
+        {
+            Logger.LogWarning("TradingAccount {AccountId} not found for closed position {PositionId}.", e.AccountId, e.PositionId);
+            return;
+        }
+
+        account.ApplyRealizedPnl(e.RealizedPnl, e.InitialMargin);
+        Logger.LogInformation("Settled PnL {Pnl} on account {AccountId} for position {PositionId}.",
+            e.RealizedPnl, e.AccountId, e.PositionId);
     }
 
-    public async Task HandleAsync(TradingPositionClosedDomainEvent @event, CancellationToken cancellationToken = default)
+    protected override Task NotifyAsync(TradingPositionClosedDomainEvent e, CancellationToken ct)
     {
-        var handlerName = nameof(TradingPositionClosedDomainEventHandler);
+        var message = $"Closed {e.Side} position for {e.Quantity:0.######} {e.Symbol} @ " +
+                      $"{TradingNotificationFormatter.FormatPrice(e.ClosePrice)}. " +
+                      $"Realized PnL: {TradingNotificationFormatter.FormatPnl(e.RealizedPnl)}.";
 
-        // 1. Idempotency Check via Inbox Pattern
-        if (_uow.InboxMessages != null)
+        var close = e.ClosePrice.ToString(CultureInfo.InvariantCulture);
+        var metadata = new Dictionary<string, string>
         {
-            var alreadyProcessed = await _uow.InboxMessages.HasBeenProcessedAsync(@event.Id, handlerName, cancellationToken);
-            if (alreadyProcessed)
-            {
-                _logger.LogInformation("Domain event {EventId} was already processed by {HandlerName}. Skipping duplicate.", @event.Id, handlerName);
-                return;
-            }
-        }
+            ["positionId"] = e.PositionId.ToString(),
+            ["symbol"] = e.Symbol,
+            ["side"] = e.Side.ToString(),
+            ["realizedPnl"] = e.RealizedPnl.ToString(CultureInfo.InvariantCulture),
+            ["closePrice"] = close,
+            ["exitPrice"] = close,
+            ["triggerReason"] = e.TriggerReason
+        };
 
-        // 2. Settle Account Balance (Aggregate Invariant)
-        var account = await _uow.TradingAccounts.GetByIdAsync(@event.AccountId);
-        if (account != null)
-        {
-            account.ApplyRealizedPnl(@event.RealizedPnl, @event.InitialMargin);
-            _logger.LogInformation(
-                "DomainEventHandler: Settled Realized PnL {RealizedPnl} on TradingAccount {AccountId} for closed position {PositionId}.",
-                @event.RealizedPnl, @event.AccountId, @event.PositionId);
-        }
-
-        // 3. Dispatch Notification Side Effect
-        if (_notificationService != null)
-        {
-            var formattedClosePrice = TradingNotificationFormatter.FormatPrice(@event.ClosePrice);
-            var formattedPnl = TradingNotificationFormatter.FormatPnl(@event.RealizedPnl);
-            var title = $"Paper Trade Closed ({@event.TriggerReason}): {@event.Symbol}";
-            var message = $"Closed {@event.Side} position for {@event.Quantity:0.######} {@event.Symbol} @ {formattedClosePrice}. Realized PnL: {formattedPnl}.";
-
-            var metadata = new Dictionary<string, string>
-            {
-                ["positionId"] = @event.PositionId.ToString(),
-                ["symbol"] = @event.Symbol,
-                ["side"] = @event.Side.ToString(),
-                ["realizedPnl"] = @event.RealizedPnl.ToString(CultureInfo.InvariantCulture),
-                ["closePrice"] = @event.ClosePrice.ToString(CultureInfo.InvariantCulture),
-                ["exitPrice"] = @event.ClosePrice.ToString(CultureInfo.InvariantCulture),
-                ["triggerReason"] = @event.TriggerReason
-            };
-
-            await _notificationService.SendNotificationAsync(
-                @event.UserId,
-                @event.TenantId,
-                title,
-                message,
-                type: "Trade",
-                actionUrl: "/Trading",
-                metadata: metadata,
-                ct: cancellationToken);
-        }
-
-        // 4. Record into Inbox to guarantee idempotency
-        if (_uow.InboxMessages != null)
-        {
-            await _uow.InboxMessages.AddAsync(new InboxMessage
-            {
-                Id = @event.Id,
-                HandlerName = handlerName,
-                ReceivedOnUtc = DateTime.UtcNow,
-                ProcessedOnUtc = DateTime.UtcNow
-            }, cancellationToken);
-
-            await _uow.SaveChangesAsync(cancellationToken);
-        }
+        return _notifications.SendNotificationAsync(e.UserId, e.TenantId,
+            $"Paper Trade Closed ({e.TriggerReason}): {e.Symbol}", message,
+            type: "Trade", actionUrl: "/Trading", metadata: metadata, ct: ct);
     }
 }

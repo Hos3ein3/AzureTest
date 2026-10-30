@@ -13,79 +13,35 @@ using AzureTest.Domain.Entities.Trading.Events;
 using Microsoft.Extensions.Logging;
 
 namespace AzureTest.Application.Trading.EventHandlers;
-
-public sealed class TradingOrderFilledDomainEventHandler : IEventHandler<TradingOrderFilledDomainEvent>
+public sealed class TradingOrderFilledDomainEventHandler
+    : IdempotentEventHandler<TradingOrderFilledDomainEvent>
 {
-    private readonly IUnitOfWork _uow;
-    private readonly IAppNotificationService? _notificationService;
-    private readonly ILogger<TradingOrderFilledDomainEventHandler> _logger;
+    private readonly IAppNotificationService _notifications;
 
     public TradingOrderFilledDomainEventHandler(
         IUnitOfWork uow,
-        IAppNotificationService? notificationService = null,
-        ILogger<TradingOrderFilledDomainEventHandler>? logger = null)
+        IAppNotificationService notifications,
+        ILogger<TradingOrderFilledDomainEventHandler> logger,
+        TimeProvider time) : base(uow, logger, time)
+        => _notifications = notifications;
+
+    protected override Task NotifyAsync(TradingOrderFilledDomainEvent e, CancellationToken ct)
     {
-        _uow = uow;
-        _notificationService = notificationService;
-        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<TradingOrderFilledDomainEventHandler>.Instance;
-    }
+        var sideText = e.Side == TradingOrderSide.Buy ? "Buy (Long)" : "Sell (Short)";
+        var message = $"Pending order filled: {sideText} {TradingNotificationFormatter.FormatQuantity(e.Quantity)} " +
+                      $"{e.Symbol} @ {TradingNotificationFormatter.FormatPrice(e.FillPrice)} (Leverage: {e.Leverage}x).";
 
-    public async Task HandleAsync(TradingOrderFilledDomainEvent @event, CancellationToken cancellationToken = default)
-    {
-        var handlerName = nameof(TradingOrderFilledDomainEventHandler);
-
-        // 1. Idempotency Check via Inbox Pattern
-        if (_uow.InboxMessages != null)
+        var metadata = new Dictionary<string, string>
         {
-            var alreadyProcessed = await _uow.InboxMessages.HasBeenProcessedAsync(@event.Id, handlerName, cancellationToken);
-            if (alreadyProcessed)
-            {
-                _logger.LogInformation("Domain event {EventId} was already processed by {HandlerName}. Skipping duplicate.", @event.Id, handlerName);
-                return;
-            }
-        }
+            ["orderId"] = e.OrderId.ToString(),
+            ["positionId"] = e.PositionId.ToString(),
+            ["symbol"] = e.Symbol,
+            ["fillPrice"] = e.FillPrice.ToString(CultureInfo.InvariantCulture),
+            ["quantity"] = e.Quantity.ToString(CultureInfo.InvariantCulture)
+        };
 
-        // 2. Dispatch Order Filled Notification
-        if (_notificationService != null)
-        {
-            var sideText = @event.Side == TradingOrderSide.Buy ? "Buy (Long)" : "Sell (Short)";
-            var formattedPrice = TradingNotificationFormatter.FormatPrice(@event.FillPrice);
-            var formattedQty = TradingNotificationFormatter.FormatQuantity(@event.Quantity);
-            var title = $"Paper Order Filled: {@event.Symbol}";
-            var message = $"Pending order filled: {sideText} {formattedQty} {@event.Symbol} @ {formattedPrice} (Leverage: {@event.Leverage}x).";
-
-            var metadata = new Dictionary<string, string>
-            {
-                ["orderId"] = @event.OrderId.ToString(),
-                ["positionId"] = @event.PositionId.ToString(),
-                ["symbol"] = @event.Symbol,
-                ["fillPrice"] = @event.FillPrice.ToString(CultureInfo.InvariantCulture),
-                ["quantity"] = @event.Quantity.ToString(CultureInfo.InvariantCulture)
-            };
-
-            await _notificationService.SendNotificationAsync(
-                @event.UserId,
-                @event.TenantId,
-                title,
-                message,
-                type: "Trade",
-                actionUrl: "/Trading",
-                metadata: metadata,
-                ct: cancellationToken);
-        }
-
-        // 3. Record into Inbox
-        if (_uow.InboxMessages != null)
-        {
-            await _uow.InboxMessages.AddAsync(new InboxMessage
-            {
-                Id = @event.Id,
-                HandlerName = handlerName,
-                ReceivedOnUtc = DateTime.UtcNow,
-                ProcessedOnUtc = DateTime.UtcNow
-            }, cancellationToken);
-
-            await _uow.SaveChangesAsync(cancellationToken);
-        }
+        return _notifications.SendNotificationAsync(e.UserId, e.TenantId,
+            $"Paper Order Filled: {e.Symbol}", message,
+            type: "Trade", actionUrl: "/Trading", metadata: metadata, ct: ct);
     }
 }

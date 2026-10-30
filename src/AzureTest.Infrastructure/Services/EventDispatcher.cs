@@ -1,7 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Collections.Concurrent;
+using System.Reflection;
+using System.Runtime.ExceptionServices;
 using AzureTest.Application.Messaging;
 using AzureTest.Domain.Primitives;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,8 +8,12 @@ using Microsoft.Extensions.Logging;
 
 namespace AzureTest.Infrastructure.Services;
 
-public class EventDispatcher : IEventDispatcher
+public sealed class EventDispatcher : IEventDispatcher
 {
+    private sealed record HandlerInfo(Type HandlerType, MethodInfo HandleMethod);
+
+    private static readonly ConcurrentDictionary<Type, HandlerInfo> Cache = new();
+
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<EventDispatcher> _logger;
 
@@ -20,39 +23,63 @@ public class EventDispatcher : IEventDispatcher
         _logger = logger;
     }
 
-    public Task PublishAsync<TEvent>(TEvent @event, CancellationToken cancellationToken = default) where TEvent : class
-    {
-        return PublishObjectAsync(@event, cancellationToken);
-    }
+    public Task PublishAsync<TEvent>(TEvent @event, CancellationToken cancellationToken = default)
+        where TEvent : class
+        => PublishObjectAsync(@event, cancellationToken);
 
     public Task PublishAsync(IDomainEvent domainEvent, CancellationToken cancellationToken = default)
-    {
-        return PublishObjectAsync(domainEvent, cancellationToken);
-    }
+        => PublishObjectAsync(domainEvent, cancellationToken);
 
-    private async Task PublishObjectAsync(object @event, CancellationToken cancellationToken)
+    private async Task PublishObjectAsync(object @event, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(@event);
+
         var eventType = @event.GetType();
-        _logger.LogInformation("EventDispatcher: Publishing event {EventType}", eventType.Name);
-
-        using var scope = _serviceProvider.CreateScope();
-        var handlerType = typeof(IEventHandler<>).MakeGenericType(eventType);
-        var handlers = scope.ServiceProvider.GetServices(handlerType);
-
-        var tasks = new List<Task>();
-        foreach (var handler in handlers)
+        var info = Cache.GetOrAdd(eventType, static t =>
         {
-            var method = handlerType.GetMethod("HandleAsync");
-            if (method != null)
+            var handlerType = typeof(IEventHandler<>).MakeGenericType(t);
+            return new HandlerInfo(handlerType, handlerType.GetMethod("HandleAsync")!);
+        });
+
+        _logger.LogInformation("Publishing event {EventType}", eventType.Name);
+
+        // One scope per handler: separate DbContext, no shared state.
+        var handlerCount = 0;
+        var errors = new List<Exception>();
+
+        using (var probe = _serviceProvider.CreateScope())
+        {
+            handlerCount = probe.ServiceProvider.GetServices(info.HandlerType).Count();
+        }
+
+        for (var i = 0; i < handlerCount; i++)
+        {
+            try
             {
-                var task = (Task)method.Invoke(handler, new object[] { @event, cancellationToken })!;
-                tasks.Add(task);
+                using var scope = _serviceProvider.CreateScope();
+                var handler = scope.ServiceProvider.GetServices(info.HandlerType).ElementAt(i)!;
+                await InvokeAsync(info, handler, @event, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex, "Handler failed for {EventType}", eventType.Name);
+                errors.Add(ex);
             }
         }
 
-        if (tasks.Count > 0)
+        if (errors.Count == 1) ExceptionDispatchInfo.Capture(errors[0]).Throw();
+        if (errors.Count > 1) throw new AggregateException(errors);
+    }
+
+    private static async Task InvokeAsync(HandlerInfo info, object handler, object @event, CancellationToken ct)
+    {
+        try
         {
-            await Task.WhenAll(tasks);
+            await (Task)info.HandleMethod.Invoke(handler, new[] { @event, ct })!;
+        }
+        catch (TargetInvocationException ex) when (ex.InnerException is not null)
+        {
+            ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
         }
     }
 }

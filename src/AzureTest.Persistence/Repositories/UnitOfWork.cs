@@ -8,10 +8,14 @@ using AzureTest.Application.Interfaces.Data;
 using AzureTest.Application.Interfaces.Data.Crypto;
 using AzureTest.Application.Interfaces.Data.Outbox;
 using AzureTest.Application.Interfaces.Data.Trading;
+using AzureTest.Domain.Entities.Outbox;
+using AzureTest.Domain.Exceptions;
 using AzureTest.Domain.Primitives;
 using AzureTest.Persistence.Context;
 using AzureTest.Persistence.Interceptors;
 using AzureTest.Persistence.Repositories.FootballFantasy;
+//using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace AzureTest.Persistence.Repositories;
 
@@ -237,11 +241,35 @@ public class UnitOfWork : IUnitOfWork
 
     private Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? _currentTransaction;
 
-    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    public async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
-        return await _dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            return await _dbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            var inbox = ex.Entries
+                .Select(e => e.Entity)
+                .OfType<InboxMessage>()
+                .FirstOrDefault();
+
+            if (inbox is null)
+                throw; // Duplicate in another table: do not hide it.
+
+            throw new DuplicateInboxMessageException(inbox.EventId, inbox.HandlerName, ex);
+        }
     }
 
+    private static bool IsUniqueViolation(DbUpdateException ex)
+    {
+        var inner = ex.InnerException;
+        if (inner is null) return false;
+
+        var number = inner.GetType().GetProperty("Number")?.GetValue(inner) as int?;
+        return number is 2601 or 2627;
+    }
+    
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
         if (_currentTransaction == null && Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.IsRelational(_dbContext.Database))

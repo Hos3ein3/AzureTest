@@ -19,7 +19,7 @@ public sealed class InboxRepository : IInboxRepository
 
     public Task<InboxMessage?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        return _context.InboxMessages.FirstOrDefaultAsync(m => m.Id == id, ct);
+        return _context.InboxMessages.FirstOrDefaultAsync(m => m.EventId == id, ct);
     }
 
     public async Task<(IReadOnlyList<InboxMessage> Items, int TotalCount)> GetPagedAsync(
@@ -77,7 +77,7 @@ public sealed class InboxRepository : IInboxRepository
     public Task<bool> HasBeenProcessedAsync(Guid messageId, string handlerName, CancellationToken ct = default)
     {
         return _context.InboxMessages
-            .AnyAsync(m => m.Id == messageId && m.HandlerName == handlerName, ct);
+            .AnyAsync(m => m.EventId == messageId && m.HandlerName == handlerName, ct);
     }
 
     public async Task AddAsync(InboxMessage message, CancellationToken ct = default)
@@ -101,7 +101,7 @@ public sealed class InboxRepository : IInboxRepository
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        var deleted = await _context.InboxMessages.Where(m => m.Id == id).ExecuteDeleteAsync(ct);
+        var deleted = await _context.InboxMessages.Where(m => m.EventId == id).ExecuteDeleteAsync(ct);
         return deleted > 0;
     }
 }

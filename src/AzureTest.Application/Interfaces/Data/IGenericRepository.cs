@@ -12,7 +12,7 @@ namespace AzureTest.Application.Interfaces.Data;
 
 public interface IGenericRepository<TEntity> where TEntity : BaseEntity
 {
-    Task<TEntity?> GetByIdAsync(Guid id);
+    Task<TEntity?> GetByIdAsync(Guid id,CancellationToken ct=default);
     Task<IReadOnlyList<TEntity>> GetAllAsync();
     Task<IReadOnlyList<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate);
     void Add(TEntity entity);

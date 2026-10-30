@@ -1,10 +1,5 @@
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using AzureTest.Application.Abstractions;
 using AzureTest.Application.Interfaces.Data;
-using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
 using AzureTest.Application.Trading.Services;
 using AzureTest.Domain.Entities.Trading.Enums;
@@ -26,95 +21,73 @@ public sealed class CloseTradingPositionCommandValidator : AbstractValidator<Clo
     }
 }
 
-public sealed class CloseTradingPositionCommandHandler : ICommandHandler<CloseTradingPositionCommand, Result<Guid>>
+public sealed class CloseTradingPositionCommandHandler
+    : ICommandHandler<CloseTradingPositionCommand, Result<Guid>>
 {
     private readonly IUnitOfWork _uow;
     private readonly ITradingMarketDataService _marketData;
-    private readonly IEventDispatcher? _eventDispatcher;
-    private readonly IAppNotificationService? _notificationService;
+    private readonly IEventDispatcher _eventDispatcher;
 
     public CloseTradingPositionCommandHandler(
         IUnitOfWork uow,
         ITradingMarketDataService marketData,
-        IEventDispatcher? eventDispatcher = null,
-        IAppNotificationService? notificationService = null)
+        IEventDispatcher eventDispatcher)
     {
         _uow = uow;
         _marketData = marketData;
         _eventDispatcher = eventDispatcher;
-        _notificationService = notificationService;
-    }
-
-    public CloseTradingPositionCommandHandler(
-        IUnitOfWork uow,
-        ITradingMarketDataService marketData,
-        IAppNotificationService? notificationService)
-        : this(uow, marketData, null, notificationService)
-    {
     }
 
     public async Task<Result<Guid>> HandleAsync(CloseTradingPositionCommand cmd, CancellationToken ct)
     {
         var position = await _uow.TradingPositions.GetByIdAsync(cmd.PositionId);
-        if (position == null || position.Status != TradingPositionStatus.Open || position.UserId != cmd.UserId || (cmd.TenantId != Guid.Empty && position.TenantId != cmd.TenantId))
+        if (position is null
+            || position.Status != TradingPositionStatus.Open
+            || position.UserId != cmd.UserId
+            || (cmd.TenantId != Guid.Empty && position.TenantId != cmd.TenantId))
         {
             return Result<Guid>.Failure("Active position not found or already closed.");
         }
 
-        decimal exitPrice;
-        if (cmd.ClosePrice.HasValue && cmd.ClosePrice.Value > 0)
-        {
-            exitPrice = cmd.ClosePrice.Value;
-        }
-        else
-        {
-            var livePrice = await _marketData.GetCurrentPriceAsync(position.Symbol, 0m, ct);
-            if (livePrice > 0)
-            {
-                exitPrice = livePrice;
-            }
-            else if (position.CurrentPrice > 0 && position.CurrentPrice != position.EntryPrice)
-            {
-                exitPrice = position.CurrentPrice;
-            }
-            else
-            {
-                var freshQuote = await _marketData.GetQuoteAsync(position.Symbol, null, ct);
-                exitPrice = (freshQuote != null && freshQuote.Price > 0)
-                    ? freshQuote.Price
-                    : (position.CurrentPrice > 0 ? position.CurrentPrice : position.EntryPrice);
-            }
-        }
+        var exitPrice = await ResolveExitPriceAsync(cmd, position, ct);
 
-        // Close position and raise TradingPositionClosedDomainEvent on AggregateRoot
         position.Close(exitPrice, "Manual");
 
-        // Atomically commit position status and transactional Outbox message
         await _uow.SaveChangesAsync(ct);
 
-        // Dispatch domain events via EventDispatcher to handle balance settlement & side effects
         var domainEvents = _uow.PopDomainEvents();
-        if ((domainEvents == null || domainEvents.Count == 0) && position.DomainEvents.Count > 0)
+        if (domainEvents is null || domainEvents.Count == 0)
         {
             domainEvents = position.DomainEvents.ToList();
         }
 
-        if (_eventDispatcher != null && domainEvents != null)
+        foreach (var domainEvent in domainEvents)
         {
-            foreach (var domainEvent in domainEvents)
-            {
-                await _eventDispatcher.PublishAsync(domainEvent, ct);
-            }
-        }
-        else if (domainEvents != null)
-        {
-            var fallbackHandler = new AzureTest.Application.Trading.EventHandlers.TradingPositionClosedDomainEventHandler(_uow, _notificationService);
-            foreach (var domainEvent in domainEvents.OfType<AzureTest.Domain.Entities.Trading.Events.TradingPositionClosedDomainEvent>())
-            {
-                await fallbackHandler.HandleAsync(domainEvent, ct);
-            }
+            await _eventDispatcher.PublishAsync(domainEvent, ct);
         }
 
         return Result<Guid>.Success(position.Id);
+    }
+
+    private async Task<decimal> ResolveExitPriceAsync(
+        CloseTradingPositionCommand cmd,
+        AzureTest.Domain.Entities.Trading.TradingPosition position,
+        CancellationToken ct)
+    {
+        if (cmd.ClosePrice is > 0)
+            return cmd.ClosePrice.Value;
+
+        var livePrice = await _marketData.GetCurrentPriceAsync(position.Symbol, 0m, ct);
+        if (livePrice > 0)
+            return livePrice;
+
+        if (position.CurrentPrice > 0 && position.CurrentPrice != position.EntryPrice)
+            return position.CurrentPrice;
+
+        var quote = await _marketData.GetQuoteAsync(position.Symbol, null, ct);
+        if (quote is { Price: > 0 })
+            return quote.Price;
+
+        return position.CurrentPrice > 0 ? position.CurrentPrice : position.EntryPrice;
     }
 }

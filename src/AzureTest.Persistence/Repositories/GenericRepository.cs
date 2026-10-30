@@ -25,9 +25,9 @@ public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEnt
         _dbSet = _dbContext.Set<TEntity>();
     }
 
-    public virtual async Task<TEntity?> GetByIdAsync(Guid id)
+    public virtual async Task<TEntity?> GetByIdAsync(Guid id,CancellationToken ct = default)
     {
-        return await _dbSet.FindAsync(id);
+        return await _dbSet.FindAsync(id,ct);
     }
 
     public virtual async Task<IReadOnlyList<TEntity>> GetAllAsync()

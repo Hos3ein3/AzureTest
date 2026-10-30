@@ -1130,10 +1130,7 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
-
-<!-- Modify Position Modal (Edit Stop Loss & Take Profit) -->
+   <!-- Modify Position Modal (Edit Stop Loss & Take Profit) -->
 <div id="modifyPositionModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs hidden z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-in">
         <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -1230,9 +1227,9 @@
     const symbol = "@selected.Symbol";
     const selectedAssetClass = @((int)selected.AssetClass);
     const feedSource = "@selected.FeedSource";
-    let basePrice = @selected.Price;
-    let cashBalance = @account.CashBalance;
-    let freeMargin = @account.FreeMargin;
+    let basePrice = `@selected.Price`;
+    let cashBalance = `@account.CashBalance`;
+    let freeMargin = `@account.FreeMargin`;
     let currentSide = 1; // 1 = Buy, 2 = Sell
     let currentOrderTab = 'market';
     let isBuzzwordsMode = false;
