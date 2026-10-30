@@ -6,6 +6,7 @@ using AzureTest.Contracts.DTOs.Notifications;
 using AzureTest.MVC.Hubs;
 using AzureTest.MVC.Services;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 using Xunit;
@@ -147,5 +148,42 @@ public class SignalRNotificationAuthTests
         // Assert
         var expectedGroup = $"user_{userId.ToLowerInvariant()}";
         mockGroups.Verify(g => g.AddToGroupAsync("conn-reconnect-1", expectedGroup, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public void UnitOfWork_PopDomainEvents_WhenInterceptorNull_ShouldReturnEmptyListWithoutThrowing()
+    {
+        // Arrange
+        var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<AzureTest.Persistence.Context.AzureTestDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        using var dbContext = new AzureTest.Persistence.Context.AzureTestDbContext(options);
+        using var uow = new AzureTest.Persistence.Repositories.UnitOfWork(dbContext);
+
+        // Act
+        var events = uow.PopDomainEvents();
+
+        // Assert
+        events.Should().NotBeNull();
+        events.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void UnitOfWork_PopDomainEvents_WhenInterceptorProvided_ShouldReturnEvents()
+    {
+        // Arrange
+        var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<AzureTest.Persistence.Context.AzureTestDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        var interceptor = new AzureTest.Persistence.Interceptors.DomainEventsInterceptor();
+        using var dbContext = new AzureTest.Persistence.Context.AzureTestDbContext(options, interceptor);
+        using var uow = new AzureTest.Persistence.Repositories.UnitOfWork(dbContext, interceptor);
+
+        // Act
+        var events = uow.PopDomainEvents();
+
+        // Assert
+        events.Should().NotBeNull();
+        events.Should().BeEmpty();
     }
 }

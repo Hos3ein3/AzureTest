@@ -10,6 +10,7 @@ using AzureTest.Application.Interfaces.Data.Outbox;
 using AzureTest.Application.Interfaces.Data.Trading;
 using AzureTest.Domain.Primitives;
 using AzureTest.Persistence.Context;
+using AzureTest.Persistence.Interceptors;
 using AzureTest.Persistence.Repositories.FootballFantasy;
 
 namespace AzureTest.Persistence.Repositories;

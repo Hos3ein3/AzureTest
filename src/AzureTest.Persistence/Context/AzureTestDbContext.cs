@@ -23,7 +23,14 @@ public class AzureTestDbContext : IdentityDbContext<ApplicationUser, Application
 
     public AzureTestDbContext(
         DbContextOptions<AzureTestDbContext> options,
-        DomainEventsInterceptor? domainEventsInterceptor = null,
+        ITenantProvider? tenantProvider = null) : base(options)
+    {
+        _tenantProvider = tenantProvider;
+    }
+
+    public AzureTestDbContext(
+        DbContextOptions<AzureTestDbContext> options,
+        DomainEventsInterceptor domainEventsInterceptor,
         ITenantProvider? tenantProvider = null) : base(options)
     {
         _domainEventsInterceptor = domainEventsInterceptor;
