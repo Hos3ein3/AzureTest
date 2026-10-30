@@ -46,6 +46,7 @@ public static class ApiRoutes
         public const string ResetBalance = "trading/account/reset";
         public const string WatchlistToggle = "trading/watchlist/toggle";
         public const string ExecuteJson = "trading/execute";
+        public const string LeverageBracket = "trading/leverage-bracket";
     }
 
     public static class Forex
@@ -270,6 +271,9 @@ public static class ApiRoutes
 
         trading.MapGet(Trading.Search, SearchTradingAssets.HandleAsync)
             .WithApiDoc(nameof(Trading), "Search Trading Assets", "Search available traded assets and instruments by query string.");
+
+        trading.MapGet(Trading.LeverageBracket, GetTradingLeverageBracket.HandleAsync)
+            .WithApiDoc(nameof(Trading), "Get Trading Leverage Bracket", "Retrieve dynamic leverage brackets and maximum allowed leverage for a specific instrument from Binance or fallback.");
 
         trading.MapPost(Trading.PlaceOrder, PlaceTradingOrder.HandleAsync)
             .WithApiDoc(nameof(Trading), "Place Trading Order", "Submit a new market or limit trading order for execution.");

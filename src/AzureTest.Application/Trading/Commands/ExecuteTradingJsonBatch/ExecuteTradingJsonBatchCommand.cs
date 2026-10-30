@@ -99,6 +99,8 @@ public sealed class ExecuteTradingJsonBatchCommandHandler : ICommandHandler<Exec
                         var orderType = action.OrderType ?? TradingOrderType.Market;
                         var qty = action.Quantity ?? 1m;
                         var lev = action.Leverage ?? 1;
+                        var maxLev = await _marketData.GetMaxLeverageAsync(symbol, ct);
+                        if (lev > maxLev) lev = maxLev;
 
                         if (orderType == TradingOrderType.Market)
                         {

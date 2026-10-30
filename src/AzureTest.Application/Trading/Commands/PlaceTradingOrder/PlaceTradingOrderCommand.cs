@@ -75,7 +75,7 @@ public sealed record PlaceTradingOrderCommand(
 
 public sealed class PlaceTradingOrderCommandValidator : AbstractValidator<PlaceTradingOrderCommand>
 {
-    public PlaceTradingOrderCommandValidator()
+    public PlaceTradingOrderCommandValidator(ITradingMarketDataService? marketData = null)
     {
         RuleFor(x => x.Symbol)
             .NotEmpty()
@@ -90,6 +90,17 @@ public sealed class PlaceTradingOrderCommandValidator : AbstractValidator<PlaceT
         RuleFor(x => x.Leverage)
             .InclusiveBetween(TradingOrder.Rules.LeverageMin, TradingOrder.Rules.LeverageMax)
             .WithMessage($"Leverage must be between {TradingOrder.Rules.LeverageMin}x and {TradingOrder.Rules.LeverageMax}x.");
+
+        if (marketData != null)
+        {
+            RuleFor(x => x)
+                .MustAsync(async (x, ct) =>
+                {
+                    var maxLev = await marketData.GetMaxLeverageAsync(x.Symbol, ct);
+                    return x.Leverage >= 1 && x.Leverage <= maxLev;
+                })
+                .WithMessage(x => $"Leverage {x.Leverage}x exceeds the maximum allowed leverage for {x.Symbol}.");
+        }
 
         When(x => x.OrderType == TradingOrderType.Limit, () =>
         {
@@ -139,6 +150,13 @@ public sealed class PlaceTradingOrderCommandHandler : ICommandHandler<PlaceTradi
             account = TradingAccount.Create(cmd.UserId, cmd.TenantId, "Primary Paper Trading Account");
             _uow.TradingAccounts.Add(account);
             await _uow.SaveChangesAsync(ct);
+        }
+
+        // Validate user leverage against dynamically fetched Binance leverage bracket or fallback
+        var maxAllowedLeverage = await _marketData.GetMaxLeverageAsync(cmd.Symbol, ct);
+        if (cmd.Leverage < 1 || cmd.Leverage > maxAllowedLeverage)
+        {
+            return Result<Guid>.Failure($"Leverage {cmd.Leverage}x is invalid for {cmd.Symbol}. Allowed leverage range is 1x to {maxAllowedLeverage}x.");
         }
 
         // Always resolve the fresh real-time market price at execution time to protect against stale cached client prices

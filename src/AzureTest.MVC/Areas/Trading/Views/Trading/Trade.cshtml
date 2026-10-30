@@ -613,7 +613,7 @@
                 </div>
             </div>
 
-            <!-- Leverage Multiplier Slider Card (1x to 250x) -->
+            <!-- Leverage Multiplier Slider Card (Dynamic 1x to @(selected.MaxLeverage)x) -->
             <div class="p-3.5 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-3">
                 <div class="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
                     <span class="term-leverage-label flex items-center gap-1.5 font-black uppercase tracking-wide">
@@ -623,30 +623,36 @@
                     <div class="flex items-center gap-2">
                         <span class="text-3xs uppercase font-bold text-slate-400">Multiplier:</span>
                         <span id="leverageDisplay" class="px-2.5 py-0.5 rounded-lg bg-brand-500 text-white font-mono font-black text-xs shadow-2xs">1x</span>
+                        <span id="maxLeverageDisplay" class="text-3xs font-mono font-bold text-slate-400">/ max @(selected.MaxLeverage)x</span>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 sm:gap-2.5">
                     <button type="button" onclick="adjustLeverage(-5)" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-amber-500 hover:text-amber-500 dark:hover:text-amber-400 font-mono font-black text-xs shadow-2xs transition-all active:scale-95 flex items-center gap-1 text-slate-700 dark:text-slate-200 shrink-0" title="Decrease leverage by 5x">
                         -5
                     </button>
-                    <input type="range" min="1" max="250" value="1" name="leverage" id="orderLeverageInput"
+                    <input type="range" min="1" max="@(selected.MaxLeverage)" value="1" name="leverage" id="orderLeverageInput"
                            oninput="updateLeverage(this.value)"
                            class="flex-1 accent-brand-500 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg" />
                     <button type="button" onclick="adjustLeverage(5)" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-amber-500 hover:text-amber-500 dark:hover:text-amber-400 font-mono font-black text-xs shadow-2xs transition-all active:scale-95 flex items-center gap-1 text-slate-700 dark:text-slate-200 shrink-0" title="Increase leverage by 5x">
                         +5
                     </button>
                 </div>
-                <div class="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 text-3xs font-extrabold text-slate-400">
+                <div id="leveragePresetContainer" class="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 text-3xs font-extrabold text-slate-400">
                     <button type="button" onclick="setLeveragePreset(1)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">1x</button>
-                    <button type="button" onclick="setLeveragePreset(2)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">2x</button>
-                    <button type="button" onclick="setLeveragePreset(5)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">5x</button>
-                    <button type="button" onclick="setLeveragePreset(10)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">10x</button>
-                    <button type="button" onclick="setLeveragePreset(20)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">20x</button>
-                    <button type="button" onclick="setLeveragePreset(50)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">50x</button>
-                    <button type="button" onclick="setLeveragePreset(100)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">100x</button>
-                    <button type="button" onclick="setLeveragePreset(150)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">150x</button>
-                    <button type="button" onclick="setLeveragePreset(200)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">200x</button>
-                    <button type="button" onclick="setLeveragePreset(250)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors font-black text-brand-600 dark:text-brand-400 shrink-0">250x</button>
+                    @if (selected.MaxLeverage >= 2) { <button type="button" onclick="setLeveragePreset(2)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">2x</button> }
+                    @if (selected.MaxLeverage >= 5) { <button type="button" onclick="setLeveragePreset(5)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">5x</button> }
+                    @if (selected.MaxLeverage >= 10) { <button type="button" onclick="setLeveragePreset(10)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">10x</button> }
+                    @if (selected.MaxLeverage >= 20) { <button type="button" onclick="setLeveragePreset(20)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">20x</button> }
+                    @if (selected.MaxLeverage >= 50) { <button type="button" onclick="setLeveragePreset(50)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">50x</button> }
+                    @if (selected.MaxLeverage >= 75 && selected.MaxLeverage != 50 && selected.MaxLeverage != 100) { <button type="button" onclick="setLeveragePreset(75)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">75x</button> }
+                    @if (selected.MaxLeverage >= 100) { <button type="button" onclick="setLeveragePreset(100)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">100x</button> }
+                    @if (selected.MaxLeverage >= 125 && selected.MaxLeverage != 100) { <button type="button" onclick="setLeveragePreset(125)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">125x</button> }
+                    @if (selected.MaxLeverage >= 150) { <button type="button" onclick="setLeveragePreset(150)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">150x</button> }
+                    @if (selected.MaxLeverage >= 200) { <button type="button" onclick="setLeveragePreset(200)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0">200x</button> }
+                    @if (selected.MaxLeverage >= 250) { <button type="button" onclick="setLeveragePreset(250)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors font-black text-rose-500 dark:text-rose-400 shrink-0">250x</button> }
+                    @if (selected.MaxLeverage != 1 && selected.MaxLeverage != 2 && selected.MaxLeverage != 5 && selected.MaxLeverage != 10 && selected.MaxLeverage != 20 && selected.MaxLeverage != 50 && selected.MaxLeverage != 75 && selected.MaxLeverage != 100 && selected.MaxLeverage != 125 && selected.MaxLeverage != 150 && selected.MaxLeverage != 200 && selected.MaxLeverage != 250) {
+                        <button type="button" onclick="setLeveragePreset(@selected.MaxLeverage)" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-rose-300 dark:border-rose-700 text-rose-500 dark:text-rose-400 font-black shrink-0">@(selected.MaxLeverage)x</button>
+                    }
                 </div>
             </div>
 
@@ -1762,24 +1768,74 @@
         onTradeValueSliderChange(pct);
     }
 
+    let currentMaxLeverage = @(selected.MaxLeverage);
+
     function setLeveragePreset(lev) {
+        const targetLev = Math.max(1, Math.min(currentMaxLeverage, lev));
         const levInput = document.getElementById('orderLeverageInput');
-        if (levInput) levInput.value = lev;
-        updateLeverage(lev);
+        if (levInput) levInput.value = targetLev;
+        updateLeverage(targetLev);
     }
 
     function adjustLeverage(delta) {
         const input = document.getElementById('orderLeverageInput');
         if (!input) return;
         let currentVal = parseInt(input.value, 10) || 1;
-        let newVal = Math.max(1, Math.min(250, currentVal + delta));
+        let newVal = Math.max(1, Math.min(currentMaxLeverage, currentVal + delta));
         input.value = newVal;
         updateLeverage(newVal);
     }
 
     function updateLeverage(val) {
-        document.getElementById('leverageDisplay').textContent = val + 'x';
+        const num = Math.max(1, Math.min(currentMaxLeverage, parseInt(val, 10) || 1));
+        document.getElementById('leverageDisplay').textContent = num + 'x';
         recalculateAllSizeAndMargin();
+    }
+
+    function renderLeveragePresets(maxLev) {
+        currentMaxLeverage = maxLev;
+        const input = document.getElementById('orderLeverageInput');
+        if (input) {
+            input.max = maxLev;
+            if (parseInt(input.value, 10) > maxLev) {
+                input.value = maxLev;
+                updateLeverage(maxLev);
+            }
+        }
+        const maxDisp = document.getElementById('maxLeverageDisplay');
+        if (maxDisp) {
+            maxDisp.textContent = '/ max ' + maxLev + 'x';
+        }
+
+        const container = document.getElementById('leveragePresetContainer');
+        if (!container) return;
+
+        const candidatePresets = [1, 2, 5, 10, 20, 50, 75, 100, 125, 150, 200, 250];
+        const presets = candidatePresets.filter(p => p < maxLev);
+        presets.push(maxLev);
+        const unique = Array.from(new Set(presets)).sort((a, b) => a - b);
+
+        let html = '';
+        unique.forEach(p => {
+            const isMax = p === maxLev;
+            const extraClass = isMax ? 'font-black text-rose-500 dark:text-rose-400 border-rose-300 dark:border-rose-700' : '';
+            html += `<button type="button" onclick="setLeveragePreset(${p})" class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors shrink-0 ${extraClass}">${p}x</button>`;
+        });
+        container.innerHTML = html;
+    }
+
+    async function loadDynamicLeverage(sym) {
+        try {
+            const res = await fetch(`/Trading/Trading/LeverageBracket?symbol=${encodeURIComponent(sym)}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.maxLeverage > 0) {
+                    renderLeveragePresets(data.maxLeverage);
+                }
+            }
+        } catch (e) {
+            console.debug('Dynamic leverage fetch fallback active', e);
+        }
     }
 
     function recalculateAllSizeAndMargin() {
@@ -3091,6 +3147,7 @@
     // Initial Startup
     document.addEventListener('DOMContentLoaded', () => {
         setTradeSizeMode('percent');
+        loadDynamicLeverage(symbol);
         initTradingViewWidget();
     });
 </script>

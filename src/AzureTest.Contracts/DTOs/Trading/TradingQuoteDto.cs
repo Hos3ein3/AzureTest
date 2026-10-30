@@ -14,5 +14,6 @@ public sealed record TradingQuoteDto(
     decimal Volume24h,
     bool IsWatchlisted,
     bool IsSimulated = false,
-    string FeedSource = "binance"
+    string FeedSource = "binance",
+    int MaxLeverage = 250
 );

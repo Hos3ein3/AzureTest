@@ -24,6 +24,11 @@ public interface ITradingMarketDataService
     Task RefreshSymbolsDataAsync(IEnumerable<string> symbols, CancellationToken ct = default);
     Task<IReadOnlyList<TradingQuoteDto>> SearchAssetsAsync(string query, HashSet<string>? watchlistedSymbols = null, CancellationToken ct = default);
 
+    Task<TradingLeverageBracketDto> GetLeverageBracketAsync(string symbol, CancellationToken ct = default);
+    Task<int> GetMaxLeverageAsync(string symbol, CancellationToken ct = default);
+    TradingLeverageBracketDto GetLeverageBracket(string symbol);
+    int GetMaxLeverage(string symbol);
+
     IReadOnlyList<TradingQuoteDto> GetAllQuotes(HashSet<string>? watchlistedSymbols = null);
     TradingQuoteDto? GetQuote(string symbol, HashSet<string>? watchlistedSymbols = null);
     decimal GetCurrentPrice(string symbol, decimal fallback = 100m);
@@ -39,7 +44,8 @@ public sealed record TradingCatalogItem(
     decimal Low,
     decimal Volume,
     bool IsSimulated = false,
-    string FeedSource = "binance"
+    string FeedSource = "binance",
+    int MaxLeverage = 250
 );
 
 public sealed class TradingMarketDataService : ITradingMarketDataService
@@ -48,6 +54,9 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
     private readonly IForexMarketDataService _forexMarketData;
     private readonly ILogger<TradingMarketDataService> _logger;
     private readonly HttpClient _http;
+    private readonly Microsoft.Extensions.Configuration.IConfiguration? _configuration;
+
+    private static readonly ConcurrentDictionary<string, (TradingLeverageBracketDto Data, DateTime ExpiresAtUtc)> LeverageBracketCache = new(StringComparer.OrdinalIgnoreCase);
 
     private sealed record LiveQuoteState(
         decimal Price,
@@ -68,23 +77,23 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
     private static readonly List<TradingCatalogItem> Catalog = new()
     {
         // Cryptocurrencies (Real-World Live Feed via Binance Public API)
-        new("BTCUSDT", "Bitcoin", AssetClass.Crypto, 67450.00m, 2.45m, 68100.00m, 65890.00m, 2450000000m),
-        new("ETHUSDT", "Ethereum", AssetClass.Crypto, 3520.50m, 1.80m, 3560.00m, 3440.00m, 1200000000m),
-        new("SOLUSDT", "Solana", AssetClass.Crypto, 102.50m, 2.80m, 106.50m, 99.20m, 850000000m),
-        new("BNBUSDT", "BNB Chain", AssetClass.Crypto, 594.80m, -0.40m, 602.00m, 588.00m, 420000000m),
-        new("XRPUSDT", "Ripple XRP", AssetClass.Crypto, 0.5840m, 3.20m, 0.5980m, 0.5620m, 380000000m),
-        new("DOGEUSDT", "Dogecoin", AssetClass.Crypto, 0.1420m, 6.80m, 0.1490m, 0.1310m, 290000000m),
-        new("AVAXUSDT", "Avalanche", AssetClass.Crypto, 29.50m, -1.20m, 30.80m, 28.70m, 140000000m),
-        new("OPUSDT", "Optimism", AssetClass.Crypto, 0.1112m, 0.63m, 0.1139m, 0.1096m, 26000000m),
-        new("ADAUSDT", "Cardano", AssetClass.Crypto, 0.3540m, 1.10m, 0.3620m, 0.3450m, 180000000m),
-        new("LINKUSDT", "Chainlink", AssetClass.Crypto, 11.65m, 2.10m, 11.90m, 11.20m, 95000000m),
-        new("SUIUSDT", "Sui Network", AssetClass.Crypto, 2.12m, 4.50m, 2.18m, 1.98m, 180000000m),
-        new("NEARUSDT", "NEAR Protocol", AssetClass.Crypto, 4.85m, 1.80m, 5.05m, 4.60m, 110000000m),
-        new("PEPEUSDT", "Pepe", AssetClass.Crypto, 0.0000104m, 3.80m, 0.000011m, 0.0000098m, 320000000m),
-        new("ARBUSDT", "Arbitrum", AssetClass.Crypto, 0.5280m, 0.90m, 0.5420m, 0.5110m, 78000000m),
-        new("APTUSDT", "Aptos", AssetClass.Crypto, 9.40m, 2.40m, 9.75m, 9.10m, 65000000m),
-        new("RENDERUSDT", "Render", AssetClass.Crypto, 5.65m, 3.20m, 5.85m, 5.35m, 72000000m),
-        new("FETUSDT", "Artificial Superintelligence", AssetClass.Crypto, 1.34m, 1.60m, 1.41m, 1.28m, 54000000m),
+        new("BTCUSDT", "Bitcoin", AssetClass.Crypto, 67450.00m, 2.45m, 68100.00m, 65890.00m, 2450000000m, false, "binance", 125),
+        new("ETHUSDT", "Ethereum", AssetClass.Crypto, 3520.50m, 1.80m, 3560.00m, 3440.00m, 1200000000m, false, "binance", 100),
+        new("SOLUSDT", "Solana", AssetClass.Crypto, 102.50m, 2.80m, 106.50m, 99.20m, 850000000m, false, "binance", 75),
+        new("BNBUSDT", "BNB Chain", AssetClass.Crypto, 594.80m, -0.40m, 602.00m, 588.00m, 420000000m, false, "binance", 75),
+        new("XRPUSDT", "Ripple XRP", AssetClass.Crypto, 0.5840m, 3.20m, 0.5980m, 0.5620m, 380000000m, false, "binance", 75),
+        new("DOGEUSDT", "Dogecoin", AssetClass.Crypto, 0.1420m, 6.80m, 0.1490m, 0.1310m, 290000000m, false, "binance", 75),
+        new("AVAXUSDT", "Avalanche", AssetClass.Crypto, 29.50m, -1.20m, 30.80m, 28.70m, 140000000m, false, "binance", 50),
+        new("OPUSDT", "Optimism", AssetClass.Crypto, 0.1112m, 0.63m, 0.1139m, 0.1096m, 26000000m, false, "binance", 50),
+        new("ADAUSDT", "Cardano", AssetClass.Crypto, 0.3540m, 1.10m, 0.3620m, 0.3450m, 180000000m, false, "binance", 75),
+        new("LINKUSDT", "Chainlink", AssetClass.Crypto, 11.65m, 2.10m, 11.90m, 11.20m, 95000000m, false, "binance", 75),
+        new("SUIUSDT", "Sui Network", AssetClass.Crypto, 2.12m, 4.50m, 2.18m, 1.98m, 180000000m, false, "binance", 50),
+        new("NEARUSDT", "NEAR Protocol", AssetClass.Crypto, 4.85m, 1.80m, 5.05m, 4.60m, 110000000m, false, "binance", 50),
+        new("PEPEUSDT", "Pepe", AssetClass.Crypto, 0.0000104m, 3.80m, 0.000011m, 0.0000098m, 320000000m, false, "binance", 50),
+        new("ARBUSDT", "Arbitrum", AssetClass.Crypto, 0.5280m, 0.90m, 0.5420m, 0.5110m, 78000000m, false, "binance", 50),
+        new("APTUSDT", "Aptos", AssetClass.Crypto, 9.40m, 2.40m, 9.75m, 9.10m, 65000000m, false, "binance", 50),
+        new("RENDERUSDT", "Render", AssetClass.Crypto, 5.65m, 3.20m, 5.85m, 5.35m, 72000000m, false, "binance", 50),
+        new("FETUSDT", "Artificial Superintelligence", AssetClass.Crypto, 1.34m, 1.60m, 1.41m, 1.28m, 54000000m, false, "binance", 50),
 
         // Forex Currencies (Real-World Live Feed via Frankfurter European Central Bank API)
         new("EUR/USD", "Euro / US Dollar", AssetClass.Forex, 1.0845m, -0.15m, 1.0872m, 1.0820m, 4500000000m, false, "forex"),
@@ -145,12 +154,14 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
         ICryptoMarketDataService cryptoMarketData,
         IForexMarketDataService forexMarketData,
         ILogger<TradingMarketDataService> logger,
-        HttpClient? http = null)
+        HttpClient? http = null,
+        Microsoft.Extensions.Configuration.IConfiguration? configuration = null)
     {
         _cryptoMarketData = cryptoMarketData;
         _forexMarketData = forexMarketData;
         _logger = logger;
         _http = http ?? new HttpClient { Timeout = TimeSpan.FromSeconds(6) };
+        _configuration = configuration;
         if (!_http.DefaultRequestHeaders.Contains("User-Agent"))
         {
             _http.DefaultRequestHeaders.Add("User-Agent", "AzureTest-TradingTerminal/1.0");
@@ -592,11 +603,11 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
 
         // Resilient fallback for any requested asset name
         var price = 10.00m;
-        var item = new TradingCatalogItem(cleanSym, $"{cleanSym} Paper Asset", AssetClass.Crypto, price, 0m, price * 1.02m, price * 0.98m, 100000m, IsSimulated: true, FeedSource: "simulated");
+        var item = new TradingCatalogItem(cleanSym, $"{cleanSym} Paper Asset", AssetClass.Crypto, price, 0m, price * 1.02m, price * 0.98m, 100000m, IsSimulated: true, FeedSource: "simulated", MaxLeverage: GetKnownMaxLeverage(cleanSym));
         DynamicCatalog[cleanSym] = item;
         LiveCache[cleanSym] = new LiveQuoteState(price, 0m, 0m, price * 1.02m, price * 0.98m, 100000m, IsSimulated: true);
 
-        return new TradingQuoteDto(cleanSym, item.Name, AssetClass.Crypto, price, 0m, 0m, price * 1.02m, price * 0.98m, 100000m, watchlistedSymbols.Contains(cleanSym), IsSimulated: true);
+        return new TradingQuoteDto(cleanSym, item.Name, AssetClass.Crypto, price, 0m, 0m, price * 1.02m, price * 0.98m, 100000m, watchlistedSymbols.Contains(cleanSym), IsSimulated: true, FeedSource: "simulated", MaxLeverage: item.MaxLeverage);
     }
 
     public async Task<decimal> GetCurrentPriceAsync(string symbol, decimal fallback = 100m, CancellationToken ct = default)
@@ -746,7 +757,7 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                         decimal vol = decimal.TryParse(root.GetProperty("volume").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var vVal) ? vVal : 100000m;
 
                         var assetBase = binanceSym.EndsWith("USDT") ? binanceSym.Substring(0, binanceSym.Length - 4) : binanceSym;
-                        var item = new TradingCatalogItem(binanceSym, $"{assetBase} / Tether USD", AssetClass.Crypto, price, pct, high, low, vol, IsSimulated: false, FeedSource: "binance");
+                        var item = new TradingCatalogItem(binanceSym, $"{assetBase} / Tether USD", AssetClass.Crypto, price, pct, high, low, vol, IsSimulated: false, FeedSource: "binance", MaxLeverage: GetKnownMaxLeverage(binanceSym));
                         DynamicCatalog[binanceSym] = item;
                         LiveCache[binanceSym] = new LiveQuoteState(price, change, pct, high, low, vol, IsSimulated: false);
 
@@ -762,7 +773,8 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                             vol,
                             watchlistedSymbols.Contains(binanceSym),
                             IsSimulated: false,
-                            FeedSource: "binance");
+                            FeedSource: "binance",
+                            MaxLeverage: item.MaxLeverage);
                     }
                 }
             }
@@ -794,7 +806,7 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                         decimal vol = decimal.TryParse(root.GetProperty("volume").GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var vVal) ? vVal : 100000m;
 
                         var assetBase = targetSym.EndsWith("USDT") ? targetSym.Substring(0, targetSym.Length - 4) : targetSym;
-                        var item = new TradingCatalogItem(targetSym, $"{assetBase} / Tether USD", AssetClass.Crypto, price, pct, high, low, vol, IsSimulated: false, FeedSource: "mexc");
+                        var item = new TradingCatalogItem(targetSym, $"{assetBase} / Tether USD", AssetClass.Crypto, price, pct, high, low, vol, IsSimulated: false, FeedSource: "mexc", MaxLeverage: GetKnownMaxLeverage(targetSym));
                         DynamicCatalog[targetSym] = item;
                         LiveCache[targetSym] = new LiveQuoteState(price, change, pct, high, low, vol, IsSimulated: false);
 
@@ -810,7 +822,8 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                             vol,
                             watchlistedSymbols.Contains(targetSym),
                             IsSimulated: false,
-                            FeedSource: "mexc");
+                            FeedSource: "mexc",
+                            MaxLeverage: item.MaxLeverage);
                     }
                 }
             }
@@ -825,7 +838,7 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
         {
             var sym = cleanQ.EndsWith("USDT") ? cleanQ : cleanQ + "USDT";
             var price = 10.00m;
-            var item = new TradingCatalogItem(sym, $"{cleanQ} (Custom Asset)", AssetClass.Crypto, price, 0m, price * 1.02m, price * 0.98m, 500000m, IsSimulated: true, FeedSource: "simulated");
+            var item = new TradingCatalogItem(sym, $"{cleanQ} (Custom Asset)", AssetClass.Crypto, price, 0m, price * 1.02m, price * 0.98m, 500000m, IsSimulated: true, FeedSource: "simulated", MaxLeverage: GetKnownMaxLeverage(sym));
             DynamicCatalog[sym] = item;
             LiveCache[sym] = new LiveQuoteState(price, 0m, 0m, price * 1.02m, price * 0.98m, 500000m, IsSimulated: true);
 
@@ -840,7 +853,8 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                 price * 0.98m,
                 500000m,
                 watchlistedSymbols.Contains(sym),
-                IsSimulated: true);
+                IsSimulated: true,
+                MaxLeverage: item.MaxLeverage);
         }
 
         return results.Values.ToList();
@@ -867,7 +881,8 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                     live.Volume,
                     watchlistedSymbols.Contains(c.Symbol),
                     live.IsSimulated,
-                    c.FeedSource
+                    c.FeedSource,
+                    c.MaxLeverage
                 );
             }
 
@@ -883,7 +898,8 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                 c.Volume,
                 watchlistedSymbols.Contains(c.Symbol),
                 c.IsSimulated,
-                c.FeedSource
+                c.FeedSource,
+                c.MaxLeverage
             );
         }).ToList();
     }
@@ -911,7 +927,8 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                 live.Volume,
                 watchlistedSymbols.Contains(item.Symbol),
                 live.IsSimulated,
-                item.FeedSource
+                item.FeedSource,
+                item.MaxLeverage
             );
         }
 
@@ -927,7 +944,8 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
             item.Volume,
             watchlistedSymbols.Contains(item.Symbol),
             item.IsSimulated,
-            item.FeedSource
+            item.FeedSource,
+            item.MaxLeverage
         );
     }
 
@@ -943,6 +961,213 @@ public sealed class TradingMarketDataService : ITradingMarketDataService
                    ?? (DynamicCatalog.TryGetValue(cleanSym, out var dynamicItem) ? dynamicItem : null);
 
         return item != null ? item.BasePrice : fallback;
+    }
+
+    public async Task<int> GetMaxLeverageAsync(string symbol, CancellationToken ct = default)
+    {
+        var bracket = await GetLeverageBracketAsync(symbol, ct);
+        return bracket.MaxLeverage;
+    }
+
+    public int GetMaxLeverage(string symbol)
+    {
+        var bracket = GetLeverageBracket(symbol);
+        return bracket.MaxLeverage;
+    }
+
+    public TradingLeverageBracketDto GetLeverageBracket(string symbol)
+    {
+        var cleanSym = NormalizeBinanceSymbol(symbol);
+        if (LeverageBracketCache.TryGetValue(cleanSym, out var cached) && cached.ExpiresAtUtc > DateTime.UtcNow)
+        {
+            return cached.Data;
+        }
+
+        var fallbackMax = GetKnownMaxLeverage(cleanSym);
+        var tiers = CreateFallbackTiers(cleanSym, fallbackMax);
+        var dto = new TradingLeverageBracketDto(cleanSym, fallbackMax, 1, tiers);
+        LeverageBracketCache[cleanSym] = (dto, DateTime.UtcNow.AddMinutes(10));
+        return dto;
+    }
+
+    public async Task<TradingLeverageBracketDto> GetLeverageBracketAsync(string symbol, CancellationToken ct = default)
+    {
+        var cleanSym = NormalizeBinanceSymbol(symbol);
+        if (LeverageBracketCache.TryGetValue(cleanSym, out var cached) && cached.ExpiresAtUtc > DateTime.UtcNow)
+        {
+            return cached.Data;
+        }
+
+        // Live fetch via Binance Futures: GET https://fapi.binance.com/fapi/v1/leverageBracket?symbol=
+        TradingLeverageBracketDto? live = null;
+        try
+        {
+            live = await FetchBinanceLeverageBracketAsync(cleanSym, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Binance leverageBracket request failed for {Symbol}", cleanSym);
+        }
+
+        if (live != null)
+        {
+            LeverageBracketCache[cleanSym] = (live, DateTime.UtcNow.AddMinutes(30));
+            UpdateCatalogMaxLeverage(cleanSym, live.MaxLeverage);
+            return live;
+        }
+
+        // Graceful fallback to known crypto tiers or 1-250
+        var fallbackMax = GetKnownMaxLeverage(cleanSym);
+        var tiers = CreateFallbackTiers(cleanSym, fallbackMax);
+        var fallbackDto = new TradingLeverageBracketDto(cleanSym, fallbackMax, 1, tiers);
+        LeverageBracketCache[cleanSym] = (fallbackDto, DateTime.UtcNow.AddMinutes(10));
+        UpdateCatalogMaxLeverage(cleanSym, fallbackMax);
+        return fallbackDto;
+    }
+
+    private async Task<TradingLeverageBracketDto?> FetchBinanceLeverageBracketAsync(string cleanSym, CancellationToken ct)
+    {
+        if (!cleanSym.EndsWith("USDT", StringComparison.OrdinalIgnoreCase) &&
+            !cleanSym.EndsWith("BUSD", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var apiKey = _configuration?["Binance:ApiKey"] ?? string.Empty;
+        var apiSecret = _configuration?["Binance:SecretKey"] ?? string.Empty;
+
+        var url = $"https://fapi.binance.com/fapi/v1/leverageBracket?symbol={cleanSym}";
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        if (!string.IsNullOrWhiteSpace(apiKey) && !string.IsNullOrWhiteSpace(apiSecret))
+        {
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var queryString = $"symbol={cleanSym}&timestamp={timestamp}";
+            var signature = ComputeHmacSha256(queryString, apiSecret);
+            url = $"https://fapi.binance.com/fapi/v1/leverageBracket?{queryString}&signature={signature}";
+            request.RequestUri = new Uri(url);
+            request.Headers.Add("X-MBX-APIKEY", apiKey);
+        }
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(TimeSpan.FromSeconds(4));
+
+        var response = await _http.SendAsync(request, cts.Token);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        var json = await response.Content.ReadAsStringAsync(cts.Token);
+        using var doc = JsonDocument.Parse(json);
+
+        JsonElement bracketsArray;
+        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+        {
+            if (doc.RootElement.GetArrayLength() == 0) return null;
+            var symbolObj = doc.RootElement[0];
+            if (!symbolObj.TryGetProperty("brackets", out bracketsArray)) return null;
+        }
+        else if (doc.RootElement.ValueKind == JsonValueKind.Object)
+        {
+            if (!doc.RootElement.TryGetProperty("brackets", out bracketsArray)) return null;
+        }
+        else
+        {
+            return null;
+        }
+
+        var tiers = new List<TradingBracketTierDto>();
+        foreach (var b in bracketsArray.EnumerateArray())
+        {
+            var bracket = b.TryGetProperty("bracket", out var brProp) ? brProp.GetInt32() : tiers.Count + 1;
+            var initialLev = b.TryGetProperty("initialLeverage", out var levProp) ? levProp.GetInt32() : 20;
+            var notionalCap = b.TryGetProperty("notionalCap", out var nCap) && nCap.TryGetDecimal(out var nc) ? nc : 0m;
+            var notionalFloor = b.TryGetProperty("notionalFloor", out var nFloor) && nFloor.TryGetDecimal(out var nf) ? nf : 0m;
+            var maintMargin = b.TryGetProperty("maintMarginRatio", out var mmr) && mmr.TryGetDecimal(out var mr) ? mr : 0m;
+            var cum = b.TryGetProperty("cum", out var cProp) && cProp.TryGetDecimal(out var cVal) ? cVal : 0m;
+
+            tiers.Add(new TradingBracketTierDto(bracket, initialLev, notionalCap, notionalFloor, maintMargin, cum));
+        }
+
+        if (tiers.Count == 0) return null;
+
+        var maxLeverage = tiers.Max(t => t.InitialLeverage);
+        if (maxLeverage <= 0) maxLeverage = 250;
+
+        return new TradingLeverageBracketDto(cleanSym, maxLeverage, 1, tiers);
+    }
+
+    private static IReadOnlyList<TradingBracketTierDto> CreateFallbackTiers(string symbol, int maxLev)
+    {
+        var tiers = new List<TradingBracketTierDto>();
+        tiers.Add(new TradingBracketTierDto(1, maxLev, 50000m, 0m, 0.005m, 0m));
+        if (maxLev > 50)
+            tiers.Add(new TradingBracketTierDto(2, 50, 250000m, 50000m, 0.01m, 250m));
+        if (maxLev > 20)
+            tiers.Add(new TradingBracketTierDto(3, 20, 1000000m, 250000m, 0.025m, 4000m));
+        if (maxLev > 10)
+            tiers.Add(new TradingBracketTierDto(4, 10, 5000000m, 1000000m, 0.05m, 29000m));
+        if (maxLev > 5)
+            tiers.Add(new TradingBracketTierDto(5, 5, 10000000m, 5000000m, 0.10m, 279000m));
+        tiers.Add(new TradingBracketTierDto(tiers.Count + 1, 1, 50000000m, 10000000m, 0.50m, 4279000m));
+        return tiers;
+    }
+
+    private static int GetKnownMaxLeverage(string cleanSym)
+    {
+        var item = Catalog.FirstOrDefault(c => c.Symbol.Equals(cleanSym, StringComparison.OrdinalIgnoreCase))
+                   ?? (DynamicCatalog.TryGetValue(cleanSym, out var dyn) ? dyn : null);
+
+        if (item != null && item.MaxLeverage > 0)
+        {
+            return item.MaxLeverage;
+        }
+
+        return cleanSym switch
+        {
+            "BTCUSDT" => 125,
+            "ETHUSDT" => 100,
+            "SOLUSDT" or "BNBUSDT" or "XRPUSDT" or "DOGEUSDT" or "ADAUSDT" or "LINKUSDT" => 75,
+            "AVAXUSDT" or "OPUSDT" or "SUIUSDT" or "NEARUSDT" or "PEPEUSDT" or "ARBUSDT" or "APTUSDT" or "RENDERUSDT" or "FETUSDT" => 50,
+            _ => 250
+        };
+    }
+
+    private static void UpdateCatalogMaxLeverage(string symbol, int maxLeverage)
+    {
+        var cat = Catalog.FirstOrDefault(c => c.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
+        if (cat != null)
+        {
+            var idx = Catalog.IndexOf(cat);
+            if (idx >= 0)
+            {
+                Catalog[idx] = cat with { MaxLeverage = maxLeverage };
+            }
+        }
+        else if (DynamicCatalog.TryGetValue(symbol, out var dyn))
+        {
+            DynamicCatalog[symbol] = dyn with { MaxLeverage = maxLeverage };
+        }
+    }
+
+    private static string NormalizeBinanceSymbol(string symbol)
+    {
+        var clean = (symbol ?? string.Empty).Trim().ToUpperInvariant().Replace("/", "").Replace("-", "");
+        if (!clean.EndsWith("USDT") && !clean.EndsWith("BUSD") && !clean.EndsWith("EUR") && !clean.EndsWith("USD"))
+        {
+            clean += "USDT";
+        }
+        return clean;
+    }
+
+    private static string ComputeHmacSha256(string message, string secret)
+    {
+        var keyBytes = System.Text.Encoding.UTF8.GetBytes(secret);
+        var messageBytes = System.Text.Encoding.UTF8.GetBytes(message);
+        using var hmac = new System.Security.Cryptography.HMACSHA256(keyBytes);
+        var hash = hmac.ComputeHash(messageBytes);
+        return Convert.ToHexString(hash).ToLowerInvariant();
     }
 }
 

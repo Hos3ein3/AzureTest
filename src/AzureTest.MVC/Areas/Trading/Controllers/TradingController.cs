@@ -169,6 +169,17 @@ public class TradingController : Controller
         return Json(quotes);
     }
 
+    [HttpGet]
+    [AllowAnonymous]
+    [DisplayName("Get Leverage Bracket")]
+    [Description("Get dynamic leverage brackets and maximum allowed leverage for an instrument.")]
+    public async Task<IActionResult> LeverageBracket(string? symbol, CancellationToken ct = default)
+    {
+        var targetSymbol = string.IsNullOrWhiteSpace(symbol) ? "BTCUSDT" : symbol.Trim();
+        var bracket = await _marketData.GetLeverageBracketAsync(targetSymbol, ct);
+        return Json(bracket);
+    }
+
     [HttpPost]
     [DisplayName("Place Order")]
     [Description("Validate and execute a Market, Limit, or Stop paper trade order with multi-level risk parameters.")]
