@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Users;
 using AzureTest.Application.Users.Queries.GetAllUsers;
+using AzureTest.Contracts.DTOs.AuditLogs;
 using AzureTest.Contracts.DTOs.Users;
 using AzureTest.MVC.ViewModels.AuditLogs;
 using Microsoft.AspNetCore.Authorization;
@@ -41,15 +42,11 @@ public class AuditLogController : Controller
     [DisplayName("Audit Trail")]
     [Description("View audit log records filtered by permissions and tenant scope.")]
     public async Task<IActionResult> Index(
-        string? actionType,
-        string? searchTerm,
-        Guid? filterUserId,
-        int pageNumber = 1,
-        int pageSize = 20,
+        [FromQuery] GetAuditLogsFilterDto filter,
         CancellationToken cancellationToken = default)
     {
-        pageNumber = Math.Max(1, pageNumber);
-        pageSize = Math.Clamp(pageSize, 5, 100);
+        var pageNumber = Math.Max(1, filter.PageNumber);
+        var pageSize = Math.Clamp(filter.PageSize, 5, 100);
 
         var isAdmin = CheckIsAdmin();
         var currentUserId = _currentUser.Id;
@@ -75,11 +72,11 @@ public class AuditLogController : Controller
             isAdmin,
             currentUserId,
             currentTenantId,
-            actionType,
-            searchTerm,
+            filter.ActionType,
+            filter.SearchTerm,
             pageNumber,
             pageSize,
-            filterUserId,
+            filter.FilterUserId,
             cancellationToken);
 
         var vm = new AuditLogListViewModel
@@ -88,9 +85,9 @@ public class AuditLogController : Controller
             TotalCount = totalCount,
             PageNumber = pageNumber,
             PageSize = pageSize,
-            ActionType = actionType,
-            SearchTerm = searchTerm,
-            FilterUserId = filterUserId,
+            ActionType = filter.ActionType,
+            SearchTerm = filter.SearchTerm,
+            FilterUserId = filter.FilterUserId,
             AvailableUsers = availableUsers,
             IsAdmin = isAdmin,
             IsImpersonating = _tenantProvider.IsAdminImpersonating,
@@ -143,7 +140,7 @@ public class AuditLogController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Delete Logs by Date Range")]
     [Description("Delete audit logs within a specific date range.")]
-    public async Task<IActionResult> DeleteByDateRange(DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> DeleteByDateRange(DeleteAuditLogsByDateRangeRequestDto request, CancellationToken cancellationToken = default)
     {
         if (!CheckIsAdmin())
         {
@@ -151,8 +148,8 @@ public class AuditLogController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        DateTime? fromUtc = fromDate.HasValue ? DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Utc) : null;
-        DateTime? toUtc = toDate.HasValue ? DateTime.SpecifyKind(toDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc) : null;
+        DateTime? fromUtc = request.FromDate.HasValue ? DateTime.SpecifyKind(request.FromDate.Value.Date, DateTimeKind.Utc) : null;
+        DateTime? toUtc = request.ToDate.HasValue ? DateTime.SpecifyKind(request.ToDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc) : null;
 
         var deleted = await _auditLogService.DeleteLogsByDateRangeAsync(fromUtc, toUtc, cancellationToken);
         TempData["Success"] = $"{deleted} audit log record(s) deleted within specified timeframe.";

@@ -9,6 +9,7 @@ using AzureTest.Application.UserPreferences.Commands;
 using AzureTest.Application.UserPreferences.Queries;
 using AzureTest.Application.Dashboards.Queries;
 using AzureTest.Domain.Documents;
+using AzureTest.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel;
@@ -52,6 +53,8 @@ public class UserPreferenceController : Controller
             themeColor = string.IsNullOrWhiteSpace(pref.ThemeColor) ? "slate" : pref.ThemeColor,
             currency = string.IsNullOrWhiteSpace(pref.Currency) ? "USD" : pref.Currency,
             preferredDashboard = pref.PreferredDashboard ?? string.Empty,
+            timeZone = (int)pref.TimeZone,
+            timeZoneName = pref.TimeZone.ToString(),
             isDarkMode = pref.IsDarkMode,
             dashboards = dashboards.Select(d => new { slug = d.Slug, name = d.Name })
         });
@@ -68,6 +71,7 @@ public class UserPreferenceController : Controller
 
         string? currency = jsonRequest?.Currency;
         string? preferredDashboard = jsonRequest?.PreferredDashboard;
+        PreferredTimeZone? timeZone = jsonRequest?.TimeZone;
         bool? isDarkMode = jsonRequest?.IsDarkMode;
 
         if (string.IsNullOrWhiteSpace(lang) && Request.HasFormContentType && Request.Form.ContainsKey("language"))
@@ -86,6 +90,11 @@ public class UserPreferenceController : Controller
         {
             preferredDashboard = Request.Form["preferredDashboard"];
         }
+        if (!timeZone.HasValue && Request.HasFormContentType && Request.Form.ContainsKey("timeZone") &&
+            Enum.TryParse<PreferredTimeZone>(Request.Form["timeZone"], true, out var parsedTz))
+        {
+            timeZone = parsedTz;
+        }
 
         var language = string.IsNullOrWhiteSpace(lang) ? "en" : lang;
         var themeColor = string.IsNullOrWhiteSpace(theme) ? "slate" : theme;
@@ -94,11 +103,12 @@ public class UserPreferenceController : Controller
         
         var pref = await _getUserPreferenceQuery.HandleAsync(new GetUserPreferenceQuery(_currentUser.Id), cancellationToken);
         var finalIsDarkMode = isDarkMode ?? pref.IsDarkMode;
+        var finalTimeZone = timeZone ?? pref.TimeZone;
 
         await _updateUserPreferenceCommand.HandleAsync(
-            new UpdateUserPreferenceCommand(_currentUser.Id, language, themeColor, finalCurrency, finalPreferredDashboard, finalIsDarkMode),
+            new UpdateUserPreferenceCommand(_currentUser.Id, language, themeColor, finalCurrency, finalPreferredDashboard, finalIsDarkMode, finalTimeZone),
             cancellationToken);
 
-        return Json(new { success = true, language, themeColor, currency = finalCurrency, preferredDashboard = finalPreferredDashboard, isDarkMode = finalIsDarkMode });
+        return Json(new { success = true, language, themeColor, currency = finalCurrency, preferredDashboard = finalPreferredDashboard, timeZone = (int)finalTimeZone, timeZoneName = finalTimeZone.ToString(), isDarkMode = finalIsDarkMode });
     }
 }

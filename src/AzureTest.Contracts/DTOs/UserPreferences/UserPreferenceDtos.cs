@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using AzureTest.Domain.Enums;
 
 namespace AzureTest.Contracts.DTOs.UserPreferences;
 
@@ -9,6 +10,7 @@ public class UpdatePreferenceRequestDto
     public string? ThemeColor { get; set; }
     public string? Currency { get; set; }
     public string? PreferredDashboard { get; set; }
+    public PreferredTimeZone? TimeZone { get; set; }
     public bool? IsDarkMode { get; set; }
 }
 
@@ -19,6 +21,7 @@ public class UserPreferenceResponseDto
     public string ThemeColor { get; set; } = "slate";
     public string Currency { get; set; } = "USD";
     public string PreferredDashboard { get; set; } = string.Empty;
+    public PreferredTimeZone TimeZone { get; set; } = PreferredTimeZone.Utc;
     public bool IsDarkMode { get; set; }
     public IEnumerable<UserPreferenceDashboardDto> Dashboards { get; set; } = [];
 }
@@ -36,5 +39,6 @@ public class UpdatePreferenceResultDto
     public string ThemeColor { get; set; } = "slate";
     public string Currency { get; set; } = "USD";
     public string PreferredDashboard { get; set; } = string.Empty;
+    public PreferredTimeZone TimeZone { get; set; } = PreferredTimeZone.Utc;
     public bool IsDarkMode { get; set; }
 }

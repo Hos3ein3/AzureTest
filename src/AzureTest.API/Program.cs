@@ -65,7 +65,80 @@ builder.Services.AddApiVersioning(options =>
 
 builder.Services.AddSignalR();
 builder.Services.AddScoped<INotificationHubDispatcher, NotificationHubDispatcher>();
-builder.Services.AddControllers();
+
+// ── 5. CORS Configuration ────────────────────────────────────────────────────
+const string CorsPolicy = "AppCorsPolicy";
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? [
+        "http://localhost:4200",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:5000",
+        "https://localhost:5001",
+        "http://localhost:5191",
+        "https://localhost:7191",
+        "http://localhost:5143",
+        "https://localhost:7143"
+    ];
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(CorsPolicy, policy =>
+    {
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.SetIsOriginAllowed(_ => true)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials()
+                  .WithExposedHeaders("X-Pagination", "Content-Disposition", "X-Refresh-Token");
+        }
+        else
+        {
+            if (allowedOrigins.Length > 0)
+            {
+                policy.WithOrigins(allowedOrigins)
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials()
+                      .WithExposedHeaders("X-Pagination", "Content-Disposition", "X-Refresh-Token");
+            }
+            else
+            {
+                policy.AllowAnyHeader()
+                      .AllowAnyMethod();
+            }
+        }
+    });
+
+    options.AddDefaultPolicy(policy =>
+    {
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.SetIsOriginAllowed(_ => true)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials()
+                  .WithExposedHeaders("X-Pagination", "Content-Disposition", "X-Refresh-Token");
+        }
+        else
+        {
+            if (allowedOrigins.Length > 0)
+            {
+                policy.WithOrigins(allowedOrigins)
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials()
+                      .WithExposedHeaders("X-Pagination", "Content-Disposition", "X-Refresh-Token");
+            }
+            else
+            {
+                policy.AllowAnyHeader()
+                      .AllowAnyMethod();
+            }
+        }
+    });
+});
 builder.Services.AddOpenApi("v1", options =>
 {
     options.ShouldInclude = _ => true;
@@ -155,6 +228,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseForwardedHeaders();
 
+app.UseCors(CorsPolicy);
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -178,10 +253,11 @@ app.MapScalarApiReference(options =>
 app.MapGet("/", () => Results.Redirect("/scalar/v1")).ExcludeFromDescription();
 app.MapGet("/scalar", () => Results.Redirect("/scalar/v1")).ExcludeFromDescription();
 
-// ── 8. Minimal API Routes (VSA style) & Controllers ────────────────────────
+// ── 8. Minimal API Routes (VSA style) & SignalR Hubs ────────────────────────
 app.MapApiRoutes();
 app.MapControllers();
 app.MapHub<NotificationHub>("/notificationHub");
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 // ── 9. Health Check & Metrics Endpoints ─────────────────────────────────────
 if (builder.Configuration.GetValue<bool>("FeatureManagement:EnableHealthCheck"))

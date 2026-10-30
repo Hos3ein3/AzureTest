@@ -12,7 +12,7 @@ public class NotificationHub : Hub
         var userId = Context.UserIdentifier 
                      ?? Context.User?.FindFirstValue(ClaimTypes.NameIdentifier)
                      ?? Context.User?.FindFirstValue("sub")
-                     ?? Context.ConnectionId;
+                     ?? Context.User?.FindFirstValue("id");
 
         if (!string.IsNullOrEmpty(userId))
         {
@@ -20,5 +20,17 @@ public class NotificationHub : Hub
         }
 
         await base.OnConnectedAsync();
+    }
+
+    /// <summary>
+    /// Explicitly joins the user-specific notification group.
+    /// Useful for clients passing user identification explicitly upon reconnect or session startup.
+    /// </summary>
+    public async Task JoinUserGroup(string userId)
+    {
+        if (!string.IsNullOrWhiteSpace(userId))
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId.Trim().ToLowerInvariant()}");
+        }
     }
 }

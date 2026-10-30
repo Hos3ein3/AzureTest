@@ -17,6 +17,7 @@ namespace AzureTest.Persistence.Repositories;
 public class UnitOfWork : IUnitOfWork
 {
     private readonly AzureTestDbContext _dbContext;
+    private readonly DomainEventsInterceptor? _domainEventsInterceptor;
 
     private IEventRepository? _events;
     private ITaskRepository? _tasks;
@@ -33,9 +34,12 @@ public class UnitOfWork : IUnitOfWork
     private IUserPermissionRepository? _userPermissions;
     private IPomodoroRepository? _pomodoros;
 
-    public UnitOfWork(AzureTestDbContext dbContext)
+    public UnitOfWork(
+        AzureTestDbContext dbContext,
+        DomainEventsInterceptor? domainEventsInterceptor = null)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _domainEventsInterceptor = domainEventsInterceptor ?? dbContext.DomainEventsInterceptor;
     }
 
     public IEventRepository Events => _events ??= new EventRepository(_dbContext);
@@ -290,7 +294,8 @@ public class UnitOfWork : IUnitOfWork
     /// </summary>
     public IReadOnlyList<IDomainEvent> PopDomainEvents()
     {
-        return _dbContext.DomainEventsInterceptor.PopDomainEvents();
+        var interceptor = _domainEventsInterceptor ?? _dbContext.DomainEventsInterceptor;
+        return interceptor?.PopDomainEvents() ?? Array.Empty<IDomainEvent>();
     }
 
     public void Dispose()

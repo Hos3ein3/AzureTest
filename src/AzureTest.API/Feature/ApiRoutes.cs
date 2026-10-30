@@ -26,6 +26,7 @@ public static class ApiRoutes
         public const string ResetPassword = "auth/reset-password";
         public const string ConfirmEmail = "auth/confirm-email";
         public const string ChangePassword = "auth/change-password";
+        public const string Google = "auth/google";
     }
 
     public static class Trading
@@ -157,6 +158,27 @@ public static class ApiRoutes
         public const string Update = "user-preference";
     }
 
+    public static class OutboxAdmin
+    {
+        public const string Outbox = "outbox-admin/outbox";
+        public const string Inbox = "outbox-admin/inbox";
+        public const string Payload = "outbox-admin/outbox/{id:guid}/payload";
+        public const string Retry = "outbox-admin/outbox/{id:guid}/retry";
+        public const string Delete = "outbox-admin/outbox/delete";
+        public const string DeleteByDateRange = "outbox-admin/outbox/delete-by-date-range";
+        public const string DeleteInbox = "outbox-admin/inbox/delete";
+        public const string DeleteInboxByDateRange = "outbox-admin/inbox/delete-by-date-range";
+    }
+
+    public static class AuditLog
+    {
+        public const string Logs = "audit-log";
+        public const string Delete = "audit-log/{id:guid}";
+        public const string DeleteByUser = "audit-log/user/{userId:guid}";
+        public const string DeleteByDateRange = "audit-log/delete-by-date-range";
+        public const string PurgeAll = "audit-log/purge";
+    }
+
     private static RouteHandlerBuilder WithApiDoc(
         this RouteHandlerBuilder builder,
         string groupName,
@@ -189,6 +211,10 @@ public static class ApiRoutes
         apiGroup.MapPost(Auth.Register, Register.HandleAsync)
             .AllowAnonymous()
             .WithApiDoc(nameof(Auth), "User Registration", "Register a new user account.");
+
+        apiGroup.MapPost(Auth.Google, GoogleAuth.HandleAsync)
+            .AllowAnonymous()
+            .WithApiDoc(nameof(Auth), "Google Authentication", "Sign in or register using Google credentials and receive JWT access tokens.");
 
         apiGroup.MapPost(Auth.RefreshToken, RefreshToken.HandleAsync)
             .AllowAnonymous()
@@ -531,6 +557,51 @@ public static class ApiRoutes
 
         userPreference.MapPost(UserPreference.Update, Feature.UserPreference.UpdateUserPreference.HandleAsync)
             .WithApiDoc(nameof(UserPreference), "Update User Preferences", "Update user preferences (theme, dark mode, language, currency, dashboard).");
+
+        // ── Outbox Admin Endpoints ───────────────────────────────────────────────────
+        var outboxAdmin = apiGroup.MapGroup("").RequireAuthorization();
+
+        outboxAdmin.MapGet(OutboxAdmin.Outbox, Feature.OutboxAdmin.GetOutboxMessages.HandleAsync)
+            .WithApiDoc("OutboxAdmin", "Get Outbox Messages", "Retrieve and filter transactional Outbox event messages.");
+
+        outboxAdmin.MapGet(OutboxAdmin.Inbox, Feature.OutboxAdmin.GetInboxMessages.HandleAsync)
+            .WithApiDoc("OutboxAdmin", "Get Inbox Messages", "Retrieve and filter deduplicated Inbox event messages.");
+
+        outboxAdmin.MapGet(OutboxAdmin.Payload, Feature.OutboxAdmin.GetOutboxPayload.HandleAsync)
+            .WithApiDoc("OutboxAdmin", "Get Outbox Payload", "Retrieve the JSON payload for a specific Outbox message.");
+
+        outboxAdmin.MapPost(OutboxAdmin.Retry, Feature.OutboxAdmin.RetryOutboxMessage.HandleAsync)
+            .WithApiDoc("OutboxAdmin", "Retry Outbox Message", "Reset an Outbox message error and retry count for re-dispatch.");
+
+        outboxAdmin.MapPost(OutboxAdmin.Delete, Feature.OutboxAdmin.DeleteOutboxMessage.HandleAsync)
+            .WithApiDoc("OutboxAdmin", "Delete Outbox Message", "Delete a specific transactional Outbox message.");
+
+        outboxAdmin.MapPost(OutboxAdmin.DeleteByDateRange, Feature.OutboxAdmin.DeleteOutboxMessagesByDateRange.HandleAsync)
+            .WithApiDoc("OutboxAdmin", "Delete Outbox Messages By Date Range", "Bulk delete Outbox messages within a specified date range.");
+
+        outboxAdmin.MapPost(OutboxAdmin.DeleteInbox, Feature.OutboxAdmin.DeleteInboxMessage.HandleAsync)
+            .WithApiDoc("OutboxAdmin", "Delete Inbox Message", "Delete a specific deduplicated Inbox message.");
+
+        outboxAdmin.MapPost(OutboxAdmin.DeleteInboxByDateRange, Feature.OutboxAdmin.DeleteInboxMessagesByDateRange.HandleAsync)
+            .WithApiDoc("OutboxAdmin", "Delete Inbox Messages By Date Range", "Bulk delete Inbox messages within a specified date range.");
+
+        // ── Audit Log Endpoints ──────────────────────────────────────────────────────
+        var auditLog = apiGroup.MapGroup("").RequireAuthorization();
+
+        auditLog.MapGet(AuditLog.Logs, Feature.AuditLog.GetAuditLogs.HandleAsync)
+            .WithApiDoc("AuditLog", "Get Audit Logs", "Retrieve and filter immutable audit trail records by user and tenant.");
+
+        auditLog.MapDelete(AuditLog.Delete, Feature.AuditLog.DeleteAuditLog.HandleAsync)
+            .WithApiDoc("AuditLog", "Delete Audit Log", "Delete a specific audit log entry (Admin only).");
+
+        auditLog.MapDelete(AuditLog.DeleteByUser, Feature.AuditLog.DeleteAuditLogsByUser.HandleAsync)
+            .WithApiDoc("AuditLog", "Delete Audit Logs By User", "Delete all audit logs for a specific user (Admin only).");
+
+        auditLog.MapPost(AuditLog.DeleteByDateRange, Feature.AuditLog.DeleteAuditLogsByDateRange.HandleAsync)
+            .WithApiDoc("AuditLog", "Delete Audit Logs By Date Range", "Delete audit logs within a date range (Admin only).");
+
+        auditLog.MapPost(AuditLog.PurgeAll, Feature.AuditLog.PurgeAuditLogs.HandleAsync)
+            .WithApiDoc("AuditLog", "Purge All Audit Logs", "Permanently purge all audit log records (Admin only).");
 
         return app;
     }

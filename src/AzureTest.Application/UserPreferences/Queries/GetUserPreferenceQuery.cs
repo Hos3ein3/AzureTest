@@ -5,6 +5,7 @@ using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
 using AzureTest.Domain.Documents;
+using AzureTest.Domain.Enums;
 
 namespace AzureTest.Application.UserPreferences.Queries;
 
@@ -41,7 +42,8 @@ public sealed class GetUserPreferenceQueryHandler : IQueryHandler<GetUserPrefere
                 ThemeColor = "blue",
                 Language = "en",
                 Currency = "USD",
-                PreferredDashboard = ""
+                PreferredDashboard = "",
+                TimeZone = PreferredTimeZone.Utc
             };
             await _noSqlUnitOfWork.UserPreferences.AddAsync(pref, cancellationToken);
             await _noSqlUnitOfWork.SaveChangesAsync(cancellationToken);

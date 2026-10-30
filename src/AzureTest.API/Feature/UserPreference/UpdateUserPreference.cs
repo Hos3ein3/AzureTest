@@ -7,6 +7,7 @@ using AzureTest.Application.UserPreferences.Commands;
 using AzureTest.Application.UserPreferences.Queries;
 using AzureTest.Contracts.DTOs.UserPreferences;
 using AzureTest.Domain.Documents;
+using AzureTest.Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,6 +30,7 @@ public static class UpdateUserPreference
         var theme = jsonRequest?.ThemeColor;
         var currency = jsonRequest?.Currency;
         var preferredDashboard = jsonRequest?.PreferredDashboard;
+        var timeZone = jsonRequest?.TimeZone;
         var isDarkMode = jsonRequest?.IsDarkMode;
 
         var language = string.IsNullOrWhiteSpace(lang) ? "en" : lang;
@@ -38,9 +40,10 @@ public static class UpdateUserPreference
 
         var pref = await getUserPreferenceQuery.HandleAsync(new GetUserPreferenceQuery(userId), cancellationToken);
         var finalIsDarkMode = isDarkMode ?? pref.IsDarkMode;
+        var finalTimeZone = timeZone ?? pref.TimeZone;
 
         await updateUserPreferenceCommand.HandleAsync(
-            new UpdateUserPreferenceCommand(userId, language, themeColor, finalCurrency, finalPreferredDashboard, finalIsDarkMode),
+            new UpdateUserPreferenceCommand(userId, language, themeColor, finalCurrency, finalPreferredDashboard, finalIsDarkMode, finalTimeZone),
             cancellationToken);
 
         var result = new UpdatePreferenceResultDto
@@ -50,6 +53,7 @@ public static class UpdateUserPreference
             ThemeColor = themeColor,
             Currency = finalCurrency,
             PreferredDashboard = finalPreferredDashboard,
+            TimeZone = finalTimeZone,
             IsDarkMode = finalIsDarkMode
         };
 

@@ -1,8 +1,10 @@
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AzureTest.Application.Interfaces.Data;
+using AzureTest.Contracts.DTOs.Outbox;
 using AzureTest.MVC.ViewModels.Outbox;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,26 +31,19 @@ public class OutboxAdminController : Controller
     [DisplayName("Outbox Messages")]
     [Description("View and filter transactional Outbox event messages.")]
     public async Task<IActionResult> Index(
-        string? searchTerm,
-        bool? isDone,
-        DateTime? fromDate,
-        DateTime? toDate,
-        string? sortBy = "OccurredOnUtc",
-        bool sortDescending = true,
-        int pageNumber = 1,
-        int pageSize = 20,
+        [FromQuery] GetOutboxMessagesFilterDto filter,
         CancellationToken cancellationToken = default)
     {
-        pageNumber = Math.Max(1, pageNumber);
-        pageSize = Math.Clamp(pageSize, 5, 100);
+        var pageNumber = Math.Max(1, filter.PageNumber);
+        var pageSize = Math.Clamp(filter.PageSize, 5, 100);
 
         var (items, totalCount) = await _uow.OutboxMessages.GetPagedAsync(
-            searchTerm,
-            isDone,
-            fromDate,
-            toDate,
-            sortBy,
-            sortDescending,
+            filter.SearchTerm,
+            filter.IsDone,
+            filter.FromDate,
+            filter.ToDate,
+            filter.SortBy,
+            filter.SortDescending,
             pageNumber,
             pageSize,
             cancellationToken);
@@ -72,12 +67,12 @@ public class OutboxAdminController : Controller
             TotalCount = totalCount,
             PageNumber = pageNumber,
             PageSize = pageSize,
-            SearchTerm = searchTerm,
-            IsDone = isDone,
-            FromDate = fromDate,
-            ToDate = toDate,
-            SortBy = sortBy,
-            SortDescending = sortDescending,
+            SearchTerm = filter.SearchTerm,
+            IsDone = filter.IsDone,
+            FromDate = filter.FromDate,
+            ToDate = filter.ToDate,
+            SortBy = filter.SortBy,
+            SortDescending = filter.SortDescending,
             PendingCount = pendingCount,
             ProcessedCount = processedCount,
             FailedCount = items.Count(m => m.RetryCount > 0 || !string.IsNullOrWhiteSpace(m.Error))
@@ -90,24 +85,18 @@ public class OutboxAdminController : Controller
     [DisplayName("Inbox Messages")]
     [Description("View and filter deduplicated Inbox event messages.")]
     public async Task<IActionResult> Inbox(
-        string? searchTerm,
-        DateTime? fromDate,
-        DateTime? toDate,
-        string? sortBy = "ReceivedOnUtc",
-        bool sortDescending = true,
-        int pageNumber = 1,
-        int pageSize = 20,
+        [FromQuery] GetInboxMessagesFilterDto filter,
         CancellationToken cancellationToken = default)
     {
-        pageNumber = Math.Max(1, pageNumber);
-        pageSize = Math.Clamp(pageSize, 5, 100);
+        var pageNumber = Math.Max(1, filter.PageNumber);
+        var pageSize = Math.Clamp(filter.PageSize, 5, 100);
 
         var (items, totalCount) = await _uow.InboxMessages.GetPagedAsync(
-            searchTerm,
-            fromDate,
-            toDate,
-            sortBy,
-            sortDescending,
+            filter.SearchTerm,
+            filter.FromDate,
+            filter.ToDate,
+            filter.SortBy,
+            filter.SortDescending,
             pageNumber,
             pageSize,
             cancellationToken);
@@ -118,11 +107,11 @@ public class OutboxAdminController : Controller
             TotalCount = totalCount,
             PageNumber = pageNumber,
             PageSize = pageSize,
-            SearchTerm = searchTerm,
-            FromDate = fromDate,
-            ToDate = toDate,
-            SortBy = sortBy,
-            SortDescending = sortDescending,
+            SearchTerm = filter.SearchTerm,
+            FromDate = filter.FromDate,
+            ToDate = filter.ToDate,
+            SortBy = filter.SortBy,
+            SortDescending = filter.SortDescending,
             TotalProcessedCount = totalCount
         };
 
@@ -190,10 +179,10 @@ public class OutboxAdminController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Delete Outbox Messages by Date Range")]
     [Description("Delete transactional Outbox messages within a specified date range.")]
-    public async Task<IActionResult> DeleteByDateRange(DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken)
+    public async Task<IActionResult> DeleteByDateRange(DeleteDateRangeRequestDto request, CancellationToken cancellationToken)
     {
-        DateTime? fromUtc = fromDate.HasValue ? DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Utc) : null;
-        DateTime? toUtc = toDate.HasValue ? DateTime.SpecifyKind(toDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc) : null;
+        DateTime? fromUtc = request.FromDate.HasValue ? DateTime.SpecifyKind(request.FromDate.Value.Date, DateTimeKind.Utc) : null;
+        DateTime? toUtc = request.ToDate.HasValue ? DateTime.SpecifyKind(request.ToDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc) : null;
 
         var count = await _uow.OutboxMessages.DeleteByDateRangeAsync(fromUtc, toUtc, cancellationToken);
         TempData["Success"] = $"{count} Outbox message(s) deleted within the specified timeframe.";
@@ -219,10 +208,10 @@ public class OutboxAdminController : Controller
     [ValidateAntiForgeryToken]
     [DisplayName("Delete Inbox Messages by Date Range")]
     [Description("Delete deduplicated Inbox messages within a specified date range.")]
-    public async Task<IActionResult> DeleteInboxByDateRange(DateTime? fromDate, DateTime? toDate, CancellationToken cancellationToken)
+    public async Task<IActionResult> DeleteInboxByDateRange(DeleteDateRangeRequestDto request, CancellationToken cancellationToken)
     {
-        DateTime? fromUtc = fromDate.HasValue ? DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Utc) : null;
-        DateTime? toUtc = toDate.HasValue ? DateTime.SpecifyKind(toDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc) : null;
+        DateTime? fromUtc = request.FromDate.HasValue ? DateTime.SpecifyKind(request.FromDate.Value.Date, DateTimeKind.Utc) : null;
+        DateTime? toUtc = request.ToDate.HasValue ? DateTime.SpecifyKind(request.ToDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc) : null;
 
         var count = await _uow.InboxMessages.DeleteByDateRangeAsync(fromUtc, toUtc, cancellationToken);
         TempData["Success"] = $"{count} Inbox message(s) deleted within the specified timeframe.";

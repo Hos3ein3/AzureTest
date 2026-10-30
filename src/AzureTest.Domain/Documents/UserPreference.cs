@@ -1,6 +1,7 @@
 
 
 using System;
+using AzureTest.Domain.Enums;
 using AzureTest.Domain.Primitives;
 
 namespace AzureTest.Domain.Documents;
@@ -14,5 +15,6 @@ public class UserPreference : ITenantEntity
     public string ThemeColor { get; set; } = string.Empty;
     public string Currency { get; set; } = "USD";
     public string PreferredDashboard { get; set; } = string.Empty;
+    public PreferredTimeZone TimeZone { get; set; } = PreferredTimeZone.Utc;
     public bool IsDarkMode { get; set; } = false;
 }

@@ -1,43 +1,68 @@
-name: Deploy to Ubuntu Server
+name: Build, Containerize & Deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 env:
-  DEPLOY_DIR: "/home/homelabadmin/wwwroot/azuretest/src"  # or direct path: "/home/ubuntu/projects/src"
+  REGISTRY: ghcr.io
+  FRONTEND_IMAGE_NAME: ${{ github.repository }}-frontend
+  BACKEND_IMAGE_NAME: ${{ github.repository }}-api
 
 jobs:
-  # ─────────────────────────────────────────────────────────────
-  # Stage 1: Unit Tests (Skipped for now)
-  # ─────────────────────────────────────────────────────────────
-  unit-tests:
-    name: Unit Tests
-    if: true # Skipped for now
+  # ==============================================================================
+  # Job 1: Frontend Angular Quality Assurance & Build
+  # ==============================================================================
+  frontend-ci:
+    name: Frontend CI (Test & Build)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front
+
     steps:
-      - name: Checkout Code
+      - name: Checkout Codebase
         uses: actions/checkout@v4
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
         with:
-          dotnet-version: '10.0.x'
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: front/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
 
       - name: Run Unit Tests
-        run: dotnet test test/AzureTest.UnitTest/AzureTest.UnitTest.csproj --configuration Release
+        run: npm test -- --no-watch
 
-  # ─────────────────────────────────────────────────────────────
-  # Stage 2: Integration Tests (Skipped for now)
-  # ─────────────────────────────────────────────────────────────
-  integration-tests:
-    name: Integration Tests
-    if: false # Skipped for now
+      - name: Compile Production Build
+        run: npm run build -- --configuration production
+
+      - name: Upload Production Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: front/dist/azure-test-front/browser
+          retention-days: 7
+
+  # ==============================================================================
+  # Job 2: Backend .NET Core Quality Assurance & Build
+  # ==============================================================================
+  backend-ci:
+    name: Backend CI (Restore & Build)
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
+      - name: Checkout Codebase
         uses: actions/checkout@v4
 
       - name: Setup .NET SDK
@@ -45,110 +70,99 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Run Integration Tests
-        run: dotnet test test/AzureTest.IntegrationTest/AzureTest.IntegrationTest.csproj --configuration Release
+      - name: Restore NuGet Packages
+        run: dotnet restore src/AzureTest.API/AzureTest.API.csproj
 
-  # ─────────────────────────────────────────────────────────────
-  # Stage 3: End-to-End Tests (Skipped for now)
-  # ─────────────────────────────────────────────────────────────
-  e2e-tests:
-    name: E2E Tests
-    if: false # Skipped for now
+      - name: Compile Release Build
+        run: dotnet build src/AzureTest.API/AzureTest.API.csproj --configuration Release --no-restore
+
+  # ==============================================================================
+  # Job 3: Docker Containerization & Registry Publish
+  # ==============================================================================
+  docker-publish:
+    name: Build & Push Docker Containers
+    needs: [frontend-ci, backend-ci]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
+      - name: Checkout Codebase
         uses: actions/checkout@v4
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+      - name: Set up Docker Buildx
+        uses: actions/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          dotnet-version: '10.0.x'
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Playwright Browsers
-        run: |
-          dotnet build test/AzureTest.e2eTest/AzureTest.e2eTest.csproj --configuration Release
-          pwsh test/AzureTest.e2eTest/bin/Release/net10.0/playwright.ps1 install --with-deps || true
+      - name: Extract Frontend Metadata
+        id: meta-front
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
 
-      - name: Run E2E Tests
-        run: dotnet test test/AzureTest.e2eTest/AzureTest.e2eTest.csproj --configuration Release
+      - name: Build & Push Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./front
+          file: ./front/Dockerfile
+          push: true
+          tags: ${{ steps.meta-front.outputs.tags }}
+          labels: ${{ steps.meta-front.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-  # ─────────────────────────────────────────────────────────────
-  # Stage 4: Build & Deploy to Ubuntu Server
-  # ─────────────────────────────────────────────────────────────
-  build-and-deploy:
-    name: Build & Deploy on Ubuntu
-    # When ready to enforce tests before deploy, uncomment:
-    # needs: [unit-tests, integration-tests, e2e-tests]
-    runs-on: self-hosted
+      - name: Extract Backend Metadata
+        id: meta-back
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Build & Push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./src/AzureTest.API/Dockerfile
+          push: true
+          tags: ${{ steps.meta-back.outputs.tags }}
+          labels: ${{ steps.meta-back.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ==============================================================================
+  # Job 4: Continuous Deployment to Production Server
+  # ==============================================================================
+  deploy:
+    name: Production Deployment
+    needs: [docker-publish]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Source Code into Runner Workspace
+      - name: Checkout Codebase
         uses: actions/checkout@v4
 
-      - name: Sync Source Code to projects/src
-        run: |
-          echo "Syncing code to production directory: projects/src..."
-          mkdir -p "$DEPLOY_DIR"
-          # Sync code excluding git and local caches
-          rsync -av --delete \
-            --exclude '.git' \
-            --exclude 'bin/' \
-            --exclude 'obj/' \
-            ./ "$DEPLOY_DIR"/
-
-      - name: Build and Start Containers via Docker Compose
+      - name: Deploy via SSH & Docker Compose
+        uses: appleboy/ssh-action@v1.0.3
+        if: env.DEPLOY_SSH_HOST != ''
         env:
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
-          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-        run: |
-          cd "$DEPLOY_DIR"
-
-          echo "Pre-pulling .NET runtime & SDK images..."
-          for img in mcr.microsoft.com/dotnet/sdk:10.0 mcr.microsoft.com/dotnet/aspnet:10.0; do
-            for i in 1 2 3; do
-              docker pull $img && break || (echo "Retry $i for $img..." && sleep 5)
-            done
-          done
-
-          echo "Building application container..."
-          docker compose build
-
-          echo "Starting all services (detached)..."
-          docker compose up -d --remove-orphans
-          docker compose up -d --force-recreate cloudflared
-
-      - name: Health Check Verification
-        run: |
-          echo "Verifying application health..."
-          end=$((SECONDS+120))
-          while [ $SECONDS -lt $end ]; do
-            RESPONSE=$(curl -s http://localhost:8088/health || true)
-            if echo "$RESPONSE" | grep -q '"status":"Healthy"'; then
-              echo "Deployment succeeded! Application is healthy:"
-              echo "$RESPONSE"
-              exit 0
-            fi
-            echo "Waiting for web container to report Healthy... Current response: $RESPONSE"
-            sleep 5
-          done
-
-          echo "Health check timed out! Dumping container logs:"
-          docker logs --tail 100 azuretest-web
-          docker logs --tail 50 azuretest-seq || true
-          exit 1
-          
-      - name: Debug cloudflared
-        if: always()
-        env:
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
-          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-        run: |
-          cd "$DEPLOY_DIR"
-          docker compose ps
-          docker compose logs --tail 50 cloudflared
+          DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /opt/azuretest
+            docker-compose pull
+            docker-compose up -d --remove-orphans
+            docker image prune -af

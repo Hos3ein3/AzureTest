@@ -8,6 +8,7 @@ using AzureTest.Application.Messaging;
 using AzureTest.Application.UserPreferences.Queries;
 using AzureTest.Contracts.DTOs.UserPreferences;
 using AzureTest.Domain.Documents;
+using AzureTest.Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -35,6 +36,7 @@ public static class GetUserPreference
             ThemeColor = string.IsNullOrWhiteSpace(pref.ThemeColor) ? "slate" : pref.ThemeColor,
             Currency = string.IsNullOrWhiteSpace(pref.Currency) ? "USD" : pref.Currency,
             PreferredDashboard = pref.PreferredDashboard ?? string.Empty,
+            TimeZone = pref.TimeZone,
             IsDarkMode = pref.IsDarkMode,
             Dashboards = dashboards.Select(d => new UserPreferenceDashboardDto
             {

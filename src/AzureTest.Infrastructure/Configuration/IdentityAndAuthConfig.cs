@@ -76,11 +76,22 @@ public static class IdentityAndAuthConfig
                         Encoding.UTF8.GetBytes(configuration["Jwt:Key"] ?? "fallback-super-secret-key-1234567890"))
                 };
 
-                // Support extracting token from cookie for MVC views
+                // Support extracting token from cookie for MVC views, query string for SignalR WebSockets/SSE, or Auth header
                 options.Events = new JwtBearerEvents
                 {
                     OnMessageReceived = context =>
                     {
+                        // 1. Support SignalR query string access_token (WebSockets / SSE)
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            (path.StartsWithSegments("/notificationHub") || path.StartsWithSegments("/hubs/notifications")))
+                        {
+                            context.Token = accessToken;
+                            return Task.CompletedTask;
+                        }
+
+                        // 2. Support extracting token from cookie for MVC views / cookie sessions
                         if (context.Request.Cookies.ContainsKey("jwt"))
                         {
                             context.Token = context.Request.Cookies["jwt"];
@@ -89,7 +100,9 @@ public static class IdentityAndAuthConfig
                     },
                     OnChallenge = context =>
                     {
-                        if (context.Request.Path.StartsWithSegments("/api"))
+                        if (context.Request.Path.StartsWithSegments("/api") ||
+                            context.Request.Path.StartsWithSegments("/notificationHub") ||
+                            context.Request.Path.StartsWithSegments("/hubs/notifications"))
                         {
                             return Task.CompletedTask;
                         }

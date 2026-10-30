@@ -147,6 +147,7 @@ app.MapStaticAssets();
 
 // ── 10. SignalR Hub Endpoints ────────────────────────────────────────────────
 app.MapHub<NotificationHub>("/notificationHub");
+app.MapHub<NotificationHub>("/hubs/notifications");
 app.MapHub<FantasyAuctionHub>("/auctionHub");
 app.MapHub<ShoppingListHub>("/shoppingListHub");
 

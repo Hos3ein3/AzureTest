@@ -17,7 +17,11 @@ public class NotificationHub : Hub
 
     public override async Task OnConnectedAsync()
     {
-        var userId = Context.UserIdentifier ?? Context.User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? Context.ConnectionId;
+        var userId = Context.UserIdentifier 
+                     ?? Context.User?.FindFirstValue(ClaimTypes.NameIdentifier) 
+                     ?? Context.User?.FindFirstValue("sub")
+                     ?? Context.User?.FindFirstValue("id")
+                     ?? Context.ConnectionId;
         var userName = Context.User?.Identity?.Name 
                        ?? Context.User?.FindFirstValue(ClaimTypes.Email)
                        ?? (Context.User?.Identity?.IsAuthenticated == true ? "Authenticated User" : $"Guest ({Context.ConnectionId[..Math.Min(4, Context.ConnectionId.Length)]})");
@@ -33,6 +37,14 @@ public class NotificationHub : Hub
         await Clients.All.SendAsync("UpdateOnlineUsersCount", onlineCount);
 
         await base.OnConnectedAsync();
+    }
+
+    public async Task JoinUserGroup(string userId)
+    {
+        if (!string.IsNullOrWhiteSpace(userId))
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId.Trim().ToLowerInvariant()}");
+        }
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)

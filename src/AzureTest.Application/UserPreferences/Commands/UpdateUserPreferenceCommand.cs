@@ -7,12 +7,13 @@ using AzureTest.Application.Interfaces.Data.NoSql;
 using AzureTest.Application.Interfaces.Services;
 using AzureTest.Application.Messaging;
 using AzureTest.Domain.Documents;
+using AzureTest.Domain.Enums;
 
 using FluentValidation;
 
 namespace AzureTest.Application.UserPreferences.Commands;
 
-public sealed record UpdateUserPreferenceCommand(Guid UserId, string Language, string ThemeColor, string Currency, string PreferredDashboard, bool IsDarkMode) : ICommand;
+public sealed record UpdateUserPreferenceCommand(Guid UserId, string Language, string ThemeColor, string Currency, string PreferredDashboard, bool IsDarkMode, PreferredTimeZone? TimeZone = PreferredTimeZone.Utc) : ICommand;
 
 public sealed class UpdateUserPreferenceCommandHandler : ICommandHandler<UpdateUserPreferenceCommand>
 {
@@ -40,6 +41,7 @@ public sealed class UpdateUserPreferenceCommandHandler : ICommandHandler<UpdateU
         pref.Currency = request.Currency;
         pref.PreferredDashboard = request.PreferredDashboard;
         pref.IsDarkMode = request.IsDarkMode;
+        pref.TimeZone = request.TimeZone ?? pref.TimeZone;
 
         if (isNew)
         {
@@ -66,5 +68,6 @@ public sealed class UpdateUserPreferenceCommandValidator : FluentValidation.Abst
         RuleFor(x => x.ThemeColor).MaximumLength(50);
         RuleFor(x => x.Currency).MaximumLength(10);
         RuleFor(x => x.PreferredDashboard).MaximumLength(100);
+        RuleFor(x => x.TimeZone).IsInEnum();
     }
 }

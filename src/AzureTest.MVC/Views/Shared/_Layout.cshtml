@@ -533,6 +533,39 @@
                                 <!-- Dashboards will be loaded here via JS -->
                             </select>
                         </div>
+
+                        <!-- Time Zone -->
+                        <div>
+                            <label for="prefTimeZone" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                                <i class="fa-solid fa-clock mr-1.5 text-brand-600"></i> Preferred Time Zone
+                            </label>
+                            <select id="prefTimeZone" name="timeZone" class="block w-full rounded-lg border-slate-300 text-sm py-2 px-3 focus:border-brand-500 focus:ring-brand-500 border bg-white">
+                                <option value="Utc">Coordinated Universal Time (UTC)</option>
+                                <option value="Hawaii">Honolulu (Hawaii Time)</option>
+                                <option value="Alaska">Anchorage (Alaska Time)</option>
+                                <option value="Pacific">Los Angeles, San Francisco, Vancouver (Pacific Time)</option>
+                                <option value="Mountain">Denver, Phoenix, Calgary (Mountain Time)</option>
+                                <option value="Central">Chicago, Dallas, Mexico City (Central Time)</option>
+                                <option value="Eastern">New York, Miami, Toronto (Eastern Time)</option>
+                                <option value="Atlantic">Halifax, Caribbean (Atlantic Time)</option>
+                                <option value="Brasilia">São Paulo, Buenos Aires (South America)</option>
+                                <option value="London">London, Dublin, Lisbon (UK & Ireland Time)</option>
+                                <option value="CentralEuropean">Paris, Berlin, Amsterdam, Rome (Central European Time)</option>
+                                <option value="EasternEuropean">Athens, Istanbul, Bucharest, Helsinki (Eastern European Time)</option>
+                                <option value="Cairo">Cairo (Egypt Time)</option>
+                                <option value="Johannesburg">Johannesburg, Cape Town (South Africa Time)</option>
+                                <option value="Moscow">Moscow, St. Petersburg (Moscow Time)</option>
+                                <option value="Tehran">Tehran (Iran Time)</option>
+                                <option value="Dubai">Dubai, Abu Dhabi, Muscat (Gulf Time)</option>
+                                <option value="Karachi">Karachi, Islamabad, Tashkent (Pakistan / West Asia)</option>
+                                <option value="India">Mumbai, New Delhi, Bangalore (India Time)</option>
+                                <option value="Bangkok">Bangkok, Jakarta, Hanoi (Indochina Time)</option>
+                                <option value="Singapore">Singapore, Hong Kong, Beijing (Singapore / China)</option>
+                                <option value="Tokyo">Tokyo, Seoul, Osaka (Japan & Korea Time)</option>
+                                <option value="Sydney">Sydney, Melbourne, Brisbane (East Australia)</option>
+                                <option value="Auckland">Auckland, Wellington (New Zealand Time)</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Modal Footer -->
@@ -817,6 +850,15 @@
                         if (data.currency && currencySelect) {
                             currencySelect.value = data.currency;
                         }
+
+                        const timeZoneSelect = document.getElementById('prefTimeZone');
+                        if (timeZoneSelect) {
+                            if (data.timeZoneName) {
+                                timeZoneSelect.value = data.timeZoneName;
+                            } else if (data.timeZone !== undefined && data.timeZone !== null) {
+                                timeZoneSelect.value = data.timeZone;
+                            }
+                        }
                         
                         const dashSelect = document.getElementById('prefDashboard');
                         if (dashSelect && data.dashboards) {
@@ -854,9 +896,16 @@
                 saveText.textContent = 'Saving...';
 
                 const selectedTheme = themeColorSelect.value;
+                const currencySelect = document.getElementById('prefCurrency');
+                const dashSelect = document.getElementById('prefDashboard');
+                const timeZoneSelect = document.getElementById('prefTimeZone');
+
                 const payload = {
                     language: languageSelect.value,
-                    themeColor: selectedTheme
+                    themeColor: selectedTheme,
+                    currency: currencySelect ? currencySelect.value : 'USD',
+                    preferredDashboard: dashSelect ? dashSelect.value : '',
+                    timeZone: timeZoneSelect ? timeZoneSelect.value : 'Utc'
                 };
 
                 try {
@@ -1382,8 +1431,20 @@
             }
         });
 
+        connection.onreconnected(() => {
+            const authUserId = '@(User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "")';
+            if (authUserId) {
+                connection.invoke('JoinUserGroup', authUserId).catch(() => {});
+            }
+            loadUserNotifications();
+        });
+
         connection.start()
             .then(() => {
+                const authUserId = '@(User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "")';
+                if (authUserId) {
+                    connection.invoke('JoinUserGroup', authUserId).catch(() => {});
+                }
                 loadUserNotifications();
             })
             .catch(err => {

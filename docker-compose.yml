@@ -1,236 +1,58 @@
-name:
-  azuretest
+version: '3.8'
 
 services:
-  # ── Application ────────────────────────────────────────────────────────────
-  web:
+  # ==============================================================================
+  # Angular Universal Paper Trading Terminal & Admin Console
+  # ==============================================================================
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    container_name: azuretest-frontend
+    restart: unless-stopped
+    ports:
+      - "4200:80"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - azuretest-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ==============================================================================
+  # ASP.NET Core 10.0 Web API & SignalR Microservices
+  # ==============================================================================
+  backend:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: azuretest-web
-    ports:
-      - "8088:8080"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
-      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
-      - EmailSettings__Username=${EMAIL_USERNAME}
-      - EmailSettings__Password=${EMAIL_PASSWORD}
-    depends_on:
-      - postgres
-      - mongo
-      - redis
-      - seq
-    networks:
-      - app-azuretest-network
-    # Exposing docker logs for Promtail
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # ── PostgreSQL Database & Admin ────────────────────────────────────────────
-  postgres:
-    image: postgres:15-alpine
-    container_name: azuretest-postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: ResumeTrackerDb.Dev
-    command: |
-      postgres 
-      -c wal_level=replica 
-      -c max_wal_senders=10 
-      -c max_replication_slots=10 
-      -c hot_standby=on
-    ports:
-      - "5434:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    networks:
-      - app-azuretest-network
-
-
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: azuretest-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5051:80"
-    depends_on:
-      - postgres
-    networks:
-      - app-azuretest-network
-
-  # ── MongoDB & Express ──────────────────────────────────────────────────────
-  mongo:
-    image: mongo:6
-    container_name: azuretest-mongo
-    ports:
-      - "27018:27017"
-    volumes:
-      - mongodata:/data/db
-    networks:
-      - app-azuretest-network
-
-  mongo-express:
-    image: mongo-express
-    container_name: azuretest-mongo-express
-    environment:
-      ME_CONFIG_MONGODB_SERVER: mongo
-      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
-      ME_CONFIG_BASICAUTH_USERNAME: admin
-      ME_CONFIG_BASICAUTH_PASSWORD: password
-    ports:
-      - "8081:8081"
-    depends_on:
-      - mongo
-    networks:
-      - app-azuretest-network
-
-  # ── Redis & Dashboard ──────────────────────────────────────────────────────
-  redis:
-    image: redis:7-alpine
-    container_name: azuretest-redis
-    ports:
-      - "6380:6379"
-    volumes:
-      - redisdata:/data
-    networks:
-      - app-azuretest-network
-
-  redisinsight:
-    image: redis/redisinsight:latest
-    container_name: azuretest-redisinsight
-    ports:
-      - "5541:5540"
-    depends_on:
-      - redis
-    networks:
-      - app-azuretest-network
-
-  # ── RabbitMQ ───────────────────────────────────────────────────────────────
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: azuretest-rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    ports:
-      - "5673:5672"
-      - "15673:15672"
-    networks:
-      - app-azuretest-network
-
-  # ── Observability: Prometheus & Node Exporter ──────────────────────────────
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: azuretest-prometheus
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheusdata:/prometheus
-    ports:
-      - "9091:9090"
-    networks:
-      - app-azuretest-network
-
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: azuretest-node-exporter
-    ports:
-      - "9101:9100"
-    networks:
-      - app-azuretest-network
-
-  # ── Observability: Loki & Promtail ─────────────────────────────────────────
-  loki:
-    image: grafana/loki:latest
-    container_name: azuretest-loki
-    ports:
-      - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - app-azuretest-network
-
-  tempo:
-    image: grafana/tempo:latest
-    container_name: azuretest-tempo
-    command: -config.file=/etc/tempo.yaml
-    volumes:
-      - ./tempo.yaml:/etc/tempo.yaml
-      - tempodata:/var/tempo
-    ports:
-      - "3200:3200"   # Tempo query API
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-    networks:
-      - app-azuretest-network
-
-  promtail:
-    image: grafana/promtail:latest
-    container_name: azuretest-promtail
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./promtail-config.yml:/etc/promtail/promtail-config.yml
-    command: -config.file=/etc/promtail/promtail-config.yml
-    networks:
-      - app-azuretest-network
-
-  # ── Observability: Seq ─────────────────────────────────────────────────────
-  seq:
-    image: datalust/seq:latest
-    container_name: azuretest-seq
+      dockerfile: ./src/AzureTest.API/Dockerfile
+    container_name: azuretest-api
     restart: unless-stopped
-    environment:
-      - ACCEPT_EULA=Y
     ports:
-      - "5342:80"
-    volumes:
-      - seqdata:/data
-    networks:
-      - app-azuretest-network
-
-  # ── Observability: Grafana ─────────────────────────────────────────────────
-  grafana:
-    image: grafana/grafana:latest
-    container_name: azuretest-grafana
+      - "5143:5143"
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    ports:
-      - "3001:3000"
-    depends_on:
-      - prometheus
-      - loki
-    volumes:
-      - grafanadata:/var/lib/grafana
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5143
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AzureTestDb;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=True;
+      - Jwt__Issuer=https://azuretest.io
+      - Jwt__Audience=https://azuretest.io
+      - Jwt__Secret=SuperSecretTestingSecurityKeyForJwtAuthenticationTokensLong256Bits1234567890
     networks:
-      - app-azuretest-network
-  
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    restart: unless-stopped
-    command: tunnel --no-autoupdate run
-    environment:
-      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
-    depends_on: 
-      - web
-    networks:
-      - app-azuretest-network
+      - azuretest-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5143/api/v1/trading/live-status || exit 0"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
 networks:
-  app-azuretest-network:
+  azuretest-network:
     driver: bridge
-
-volumes:
-  pgdata:
-  pgdata_replica:
-  mongodata:
-  redisdata:
-  prometheusdata:
-  grafanadata:
-  tempodata:
-  seqdata:
