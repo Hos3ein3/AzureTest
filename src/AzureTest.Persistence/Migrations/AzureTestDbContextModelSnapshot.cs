@@ -5705,7 +5705,7 @@ namespace AzureTest.Persistence.Migrations
 
             modelBuilder.Entity("AzureTest.Domain.Entities.Outbox.InboxMessage", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<Guid>("EventId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("HandlerName")
@@ -5718,7 +5718,7 @@ namespace AzureTest.Persistence.Migrations
                     b.Property<DateTime>("ReceivedOnUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("Id", "HandlerName");
+                    b.HasKey("EventId", "HandlerName");
 
                     b.ToTable("InboxMessages", (string)null);
                 });
