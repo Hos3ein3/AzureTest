@@ -7,6 +7,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: mvc
     container_name: azuretest-web
     ports:
       - "8088:8080"
@@ -39,6 +40,8 @@ services:
       - "8089:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
+      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
       - EmailSettings__Username=${EMAIL_USERNAME}
       - EmailSettings__Password=${EMAIL_PASSWORD}
     depends_on:
@@ -241,6 +244,7 @@ services:
       TUNNEL_TOKEN: ${TUNNEL_TOKEN}
     depends_on:
       - web
+      - api
     networks:
       - app-azuretest-network
 
